@@ -22,6 +22,8 @@ const FareCalculator = () => {
   const [toLocation, setToLocation] = useState('')
   const [routeResult, setRouteResult] = useState<RouteResult | null>(null)
   const [isCalculating, setIsCalculating] = useState(false)
+  const [error, setError] = useState<string>('')
+  const [lastCalculationTime, setLastCalculationTime] = useState<number>(0)
 
   // Official Barangays and Landmarks of Basey Municipality, Samar
   const barangays = [
@@ -265,17 +267,37 @@ const FareCalculator = () => {
   }
 
   const handleCalculate = () => {
+    setError('') // Clear previous errors
+    
+    // Rate limiting: prevent calculations within 2 seconds
+    const now = Date.now()
+    if (now - lastCalculationTime < 2000) {
+      setError('Please wait a moment before calculating again')
+      return
+    }
+    
+    // Input validation
     if (!fromLocation || !toLocation) {
-      alert('Please select both pickup and destination locations')
+      setError('Please select both pickup and destination locations')
       return
     }
 
     if (fromLocation === toLocation) {
-      alert('Pickup and destination cannot be the same')
+      setError('Pickup and destination cannot be the same')
+      return
+    }
+
+    // Sanitize inputs (ensure they're in our barangay list)
+    const validFromLocation = barangays.find(b => b.name === fromLocation)
+    const validToLocation = barangays.find(b => b.name === toLocation)
+    
+    if (!validFromLocation || !validToLocation) {
+      setError('Please select valid locations from the dropdown list')
       return
     }
 
     setIsCalculating(true)
+    setLastCalculationTime(now) // Set rate limiting timestamp
 
     // Simulate processing time for enhanced calculation
     setTimeout(() => {
@@ -297,6 +319,7 @@ const FareCalculator = () => {
     setFromLocation('')
     setToLocation('')
     setRouteResult(null)
+    setError('') // Clear any error messages
   }
 
   return (
@@ -362,6 +385,16 @@ const FareCalculator = () => {
               ))}
             </select>
           </div>
+
+          {/* Error Message */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+              <div className="flex items-center">
+                <span className="text-red-600 mr-2">⚠️</span>
+                <p className="text-red-700 font-medium">{error}</p>
+              </div>
+            </div>
+          )}
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 pt-4">
