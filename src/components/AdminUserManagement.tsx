@@ -1,0 +1,544 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+
+// Local enum definition to avoid Prisma import issues
+enum UserType {
+  ADMIN = 'ADMIN',
+  DATA_ENCODER = 'DATA_ENCODER',
+  ENFORCER = 'ENFORCER',
+  PUBLIC = 'PUBLIC'
+}
+
+interface AdminUser {
+  id?: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string;
+  userType: UserType;
+  department?: string;
+  position?: string;
+  employeeId?: string;
+  notes?: string;
+}
+
+interface User {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  userType: string;
+  isActive: boolean;
+  isVerified: boolean;
+  createdAt: string;
+  governmentId?: string;
+  barangayResidence?: string;
+  reasonForRegistration?: string;
+}
+
+export default function AdminUserManagement() {
+  const [activeTab, setActiveTab] = useState<'create' | 'pending' | 'users'>('create');
+  const [users, setUsers] = useState<User[]>([]);
+  const [pendingUsers, setPendingUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const [newUser, setNewUser] = useState<AdminUser>({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phoneNumber: '',
+    userType: UserType.DATA_ENCODER,
+    department: '',
+    position: '',
+    employeeId: '',
+    notes: ''
+  });
+
+  useEffect(() => {
+    if (activeTab === 'users') {
+      fetchUsers();
+    } else if (activeTab === 'pending') {
+      fetchPendingUsers();
+    }
+  }, [activeTab]);
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/admin/users');
+      const data = await response.json();
+      if (data.success) {
+        setUsers(data.users);
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchPendingUsers = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/admin/users/pending');
+      const data = await response.json();
+      if (data.success) {
+        setPendingUsers(data.users);
+      }
+    } catch (error) {
+      console.error('Error fetching pending users:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      
+      const response = await fetch('/api/admin/users/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newUser),
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        alert('User created successfully!');
+        setNewUser({
+          firstName: '',
+          lastName: '',
+          email: '',
+          phoneNumber: '',
+          userType: UserType.DATA_ENCODER,
+          department: '',
+          position: '',
+          employeeId: '',
+          notes: ''
+        });
+        if (activeTab === 'users') {
+          fetchUsers();
+        }
+      } else {
+        alert(data.error || 'Failed to create user');
+      }
+    } catch (error) {
+      console.error('Error creating user:', error);
+      alert('Failed to create user');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyUser = async (userId: string, action: 'approve' | 'reject', reason?: string) => {
+    try {
+      setLoading(true);
+      
+      const response = await fetch('/api/admin/users/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId, action, reason }),
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        alert(`User ${action}d successfully!`);
+        fetchPendingUsers();
+        if (activeTab === 'users') {
+          fetchUsers();
+        }
+      } else {
+        alert(data.error || `Failed to ${action} user`);
+      }
+    } catch (error) {
+      console.error(`Error ${action}ing user:`, error);
+      alert(`Failed to ${action} user`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleUserStatus = async (userId: string, currentStatus: boolean) => {
+    try {
+      setLoading(true);
+      
+      const response = await fetch('/api/admin/users/toggle-status', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId, isActive: !currentStatus }),
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        alert(`User ${!currentStatus ? 'activated' : 'deactivated'} successfully!`);
+        fetchUsers();
+      } else {
+        alert(data.error || 'Failed to update user status');
+      }
+    } catch (error) {
+      console.error('Error updating user status:', error);
+      alert('Failed to update user status');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="max-w-7xl mx-auto p-6">
+      <div className="bg-white rounded-lg shadow-md">
+        {/* Header */}
+        <div className="border-b border-gray-200 px-6 py-4">
+          <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
+          <p className="text-gray-600 mt-1">Manage official accounts and verify public users</p>
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="border-b border-gray-200">
+          <nav className="flex space-x-8 px-6">
+            {[
+              { key: 'create', label: 'Create Official User', icon: '➕' },
+              { key: 'pending', label: 'Pending Verifications', icon: '⏳' },
+              { key: 'users', label: 'All Users', icon: '👥' }
+            ].map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key as any)}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === tab.key
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <span className="mr-2">{tab.icon}</span>
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+        </div>
+
+        <div className="p-6">
+          {/* Create Official User Tab */}
+          {activeTab === 'create' && (
+            <form onSubmit={handleCreateUser} className="space-y-6">
+              <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <span className="text-blue-600 text-xl">ℹ️</span>
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-blue-800">
+                      Creating Official User Account
+                    </h3>
+                    <div className="mt-2 text-sm text-blue-700">
+                      <p>Only administrators can create Enforcer and Data Encoder accounts. These users will have immediate access upon creation.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    First Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={newUser.firstName}
+                    onChange={(e) => setNewUser({ ...newUser, firstName: e.target.value })}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Last Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={newUser.lastName}
+                    onChange={(e) => setNewUser({ ...newUser, lastName: e.target.value })}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Email Address *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={newUser.email}
+                    onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Phone Number *
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    value={newUser.phoneNumber}
+                    onChange={(e) => setNewUser({ ...newUser, phoneNumber: e.target.value })}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    User Role *
+                  </label>
+                  <select
+                    required
+                    value={newUser.userType}
+                    onChange={(e) => setNewUser({ ...newUser, userType: e.target.value as UserType })}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  >
+                    <option value={UserType.DATA_ENCODER}>Data Encoder</option>
+                    <option value={UserType.ENFORCER}>Enforcer</option>
+                    <option value={UserType.ADMIN}>Administrator</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Employee ID
+                  </label>
+                  <input
+                    type="text"
+                    value={newUser.employeeId}
+                    onChange={(e) => setNewUser({ ...newUser, employeeId: e.target.value })}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Department
+                  </label>
+                  <input
+                    type="text"
+                    value={newUser.department}
+                    onChange={(e) => setNewUser({ ...newUser, department: e.target.value })}
+                    placeholder="e.g., Traffic Management, Transport Office"
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Position
+                  </label>
+                  <input
+                    type="text"
+                    value={newUser.position}
+                    onChange={(e) => setNewUser({ ...newUser, position: e.target.value })}
+                    placeholder="e.g., Traffic Enforcer, Data Entry Clerk"
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Notes
+                </label>
+                <textarea
+                  value={newUser.notes}
+                  onChange={(e) => setNewUser({ ...newUser, notes: e.target.value })}
+                  rows={3}
+                  placeholder="Additional notes about this user account..."
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {loading ? 'Creating...' : 'Create User'}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* Pending Verifications Tab */}
+          {activeTab === 'pending' && (
+            <div className="space-y-4">
+              {loading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                  <p className="mt-2 text-gray-600">Loading pending users...</p>
+                </div>
+              ) : pendingUsers.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">No pending user verifications</p>
+                </div>
+              ) : (
+                pendingUsers.map((user) => (
+                  <div key={user.id} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h3 className="font-medium text-gray-900">
+                          {user.firstName} {user.lastName}
+                        </h3>
+                        <p className="text-sm text-gray-600">{user.email}</p>
+                        <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                          <div>
+                            <span className="font-medium">Government ID:</span> {user.governmentId || 'N/A'}
+                          </div>
+                          <div>
+                            <span className="font-medium">Barangay:</span> {user.barangayResidence || 'N/A'}
+                          </div>
+                          <div>
+                            <span className="font-medium">Registered:</span> {new Date(user.createdAt).toLocaleDateString()}
+                          </div>
+                        </div>
+                        {user.reasonForRegistration && (
+                          <div className="mt-2">
+                            <span className="font-medium text-sm">Reason:</span>
+                            <p className="text-sm text-gray-600 mt-1">{user.reasonForRegistration}</p>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex space-x-2 ml-4">
+                        <button
+                          onClick={() => handleVerifyUser(user.id, 'approve')}
+                          className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700"
+                        >
+                          ✓ Approve
+                        </button>
+                        <button
+                          onClick={() => {
+                            const reason = prompt('Reason for rejection:');
+                            if (reason) {
+                              handleVerifyUser(user.id, 'reject', reason);
+                            }
+                          }}
+                          className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700"
+                        >
+                          ✗ Reject
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          {/* All Users Tab */}
+          {activeTab === 'users' && (
+            <div className="space-y-4">
+              {loading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                  <p className="mt-2 text-gray-600">Loading users...</p>
+                </div>
+              ) : users.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">No users found</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          User
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Role
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Created
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {users.map((user) => (
+                        <tr key={user.id}>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">
+                                {user.firstName} {user.lastName}
+                              </div>
+                              <div className="text-sm text-gray-500">{user.email}</div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              user.userType === 'ADMIN' ? 'bg-purple-100 text-purple-800' :
+                              user.userType === 'ENFORCER' ? 'bg-red-100 text-red-800' :
+                              user.userType === 'DATA_ENCODER' ? 'bg-blue-100 text-blue-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {user.userType.replace('_', ' ')}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex flex-col space-y-1">
+                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                              }`}>
+                                {user.isActive ? 'Active' : 'Inactive'}
+                              </span>
+                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                user.isVerified ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'
+                              }`}>
+                                {user.isVerified ? 'Verified' : 'Pending'}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {new Date(user.createdAt).toLocaleDateString()}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button
+                              onClick={() => toggleUserStatus(user.id, user.isActive)}
+                              className={`mr-2 px-3 py-1 rounded text-xs ${
+                                user.isActive
+                                  ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                                  : 'bg-green-100 text-green-700 hover:bg-green-200'
+                              }`}
+                            >
+                              {user.isActive ? 'Deactivate' : 'Activate'}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
