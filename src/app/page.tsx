@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import { useAuth } from '@/components/AuthProvider'
-import FareCalculator from '@/components/FareCalculator'
 
 export default function HomePage() {
   const { user, loading } = useAuth()
@@ -27,10 +26,13 @@ export default function HomePage() {
             {/* Quick Access Buttons */}
             <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
               {isAuthenticated ? (
-                <div className="bg-white bg-opacity-20 backdrop-blur-sm rounded-lg px-6 py-3 flex items-center justify-center font-semibold border border-white border-opacity-30">
-                  <span className="mr-2 text-lg">🗺️</span>
-                  Route Calculator Available Below
-                </div>
+                <Link
+                  href="/dashboard"
+                  className="bg-white bg-opacity-20 hover:bg-opacity-30 backdrop-blur-sm rounded-lg px-6 py-3 flex items-center justify-center transition-all font-semibold border border-white border-opacity-30"
+                >
+                  <span className="mr-2 text-lg">�</span>
+                  Go to Dashboard & Calculator
+                </Link>
               ) : (
                 <Link
                   href="/auth"
@@ -45,68 +47,47 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Main Calculator Section - Authentication Required */}
-      <section className="py-8 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="max-w-6xl mx-auto">
-            {loading ? (
-              <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto"></div>
-                <p className="mt-4 text-gray-600">Loading...</p>
+      {/* Authentication Section for Non-Users */}
+      {!isAuthenticated && (
+        <section className="py-12 bg-gray-50">
+          <div className="container mx-auto px-4">
+            <div className="max-w-md mx-auto text-center">
+              <div className="w-24 h-24 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <span className="text-4xl">🔒</span>
               </div>
-            ) : isAuthenticated ? (
-              <div className="animate-fade-in">
-                <div className="text-center mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                    🗺️ Fare Calculator
-                  </h2>
-                  <p className="text-gray-600">
-                    Calculate official transportation fares for Basey Municipality
-                  </p>
-                </div>
-                <FareCalculator />
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                Authentication Required
+              </h2>
+              <p className="text-gray-600 mb-8">
+                The fare calculator is only available to registered and authenticated users to ensure legitimate travel recording and system integrity.
+              </p>
+              <div className="space-y-3">
+                <Link
+                  href="/auth"
+                  className="block w-full bg-emerald-600 text-white px-8 py-3 rounded-lg hover:bg-emerald-700 transition-colors font-semibold"
+                >
+                  Login to Access Calculator
+                </Link>
+                <Link
+                  href="/auth?tab=register"
+                  className="block w-full bg-gray-100 text-gray-700 px-8 py-3 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                >
+                  Register New Account
+                </Link>
               </div>
-            ) : (
-              <div className="text-center py-12">
-                <div className="max-w-md mx-auto">
-                  <div className="w-24 h-24 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <span className="text-4xl">🔒</span>
-                  </div>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                    Authentication Required
-                  </h2>
-                  <p className="text-gray-600 mb-8">
-                    The fare calculator is only available to registered and authenticated users to ensure legitimate travel recording and system integrity.
-                  </p>
-                  <div className="space-y-3">
-                    <Link
-                      href="/auth"
-                      className="block w-full bg-emerald-600 text-white px-8 py-3 rounded-lg hover:bg-emerald-700 transition-colors font-semibold"
-                    >
-                      Login to Access Calculator
-                    </Link>
-                    <Link
-                      href="/auth?tab=register"
-                      className="block w-full bg-gray-100 text-gray-700 px-8 py-3 rounded-lg hover:bg-gray-200 transition-colors font-medium"
-                    >
-                      Register New Account
-                    </Link>
-                  </div>
-                  <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                    <h3 className="font-semibold text-blue-800 mb-2">Why Authentication?</h3>
-                    <ul className="text-sm text-blue-700 text-left space-y-1">
-                      <li>• Ensures legitimate travel recording</li>
-                      <li>• Prevents system abuse and fraud</li>
-                      <li>• Maintains data accuracy and integrity</li>
-                      <li>• Enables proper incident reporting</li>
-                    </ul>
-                  </div>
-                </div>
+              <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <h3 className="font-semibold text-blue-800 mb-2">Why Authentication?</h3>
+                <ul className="text-sm text-blue-700 text-left space-y-1">
+                  <li>• Ensures legitimate travel recording</li>
+                  <li>• Prevents system abuse and fraud</li>
+                  <li>• Maintains data accuracy and integrity</li>
+                  <li>• Enables proper incident reporting</li>
+                </ul>
               </div>
-            )}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Compact Features & Legal Section */}
       <section className="py-12 bg-white">

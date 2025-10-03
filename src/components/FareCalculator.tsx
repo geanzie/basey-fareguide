@@ -522,7 +522,7 @@ const FareCalculator = () => {
       <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-all duration-300">
         <div className="text-center mb-6">
           <div className="inline-flex items-center justify-center w-12 h-12 bg-indigo-100 rounded-xl mb-3">
-            <span className="text-xl">�</span>
+            <span className="text-xl">🛣️</span>
           </div>
           <h3 className="text-xl font-semibold text-gray-900 mb-3">
             Route Details

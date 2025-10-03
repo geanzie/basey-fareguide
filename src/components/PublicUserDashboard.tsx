@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 
 interface Incident {
   id: string
@@ -81,67 +82,84 @@ export default function PublicUserDashboard() {
     <div className="space-y-6">
       {/* Welcome Section */}
       <div className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl p-6 border border-emerald-200">
-        <h2 className="text-2xl font-bold text-emerald-800 mb-2">Welcome to Your Dashboard</h2>
+        <h2 className="text-2xl font-bold text-emerald-800 mb-2">� Welcome to Your Dashboard</h2>
         <p className="text-emerald-700">
-          Track your fare calculations, report incidents, and manage your transportation activities in Basey.
+          Manage your travel activities and transportation information in Basey Municipality.
         </p>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex items-center">
-            <div className="p-3 bg-blue-100 rounded-full">
-              <span className="text-2xl">📊</span>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Routes</p>
-              <p className="text-2xl font-semibold text-gray-900">{recentRoutes.length}</p>
-            </div>
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <Link
+          href="/dashboard/calculator"
+          className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow border border-gray-100 group"
+        >
+          <div className="text-center">
+            <div className="text-3xl mb-3 group-hover:scale-110 transition-transform">🧮</div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Fare Calculator</h3>
+            <p className="text-gray-600 text-sm">Calculate official transportation fares</p>
+          </div>
+        </Link>
+        
+        <Link
+          href="/dashboard/report"
+          className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow border border-gray-100 group"
+        >
+          <div className="text-center">
+            <div className="text-3xl mb-3 group-hover:scale-110 transition-transform">🚨</div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Report Incident</h3>
+            <p className="text-gray-600 text-sm">Report transportation violations</p>
+          </div>
+        </Link>
+        
+        <Link
+          href="/dashboard/profile"
+          className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow border border-gray-100 group"
+        >
+          <div className="text-center">
+            <div className="text-3xl mb-3 group-hover:scale-110 transition-transform">👤</div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">My Profile</h3>
+            <p className="text-gray-600 text-sm">Manage your account settings</p>
+          </div>
+        </Link>
+      </div>
+
+      {/* Compact Stats Row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-white rounded-lg shadow-md p-4">
+          <div className="text-center">
+            <div className="text-2xl mb-1">📊</div>
+            <p className="text-lg font-bold text-gray-900">{recentRoutes.length}</p>
+            <p className="text-xs text-gray-600">Routes</p>
           </div>
         </div>
-        
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex items-center">
-            <div className="p-3 bg-red-100 rounded-full">
-              <span className="text-2xl">📝</span>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Reports Filed</p>
-              <p className="text-2xl font-semibold text-gray-900">{reportedIncidents.length}</p>
-            </div>
+        <div className="bg-white rounded-lg shadow-md p-4">
+          <div className="text-center">
+            <div className="text-2xl mb-1">📝</div>
+            <p className="text-lg font-bold text-gray-900">{reportedIncidents.length}</p>
+            <p className="text-xs text-gray-600">Reports</p>
           </div>
         </div>
-        
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex items-center">
-            <div className="p-3 bg-green-100 rounded-full">
-              <span className="text-2xl">💰</span>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Fare Spent</p>
-              <p className="text-2xl font-semibold text-gray-900">₱{
-                recentRoutes.reduce((total, route) => 
-                  total + parseFloat(route.fare.replace('₱', '')), 0
-                ).toFixed(2)
-              }</p>
-            </div>
+        <div className="bg-white rounded-lg shadow-md p-4">
+          <div className="text-center">
+            <div className="text-2xl mb-1">💰</div>
+            <p className="text-lg font-bold text-gray-900">₱{
+              recentRoutes.reduce((total, route) => 
+                total + parseFloat(route.fare.replace('₱', '')), 0
+              ).toFixed(0)
+            }</p>
+            <p className="text-xs text-gray-600">Total Fare</p>
           </div>
         </div>
-        
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex items-center">
-            <div className="p-3 bg-yellow-100 rounded-full">
-              <span className="text-2xl">📍</span>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Distance Traveled</p>
-              <p className="text-2xl font-semibold text-gray-900">{
-                recentRoutes.reduce((total, route) => 
-                  total + parseFloat(route.distance.split(' ')[0]), 0
-                ).toFixed(1)
-              } km</p>
-            </div>
+        <div className="bg-white rounded-lg shadow-md p-4">
+          <div className="text-center">
+            <div className="text-2xl mb-1">📍</div>
+            <p className="text-lg font-bold text-gray-900">{
+              recentRoutes.reduce((total, route) => 
+                total + parseFloat(route.distance.split(' ')[0]), 0
+              ).toFixed(1)
+            }</p>
+            <p className="text-xs text-gray-600">km Traveled</p>
           </div>
         </div>
       </div>
