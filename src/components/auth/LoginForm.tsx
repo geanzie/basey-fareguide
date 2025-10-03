@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '@/components/AuthProvider'
 
 interface LoginFormProps {
   onSwitchToRegister: () => void
@@ -15,6 +16,7 @@ const LoginForm = ({ onSwitchToRegister }: LoginFormProps) => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
+  const { login } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -22,6 +24,8 @@ const LoginForm = ({ onSwitchToRegister }: LoginFormProps) => {
     setError('')
 
     try {
+      console.log('Attempting login with:', { username: formData.username })
+      
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
@@ -30,11 +34,14 @@ const LoginForm = ({ onSwitchToRegister }: LoginFormProps) => {
         body: JSON.stringify(formData),
       })
 
+      console.log('Login response status:', response.status)
+
       if (response.ok) {
         const data = await response.json()
-        // Store user data in localStorage or context
-        localStorage.setItem('user', JSON.stringify(data.user))
-        localStorage.setItem('token', data.token)
+        console.log('Login successful:', data.user)
+        
+        // Update global auth state
+        login(data.user, data.token)
         
         // Redirect based on user type
         switch (data.user.userType) {
@@ -52,9 +59,11 @@ const LoginForm = ({ onSwitchToRegister }: LoginFormProps) => {
         }
       } else {
         const errorData = await response.json()
+        console.error('Login error:', errorData)
         setError(errorData.message || 'Login failed')
       }
     } catch (err) {
+      console.error('Network error:', err)
       setError('Network error. Please try again.')
     } finally {
       setLoading(false)
@@ -83,14 +92,14 @@ const LoginForm = ({ onSwitchToRegister }: LoginFormProps) => {
           </p>
         </div>
         
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit} suppressHydrationWarning>
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
               {error}
             </div>
           )}
           
-          <div className="rounded-md shadow-sm -space-y-px">
+          <div className="rounded-md shadow-sm -space-y-px" suppressHydrationWarning>
             <div>
               <label htmlFor="username" className="sr-only">Username</label>
               <input

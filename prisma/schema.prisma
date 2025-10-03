@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
   output   = "../src/generated/prisma"
@@ -14,55 +8,193 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// User management models
 model User {
-  id          String   @id @default(cuid())
-  email       String   @unique
-  username    String   @unique
-  password    String
-  firstName   String
-  lastName    String
-  phoneNumber String?
-  address     String?
-  userType    UserType
-  isActive    Boolean  @default(true)
-  
-  // Enhanced validation fields
-  dateOfBirth         DateTime?
-  governmentId        String?   @unique
-  idType              String?
-  barangayResidence   String?
-  occupation          String?
-  emergencyContact    String?
+  id                    String                @id @default(cuid())
+  email                 String                @unique
+  username              String                @unique
+  password              String
+  firstName             String
+  lastName              String
+  phoneNumber           String?
+  address               String?
+  userType              UserType
+  isActive              Boolean               @default(true)
+  dateOfBirth           DateTime?
+  governmentId          String?               @unique
+  idType                String?
+  barangayResidence     String?
+  occupation            String?
+  emergencyContact      String?
   emergencyContactPhone String?
   reasonForRegistration String?
-  
-  // Account verification
-  isVerified          Boolean  @default(false)
-  verificationToken   String?
-  verificationExpiry  DateTime?
-  verifiedAt         DateTime?
-  verifiedBy         String?  // Admin who verified the account
-  
-  // Account status tracking
-  registrationIp     String?
-  lastLoginAt        DateTime?
-  lastLoginIp        String?
-  loginAttempts      Int      @default(0)
-  lockedUntil        DateTime?
-  
+  isVerified            Boolean               @default(false)
+  verificationToken     String?
+  verificationExpiry    DateTime?
+  verifiedAt            DateTime?
+  verifiedBy            String?
+  registrationIp        String?
+  lastLoginAt           DateTime?
+  lastLoginIp           String?
+  loginAttempts         Int                   @default(0)
+  lockedUntil           DateTime?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  driverProfile         DriverProfile?
+  fareCalculations      FareCalculation[]
+  handledIncidents      Incident[]            @relation("HandledBy")
+  reportedIncidents     Incident[]            @relation("ReportedBy")
+  verificationLogs      UserVerificationLog[]
+  vehicles              Vehicle[]
+
+  @@map("users")
+}
+
+model DriverProfile {
+  id               String    @id @default(cuid())
+  userId           String    @unique
+  licenseNumber    String    @unique
+  licenseType      String
+  licenseExpiry    DateTime
+  emergencyContact String
+  bloodType        String?
+  medicalRemarks   String?
+  isActive         Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicles         Vehicle[]
+
+  @@map("driver_profiles")
+}
+
+model Vehicle {
+  id                 String            @id @default(cuid())
+  plateNumber        String            @unique
+  vehicleType        VehicleType
+  make               String
+  model              String
+  year               Int
+  color              String
+  capacity           Int
+  ownerId            String
+  driverId           String?
+  isActive           Boolean           @default(true)
+  registrationExpiry DateTime
+  insuranceExpiry    DateTime?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  fareCalculations   FareCalculation[]
+  incidents          Incident[]
+  driver             DriverProfile?    @relation(fields: [driverId], references: [id])
+  owner              User              @relation(fields: [ownerId], references: [id])
+
+  @@map("vehicles")
+}
+
+model Incident {
+  id            String         @id @default(cuid())
+  incidentType  IncidentType
+  description   String
+  location      String
+  coordinates   String?
+  reportedById  String
+  handledById   String?
+  vehicleId     String?
+  driverLicense String?
+  plateNumber   String?
+  status        IncidentStatus @default(PENDING)
+  evidenceUrls  String[]
+  penaltyAmount Decimal?
+  remarks       String?
+  incidentDate  DateTime
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  handledBy     User?          @relation("HandledBy", fields: [handledById], references: [id])
+  reportedBy    User           @relation("ReportedBy", fields: [reportedById], references: [id])
+  vehicle       Vehicle?       @relation(fields: [vehicleId], references: [id])
+
+  @@map("incidents")
+}
+
+model FareCalculation {
+  id              String   @id @default(cuid())
+  userId          String?
+  vehicleId       String?
+  fromLocation    String
+  toLocation      String
+  distance        Decimal
+  calculatedFare  Decimal
+  actualFare      Decimal?
+  calculationType String
+  routeData       String?
+  createdAt       DateTime @default(now())
+  user            User?    @relation(fields: [userId], references: [id])
+  vehicle         Vehicle? @relation(fields: [vehicleId], references: [id])
+
+  @@map("fare_calculations")
+}
+
+model Route {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  waypoints   String
+  distance    Decimal
+  isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // Relations
-  driverProfile     DriverProfile?
-  reportedIncidents Incident[] @relation("ReportedBy")
-  handledIncidents  Incident[] @relation("HandledBy")
-  vehicles          Vehicle[]
-  fareCalculations  FareCalculation[]
-  verificationLogs  UserVerificationLog[]
+  @@map("routes")
+}
 
-  @@map("users")
+model Location {
+  id          String       @id @default(cuid())
+  name        String       @unique
+  type        LocationType
+  coordinates String
+  barangay    String?
+  description String?
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@map("locations")
+}
+
+model UserVerificationLog {
+  id          String   @id @default(cuid())
+  userId      String
+  action      String
+  performedBy String
+  reason      String?
+  evidence    String?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_verification_logs")
+}
+
+model AdminUserCreation {
+  id            String    @id @default(cuid())
+  requestedBy   String
+  userType      UserType
+  firstName     String
+  lastName      String
+  email         String
+  phoneNumber   String
+  department    String?
+  position      String?
+  employeeId    String?
+  notes         String?
+  isActive      Boolean   @default(false)
+  approvedBy    String?
+  approvedAt    DateTime?
+  createdUserId String?
+  createdAt     DateTime  @default(now())
+
+  @@map("admin_user_creations")
 }
 
 enum UserType {
@@ -72,54 +204,6 @@ enum UserType {
   PUBLIC
 }
 
-// Driver profile model
-model DriverProfile {
-  id               String   @id @default(cuid())
-  userId           String   @unique
-  licenseNumber    String   @unique
-  licenseType      String
-  licenseExpiry    DateTime
-  emergencyContact String
-  bloodType        String?
-  medicalRemarks   String?
-  isActive         Boolean  @default(true)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  // Relations
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  vehicles Vehicle[]
-
-  @@map("driver_profiles")
-}
-
-// Vehicle model
-model Vehicle {
-  id               String   @id @default(cuid())
-  plateNumber      String   @unique
-  vehicleType      VehicleType
-  make             String
-  model            String
-  year             Int
-  color            String
-  capacity         Int
-  ownerId          String
-  driverId         String?
-  isActive         Boolean  @default(true)
-  registrationExpiry DateTime
-  insuranceExpiry    DateTime?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  // Relations
-  owner    User           @relation(fields: [ownerId], references: [id])
-  driver   DriverProfile? @relation(fields: [driverId], references: [id])
-  incidents Incident[]
-  fareCalculations FareCalculation[]
-
-  @@map("vehicles")
-}
-
 enum VehicleType {
   JEEPNEY
   TRICYCLE
@@ -127,34 +211,6 @@ enum VehicleType {
   MULTICAB
   BUS
   VAN
-}
-
-// Incident reporting model
-model Incident {
-  id               String        @id @default(cuid())
-  incidentType     IncidentType
-  description      String
-  location         String
-  coordinates      String?       // JSON string for lat,lng
-  reportedById     String
-  handledById      String?
-  vehicleId        String?
-  driverLicense    String?
-  plateNumber      String?
-  status           IncidentStatus @default(PENDING)
-  evidenceUrls     String[]      // Array of image/video URLs
-  penaltyAmount    Decimal?
-  remarks          String?
-  incidentDate     DateTime
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
-
-  // Relations
-  reportedBy User     @relation("ReportedBy", fields: [reportedById], references: [id])
-  handledBy  User?    @relation("HandledBy", fields: [handledById], references: [id])
-  vehicle    Vehicle? @relation(fields: [vehicleId], references: [id])
-
-  @@map("incidents")
 }
 
 enum IncidentType {
@@ -173,97 +229,9 @@ enum IncidentStatus {
   DISMISSED
 }
 
-// Fare calculation history
-model FareCalculation {
-  id               String   @id @default(cuid())
-  userId           String?
-  vehicleId        String?
-  fromLocation     String
-  toLocation       String
-  distance         Decimal
-  calculatedFare   Decimal
-  actualFare       Decimal?
-  calculationType  String   // 'ROUTE' or 'GPS'
-  routeData        String?  // JSON string with route details
-  createdAt        DateTime @default(now())
-
-  // Relations
-  user    User?    @relation(fields: [userId], references: [id])
-  vehicle Vehicle? @relation(fields: [vehicleId], references: [id])
-
-  @@map("fare_calculations")
-}
-
-// Route and location models
-model Route {
-  id          String @id @default(cuid())
-  name        String
-  description String?
-  waypoints   String // JSON string with coordinate array
-  distance    Decimal
-  isActive    Boolean @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@map("routes")
-}
-
-model Location {
-  id          String      @id @default(cuid())
-  name        String      @unique
-  type        LocationType
-  coordinates String      // JSON string for lat,lng
-  barangay    String?
-  description String?
-  isActive    Boolean     @default(true)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-
-  @@map("locations")
-}
-
 enum LocationType {
   BARANGAY
   LANDMARK
   URBAN
   RURAL
-}
-
-// User verification and audit trail
-model UserVerificationLog {
-  id              String   @id @default(cuid())
-  userId          String
-  action          String   // 'CREATED', 'VERIFIED', 'SUSPENDED', 'REACTIVATED'
-  performedBy     String   // Admin user ID who performed the action
-  reason          String?
-  evidence        String?  // JSON string with verification evidence
-  ipAddress       String?
-  userAgent       String?
-  createdAt       DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("user_verification_logs")
-}
-
-// Admin user creation for official roles
-model AdminUserCreation {
-  id              String   @id @default(cuid())
-  requestedBy     String   // Admin ID who created the user
-  userType        UserType
-  firstName       String
-  lastName        String
-  email           String
-  phoneNumber     String
-  department      String?  // For enforcers/encoders
-  position        String?
-  employeeId      String?
-  notes           String?
-  isActive        Boolean  @default(false)
-  approvedBy      String?  // Higher admin who approved
-  approvedAt      DateTime?
-  createdUserId   String?  // Final created user ID
-  createdAt       DateTime @default(now())
-
-  @@map("admin_user_creations")
 }

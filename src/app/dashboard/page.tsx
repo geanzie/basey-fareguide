@@ -2,51 +2,24 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '@/components/AuthProvider'
 import AuthorityDashboard from '@/components/AuthorityDashboard'
 import PublicUserDashboard from '@/components/PublicUserDashboard'
 import UserProfile from '@/components/UserProfile'
 import IncidentReporting from '@/components/IncidentReporting'
 import IncidentsList from '@/components/IncidentsList'
 
-interface User {
-  id: string
-  userType: string
-  firstName: string
-  lastName: string
-}
-
 export default function DashboardPage() {
-  const [user, setUser] = useState<User | null>(null)
+  const { user, loading } = useAuth()
   const [activeSection, setActiveSection] = useState<'dashboard' | 'profile' | 'driver' | 'incidents' | 'report'>('dashboard')
-  const [loading, setLoading] = useState(true)
   const router = useRouter()
 
   useEffect(() => {
-    // Check if user is logged in
-    const userData = localStorage.getItem('user')
-    const token = localStorage.getItem('token')
-
-    if (!userData || !token) {
+    // Redirect if not authenticated
+    if (!loading && !user) {
       router.push('/auth')
-      return
     }
-
-    try {
-      const parsedUser = JSON.parse(userData)
-      setUser(parsedUser)
-    } catch (err) {
-      router.push('/auth')
-      return
-    }
-
-    setLoading(false)
-  }, [router])
-
-  const handleLogout = () => {
-    localStorage.removeItem('user')
-    localStorage.removeItem('token')
-    router.push('/auth')
-  }
+  }, [user, loading, router])
 
   if (loading) {
     return (
@@ -99,32 +72,7 @@ export default function DashboardPage() {
   )
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <span className="text-2xl mr-3">🚌</span>
-              <h1 className="text-xl font-semibold text-gray-900">
-                Basey Fare Guide - Dashboard
-              </h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-600">
-                Welcome, {user.firstName} {user.lastName}
-              </span>
-              <button
-                onClick={handleLogout}
-                className="text-sm text-red-600 hover:text-red-800"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
+    <div className="bg-gray-50 min-h-[calc(100vh-4rem)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Sidebar Navigation */}
