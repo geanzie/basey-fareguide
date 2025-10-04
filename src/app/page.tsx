@@ -30,7 +30,7 @@ export default function HomePage() {
                   href="/dashboard"
                   className="bg-white bg-opacity-20 hover:bg-opacity-30 backdrop-blur-sm rounded-lg px-6 py-3 flex items-center justify-center transition-all font-semibold border border-white border-opacity-30"
                 >
-                  <span className="mr-2 text-lg">�</span>
+                  <span className="mr-2 text-lg">➡️</span>
                   Go to Dashboard & Calculator
                 </Link>
               ) : (

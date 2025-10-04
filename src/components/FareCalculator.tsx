@@ -323,8 +323,8 @@ const FareCalculator = () => {
   }
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-      {/* Left Column: Enhanced Route Calculator */}
+    <div className="max-w-4xl mx-auto">
+      {/* Enhanced Route Calculator */}
       <div className="space-y-8">
         {/* Calculator Form */}
         <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-8 hover:shadow-xl transition-all duration-300">
@@ -459,184 +459,39 @@ const FareCalculator = () => {
               </div>
             </div>
 
-            {/* Detailed Breakdown */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <div className="bg-white rounded-xl p-6">
-                <h4 className="font-bold text-gray-800 mb-4 flex items-center">
-                  <span className="w-8 h-8 bg-emerald-100 text-emerald-600 rounded-lg flex items-center justify-center text-sm font-bold mr-3">💰</span>
-                  Fare Breakdown
-                </h4>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="text-gray-600">Base fare (3km):</span>
-                    <span className="font-semibold text-gray-900">₱{routeResult.breakdown.baseFare.toFixed(2)}</span>
-                  </div>
-                  {routeResult.breakdown.additionalDistance > 0 && (
-                    <>
-                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                        <span className="text-gray-600">Additional distance:</span>
-                        <span className="font-semibold text-gray-900">{routeResult.breakdown.additionalDistance.toFixed(2)} km</span>
-                      </div>
-                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                        <span className="text-gray-600">Additional fare:</span>
-                        <span className="font-semibold text-gray-900">₱{routeResult.breakdown.additionalFare.toFixed(2)}</span>
-                      </div>
-                    </>
-                  )}
+            {/* Detailed Fare Breakdown */}
+            <div className="bg-white rounded-xl p-6 shadow-sm">
+              <h4 className="font-bold text-gray-800 mb-4 flex items-center">
+                <span className="w-8 h-8 bg-emerald-100 text-emerald-600 rounded-lg flex items-center justify-center text-sm font-bold mr-3">💰</span>
+                Fare Breakdown
+              </h4>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <span className="text-gray-600">Base fare (first 3km):</span>
+                  <span className="font-semibold text-gray-900">₱15.00</span>
                 </div>
-              </div>
-
-              <div className="bg-white rounded-xl p-6">
-                <h4 className="font-bold text-gray-800 mb-4 flex items-center">
-                  <span className="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center text-sm font-bold mr-3">📊</span>
-                  Route Analysis
-                </h4>
-                <div className="space-y-3">
+                {routeResult.distance > 3 && (
                   <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="text-gray-600">Estimated time:</span>
-                    <span className="font-semibold text-gray-900">{routeResult.routeDetails.estimatedTime}</span>
+                    <span className="text-gray-600">Additional distance:</span>
+                    <span className="font-semibold text-gray-900">{(routeResult.distance - 3).toFixed(2)} km × ₱3.00 = ₱{routeResult.breakdown.additionalFare.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="text-gray-600">Road conditions:</span>
-                    <span className="font-semibold text-gray-900">{routeResult.routeDetails.roadConditions}</span>
+                )}
+                <div className="border-t-2 border-emerald-300 pt-3 mt-3">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-emerald-700 text-lg">Total Fare:</span>
+                    <span className="text-2xl font-bold text-emerald-600">₱{routeResult.fare.toFixed(2)}</span>
                   </div>
-                  <div className="py-2">
-                    <span className="text-gray-600 font-medium">Route factors:</span>
-                    <div className="mt-2 space-y-1">
-                      {routeResult.routeDetails.terrainFactors.map((factor, index) => (
-                        <div key={index} className="text-sm text-gray-700 bg-gray-50 rounded-lg px-3 py-2">
-                          • {factor}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                </div>
+                <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                  <p className="text-xs text-gray-600 text-center">
+                    Based on Municipal Ordinance 105 Series of 2023
+                  </p>
                 </div>
               </div>
             </div>
           </div>
         </div>
       )}
-      </div>
-      
-      {/* Right Column - Route Details */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-all duration-300">
-        <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-12 h-12 bg-indigo-100 rounded-xl mb-3">
-            <span className="text-xl">🛣️</span>
-          </div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-3">
-            Route Details
-          </h3>
-          <p className="text-gray-600">
-            Comprehensive route information and journey breakdown
-          </p>
-        </div>
-        
-        {routeResult ? (
-          <div className="space-y-6">
-            {/* Route Summary */}
-            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg p-4 border border-indigo-200">
-              <h4 className="font-semibold text-indigo-900 mb-3 flex items-center">
-                <span className="mr-2">🛣️</span>
-                Route Summary
-              </h4>
-              <div className="grid grid-cols-1 gap-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-700 font-medium">Total Distance:</span>
-                  <span className="text-xl font-bold text-indigo-600">{routeResult.distance.toFixed(2)} km</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-700 font-medium">Estimated Time:</span>
-                  <span className="text-lg font-semibold text-gray-900">{routeResult.routeDetails.estimatedTime}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-700 font-medium">Road Conditions:</span>
-                  <span className="text-sm font-medium text-gray-800">{routeResult.routeDetails.roadConditions}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Location Information */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
-                <span className="mr-2">📍</span>
-                Location Information
-              </h4>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                  <span className="text-gray-600">From:</span>
-                  <span className="font-semibold text-gray-900">{fromLocation}</span>
-                </div>
-                <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                  <span className="text-gray-600">To:</span>
-                  <span className="font-semibold text-gray-900">{toLocation}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Fare Breakdown */}
-            <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-200">
-              <h4 className="font-semibold text-emerald-900 mb-3 flex items-center">
-                <span className="mr-2">💰</span>
-                Fare Breakdown
-              </h4>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center py-1">
-                  <span className="text-gray-600">Base fare (first 3km):</span>
-                  <span className="font-semibold text-gray-900">₱15.00</span>
-                </div>
-                {routeResult.distance > 3 && (
-                  <div className="flex justify-between items-center py-1">
-                    <span className="text-gray-600">Additional distance:</span>
-                    <span className="font-semibold text-gray-900">{(routeResult.distance - 3).toFixed(2)} km × ₱3.00</span>
-                  </div>
-                )}
-                <div className="border-t border-emerald-300 pt-2 mt-2">
-                  <div className="flex justify-between items-center">
-                    <span className="font-semibold text-emerald-700">Total Fare:</span>
-                    <span className="text-xl font-bold text-emerald-600">₱{routeResult.fare}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Route Factors */}
-            <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-              <h4 className="font-semibold text-blue-900 mb-3 flex items-center">
-                <span className="mr-2">🗺️</span>
-                Route Factors
-              </h4>
-              <div className="space-y-1">
-                {routeResult.routeDetails.terrainFactors.map((factor, index) => (
-                  <div key={index} className="text-sm text-blue-700 bg-blue-100 rounded px-3 py-1">
-                    • {factor}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Legal Compliance */}
-            <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
-              <h4 className="font-semibold text-amber-900 mb-2 flex items-center">
-                <span className="mr-2">⚖️</span>
-                Legal Compliance
-              </h4>
-              <p className="text-sm text-amber-800">
-                This fare calculation complies with <strong>Municipal Ordinance 105 Series of 2023</strong> of Basey Municipality, Samar.
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-2xl text-gray-400">📋</span>
-            </div>
-            <h4 className="text-lg font-semibold text-gray-900 mb-2">No Route Selected</h4>
-            <p className="text-gray-600 max-w-sm mx-auto">
-              Select your departure and destination locations to view detailed route information and fare breakdown.
-            </p>
-          </div>
-        )}
       </div>
     </div>
   )

@@ -82,7 +82,10 @@ export default function PublicUserDashboard() {
     <div className="space-y-6">
       {/* Welcome Section */}
       <div className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl p-6 border border-emerald-200">
-        <h2 className="text-2xl font-bold text-emerald-800 mb-2">� Welcome to Your Dashboard</h2>
+        <div className="flex items-center mb-2">
+          <span className="text-3xl mr-2">👋</span>
+          <h2 className="text-2xl font-bold text-emerald-800">Welcome to Your Dashboard</h2>
+        </div>
         <p className="text-emerald-700">
           Manage your travel activities and transportation information in Basey Municipality.
         </p>
