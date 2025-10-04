@@ -45,7 +45,29 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ message: 'Access denied. Enforcer role required.' }, { status: 403 })
     }
 
+    // Get query parameters for filtering
+    const { searchParams } = new URL(request.url)
+    const days = searchParams.get('days') || '30'
+    const filter = searchParams.get('filter') || 'all'
+
+    // Calculate date range
+    const daysAgo = new Date()
+    daysAgo.setDate(daysAgo.getDate() - parseInt(days))
+
+    // Build where clause
+    const whereClause: any = {
+      createdAt: {
+        gte: daysAgo
+      }
+    }
+
+    // Add violation type filter if specified
+    if (filter !== 'all') {
+      whereClause.incidentType = filter
+    }
+
     const incidents = await prisma.incident.findMany({
+      where: whereClause,
       include: {
         reportedBy: {
           select: {
@@ -68,6 +90,15 @@ export async function GET(request: NextRequest) {
             make: true,
             model: true
           }
+        },
+        evidence: {
+          select: {
+            id: true,
+            fileName: true,
+            fileType: true,
+            status: true,
+            createdAt: true
+          }
         }
       },
       orderBy: {
@@ -75,9 +106,19 @@ export async function GET(request: NextRequest) {
       }
     })
 
+    // Add evidence count to each incident
+    const incidentsWithCounts = incidents.map(incident => ({
+      ...incident,
+      evidenceCount: incident.evidence?.length || 0
+    }))
+
     return NextResponse.json({
-      incidents,
-      message: 'Incidents retrieved successfully'
+      incidents: incidentsWithCounts,
+      message: 'Incidents retrieved successfully',
+      filters: {
+        days: parseInt(days),
+        violationType: filter
+      }
     })
 
   } catch (error) {

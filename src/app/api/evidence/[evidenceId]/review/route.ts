@@ -34,7 +34,7 @@ async function verifyAuth(request: NextRequest) {
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ incidentId: string }> }
+  { params }: { params: Promise<{ evidenceId: string }> }
 ) {
   try {
     const user = await verifyAuth(request)
@@ -43,44 +43,62 @@ export async function PATCH(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 
-    if (user.userType !== 'ENFORCER') {
-      return NextResponse.json({ message: 'Access denied. Enforcer role required.' }, { status: 403 })
-    }
-
-    const { incidentId } = await params
-
-    // Check if incident exists and is still pending
-    const incident = await prisma.incident.findUnique({
-      where: { id: incidentId }
-    })
-
-    if (!incident) {
-      return NextResponse.json({ message: 'Incident not found' }, { status: 404 })
-    }
-
-    if (incident.status !== 'PENDING') {
+    // Only enforcers and admins can review evidence
+    if (!['ENFORCER', 'ADMIN'].includes(user.userType)) {
       return NextResponse.json({ 
-        message: 'This incident has already been assigned or resolved' 
+        message: 'Only enforcers and administrators can review evidence' 
+      }, { status: 403 })
+    }
+
+    const { evidenceId } = await params
+    const { status, remarks } = await request.json()
+
+    // Validate status
+    const validStatuses = ['VERIFIED', 'REJECTED', 'REQUIRES_ADDITIONAL']
+    if (!validStatuses.includes(status)) {
+      return NextResponse.json({ 
+        message: 'Invalid status. Must be VERIFIED, REJECTED, or REQUIRES_ADDITIONAL' 
       }, { status: 400 })
     }
 
-    // Update incident to investigating and assign to current enforcer
-    const updatedIncident = await prisma.incident.update({
-      where: { id: incidentId },
+    // Check if evidence exists
+    const evidence = await prisma.evidence.findUnique({
+      where: { id: evidenceId },
+      include: {
+        incident: true,
+        uploader: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true
+          }
+        }
+      }
+    })
+
+    if (!evidence) {
+      return NextResponse.json({ message: 'Evidence not found' }, { status: 404 })
+    }
+
+    // Update evidence status
+    const updatedEvidence = await prisma.evidence.update({
+      where: { id: evidenceId },
       data: {
-        status: 'INVESTIGATING',
-        handledById: user.id,
+        status: status as any,
+        remarks,
+        reviewedBy: user.id,
+        reviewedAt: new Date(),
         updatedAt: new Date()
       },
       include: {
-        reportedBy: {
+        uploader: {
           select: {
             firstName: true,
             lastName: true,
             email: true
           }
         },
-        handledBy: {
+        reviewer: {
           select: {
             firstName: true,
             lastName: true,
@@ -91,12 +109,12 @@ export async function PATCH(
     })
 
     return NextResponse.json({
-      incident: updatedIncident,
-      message: 'Incident assigned successfully'
+      evidence: updatedEvidence,
+      message: `Evidence ${status.toLowerCase()} successfully`
     })
 
   } catch (error) {
-    console.error('PATCH /api/incidents/[incidentId]/take error:', error)
+    console.error('PATCH /api/evidence/[evidenceId]/review error:', error)
     return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }

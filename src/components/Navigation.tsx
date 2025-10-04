@@ -33,6 +33,134 @@ export default function Navigation() {
   }
 
   const isAuthority = user && ['ADMIN', 'DATA_ENCODER', 'ENFORCER'].includes(user.userType)
+  
+  // Role-based dashboard URLs
+  const getDashboardUrl = (userType: string) => {
+    switch (userType) {
+      case 'ADMIN': return '/admin'
+      case 'DATA_ENCODER': return '/encoder'
+      case 'ENFORCER': return '/enforcer'
+      case 'PUBLIC': return '/dashboard'
+      default: return '/dashboard'
+    }
+  }
+
+  const getDashboardLabel = (userType: string) => {
+    switch (userType) {
+      case 'ADMIN': return 'Admin Panel'
+      case 'DATA_ENCODER': return 'Data Encoder'
+      case 'ENFORCER': return 'Enforcement Dashboard'
+      case 'PUBLIC': return 'My Dashboard'
+      default: return 'Dashboard'
+    }
+  }
+
+  const renderRoleBasedNavigation = (userType: string, isMobile: boolean = false) => {
+    const linkClass = isMobile 
+      ? "block text-gray-600 hover:text-emerald-600 px-3 py-2 font-medium"
+      : "text-gray-600 hover:text-emerald-600 px-3 py-2 font-medium"
+    
+    const handleClick = isMobile ? () => setMobileMenuOpen(false) : undefined
+
+    // Common dashboard link for all roles
+    const dashboardLink = (
+      <Link 
+        href={getDashboardUrl(userType)} 
+        className={linkClass}
+        onClick={handleClick}
+        key="dashboard"
+      >
+        📊 {getDashboardLabel(userType)}
+      </Link>
+    )
+
+    switch (userType) {
+      case 'ADMIN':
+        return (
+          <>
+            {dashboardLink}
+            <Link 
+              href="/verify-coordinates" 
+              className={linkClass}
+              onClick={handleClick}
+              key="coordinates"
+            >
+              📍 Coordinate Verification
+            </Link>
+          </>
+        )
+
+      case 'DATA_ENCODER':
+        return (
+          <>
+            {dashboardLink}
+            <Link 
+              href="/verify-coordinates" 
+              className={linkClass}
+              onClick={handleClick}
+              key="coordinates"
+            >
+              📍 Coordinate Verification
+            </Link>
+          </>
+        )
+
+      case 'ENFORCER':
+        return (
+          <>
+            {dashboardLink}
+            <Link 
+              href="/calculator" 
+              className={linkClass}
+              onClick={handleClick}
+              key="calculator"
+            >
+              🧮 Fare Calculator
+            </Link>
+            <Link 
+              href="/report" 
+              className={linkClass}
+              onClick={handleClick}
+              key="report"
+            >
+              📝 Report Issue
+            </Link>
+          </>
+        )
+
+      case 'PUBLIC':
+      default:
+        return (
+          <>
+            {dashboardLink}
+            <Link 
+              href="/calculator" 
+              className={linkClass}
+              onClick={handleClick}
+              key="calculator"
+            >
+              🧮 Fare Calculator
+            </Link>
+            <Link 
+              href="/report" 
+              className={linkClass}
+              onClick={handleClick}
+              key="report"
+            >
+              📝 Report Issue
+            </Link>
+            <Link 
+              href="/features" 
+              className={linkClass}
+              onClick={handleClick}
+              key="features"
+            >
+              ⭐ Features
+            </Link>
+          </>
+        )
+    }
+  }
 
   return (
     <nav className="bg-white shadow-lg">
@@ -60,55 +188,20 @@ export default function Navigation() {
               </Link>
             ) : (
               <>
-                <Link 
-                  href={user.userType === 'ENFORCER' ? '/enforcer' : '/dashboard'} 
-                  className="text-gray-600 hover:text-emerald-600 px-3 py-2 font-medium"
-                >
-                  📊 {user.userType === 'PUBLIC' ? 'My Dashboard' : user.userType === 'ENFORCER' ? 'Enforcement Dashboard' : 'Dashboard'}
-                </Link>
-                
-                {user.userType === 'ADMIN' && (
-                  <Link 
-                    href="/admin" 
-                    className="text-gray-600 hover:text-emerald-600 px-3 py-2 font-medium"
-                  >
-                    ⚙️ Admin
-                  </Link>
-                )}
+                {/* Role-specific navigation */}
+                {renderRoleBasedNavigation(user.userType, false)}
 
-                {user.userType === 'DATA_ENCODER' && (
-                  <Link 
-                    href="/encoder" 
-                    className="text-gray-600 hover:text-emerald-600 px-3 py-2 font-medium"
-                  >
-                    📋 Encoder
-                  </Link>
-                )}
 
-                {user.userType === 'ENFORCER' && (
-                  <Link 
-                    href="/enforcer" 
-                    className="text-gray-600 hover:text-emerald-600 px-3 py-2 font-medium"
-                  >
-                    🚔 Enforcer
-                  </Link>
-                )}
                 
-                {isAuthority && !['ADMIN', 'DATA_ENCODER', 'ENFORCER'].includes(user.userType) && (
-                  <Link 
-                    href="/features" 
-                    className="text-gray-600 hover:text-emerald-600 px-3 py-2 font-medium"
-                  >
-                    ⭐ Features
-                  </Link>
-                )}
-                
+                {/* Report - Available to all logged-in users */}
                 <Link 
                   href="/report" 
                   className="text-gray-600 hover:text-emerald-600 px-3 py-2 font-medium"
                 >
-                  📝 Report
+                  � Report Issue
                 </Link>
+
+
                 
                 <div className="flex items-center space-x-2">
                   <span className="text-sm text-gray-600">
@@ -160,61 +253,21 @@ export default function Navigation() {
               </Link>
             ) : (
               <>
-                <Link 
-                  href={user.userType === 'ENFORCER' ? '/enforcer' : '/dashboard'} 
-                  className="block text-gray-600 hover:text-emerald-600 px-3 py-2 font-medium"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  📊 {user.userType === 'PUBLIC' ? 'My Dashboard' : user.userType === 'ENFORCER' ? 'Enforcement Dashboard' : 'Dashboard'}
-                </Link>
-                
-                {user.userType === 'ADMIN' && (
-                  <Link 
-                    href="/admin" 
-                    className="block text-gray-600 hover:text-emerald-600 px-3 py-2 font-medium"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    ⚙️ Admin
-                  </Link>
-                )}
+                {/* Role-specific mobile navigation */}
+                {renderRoleBasedNavigation(user.userType, true)}
 
-                {user.userType === 'DATA_ENCODER' && (
-                  <Link 
-                    href="/encoder" 
-                    className="block text-gray-600 hover:text-emerald-600 px-3 py-2 font-medium"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    📋 Encoder
-                  </Link>
-                )}
 
-                {user.userType === 'ENFORCER' && (
-                  <Link 
-                    href="/enforcer" 
-                    className="block text-gray-600 hover:text-emerald-600 px-3 py-2 font-medium"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    🚔 Enforcer
-                  </Link>
-                )}
                 
-                {isAuthority && !['ADMIN', 'DATA_ENCODER', 'ENFORCER'].includes(user.userType) && (
-                  <Link 
-                    href="/features" 
-                    className="block text-gray-600 hover:text-emerald-600 px-3 py-2 font-medium"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    ⭐ Features
-                  </Link>
-                )}
-                
+                {/* Report - Available to all logged-in users */}
                 <Link 
                   href="/report" 
                   className="block text-gray-600 hover:text-emerald-600 px-3 py-2 font-medium"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  📝 Report
+                  � Report Issue
                 </Link>
+
+
                 
                 <div className="px-3 py-2 border-t border-gray-200">
                   <div className="text-sm text-gray-600 mb-2">

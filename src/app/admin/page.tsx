@@ -1,7 +1,11 @@
+'use client'
+
+import RoleGuard from '@/components/RoleGuard'
 import AdminUserManagement from '@/components/AdminUserManagement';
 
 export default function AdminPage() {
   return (
+    <RoleGuard allowedRoles={['ADMIN']}>
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
@@ -29,5 +33,6 @@ export default function AdminPage() {
         <AdminUserManagement />
       </main>
     </div>
+    </RoleGuard>
   );
 }

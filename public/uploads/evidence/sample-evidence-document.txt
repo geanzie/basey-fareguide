@@ -1,0 +1,19 @@
+This is a sample evidence document for testing the evidence management system.
+
+Incident Type: Fare Overcharge
+Date: October 4, 2025
+Location: Poblacion to Guintigui-an Route
+Vehicle: ABC-1234
+
+Evidence Description:
+This document serves as a test file for the evidence management system.
+In a real scenario, this could be:
+- Receipt showing overcharged amount
+- Witness statement
+- Official report
+- Supporting documentation
+
+Reporter: John Reporter
+Enforcer: Traffic Enforcer
+
+Status: Under Review

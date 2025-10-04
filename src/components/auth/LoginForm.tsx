@@ -100,7 +100,7 @@ const LoginForm = ({ onSwitchToRegister }: LoginFormProps) => {
           )}
           
           <div className="rounded-md shadow-sm -space-y-px" suppressHydrationWarning>
-            <div>
+            <div suppressHydrationWarning>
               <label htmlFor="username" className="sr-only">Username</label>
               <input
                 id="username"
@@ -112,9 +112,10 @@ const LoginForm = ({ onSwitchToRegister }: LoginFormProps) => {
                 placeholder="Username"
                 value={formData.username}
                 onChange={handleInputChange}
+                suppressHydrationWarning
               />
             </div>
-            <div>
+            <div suppressHydrationWarning>
               <label htmlFor="password" className="sr-only">Password</label>
               <input
                 id="password"
@@ -126,6 +127,7 @@ const LoginForm = ({ onSwitchToRegister }: LoginFormProps) => {
                 placeholder="Password"
                 value={formData.password}
                 onChange={handleInputChange}
+                suppressHydrationWarning
               />
             </div>
           </div>

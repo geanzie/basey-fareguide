@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/components/AuthProvider'
 import { VehicleType, PermitStatus } from '@/generated/prisma'
+import ResponsiveTable, { StatusBadge, ActionButton } from './ResponsiveTable'
 
 interface Permit {
   id: string
@@ -359,112 +360,101 @@ export default function PermitManagement() {
 
       {/* Permits Table */}
       <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
-        {loading ? (
-          <div className="p-8 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto"></div>
-            <p className="text-gray-600 mt-2">Loading permits...</p>
-          </div>
-        ) : permits.length === 0 ? (
-          <div className="p-8 text-center">
-            <p className="text-gray-600">No permits found.</p>
-          </div>
-        ) : (
-          <>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Plate Number
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Driver Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Vehicle Type
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Expiry Date
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {permits.map((permit) => (
-                    <tr key={permit.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {permit.plateNumber}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {permit.driverFullName}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {permit.vehicleType.replace('_', '-')}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(permit.status)}`}>
-                          {permit.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        <div>
-                          {new Date(permit.expiryDate).toLocaleDateString()}
-                          {isExpired(permit.expiryDate) && (
-                            <span className="block text-red-600 text-xs">Expired</span>
-                          )}
-                          {isExpiringSoon(permit.expiryDate) && !isExpired(permit.expiryDate) && (
-                            <span className="block text-yellow-600 text-xs">Expiring Soon</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                        <button
-                          onClick={() => {
-                            setEditingPermit(permit)
-                            setFormData({
-                              plateNumber: permit.plateNumber,
-                              driverFullName: permit.driverFullName,
-                              vehicleType: permit.vehicleType,
-                              remarks: permit.remarks || ''
-                            })
-                          }}
-                          className="text-emerald-600 hover:text-emerald-900"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleRenewPermit(permit.id)}
-                          className="text-blue-600 hover:text-blue-900"
-                        >
-                          Renew
-                        </button>
-                        {permit.status === PermitStatus.ACTIVE && (
-                          <button
-                            onClick={() => handleStatusChange(permit.id, PermitStatus.SUSPENDED)}
-                            className="text-yellow-600 hover:text-yellow-900"
-                          >
-                            Suspend
-                          </button>
-                        )}
-                        {permit.status === PermitStatus.SUSPENDED && (
-                          <button
-                            onClick={() => handleStatusChange(permit.id, PermitStatus.ACTIVE)}
-                            className="text-green-600 hover:text-green-900"
-                          >
-                            Activate
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+        <ResponsiveTable
+          columns={[
+            {
+              key: 'plateNumber',
+              label: 'Plate Number',
+              className: 'font-medium'
+            },
+            {
+              key: 'driverFullName',
+              label: 'Driver Name',
+              mobileLabel: 'Driver'
+            },
+            {
+              key: 'vehicleType',
+              label: 'Vehicle Type',
+              mobileLabel: 'Type',
+              render: (vehicleType) => vehicleType.replace('_', '-')
+            },
+            {
+              key: 'status',
+              label: 'Status',
+              render: (status) => (
+                <StatusBadge status={status} className={getStatusColor(status)} />
+              )
+            },
+            {
+              key: 'expiryDate',
+              label: 'Expiry Date',
+              mobileLabel: 'Expiry',
+              render: (expiryDate) => (
+                <div>
+                  {new Date(expiryDate).toLocaleDateString()}
+                  {isExpired(expiryDate) && (
+                    <span className="block text-red-600 text-xs">Expired</span>
+                  )}
+                  {isExpiringSoon(expiryDate) && !isExpired(expiryDate) && (
+                    <span className="block text-yellow-600 text-xs">Expiring Soon</span>
+                  )}
+                </div>
+              )
+            },
+            {
+              key: 'actions',
+              label: 'Actions',
+              render: (_, permit) => (
+                <div className="space-y-1">
+                  <ActionButton
+                    onClick={() => {
+                      setEditingPermit(permit)
+                      setFormData({
+                        plateNumber: permit.plateNumber,
+                        driverFullName: permit.driverFullName,
+                        vehicleType: permit.vehicleType,
+                        remarks: permit.remarks || ''
+                      })
+                    }}
+                    variant="secondary"
+                    size="xs"
+                  >
+                    Edit
+                  </ActionButton>
+                  <ActionButton
+                    onClick={() => handleRenewPermit(permit.id)}
+                    variant="primary"
+                    size="xs"
+                  >
+                    Renew
+                  </ActionButton>
+                  {permit.status === PermitStatus.ACTIVE && (
+                    <ActionButton
+                      onClick={() => handleStatusChange(permit.id, PermitStatus.SUSPENDED)}
+                      variant="danger"
+                      size="xs"
+                    >
+                      Suspend
+                    </ActionButton>
+                  )}
+                  {permit.status === PermitStatus.SUSPENDED && (
+                    <ActionButton
+                      onClick={() => handleStatusChange(permit.id, PermitStatus.ACTIVE)}
+                      variant="primary"
+                      size="xs"
+                    >
+                      Activate
+                    </ActionButton>
+                  )}
+                </div>
+              )
+            }
+          ]}
+          data={permits}
+          loading={loading}
+          emptyMessage="No permits found."
+          className="rounded-lg"
+        />
 
             {/* Pagination */}
             {pagination.totalPages > 1 && (
@@ -535,8 +525,6 @@ export default function PermitManagement() {
                 </div>
               </div>
             )}
-          </>
-        )}
       </div>
     </div>
   )

@@ -128,7 +128,7 @@ const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
           </p>
         </div>
         
-        <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
+        <form className="mt-8 space-y-4" onSubmit={handleSubmit} suppressHydrationWarning>
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
               {error}
@@ -177,6 +177,7 @@ const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
                 value={formData.firstName}
                 onChange={handleInputChange}
+                suppressHydrationWarning
               />
             </div>
             <div>
@@ -191,6 +192,7 @@ const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
                 value={formData.lastName}
                 onChange={handleInputChange}
+                suppressHydrationWarning
               />
             </div>
           </div>
@@ -212,6 +214,7 @@ const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
                 placeholder="09XXXXXXXXX"
                 value={formData.phoneNumber}
                 onChange={handleInputChange}
+                suppressHydrationWarning
               />
             </div>
           </div>
@@ -237,6 +240,7 @@ const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
                 value={formData.dateOfBirth}
                 onChange={handleInputChange}
                 max={new Date(Date.now() - 18 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]} // 18+ only
+                suppressHydrationWarning
               />
             </div>
             <div>

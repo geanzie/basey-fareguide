@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import ResponsiveTable, { StatusBadge, ActionButton } from './ResponsiveTable';
 
 // Local enum definition to avoid Prisma import issues
 enum UserType {
@@ -447,95 +448,77 @@ export default function AdminUserManagement() {
 
           {/* All Users Tab */}
           {activeTab === 'users' && (
-            <div className="space-y-4">
-              {loading ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                  <p className="mt-2 text-gray-600">Loading users...</p>
-                </div>
-              ) : users.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-gray-500">No users found</p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          User
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Role
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Status
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Created
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {users.map((user) => (
-                        <tr key={user.id}>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div>
-                              <div className="text-sm font-medium text-gray-900">
-                                {user.firstName} {user.lastName}
-                              </div>
-                              <div className="text-sm text-gray-500">{user.email}</div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              user.userType === 'ADMIN' ? 'bg-purple-100 text-purple-800' :
-                              user.userType === 'ENFORCER' ? 'bg-red-100 text-red-800' :
-                              user.userType === 'DATA_ENCODER' ? 'bg-blue-100 text-blue-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {user.userType.replace('_', ' ')}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex flex-col space-y-1">
-                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                              }`}>
-                                {user.isActive ? 'Active' : 'Inactive'}
-                              </span>
-                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                user.isVerified ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'
-                              }`}>
-                                {user.isVerified ? 'Verified' : 'Pending'}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {new Date(user.createdAt).toLocaleDateString()}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <button
-                              onClick={() => toggleUserStatus(user.id, user.isActive)}
-                              className={`mr-2 px-3 py-1 rounded text-xs ${
-                                user.isActive
-                                  ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                                  : 'bg-green-100 text-green-700 hover:bg-green-200'
-                              }`}
-                            >
-                              {user.isActive ? 'Deactivate' : 'Activate'}
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
+            <ResponsiveTable
+              columns={[
+                {
+                  key: 'user',
+                  label: 'User',
+                  mobileLabel: 'User Info',
+                  render: (_, user) => (
+                    <div>
+                      <div className="font-medium text-gray-900">
+                        {user.firstName} {user.lastName}
+                      </div>
+                      <div className="text-sm text-gray-500">{user.email}</div>
+                    </div>
+                  )
+                },
+                {
+                  key: 'userType',
+                  label: 'Role',
+                  render: (userType) => (
+                    <StatusBadge 
+                      status={userType.replace('_', ' ')} 
+                      className={
+                        userType === 'ADMIN' ? 'bg-purple-100 text-purple-800' :
+                        userType === 'ENFORCER' ? 'bg-red-100 text-red-800' :
+                        userType === 'DATA_ENCODER' ? 'bg-blue-100 text-blue-800' :
+                        'bg-gray-100 text-gray-800'
+                      }
+                    />
+                  )
+                },
+                {
+                  key: 'status',
+                  label: 'Status',
+                  render: (_, user) => (
+                    <div className="space-y-1">
+                      <StatusBadge 
+                        status={user.isActive ? 'Active' : 'Inactive'}
+                        className={user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}
+                      />
+                      <br />
+                      <StatusBadge 
+                        status={user.isVerified ? 'Verified' : 'Pending'}
+                        className={user.isVerified ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'}
+                      />
+                    </div>
+                  )
+                },
+                {
+                  key: 'createdAt',
+                  label: 'Created',
+                  mobileLabel: 'Created Date',
+                  render: (createdAt) => new Date(createdAt).toLocaleDateString()
+                },
+                {
+                  key: 'actions',
+                  label: 'Actions',
+                  render: (_, user) => (
+                    <ActionButton
+                      onClick={() => toggleUserStatus(user.id, user.isActive)}
+                      variant={user.isActive ? 'danger' : 'primary'}
+                    >
+                      {user.isActive ? 'Deactivate' : 'Activate'}
+                    </ActionButton>
+                  )
+                }
+              ]}
+              data={users}
+              loading={loading}
+              emptyMessage="No users found"
+              className="bg-white rounded-lg shadow"
+            />
           )}
         </div>
       </div>

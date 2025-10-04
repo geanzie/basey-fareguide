@@ -6,9 +6,10 @@ const prisma = new PrismaClient()
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const body = await request.json()
     const { renewedBy, notes } = body
 
@@ -20,7 +21,7 @@ export async function POST(
     }
 
     const existingPermit = await prisma.permit.findUnique({
-      where: { id: params.id }
+      where: { id }
     })
 
     if (!existingPermit) {
@@ -42,7 +43,7 @@ export async function POST(
       // Create renewal history record
       await tx.permitRenewal.create({
         data: {
-          permitId: params.id,
+          permitId: id,
           previousExpiry: existingPermit.expiryDate,
           newExpiry,
           renewedBy,
@@ -52,7 +53,7 @@ export async function POST(
 
       // Update permit
       const updatedPermit = await tx.permit.update({
-        where: { id: params.id },
+        where: { id },
         data: {
           expiryDate: newExpiry,
           status: PermitStatus.ACTIVE,

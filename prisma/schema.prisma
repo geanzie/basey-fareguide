@@ -43,6 +43,8 @@ model User {
   fareCalculations      FareCalculation[]
   handledIncidents      Incident[]            @relation("HandledBy")
   reportedIncidents     Incident[]            @relation("ReportedBy")
+  uploadedEvidence      Evidence[]            @relation("EvidenceUploader")
+  reviewedEvidence      Evidence[]            @relation("EvidenceReviewer")
   verificationLogs      UserVerificationLog[]
   vehicles              Vehicle[]
 
@@ -114,8 +116,30 @@ model Incident {
   handledBy     User?          @relation("HandledBy", fields: [handledById], references: [id])
   reportedBy    User           @relation("ReportedBy", fields: [reportedById], references: [id])
   vehicle       Vehicle?       @relation(fields: [vehicleId], references: [id])
+  evidence      Evidence[]
 
   @@map("incidents")
+}
+
+model Evidence {
+  id          String        @id @default(cuid())
+  incidentId  String
+  fileName    String
+  fileUrl     String
+  fileType    EvidenceType
+  fileSize    Int?
+  uploadedBy  String
+  status      EvidenceStatus @default(PENDING_REVIEW)
+  reviewedBy  String?
+  reviewedAt  DateTime?
+  remarks     String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  incident    Incident      @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  uploader    User          @relation("EvidenceUploader", fields: [uploadedBy], references: [id])
+  reviewer    User?         @relation("EvidenceReviewer", fields: [reviewedBy], references: [id])
+
+  @@map("evidence")
 }
 
 model FareCalculation {
@@ -274,4 +298,19 @@ enum PermitStatus {
   EXPIRED
   SUSPENDED
   REVOKED
+}
+
+enum EvidenceType {
+  IMAGE
+  VIDEO
+  AUDIO
+  DOCUMENT
+  OTHER
+}
+
+enum EvidenceStatus {
+  PENDING_REVIEW
+  VERIFIED
+  REJECTED
+  REQUIRES_ADDITIONAL
 }

@@ -6,11 +6,12 @@ const prisma = new PrismaClient()
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const permit = await prisma.permit.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         renewalHistory: {
           orderBy: { renewedAt: 'desc' }
@@ -37,14 +38,15 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const body = await request.json()
     const { driverFullName, status, remarks, updatedBy } = body
 
     const existingPermit = await prisma.permit.findUnique({
-      where: { id: params.id }
+      where: { id }
     })
 
     if (!existingPermit) {
@@ -55,7 +57,7 @@ export async function PUT(
     }
 
     const permit = await prisma.permit.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(driverFullName && { driverFullName }),
         ...(status && { status }),
@@ -82,11 +84,12 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const existingPermit = await prisma.permit.findUnique({
-      where: { id: params.id }
+      where: { id }
     })
 
     if (!existingPermit) {
@@ -97,7 +100,7 @@ export async function DELETE(
     }
 
     await prisma.permit.delete({
-      where: { id: params.id }
+      where: { id }
     })
 
     return NextResponse.json({ message: 'Permit deleted successfully' })
