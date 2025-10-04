@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getGoogleMapsRoute, calculateGoogleMapsFare, metersToKilometers, validateBaseyCoordinates } from '@/lib/googleMaps';
+import { getGoogleMapsRoute, getDetailedRoute, calculateGoogleMapsFare, metersToKilometers, validateBaseyCoordinates } from '@/lib/googleMaps';
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,8 +36,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get route information from Google Maps
-    const route = await getGoogleMapsRoute(originCoords, destinationCoords);
+    // Get detailed route information from Google Maps including polyline
+    const route = await getDetailedRoute(originCoords, destinationCoords);
 
     if (!route) {
       return NextResponse.json(
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     // Calculate fare using Municipal Ordinance
     const fareCalculation = calculateGoogleMapsFare(distanceInKm);
 
-    // Return comprehensive route information
+    // Return comprehensive route information including polyline for visualization
     return NextResponse.json({
       success: true,
       route: {
@@ -65,6 +65,7 @@ export async function POST(request: NextRequest) {
           seconds: route.duration.value,
           text: route.duration.text,
         },
+        polyline: route.polyline, // Include polyline for route visualization
         fare: fareCalculation,
         source: 'Google Maps API',
         accuracy: 'High (GPS-based routing)',
