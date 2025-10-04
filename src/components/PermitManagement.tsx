@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useAuth } from '@/components/AuthProvider'
 import { VehicleType, PermitStatus } from '@/generated/prisma'
 import ResponsiveTable, { StatusBadge, ActionButton } from './ResponsiveTable'
@@ -28,6 +29,21 @@ interface Permit {
   }>
 }
 
+interface Vehicle {
+  id: string
+  plateNumber: string
+  vehicleType: VehicleType
+  make: string
+  model: string
+  year: number
+  color: string
+  ownerName: string
+  ownerContact: string
+  driverName?: string
+  driverLicense?: string
+  isActive: boolean
+}
+
 interface PaginatedResponse {
   permits: Permit[]
   pagination: {
@@ -40,8 +56,11 @@ interface PaginatedResponse {
 
 export default function PermitManagement() {
   const { user } = useAuth()
+  const searchParams = useSearchParams()
   const [permits, setPermits] = useState<Permit[]>([])
+  const [vehicles, setVehicles] = useState<Vehicle[]>([])
   const [loading, setLoading] = useState(true)
+  const [vehiclesLoading, setVehiclesLoading] = useState(false)
   const [showAddForm, setShowAddForm] = useState(false)
   const [editingPermit, setEditingPermit] = useState<Permit | null>(null)
   const [pagination, setPagination] = useState({
@@ -53,9 +72,7 @@ export default function PermitManagement() {
 
   // Form states
   const [formData, setFormData] = useState({
-    plateNumber: '',
-    driverFullName: '',
-    vehicleType: VehicleType.TRICYCLE as VehicleType,
+    vehicleId: '',
     remarks: ''
   })
 
@@ -90,15 +107,44 @@ export default function PermitManagement() {
     }
   }
 
+  const fetchVehicles = async () => {
+    try {
+      setVehiclesLoading(true)
+      const response = await fetch('/api/vehicles?isActive=true&limit=1000')
+      if (response.ok) {
+        const data = await response.json()
+        setVehicles(data.vehicles || [])
+      }
+    } catch (error) {
+      console.error('Error fetching vehicles:', error)
+    } finally {
+      setVehiclesLoading(false)
+    }
+  }
+
   useEffect(() => {
     fetchPermits()
   }, [pagination.page, filters])
 
+  useEffect(() => {
+    fetchVehicles()
+  }, [])
+
+  // Check for modal parameter to auto-open add permit form
+  useEffect(() => {
+    const modal = searchParams.get('modal')
+    if (modal === 'add-permit') {
+      setShowAddForm(true)
+      // Clean up URL parameter without page reload
+      const url = new URL(window.location.href)
+      url.searchParams.delete('modal')
+      window.history.replaceState({}, '', url.pathname + url.search)
+    }
+  }, [searchParams])
+
   const resetForm = () => {
     setFormData({
-      plateNumber: '',
-      driverFullName: '',
-      vehicleType: VehicleType.TRICYCLE,
+      vehicleId: '',
       remarks: ''
     })
     setShowAddForm(false)
@@ -109,8 +155,18 @@ export default function PermitManagement() {
     e.preventDefault()
     
     try {
+      const selectedVehicle = vehicles.find(v => v.id === formData.vehicleId)
+      if (!selectedVehicle) {
+        alert('Please select a vehicle')
+        return
+      }
+
       const payload = {
-        ...formData,
+        vehicleId: formData.vehicleId,
+        plateNumber: selectedVehicle.plateNumber,
+        driverFullName: selectedVehicle.driverName || 'Unknown Driver',
+        vehicleType: selectedVehicle.vehicleType,
+        remarks: formData.remarks,
         encodedBy: user?.id,
         ...(editingPermit && { updatedBy: user?.id })
       }
@@ -288,43 +344,44 @@ export default function PermitManagement() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Plate Number
+                  Select Vehicle
                 </label>
-                <input
-                  type="text"
-                  required
-                  className="w-full border border-gray-300 rounded-md px-3 py-2"
-                  value={formData.plateNumber}
-                  onChange={(e) => setFormData({ ...formData, plateNumber: e.target.value.toUpperCase() })}
-                  placeholder="e.g., ABC-123"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Driver Full Name
-                </label>
-                <input
-                  type="text"
-                  required
-                  className="w-full border border-gray-300 rounded-md px-3 py-2"
-                  value={formData.driverFullName}
-                  onChange={(e) => setFormData({ ...formData, driverFullName: e.target.value })}
-                  placeholder="e.g., Juan Dela Cruz"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Vehicle Type
-                </label>
-                <select
-                  required
-                  className="w-full border border-gray-300 rounded-md px-3 py-2"
-                  value={formData.vehicleType}
-                  onChange={(e) => setFormData({ ...formData, vehicleType: e.target.value as VehicleType })}
-                >
-                  <option value={VehicleType.TRICYCLE}>Tricycle</option>
-                  <option value={VehicleType.HABAL_HABAL}>Habal-habal</option>
-                </select>
+                {vehiclesLoading ? (
+                  <div className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-500">
+                    Loading vehicles...
+                  </div>
+                ) : (
+                  <select
+                    required
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    value={formData.vehicleId}
+                    onChange={(e) => setFormData({ ...formData, vehicleId: e.target.value })}
+                  >
+                    <option value="">Select a vehicle...</option>
+                    {vehicles
+                      .filter(vehicle => vehicle.isActive && !permits.some(permit => permit.plateNumber === vehicle.plateNumber && permit.status === 'ACTIVE'))
+                      .map((vehicle) => (
+                        <option key={vehicle.id} value={vehicle.id}>
+                          {vehicle.plateNumber} - {vehicle.vehicleType.replace('_', '-')} ({vehicle.driverName || 'No Driver'})
+                        </option>
+                      ))}
+                  </select>
+                )}
+                {formData.vehicleId && (
+                  <div className="mt-2 p-3 bg-gray-50 rounded-md text-sm">
+                    {(() => {
+                      const selectedVehicle = vehicles.find(v => v.id === formData.vehicleId)
+                      return selectedVehicle ? (
+                        <div>
+                          <div><strong>Plate:</strong> {selectedVehicle.plateNumber}</div>
+                          <div><strong>Type:</strong> {selectedVehicle.vehicleType.replace('_', '-')}</div>
+                          <div><strong>Driver:</strong> {selectedVehicle.driverName || 'Unknown'}</div>
+                          <div><strong>Owner:</strong> {selectedVehicle.ownerName}</div>
+                        </div>
+                      ) : null
+                    })()}
+                  </div>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -409,12 +466,13 @@ export default function PermitManagement() {
                   <ActionButton
                     onClick={() => {
                       setEditingPermit(permit)
+                      // Find the vehicle that matches this permit
+                      const matchingVehicle = vehicles.find(v => v.plateNumber === permit.plateNumber)
                       setFormData({
-                        plateNumber: permit.plateNumber,
-                        driverFullName: permit.driverFullName,
-                        vehicleType: permit.vehicleType,
+                        vehicleId: matchingVehicle?.id || '',
                         remarks: permit.remarks || ''
                       })
+                      setShowAddForm(true)
                     }}
                     variant="secondary"
                     size="xs"

@@ -42,7 +42,8 @@ export async function GET(request: NextRequest) {
           renewalHistory: {
             orderBy: { renewedAt: 'desc' },
             take: 1
-          }
+          },
+          vehicle: true
         }
       }),
       prisma.permit.count({ where })
@@ -69,24 +70,36 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { plateNumber, driverFullName, vehicleType, encodedBy } = body
+    const { vehicleId, plateNumber, driverFullName, vehicleType, encodedBy, remarks } = body
 
     // Validate required fields
-    if (!plateNumber || !driverFullName || !vehicleType || !encodedBy) {
+    if (!vehicleId || !plateNumber || !driverFullName || !vehicleType || !encodedBy) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
       )
     }
 
-    // Check if plate number already exists
+    // Check if vehicle exists
+    const vehicle = await prisma.vehicle.findUnique({
+      where: { id: vehicleId }
+    })
+
+    if (!vehicle) {
+      return NextResponse.json(
+        { error: 'Vehicle not found' },
+        { status: 404 }
+      )
+    }
+
+    // Check if vehicle already has an active permit
     const existingPermit = await prisma.permit.findUnique({
-      where: { plateNumber }
+      where: { vehicleId }
     })
 
     if (existingPermit) {
       return NextResponse.json(
-        { error: 'Plate number already exists' },
+        { error: 'Vehicle already has a permit' },
         { status: 409 }
       )
     }
@@ -97,15 +110,18 @@ export async function POST(request: NextRequest) {
 
     const permit = await prisma.permit.create({
       data: {
+        vehicleId,
         plateNumber: plateNumber.toUpperCase(),
         driverFullName,
         vehicleType,
         expiryDate,
         encodedBy,
+        remarks,
         status: PermitStatus.ACTIVE
       },
       include: {
-        renewalHistory: true
+        renewalHistory: true,
+        vehicle: true
       }
     })
 

@@ -223,27 +223,27 @@ function renderRoleSpecificNavigation(userType: string, setSidebarOpen: (open: b
           <div className="mb-6">
             <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Permits</h3>
             <div className="space-y-2">
-              <button className={`${commonLinkClass} hover:bg-green-50`}>
+              <a href="/encoder?modal=add-permit" className={`${commonLinkClass} hover:bg-green-50`} onClick={closeSidebar}>
                 <span className="text-xl mr-3">➕</span>
                 <div className="text-left">
                   <div className="font-medium text-gray-700 group-hover:text-green-700">Add New Permit</div>
                   <div className="text-xs text-gray-500 group-hover:text-green-600">Register driver permit</div>
                 </div>
-              </button>
-              <button className={`${commonLinkClass} hover:bg-blue-50`}>
+              </a>
+              <a href="/encoder/permits" className={`${commonLinkClass} hover:bg-blue-50`} onClick={closeSidebar}>
                 <span className="text-xl mr-3">📋</span>
                 <div className="text-left">
                   <div className="font-medium text-gray-700 group-hover:text-blue-700">View All Permits</div>
                   <div className="text-xs text-gray-500 group-hover:text-blue-600">Browse permit records</div>
                 </div>
-              </button>
-              <button className={`${commonLinkClass} hover:bg-yellow-50`}>
+              </a>
+              <a href="/encoder/permits/pending" className={`${commonLinkClass} hover:bg-yellow-50`} onClick={closeSidebar}>
                 <span className="text-xl mr-3">⏳</span>
                 <div className="text-left">
                   <div className="font-medium text-gray-700 group-hover:text-yellow-700">Pending Permits</div>
                   <div className="text-xs text-gray-500 group-hover:text-yellow-600">Review applications</div>
                 </div>
-              </button>
+              </a>
             </div>
           </div>
 
@@ -251,20 +251,20 @@ function renderRoleSpecificNavigation(userType: string, setSidebarOpen: (open: b
           <div className="mb-6">
             <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Vehicles</h3>
             <div className="space-y-2">
-              <button className={`${commonLinkClass} hover:bg-purple-50`}>
+              <a href="/encoder/vehicles/new" className={`${commonLinkClass} hover:bg-purple-50`} onClick={closeSidebar}>
                 <span className="text-xl mr-3">🚗</span>
                 <div className="text-left">
                   <div className="font-medium text-gray-700 group-hover:text-purple-700">Register Vehicle</div>
                   <div className="text-xs text-gray-500 group-hover:text-purple-600">Add new vehicle</div>
                 </div>
-              </button>
-              <button className={`${commonLinkClass} hover:bg-indigo-50`}>
+              </a>
+              <a href="/encoder/vehicles" className={`${commonLinkClass} hover:bg-indigo-50`} onClick={closeSidebar}>
                 <span className="text-xl mr-3">🔍</span>
                 <div className="text-left">
                   <div className="font-medium text-gray-700 group-hover:text-indigo-700">Vehicle Registry</div>
                   <div className="text-xs text-gray-500 group-hover:text-indigo-600">Browse all vehicles</div>
                 </div>
-              </button>
+              </a>
             </div>
           </div>
         </nav>
@@ -367,22 +367,22 @@ export function AuthAwareLayout({ children }: { children: React.ReactNode }) {
 
   // Layout with sidebar for authority users
   return (
-    <main className="flex-1 flex relative">
+    <main className="flex-1 flex relative overflow-hidden">
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
             )}      {/* Quick Actions Sidebar */}
       <aside className={`
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         fixed lg:relative lg:translate-x-0
-        w-80 bg-white shadow-lg border-r border-gray-200
-        h-full z-50 transition-transform duration-300 ease-in-out
+        w-80 flex-shrink-0 bg-white shadow-lg border-r border-gray-200
+        h-[calc(100vh-4rem)] lg:h-full top-16 lg:top-0 z-40 transition-transform duration-300 ease-in-out
         lg:flex lg:flex-col
       `}>
-        <div className="sticky top-0 h-screen overflow-y-auto">
+        <div className="h-full overflow-y-auto">
           <div className="p-6">
             {/* Mobile Close Button */}
             <div className="flex items-center justify-between mb-6 lg:mb-0">
@@ -405,7 +405,7 @@ export function AuthAwareLayout({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 min-h-screen">
+      <div className="flex-1 min-h-screen min-w-0 overflow-auto">
         {/* Mobile Menu Toggle Button */}
         <div className="lg:hidden sticky top-0 z-30 bg-white border-b border-gray-200 px-4 py-3">
           <button
