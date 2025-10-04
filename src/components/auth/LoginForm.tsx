@@ -46,13 +46,13 @@ const LoginForm = ({ onSwitchToRegister }: LoginFormProps) => {
         // Redirect based on user type
         switch (data.user.userType) {
           case 'ADMIN':
-            router.push('/admin/dashboard')
+            router.push('/dashboard')
             break
           case 'DATA_ENCODER':
-            router.push('/encoder/dashboard')
+            router.push('/encoder')
             break
           case 'ENFORCER':
-            router.push('/enforcer/dashboard')
+            router.push('/enforcer')
             break
           default:
             router.push('/dashboard')

@@ -54,7 +54,7 @@ const GoogleMapsFareCalculator = () => {
     { name: 'Amandayehan', coords: [11.2755464, 124.9989947], type: 'rural' as const },
     { name: 'Anglit', coords: [11.2976225, 125.1096464], type: 'rural' as const },
     { name: 'Bacubac', coords: [11.2822154, 125.0484524], type: 'rural' as const },
-    { name: 'Baloog', coords: [11.357169691706632, 125.0397263836978], type: 'rural' as const },
+    { name: 'Baloog', coords: [11.3572, 125.0397], type: 'rural' as const }, // Verified correct location, cleaned precision
     { name: 'Basiao', coords: [11.2469, 125.0739], type: 'rural' as const },
     { name: 'Buenavista', coords: [11.2612303, 125.1610249], type: 'rural' as const },
     { name: 'Burgos', coords: [11.3127738, 125.1524123], type: 'rural' as const },
@@ -65,7 +65,7 @@ const GoogleMapsFareCalculator = () => {
     { name: 'Catadman', coords: [11.2725188, 125.1529991], type: 'rural' as const },
     { name: 'Cogon', coords: [11.333611, 125.097222], type: 'rural' as const },
     { name: 'Dolongan', coords: [11.3358835, 125.0288258], type: 'rural' as const },
-    { name: 'Guintigui-an', coords: [11.1168402, 124.5282884], type: 'rural' as const },
+    { name: 'Guintigui-an', coords: [11.2850000, 125.0500000], type: 'rural' as const }, // TODO: VERIFY - Previous coords pointed to Ormoc City
     { name: 'Guirang', coords: [11.3334531, 125.1456322], type: 'rural' as const },
     { name: 'Balante', coords: [11.3388426, 125.0437445], type: 'rural' as const },
     { name: 'Iba', coords: [11.2943547, 125.0929189], type: 'rural' as const },

@@ -85,6 +85,20 @@ export default function FeaturesPage() {
       ],
       link: '/dashboard',
       color: 'green'
+    },
+    {
+      id: 'traffic-enforcer',
+      title: 'Traffic Enforcer',
+      icon: '🚔',
+      description: 'Dedicated enforcement dashboard for police authorities',
+      features: [
+        'FIFO incident queue (First In, First Out)',
+        'Priority-based incident management',
+        'Ticket number assignment system',
+        'Real-time incident resolution tracking'
+      ],
+      link: '/enforcer',
+      color: 'indigo'
     }
   ]
 
@@ -95,7 +109,8 @@ export default function FeaturesPage() {
       blue: 'border-blue-500 bg-blue-50',
       purple: 'border-purple-500 bg-purple-50',
       yellow: 'border-yellow-500 bg-yellow-50',
-      green: 'border-green-500 bg-green-50'
+      green: 'border-green-500 bg-green-50',
+      indigo: 'border-indigo-500 bg-indigo-50'
     }
     return colors[color as keyof typeof colors] || 'border-gray-500 bg-gray-50'
   }

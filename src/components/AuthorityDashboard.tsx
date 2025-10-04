@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import IncidentsList from './IncidentsList'
 import AdminUserManagement from './AdminUserManagement'
+import PermitManagement from './PermitManagement'
+import PermitStatistics from './PermitStatistics'
 
 interface DashboardStats {
   totalIncidents: number
@@ -27,7 +29,7 @@ const AuthorityDashboard = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'overview' | 'incidents' | 'users' | 'vehicles' | 'admin'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'incidents' | 'users' | 'vehicles' | 'admin' | 'permits'>('overview')
   const [userType, setUserType] = useState<string>('PUBLIC')
 
   useEffect(() => {
@@ -114,14 +116,15 @@ const AuthorityDashboard = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="max-w-7xl mx-auto">
       {/* Dashboard Header */}
-      <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 rounded-xl shadow-lg p-8 text-white">
+      <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 rounded-xl shadow-lg p-8 text-white mb-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">
               {userType === 'ADMIN' ? 'Admin Dashboard' : 
                userType === 'ENFORCER' ? 'Enforcer Dashboard' : 
+               userType === 'DATA_ENCODER' ? 'Encoder Dashboard' :
                'Authority Dashboard'}
             </h1>
             <p className="text-emerald-100 mt-2">
@@ -135,70 +138,105 @@ const AuthorityDashboard = () => {
         </div>
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="bg-white rounded-xl shadow-lg p-2">
-        <div className="flex space-x-1">
-          <button
-            onClick={() => setActiveTab('overview')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              activeTab === 'overview'
-                ? 'bg-emerald-100 text-emerald-700'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            📊 Overview
-          </button>
-          <button
-            onClick={() => setActiveTab('incidents')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              activeTab === 'incidents'
-                ? 'bg-emerald-100 text-emerald-700'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            ⚠️ Incidents
-          </button>
-          {(userType === 'ADMIN' || userType === 'DATA_ENCODER') && (
-            <>
+      {/* Main Layout with Sidebar and Content */}
+      <div className="flex gap-6">
+        {/* Sidebar */}
+        <div className="w-80 flex-shrink-0">
+          <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+            {/* Main Navigation */}
+            <div className="p-6 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Dashboard</h3>
               <button
-                onClick={() => setActiveTab('users')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  activeTab === 'users'
-                    ? 'bg-emerald-100 text-emerald-700'
-                    : 'text-gray-500 hover:text-gray-700'
+                onClick={() => setActiveTab('overview')}
+                className={`w-full flex items-center p-4 rounded-lg transition-colors ${
+                  activeTab === 'overview'
+                    ? 'bg-emerald-50 border-2 border-emerald-200'
+                    : 'bg-gray-50 hover:bg-gray-100 border-2 border-transparent'
                 }`}
               >
-                👥 Users
+                <span className="text-2xl mr-3">📊</span>
+                <div className="text-left">
+                  <div className={`font-medium ${activeTab === 'overview' ? 'text-emerald-700' : 'text-gray-700'}`}>
+                    Authority Dashboard
+                  </div>
+                  <div className={`text-sm ${activeTab === 'overview' ? 'text-emerald-600' : 'text-gray-600'}`}>
+                    View overview & statistics
+                  </div>
+                </div>
               </button>
-              <button
-                onClick={() => setActiveTab('vehicles')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  activeTab === 'vehicles'
-                    ? 'bg-emerald-100 text-emerald-700'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                🚗 Vehicles
-              </button>
-            </>
-          )}
-          {userType === 'ADMIN' && (
-            <button
-              onClick={() => setActiveTab('admin')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                activeTab === 'admin'
-                  ? 'bg-emerald-100 text-emerald-700'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              ⚙️ User Management
-            </button>
-          )}
-        </div>
-      </div>
+            </div>
 
-      {/* Tab Content */}
-      {activeTab === 'overview' && (
+            {/* Quick Actions */}
+            <div className="p-6">
+              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
+                Quick Actions
+              </h3>
+              <div className="space-y-2">
+                <button className="w-full flex items-center p-3 rounded-lg hover:bg-red-50 transition-colors group">
+                  <span className="text-xl mr-3">📝</span>
+                  <div className="text-left">
+                    <div className="font-medium text-gray-700 group-hover:text-red-700">Create Incident</div>
+                    <div className="text-xs text-gray-500 group-hover:text-red-600">Report new violation</div>
+                  </div>
+                </button>
+
+                {userType === 'DATA_ENCODER' && (
+                  <button className="w-full flex items-center p-3 rounded-lg hover:bg-emerald-50 transition-colors group">
+                    <span className="text-xl mr-3">📋</span>
+                    <div className="text-left">
+                      <div className="font-medium text-gray-700 group-hover:text-emerald-700">Add Permit</div>
+                      <div className="text-xs text-gray-500 group-hover:text-emerald-600">Register new permit</div>
+                    </div>
+                  </button>
+                )}
+
+                {(userType === 'ADMIN' || userType === 'DATA_ENCODER') && (
+                  <button className="w-full flex items-center p-3 rounded-lg hover:bg-purple-50 transition-colors group">
+                    <span className="text-xl mr-3">�</span>
+                    <div className="text-left">
+                      <div className="font-medium text-gray-700 group-hover:text-purple-700">Add Vehicle</div>
+                      <div className="text-xs text-gray-500 group-hover:text-purple-600">Register new vehicle</div>
+                    </div>
+                  </button>
+                )}
+
+                <button className="w-full flex items-center p-3 rounded-lg hover:bg-blue-50 transition-colors group">
+                  <span className="text-xl mr-3">�</span>
+                  <div className="text-left">
+                    <div className="font-medium text-gray-700 group-hover:text-blue-700">Generate Report</div>
+                    <div className="text-xs text-gray-500 group-hover:text-blue-600">Export statistics</div>
+                  </div>
+                </button>
+
+                {userType === 'ADMIN' && (
+                  <>
+                    <button className="w-full flex items-center p-3 rounded-lg hover:bg-indigo-50 transition-colors group">
+                      <span className="text-xl mr-3">👥</span>
+                      <div className="text-left">
+                        <div className="font-medium text-gray-700 group-hover:text-indigo-700">Manage Users</div>
+                        <div className="text-xs text-gray-500 group-hover:text-indigo-600">View user accounts</div>
+                      </div>
+                    </button>
+
+                    <button className="w-full flex items-center p-3 rounded-lg hover:bg-orange-50 transition-colors group">
+                      <span className="text-xl mr-3">⚙️</span>
+                      <div className="text-left">
+                        <div className="font-medium text-gray-700 group-hover:text-orange-700">User Management</div>
+                        <div className="text-xs text-gray-500 group-hover:text-orange-600">Create admin users</div>
+                      </div>
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content Area */}
+        <div className="flex-1">
+
+          {/* Tab Content */}
+          {activeTab === 'overview' && (
         <div className="space-y-6">
           {/* Statistics Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -300,65 +338,42 @@ const AuthorityDashboard = () => {
             </div>
           </div>
         </div>
-      )}
+            )}
 
-      {activeTab === 'incidents' && (
-        <IncidentsList />
-      )}
+            {activeTab === 'incidents' && (
+              <IncidentsList />
+            )}
 
-      {activeTab === 'users' && (userType === 'ADMIN' || userType === 'DATA_ENCODER') && (
-        <div className="bg-white rounded-xl shadow-lg p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">User Management</h2>
-          <p className="text-gray-600">User management interface will be implemented here.</p>
-          {/* TODO: Implement user management component */}
-        </div>
-      )}
-
-      {activeTab === 'vehicles' && (userType === 'ADMIN' || userType === 'DATA_ENCODER') && (
-        <div className="bg-white rounded-xl shadow-lg p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Vehicle Management</h2>
-          <p className="text-gray-600">Vehicle management interface will be implemented here.</p>
-          {/* TODO: Implement vehicle management component */}
-        </div>
-      )}
-
-      {/* Admin User Management Tab */}
-      {activeTab === 'admin' && (
-        <div>
-          <AdminUserManagement />
-        </div>
-      )}
-
-      {/* Quick Actions */}
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button className="flex items-center p-4 bg-red-50 rounded-lg hover:bg-red-100 transition-colors">
-            <span className="text-2xl mr-3">📝</span>
-            <div className="text-left">
-              <div className="font-medium text-red-700">Create Incident</div>
-              <div className="text-sm text-red-600">Report new violation</div>
-            </div>
-          </button>
-          
-          {(userType === 'ADMIN' || userType === 'DATA_ENCODER') && (
-            <button className="flex items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
-              <span className="text-2xl mr-3">🚗</span>
-              <div className="text-left">
-                <div className="font-medium text-blue-700">Add Vehicle</div>
-                <div className="text-sm text-blue-600">Register new vehicle</div>
+            {activeTab === 'users' && (userType === 'ADMIN') && (
+              <div className="bg-white rounded-xl shadow-lg p-8">
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">User Management</h2>
+                <p className="text-gray-600">User management interface will be implemented here.</p>
+                {/* TODO: Implement user management component */}
               </div>
-            </button>
-          )}
-          
-          <button className="flex items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
-            <span className="text-2xl mr-3">📊</span>
-            <div className="text-left">
-              <div className="font-medium text-green-700">Generate Report</div>
-              <div className="text-sm text-green-600">Export statistics</div>
-            </div>
-          </button>
-        </div>
+            )}
+
+            {activeTab === 'vehicles' && (userType === 'ADMIN') && (
+              <div className="bg-white rounded-xl shadow-lg p-8">
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">Vehicle Management</h2>
+                <p className="text-gray-600">Vehicle management interface will be implemented here.</p>
+                {/* TODO: Implement vehicle management component */}
+              </div>
+            )}
+
+            {/* Permits Management Tab */}
+            {activeTab === 'permits' && userType === 'DATA_ENCODER' && (
+              <div className="space-y-8">
+                <PermitStatistics />
+                <PermitManagement />
+              </div>
+            )}
+
+            {/* Admin User Management Tab */}
+            {activeTab === 'admin' && userType === 'ADMIN' && (
+              <div>
+                <AdminUserManagement />
+              </div>
+            )}        </div>
       </div>
     </div>
   )

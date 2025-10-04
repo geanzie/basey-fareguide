@@ -48,41 +48,44 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     return null // Will redirect to auth
   }
 
-  const navigationItems: NavigationItem[] = [
+  // For authority users (ADMIN, DATA_ENCODER, ENFORCER), show minimal navigation
+  // For PUBLIC users, show full navigation
+  const navigationItems: NavigationItem[] = user?.userType === 'PUBLIC' ? [
     {
       key: 'dashboard',
-      label: user?.userType === 'PUBLIC' ? 'My Dashboard' : 'Authority Dashboard',
+      label: 'My Dashboard',
       icon: '📊',
       path: '/dashboard',
-      available: ['ADMIN', 'DATA_ENCODER', 'ENFORCER', 'PUBLIC']
+      available: ['PUBLIC']
     },
     {
       key: 'calculator',
       label: 'Fare Calculator',
       icon: '🧮',
       path: '/dashboard/calculator',
-      available: ['ADMIN', 'DATA_ENCODER', 'ENFORCER', 'PUBLIC']
+      available: ['PUBLIC']
     },
     {
       key: 'profile',
       label: 'My Profile',
       icon: '👤',
       path: '/dashboard/profile',
-      available: ['ADMIN', 'DATA_ENCODER', 'ENFORCER', 'PUBLIC']
-    },
-    {
-      key: 'incidents',
-      label: 'View Incidents',
-      icon: '📋',
-      path: '/dashboard/incidents',
-      available: ['ADMIN', 'DATA_ENCODER', 'ENFORCER']
+      available: ['PUBLIC']
     },
     {
       key: 'report',
       label: 'Report Incident',
-      icon: '🚨',
+      icon: '�',
       path: '/dashboard/report',
-      available: ['ADMIN', 'DATA_ENCODER', 'ENFORCER', 'PUBLIC']
+      available: ['PUBLIC']
+    }
+  ] : [
+    {
+      key: 'dashboard',
+      label: 'Authority Dashboard',
+      icon: '�',
+      path: '/dashboard',
+      available: ['ADMIN', 'DATA_ENCODER', 'ENFORCER']
     }
   ]
 

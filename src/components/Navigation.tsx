@@ -61,13 +61,40 @@ export default function Navigation() {
             ) : (
               <>
                 <Link 
-                  href="/dashboard" 
+                  href={user.userType === 'ENFORCER' ? '/enforcer' : '/dashboard'} 
                   className="text-gray-600 hover:text-emerald-600 px-3 py-2 font-medium"
                 >
-                  📊 {user.userType === 'PUBLIC' ? 'My Dashboard' : 'Dashboard'}
+                  📊 {user.userType === 'PUBLIC' ? 'My Dashboard' : user.userType === 'ENFORCER' ? 'Enforcement Dashboard' : 'Dashboard'}
                 </Link>
                 
-                {isAuthority && (
+                {user.userType === 'ADMIN' && (
+                  <Link 
+                    href="/admin" 
+                    className="text-gray-600 hover:text-emerald-600 px-3 py-2 font-medium"
+                  >
+                    ⚙️ Admin
+                  </Link>
+                )}
+
+                {user.userType === 'DATA_ENCODER' && (
+                  <Link 
+                    href="/encoder" 
+                    className="text-gray-600 hover:text-emerald-600 px-3 py-2 font-medium"
+                  >
+                    📋 Encoder
+                  </Link>
+                )}
+
+                {user.userType === 'ENFORCER' && (
+                  <Link 
+                    href="/enforcer" 
+                    className="text-gray-600 hover:text-emerald-600 px-3 py-2 font-medium"
+                  >
+                    🚔 Enforcer
+                  </Link>
+                )}
+                
+                {isAuthority && !['ADMIN', 'DATA_ENCODER', 'ENFORCER'].includes(user.userType) && (
                   <Link 
                     href="/features" 
                     className="text-gray-600 hover:text-emerald-600 px-3 py-2 font-medium"
@@ -134,14 +161,44 @@ export default function Navigation() {
             ) : (
               <>
                 <Link 
-                  href="/dashboard" 
+                  href={user.userType === 'ENFORCER' ? '/enforcer' : '/dashboard'} 
                   className="block text-gray-600 hover:text-emerald-600 px-3 py-2 font-medium"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  📊 {user.userType === 'PUBLIC' ? 'My Dashboard' : 'Dashboard'}
+                  📊 {user.userType === 'PUBLIC' ? 'My Dashboard' : user.userType === 'ENFORCER' ? 'Enforcement Dashboard' : 'Dashboard'}
                 </Link>
                 
-                {isAuthority && (
+                {user.userType === 'ADMIN' && (
+                  <Link 
+                    href="/admin" 
+                    className="block text-gray-600 hover:text-emerald-600 px-3 py-2 font-medium"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    ⚙️ Admin
+                  </Link>
+                )}
+
+                {user.userType === 'DATA_ENCODER' && (
+                  <Link 
+                    href="/encoder" 
+                    className="block text-gray-600 hover:text-emerald-600 px-3 py-2 font-medium"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    📋 Encoder
+                  </Link>
+                )}
+
+                {user.userType === 'ENFORCER' && (
+                  <Link 
+                    href="/enforcer" 
+                    className="block text-gray-600 hover:text-emerald-600 px-3 py-2 font-medium"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    🚔 Enforcer
+                  </Link>
+                )}
+                
+                {isAuthority && !['ADMIN', 'DATA_ENCODER', 'ENFORCER'].includes(user.userType) && (
                   <Link 
                     href="/features" 
                     className="block text-gray-600 hover:text-emerald-600 px-3 py-2 font-medium"

@@ -142,8 +142,13 @@ const IncidentReporting = () => {
         submitData.append(`evidence_${index}`, file)
       })
 
+      const token = localStorage.getItem('token')
+      
       const response = await fetch('/api/incidents/report', {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
         body: submitData
       })
 

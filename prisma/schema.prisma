@@ -106,9 +106,11 @@ model Incident {
   evidenceUrls  String[]
   penaltyAmount Decimal?
   remarks       String?
+  ticketNumber  String?        @unique
   incidentDate  DateTime
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+  resolvedAt    DateTime?
   handledBy     User?          @relation("HandledBy", fields: [handledById], references: [id])
   reportedBy    User           @relation("ReportedBy", fields: [reportedById], references: [id])
   vehicle       Vehicle?       @relation(fields: [vehicleId], references: [id])
@@ -197,6 +199,37 @@ model AdminUserCreation {
   @@map("admin_user_creations")
 }
 
+model Permit {
+  id                 String       @id @default(cuid())
+  plateNumber        String       @unique
+  driverFullName     String
+  vehicleType        VehicleType
+  issuedDate         DateTime     @default(now())
+  expiryDate         DateTime
+  status             PermitStatus @default(ACTIVE)
+  remarks            String?
+  encodedBy          String
+  encodedAt          DateTime     @default(now())
+  lastUpdatedBy      String?
+  lastUpdatedAt      DateTime?
+  renewalHistory     PermitRenewal[]
+  
+  @@map("permits")
+}
+
+model PermitRenewal {
+  id            String   @id @default(cuid())
+  permitId      String
+  previousExpiry DateTime
+  newExpiry      DateTime
+  renewedBy     String
+  renewedAt     DateTime @default(now())
+  notes         String?
+  permit        Permit   @relation(fields: [permitId], references: [id], onDelete: Cascade)
+  
+  @@map("permit_renewals")
+}
+
 enum UserType {
   ADMIN
   DATA_ENCODER
@@ -234,4 +267,11 @@ enum LocationType {
   LANDMARK
   URBAN
   RURAL
+}
+
+enum PermitStatus {
+  ACTIVE
+  EXPIRED
+  SUSPENDED
+  REVOKED
 }
