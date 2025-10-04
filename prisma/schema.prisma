@@ -226,7 +226,7 @@ model AdminUserCreation {
 model Permit {
   id                 String       @id @default(cuid())
   vehicleId          String       @unique
-  plateNumber        String       @unique
+  permitPlateNumber  String       @unique
   driverFullName     String
   vehicleType        VehicleType
   issuedDate         DateTime     @default(now())

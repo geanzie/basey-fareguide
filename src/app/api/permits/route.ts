@@ -27,8 +27,10 @@ export async function GET(request: NextRequest) {
     
     if (search) {
       where.OR = [
-        { plateNumber: { contains: search, mode: 'insensitive' } },
-        { driverFullName: { contains: search, mode: 'insensitive' } }
+        { permitPlateNumber: { contains: search, mode: 'insensitive' } },
+        { driverFullName: { contains: search, mode: 'insensitive' } },
+        { vehicle: { plateNumber: { contains: search, mode: 'insensitive' } } },
+        { vehicle: { ownerName: { contains: search, mode: 'insensitive' } } }
       ]
     }
 
@@ -70,13 +72,25 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { vehicleId, plateNumber, driverFullName, vehicleType, encodedBy, remarks } = body
+    const { vehicleId, permitPlateNumber, driverFullName, vehicleType, encodedBy, remarks } = body
 
     // Validate required fields
-    if (!vehicleId || !plateNumber || !driverFullName || !vehicleType || !encodedBy) {
+    if (!vehicleId || !permitPlateNumber || !driverFullName || !vehicleType || !encodedBy) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
+      )
+    }
+
+    // Check if permit plate number already exists
+    const existingPlatePermit = await prisma.permit.findUnique({
+      where: { permitPlateNumber: permitPlateNumber.toUpperCase() }
+    })
+
+    if (existingPlatePermit) {
+      return NextResponse.json(
+        { error: 'Permit plate number already exists' },
+        { status: 409 }
       )
     }
 
@@ -111,7 +125,7 @@ export async function POST(request: NextRequest) {
     const permit = await prisma.permit.create({
       data: {
         vehicleId,
-        plateNumber: plateNumber.toUpperCase(),
+        permitPlateNumber: permitPlateNumber.toUpperCase(),
         driverFullName,
         vehicleType,
         expiryDate,
@@ -121,7 +135,16 @@ export async function POST(request: NextRequest) {
       },
       include: {
         renewalHistory: true,
-        vehicle: true
+        vehicle: {
+          select: {
+            id: true,
+            plateNumber: true,
+            make: true,
+            model: true,
+            ownerName: true,
+            vehicleType: true
+          }
+        }
       }
     })
 

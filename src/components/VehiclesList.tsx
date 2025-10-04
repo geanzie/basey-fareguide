@@ -23,6 +23,13 @@ interface Vehicle {
   insuranceExpiry?: string
   createdAt: string
   updatedAt: string
+  permit?: {
+    id: string
+    permitPlateNumber: string
+    status: string
+    issuedDate: string
+    expiryDate: string
+  }
 }
 
 interface PaginatedResponse {
@@ -125,12 +132,42 @@ export default function VehiclesList() {
   const columns = [
     {
       key: 'plateNumber',
-      label: 'Plate Number',
+      label: 'Vehicle Plate',
       render: (value: any, vehicle: Vehicle) => {
         if (!vehicle) return null
         return (
-          <div className="font-mono font-medium text-gray-900">
-            {vehicle.plateNumber || '-'}
+          <div>
+            <div className="font-mono font-medium text-gray-900">
+              {vehicle.plateNumber || '-'}
+            </div>
+            <div className="text-xs text-gray-500">
+              Vehicle Plate
+            </div>
+          </div>
+        )
+      }
+    },
+    {
+      key: 'permitPlateNumber',
+      label: 'Permit Plate',
+      render: (value: any, vehicle: Vehicle) => {
+        if (!vehicle) return null
+        if (!vehicle.permit?.permitPlateNumber) {
+          return (
+            <div className="text-sm">
+              <span className="text-red-600 font-medium">No Permit</span>
+              <div className="text-xs text-gray-500">Not registered</div>
+            </div>
+          )
+        }
+        return (
+          <div>
+            <div className="font-mono font-medium text-emerald-900">
+              {vehicle.permit.permitPlateNumber}
+            </div>
+            <div className="text-xs text-emerald-600">
+              Permit ID
+            </div>
           </div>
         )
       }
@@ -348,17 +385,23 @@ export default function VehiclesList() {
         </div>
 
         {/* Quick Stats */}
-        <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 lg:gap-4">
+        <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 lg:gap-4">
           <div className="bg-green-50 p-3 rounded-lg min-w-0">
-            <div className="text-sm text-green-600 font-medium truncate">Active</div>
+            <div className="text-sm text-green-600 font-medium truncate">Active Vehicles</div>
             <div className="text-lg font-bold text-green-800">
               {vehicles.filter(v => v.isActive).length}
             </div>
           </div>
+          <div className="bg-emerald-50 p-3 rounded-lg min-w-0">
+            <div className="text-sm text-emerald-600 font-medium truncate">With Permits</div>
+            <div className="text-lg font-bold text-emerald-800">
+              {vehicles.filter(v => v.permit?.permitPlateNumber).length}
+            </div>
+          </div>
           <div className="bg-red-50 p-3 rounded-lg min-w-0">
-            <div className="text-sm text-red-600 font-medium truncate">Inactive</div>
+            <div className="text-sm text-red-600 font-medium truncate">No Permits</div>
             <div className="text-lg font-bold text-red-800">
-              {vehicles.filter(v => !v.isActive).length}
+              {vehicles.filter(v => !v.permit?.permitPlateNumber).length}
             </div>
           </div>
           <div className="bg-blue-50 p-3 rounded-lg min-w-0">
@@ -373,7 +416,7 @@ export default function VehiclesList() {
               {vehicles.filter(v => v.vehicleType === VehicleType.TRICYCLE).length}
             </div>
           </div>
-          <div className="bg-indigo-50 p-3 rounded-lg min-w-0 sm:col-span-1 lg:col-span-1">
+          <div className="bg-indigo-50 p-3 rounded-lg min-w-0">
             <div className="text-sm text-indigo-600 font-medium truncate">Total</div>
             <div className="text-lg font-bold text-indigo-800">
               {pagination.total}
@@ -447,8 +490,18 @@ export default function VehiclesList() {
                   <h4 className="font-medium text-gray-900 mb-3">Vehicle Information</h4>
                   <div className="space-y-3">
                     <div>
-                      <span className="text-sm text-gray-500">Plate Number:</span>
+                      <span className="text-sm text-gray-500">Vehicle Plate Number:</span>
                       <div className="font-mono font-medium">{selectedVehicle.plateNumber}</div>
+                    </div>
+                    <div>
+                      <span className="text-sm text-gray-500">Permit Plate Number:</span>
+                      {selectedVehicle.permit?.permitPlateNumber ? (
+                        <div className="font-mono font-medium text-emerald-900">
+                          {selectedVehicle.permit.permitPlateNumber}
+                        </div>
+                      ) : (
+                        <div className="text-red-600 font-medium">No permit issued</div>
+                      )}
                     </div>
                     <div>
                       <span className="text-sm text-gray-500">Vehicle Type:</span>
@@ -476,7 +529,7 @@ export default function VehiclesList() {
                       <div>{selectedVehicle.capacity} passengers</div>
                     </div>
                     <div>
-                      <span className="text-sm text-gray-500">Status:</span>
+                      <span className="text-sm text-gray-500">Vehicle Status:</span>
                       <div>
                         <StatusBadge
                           status={selectedVehicle.isActive ? 'Active' : 'Inactive'}
@@ -484,6 +537,17 @@ export default function VehiclesList() {
                         />
                       </div>
                     </div>
+                    {selectedVehicle.permit && (
+                      <div>
+                        <span className="text-sm text-gray-500">Permit Status:</span>
+                        <div>
+                          <StatusBadge
+                            status={selectedVehicle.permit.status}
+                            className={selectedVehicle.permit.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -516,7 +580,7 @@ export default function VehiclesList() {
 
                 {/* Registration & Insurance */}
                 <div className="md:col-span-2">
-                  <h4 className="font-medium text-gray-900 mb-3">Registration & Insurance</h4>
+                  <h4 className="font-medium text-gray-900 mb-3">Registration & Permits</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <span className="text-sm text-gray-500">Registration Expiry:</span>
@@ -531,6 +595,23 @@ export default function VehiclesList() {
                         }
                       </div>
                     </div>
+                    {selectedVehicle.permit && (
+                      <>
+                        <div>
+                          <span className="text-sm text-gray-500">Permit Issued:</span>
+                          <div>{new Date(selectedVehicle.permit.issuedDate).toLocaleDateString()}</div>
+                        </div>
+                        <div>
+                          <span className="text-sm text-gray-500">Permit Expiry:</span>
+                          <div className={new Date(selectedVehicle.permit.expiryDate) < new Date() ? 'text-red-600 font-medium' : ''}>
+                            {new Date(selectedVehicle.permit.expiryDate).toLocaleDateString()}
+                            {new Date(selectedVehicle.permit.expiryDate) < new Date() && (
+                              <span className="text-xs text-red-500 ml-2">(Expired)</span>
+                            )}
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
 

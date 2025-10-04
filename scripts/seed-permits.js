@@ -9,7 +9,7 @@ async function seedPermits() {
     // Sample permit data
     const permits = [
       {
-        plateNumber: 'ABC-123',
+        permitPlateNumber: 'PERMIT-2025-001',
         driverFullName: 'Juan Dela Cruz',
         vehicleType: VehicleType.TRICYCLE,
         expiryDate: new Date('2025-12-31'),
@@ -17,7 +17,7 @@ async function seedPermits() {
         encodedBy: 'system'
       },
       {
-        plateNumber: 'DEF-456',
+        permitPlateNumber: 'PERMIT-2024-002',
         driverFullName: 'Maria Santos',
         vehicleType: VehicleType.HABAL_HABAL,
         expiryDate: new Date('2024-12-31'), // Expired
@@ -25,7 +25,7 @@ async function seedPermits() {
         encodedBy: 'system'
       },
       {
-        plateNumber: 'GHI-789',
+        permitPlateNumber: 'PERMIT-2025-003',
         driverFullName: 'Pedro Rodriguez',
         vehicleType: VehicleType.TRICYCLE,
         expiryDate: new Date('2025-11-15'), // Expiring soon
@@ -33,7 +33,7 @@ async function seedPermits() {
         encodedBy: 'system'
       },
       {
-        plateNumber: 'JKL-012',
+        permitPlateNumber: 'PERMIT-2025-004',
         driverFullName: 'Ana Garcia',
         vehicleType: VehicleType.HABAL_HABAL,
         expiryDate: new Date('2025-06-30'),
@@ -41,7 +41,7 @@ async function seedPermits() {
         encodedBy: 'system'
       },
       {
-        plateNumber: 'MNO-345',
+        permitPlateNumber: 'PERMIT-2025-005',
         driverFullName: 'Carlos Mendoza',
         vehicleType: VehicleType.TRICYCLE,
         expiryDate: new Date('2025-09-15'),

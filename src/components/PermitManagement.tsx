@@ -8,7 +8,7 @@ import ResponsiveTable, { StatusBadge, ActionButton } from './ResponsiveTable'
 
 interface Permit {
   id: string
-  plateNumber: string
+  permitPlateNumber: string
   driverFullName: string
   vehicleType: VehicleType
   issuedDate: string
@@ -27,6 +27,13 @@ interface Permit {
     renewedAt: string
     notes?: string
   }>
+  vehicle?: {
+    id: string
+    plateNumber: string
+    make: string
+    model: string
+    ownerName: string
+  }
 }
 
 interface Vehicle {
@@ -73,6 +80,7 @@ export default function PermitManagement() {
   // Form states
   const [formData, setFormData] = useState({
     vehicleId: '',
+    permitPlateNumber: '',
     remarks: ''
   })
 
@@ -145,6 +153,7 @@ export default function PermitManagement() {
   const resetForm = () => {
     setFormData({
       vehicleId: '',
+      permitPlateNumber: '',
       remarks: ''
     })
     setShowAddForm(false)
@@ -155,17 +164,38 @@ export default function PermitManagement() {
     e.preventDefault()
     
     try {
-      const selectedVehicle = vehicles.find(v => v.id === formData.vehicleId)
+      if (!formData.permitPlateNumber.trim()) {
+        alert('Please enter a permit plate number')
+        return
+      }
+
+      let selectedVehicle = null
+      if (editingPermit) {
+        // For editing, use the vehicle from the permit or find by ID
+        selectedVehicle = editingPermit.vehicle || vehicles.find(v => v.id === formData.vehicleId)
+      } else {
+        // For new permits, require vehicle selection
+        selectedVehicle = vehicles.find(v => v.id === formData.vehicleId)
+        if (!selectedVehicle) {
+          alert('Please select a vehicle')
+          return
+        }
+      }
+
       if (!selectedVehicle) {
-        alert('Please select a vehicle')
+        alert('Vehicle information not available')
         return
       }
 
       const payload = {
-        vehicleId: formData.vehicleId,
-        plateNumber: selectedVehicle.plateNumber,
-        driverFullName: selectedVehicle.driverName || 'Unknown Driver',
-        vehicleType: selectedVehicle.vehicleType,
+        vehicleId: editingPermit ? editingPermit.vehicle?.id || formData.vehicleId : formData.vehicleId,
+        permitPlateNumber: formData.permitPlateNumber,
+        driverFullName: editingPermit 
+          ? editingPermit.driverFullName 
+          : (selectedVehicle as any).driverName || 'Unknown Driver',
+        vehicleType: editingPermit 
+          ? editingPermit.vehicleType 
+          : (selectedVehicle as any).vehicleType,
         remarks: formData.remarks,
         encodedBy: user?.id,
         ...(editingPermit && { updatedBy: user?.id })
@@ -287,7 +317,7 @@ export default function PermitManagement() {
             </label>
             <input
               type="text"
-              placeholder="Plate number or driver name"
+              placeholder="Permit plate, vehicle plate, or driver name"
               className="w-full border border-gray-300 rounded-md px-3 py-2"
               value={filters.search}
               onChange={(e) => setFilters({ ...filters, search: e.target.value })}
@@ -344,25 +374,40 @@ export default function PermitManagement() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Select Vehicle
+                  {editingPermit ? 'Assigned Vehicle' : 'Select Vehicle'}
                 </label>
+                {editingPermit && (
+                  <p className="text-sm text-blue-600 mb-2">
+                    Vehicle assignment cannot be changed when editing a permit.
+                  </p>
+                )}
                 {vehiclesLoading ? (
                   <div className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-500">
                     Loading vehicles...
                   </div>
                 ) : (
                   <select
-                    required
-                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    required={!editingPermit}
+                    disabled={!!editingPermit}
+                    className={`w-full border border-gray-300 rounded-md px-3 py-2 ${editingPermit ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                     value={formData.vehicleId}
                     onChange={(e) => setFormData({ ...formData, vehicleId: e.target.value })}
                   >
                     <option value="">Select a vehicle...</option>
                     {vehicles
-                      .filter(vehicle => vehicle.isActive && !permits.some(permit => permit.plateNumber === vehicle.plateNumber && permit.status === 'ACTIVE'))
+                      .filter(vehicle => {
+                        if (editingPermit) {
+                          // When editing, show all vehicles but highlight the current one
+                          return vehicle.isActive
+                        } else {
+                          // When creating new, only show vehicles without active permits
+                          return vehicle.isActive && !permits.some(permit => permit.vehicle?.id === vehicle.id && permit.status === 'ACTIVE')
+                        }
+                      })
                       .map((vehicle) => (
                         <option key={vehicle.id} value={vehicle.id}>
                           {vehicle.plateNumber} - {vehicle.vehicleType.replace('_', '-')} ({vehicle.driverName || 'No Driver'})
+                          {editingPermit && formData.vehicleId === vehicle.id ? ' (Current)' : ''}
                         </option>
                       ))}
                   </select>
@@ -382,6 +427,23 @@ export default function PermitManagement() {
                     })()}
                   </div>
                 )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Permit Plate Number *
+                </label>
+                <input
+                  type="text"
+                  required
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 font-mono"
+                  value={formData.permitPlateNumber}
+                  onChange={(e) => setFormData({ ...formData, permitPlateNumber: e.target.value.toUpperCase() })}
+                  placeholder="e.g., PERMIT-2025-001"
+                  maxLength={20}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  This will serve as the unique permit ID for this vehicle (valid for 1 year)
+                </p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -420,9 +482,37 @@ export default function PermitManagement() {
         <ResponsiveTable
           columns={[
             {
-              key: 'plateNumber',
-              label: 'Plate Number',
-              className: 'font-medium'
+              key: 'permitPlateNumber',
+              label: 'Permit Plate',
+              className: 'font-medium text-emerald-600',
+              render: (permitPlateNumber) => (
+                <div>
+                  <div className="font-mono font-medium text-emerald-900">
+                    {permitPlateNumber}
+                  </div>
+                  <div className="text-xs text-emerald-600">Permit ID</div>
+                </div>
+              )
+            },
+            {
+              key: 'vehicle',
+              label: 'Vehicle Info',
+              render: (vehicle, permit) => {
+                if (!permit || !permit.vehicle) return <span className="text-gray-500">No vehicle data</span>
+                return (
+                  <div>
+                    <div className="font-medium text-gray-900">
+                      {permit.vehicle.plateNumber}
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      {permit.vehicle.make} {permit.vehicle.model}
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      Owner: {permit.vehicle.ownerName}
+                    </div>
+                  </div>
+                )
+              }
             },
             {
               key: 'driverFullName',
@@ -467,9 +557,10 @@ export default function PermitManagement() {
                     onClick={() => {
                       setEditingPermit(permit)
                       // Find the vehicle that matches this permit
-                      const matchingVehicle = vehicles.find(v => v.plateNumber === permit.plateNumber)
+                      const matchingVehicle = vehicles.find(v => v.id === permit.vehicle?.id)
                       setFormData({
                         vehicleId: matchingVehicle?.id || '',
+                        permitPlateNumber: permit.permitPlateNumber || '',
                         remarks: permit.remarks || ''
                       })
                       setShowAddForm(true)

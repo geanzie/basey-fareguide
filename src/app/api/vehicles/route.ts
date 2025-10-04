@@ -30,7 +30,10 @@ export async function GET(request: NextRequest) {
         { plateNumber: { contains: search, mode: 'insensitive' } },
         { make: { contains: search, mode: 'insensitive' } },
         { model: { contains: search, mode: 'insensitive' } },
-        { color: { contains: search, mode: 'insensitive' } }
+        { color: { contains: search, mode: 'insensitive' } },
+        { ownerName: { contains: search, mode: 'insensitive' } },
+        { driverName: { contains: search, mode: 'insensitive' } },
+        { permit: { permitPlateNumber: { contains: search, mode: 'insensitive' } } }
       ]
     }
 
@@ -39,7 +42,18 @@ export async function GET(request: NextRequest) {
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
+        include: {
+          permit: {
+            select: {
+              id: true,
+              permitPlateNumber: true,
+              status: true,
+              issuedDate: true,
+              expiryDate: true
+            }
+          }
+        }
       }),
       prisma.vehicle.count({ where })
     ])

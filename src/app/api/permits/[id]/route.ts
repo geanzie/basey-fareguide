@@ -15,6 +15,16 @@ export async function GET(
       include: {
         renewalHistory: {
           orderBy: { renewedAt: 'desc' }
+        },
+        vehicle: {
+          select: {
+            id: true,
+            plateNumber: true,
+            make: true,
+            model: true,
+            ownerName: true,
+            vehicleType: true
+          }
         }
       }
     })
@@ -43,7 +53,7 @@ export async function PUT(
   try {
     const { id } = await params
     const body = await request.json()
-    const { driverFullName, status, remarks, updatedBy } = body
+    const { permitPlateNumber, driverFullName, status, remarks, updatedBy } = body
 
     const existingPermit = await prisma.permit.findUnique({
       where: { id }
@@ -56,9 +66,24 @@ export async function PUT(
       )
     }
 
+    // If permitPlateNumber is being updated, check if it already exists
+    if (permitPlateNumber && permitPlateNumber !== existingPermit.permitPlateNumber) {
+      const existingPlatePermit = await prisma.permit.findUnique({
+        where: { permitPlateNumber: permitPlateNumber.toUpperCase() }
+      })
+      
+      if (existingPlatePermit && existingPlatePermit.id !== id) {
+        return NextResponse.json(
+          { error: 'Permit plate number already exists' },
+          { status: 409 }
+        )
+      }
+    }
+
     const permit = await prisma.permit.update({
       where: { id },
       data: {
+        ...(permitPlateNumber && { permitPlateNumber: permitPlateNumber.toUpperCase() }),
         ...(driverFullName && { driverFullName }),
         ...(status && { status }),
         ...(remarks && { remarks }),
