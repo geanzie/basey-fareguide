@@ -102,6 +102,7 @@ model Incident {
   reportedById  String
   handledById   String?
   vehicleId     String?
+  vehicleType   VehicleType?
   driverLicense String?
   plateNumber   String?
   status        IncidentStatus @default(PENDING)

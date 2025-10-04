@@ -70,6 +70,7 @@ export async function POST(request: NextRequest) {
         location,
         plateNumber: plateNumber || null,
         driverLicense: driverLicense || null,
+        vehicleType: vehicleType ? (vehicleType as any) : null,
         coordinates: coordinates || null,
         incidentDate: incidentDateTime,
         reportedById: user.id,

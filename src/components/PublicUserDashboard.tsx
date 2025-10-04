@@ -8,8 +8,13 @@ interface Incident {
   type: string
   description: string
   location: string
+  plateNumber?: string
+  vehicleType?: string
   date: string
   status: string
+  ticketNumber?: string | null
+  createdAt: string
+  updatedAt: string
 }
 
 interface Route {
@@ -18,7 +23,12 @@ interface Route {
   to: string
   distance: string
   fare: string
+  actualFare?: string | null
+  calculationType: string
   date: string
+  vehicleType?: string | null
+  plateNumber?: string | null
+  createdAt: string
 }
 
 export default function PublicUserDashboard() {
@@ -27,41 +37,46 @@ export default function PublicUserDashboard() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Simulate loading user's personal data
-    // In real implementation, fetch from API based on user ID
-    setTimeout(() => {
-      setReportedIncidents([
-        {
-          id: '1',
-          type: 'Overcharging',
-          description: 'Jeepney charged ₱25 for a ₱18 route',
-          location: 'Basey to San Sebastian',
-          date: '2024-01-15',
-          status: 'Under Investigation'
+    const fetchUserData = async () => {
+      try {
+        const token = localStorage.getItem('token')
+        if (!token) {
+          setLoading(false)
+          return
         }
-      ])
-      
-      setRecentRoutes([
-        {
-          id: '1',
-          from: 'Basey Town Center',
-          to: 'Brgy. San Sebastian',
-          distance: '8.2 km',
-          fare: '₱30.60',
-          date: '2024-01-20'
-        },
-        {
-          id: '2',
-          from: 'Brgy. Poblacion',
-          to: 'Brgy. Mercado',
-          distance: '4.5 km',
-          fare: '₱19.50',
-          date: '2024-01-18'
+
+        // Fetch user incidents and routes in parallel
+        const [incidentsResponse, routesResponse] = await Promise.all([
+          fetch('/api/incidents', {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          }),
+          fetch('/api/routes', {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          })
+        ])
+
+        if (incidentsResponse.ok) {
+          const incidentsData = await incidentsResponse.json()
+          setReportedIncidents(incidentsData.incidents || [])
         }
-      ])
-      
-      setLoading(false)
-    }, 1000)
+
+        if (routesResponse.ok) {
+          const routesData = await routesResponse.json()
+          setRecentRoutes(routesData.routes || [])
+        }
+
+      } catch (error) {
+        console.error('Error fetching user data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchUserData()
   }, [])
 
   if (loading) {
@@ -180,12 +195,12 @@ export default function PublicUserDashboard() {
               <div className="text-center py-8">
                 <span className="text-6xl mb-4 block">🚌</span>
                 <p className="text-gray-600">No routes calculated yet</p>
-                <a 
-                  href="/"
+                <Link 
+                  href="/dashboard/calculator"
                   className="mt-4 inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
                 >
                   Calculate Fare
-                </a>
+                </Link>
               </div>
             ) : (
               <div className="space-y-4">
@@ -225,9 +240,12 @@ export default function PublicUserDashboard() {
               <div className="text-center py-8">
                 <span className="text-6xl mb-4 block">📝</span>
                 <p className="text-gray-600">No incidents reported yet</p>
-                <button className="mt-4 inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                <Link
+                  href="/dashboard/report"
+                  className="mt-4 inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
                   Report Incident
-                </button>
+                </Link>
               </div>
             ) : (
               <div className="space-y-4">
@@ -266,8 +284,8 @@ export default function PublicUserDashboard() {
       <div className="bg-white rounded-lg shadow-md p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <a
-            href="/"
+          <Link
+            href="/dashboard/calculator"
             className="flex items-center p-4 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors"
           >
             <span className="text-2xl mr-3">🧮</span>
@@ -275,15 +293,18 @@ export default function PublicUserDashboard() {
               <p className="font-medium text-emerald-800">Calculate Fare</p>
               <p className="text-sm text-emerald-600">Check route pricing</p>
             </div>
-          </a>
+          </Link>
           
-          <button className="flex items-center p-4 bg-red-50 rounded-lg hover:bg-red-100 transition-colors">
+          <Link
+            href="/dashboard/report"
+            className="flex items-center p-4 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+          >
             <span className="text-2xl mr-3">📝</span>
             <div>
               <p className="font-medium text-red-800">Report Issue</p>
               <p className="text-sm text-red-600">File a complaint</p>
             </div>
-          </button>
+          </Link>
           
           <a
             href="tel:09985986570"

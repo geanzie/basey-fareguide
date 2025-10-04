@@ -62,28 +62,28 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       key: 'calculator',
       label: 'Fare Calculator',
       icon: '🧮',
-      path: '/dashboard/calculator',
+      path: '/calculator',
       available: ['PUBLIC']
     },
     {
       key: 'profile',
       label: 'My Profile',
       icon: '👤',
-      path: '/dashboard/profile',
+      path: '/profile',
       available: ['PUBLIC']
     },
     {
       key: 'report',
       label: 'Report Incident',
-      icon: '�',
-      path: '/dashboard/report',
+      icon: '🚨',
+      path: '/report',
       available: ['PUBLIC']
     }
   ] : [
     {
       key: 'dashboard',
       label: 'Authority Dashboard',
-      icon: '�',
+      icon: '📊',
       path: '/dashboard',
       available: ['ADMIN', 'DATA_ENCODER', 'ENFORCER']
     }

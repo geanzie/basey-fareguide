@@ -23,14 +23,14 @@ const HeaderNavigation: React.FC<HeaderNavigationProps> = ({ user, logout }) => 
       case 'ENFORCER':
         return [
           { href: '/dashboard', label: 'Dashboard', icon: '📊' },
-          { href: '/dashboard/incidents', label: 'Incidents', icon: '🚨' },
-          { href: '/dashboard/report', label: 'Report Incident', icon: '📝' },
+          { href: '/incidents', label: 'Incidents', icon: '🚨' },
+          { href: '/report', label: 'Report Incident', icon: '📝' },
         ];
       case 'PUBLIC':
         return [
           { href: '/dashboard', label: 'Dashboard', icon: '📊' },
           { href: '/calculator', label: 'Fare Calculator', icon: '🧮' },
-          { href: '/dashboard/report', label: 'Report Incident', icon: '📝' },
+          { href: '/report', label: 'Report Incident', icon: '📝' },
         ];
       default:
         return [];
