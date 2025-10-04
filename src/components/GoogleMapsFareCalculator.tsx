@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
 interface RouteResult {
   distance: {
@@ -32,9 +32,6 @@ const GoogleMapsFareCalculator = () => {
   const [isCalculating, setIsCalculating] = useState(false)
   const [error, setError] = useState<string>('')
   const [lastCalculationTime, setLastCalculationTime] = useState<number>(0)
-  const [map, setMap] = useState<google.maps.Map | null>(null)
-  const [directionsService, setDirectionsService] = useState<google.maps.DirectionsService | null>(null)
-  const [directionsRenderer, setDirectionsRenderer] = useState<google.maps.DirectionsRenderer | null>(null)
 
   // Official Barangays and Landmarks of Basey Municipality, Samar
   const barangays = [
@@ -305,20 +302,34 @@ const GoogleMapsFareCalculator = () => {
             </div>
           </div>
 
-          {/* Map Placeholder */}
-          <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-            <div className="h-96 lg:h-full min-h-[400px] flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100">
+          {/* Interactive Map - Coming Soon */}
+          <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+            <div className="mb-4">
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Interactive Route Map</h3>
+              <p className="text-sm text-gray-600">Visual map integration coming soon</p>
+            </div>
+            
+            <div className="h-96 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg flex items-center justify-center border-2 border-dashed border-blue-200">
               <div className="text-center p-8">
                 <div className="w-20 h-20 bg-blue-200 rounded-full flex items-center justify-center mx-auto mb-6">
                   <span className="text-3xl">🗺️</span>
                 </div>
-                <h3 className="text-xl font-bold text-blue-800 mb-2">Interactive Map</h3>
-                <p className="text-blue-600 mb-4">Visual route display coming soon</p>
-                <div className="text-sm text-blue-500">
+                <h4 className="text-xl font-bold text-blue-800 mb-2">Interactive Map</h4>
+                <p className="text-blue-600 mb-4">Coming in the next update!</p>
+                <div className="text-sm text-blue-500 space-y-1">
                   <p>✓ Google Maps API Integration Ready</p>
                   <p>✓ Route Calculation Active</p>
                   <p>✓ Fare Computation Working</p>
+                  <p>🔄 Visual Map Loading...</p>
                 </div>
+                
+                {(fromLocation && toLocation) && (
+                  <div className="mt-4 p-3 bg-white rounded-lg shadow-sm">
+                    <p className="text-sm text-gray-700">
+                      <span className="font-medium">Route:</span> {fromLocation} → {toLocation}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

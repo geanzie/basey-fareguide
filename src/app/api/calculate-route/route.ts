@@ -1,8 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { googleMapsClient } from '@/lib/googleMapsService'
-import { TravelMode, UnitSystem } from '@googlemaps/google-maps-services-js'
+// Temporarily disabled to diagnose webpack issues
+// import { googleMapsClient } from '@/lib/googleMapsService'
+// import { TravelMode, UnitSystem } from '@googlemaps/google-maps-services-js'
 
 export async function POST(request: NextRequest) {
+  // Temporarily disabled to diagnose webpack issues
+  return NextResponse.json({
+    error: 'Google Maps integration temporarily disabled for debugging',
+    message: 'Please use the traditional fare calculator for now'
+  }, { status: 503 });
+  
+  /* Original code temporarily disabled
+export async function POST_DISABLED(request: NextRequest) {
   try {
     const { origin, destination } = await request.json()
 
@@ -87,4 +96,7 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
+}
+*/
+
 }
