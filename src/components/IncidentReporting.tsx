@@ -6,6 +6,7 @@ interface IncidentForm {
   incidentType: string
   description: string
   location: string
+  vehicleId: string
   plateNumber: string
   driverLicense: string
   vehicleType: string
@@ -19,11 +20,32 @@ interface GPSPosition {
   longitude: number
 }
 
+interface Vehicle {
+  id: string
+  plateNumber: string
+  vehicleType: string
+  make: string
+  model: string
+  color: string
+  ownerName: string
+  driverName: string | null
+  driverLicense: string | null
+  isActive: boolean
+  permit: {
+    id: string
+    permitPlateNumber: string
+    status: string
+    issuedDate: string
+    expiryDate: string
+  } | null
+}
+
 const IncidentReporting = () => {
   const [formData, setFormData] = useState<IncidentForm>({
     incidentType: '',
     description: '',
     location: '',
+    vehicleId: '',
     plateNumber: '',
     driverLicense: '',
     vehicleType: '',
@@ -36,6 +58,10 @@ const IncidentReporting = () => {
   const [success, setSuccess] = useState('')
   const [error, setError] = useState('')
   const [locationLoading, setLocationLoading] = useState(false)
+  const [vehicles, setVehicles] = useState<Vehicle[]>([])
+  const [vehiclesLoading, setVehiclesLoading] = useState(true)
+  const [vehicleSearch, setVehicleSearch] = useState('')
+  const [filteredVehicles, setFilteredVehicles] = useState<Vehicle[]>([])
 
   const incidentTypes = [
     { value: 'FARE_OVERCHARGE', label: 'Fare Overcharging' },
@@ -70,7 +96,59 @@ const IncidentReporting = () => {
   useEffect(() => {
     // Get current location on component mount
     getCurrentLocation()
+    // Fetch available vehicles
+    fetchVehicles()
   }, [])
+
+  useEffect(() => {
+    // Filter vehicles based on search term
+    if (vehicleSearch.trim() === '') {
+      setFilteredVehicles(vehicles)
+    } else {
+      const searchTerm = vehicleSearch.toLowerCase()
+      const filtered = vehicles.filter(vehicle => 
+        vehicle.plateNumber.toLowerCase().includes(searchTerm) ||
+        vehicle.vehicleType.toLowerCase().includes(searchTerm) ||
+        vehicle.make.toLowerCase().includes(searchTerm) ||
+        vehicle.model.toLowerCase().includes(searchTerm) ||
+        vehicle.color.toLowerCase().includes(searchTerm) ||
+        vehicle.ownerName.toLowerCase().includes(searchTerm) ||
+        (vehicle.driverName && vehicle.driverName.toLowerCase().includes(searchTerm)) ||
+        (vehicle.permit?.permitPlateNumber && vehicle.permit.permitPlateNumber.toLowerCase().includes(searchTerm))
+      )
+      setFilteredVehicles(filtered)
+    }
+  }, [vehicles, vehicleSearch])
+
+  const fetchVehicles = async () => {
+    try {
+      setVehiclesLoading(true)
+      const token = localStorage.getItem('token')
+      
+      const response = await fetch('/api/vehicles?isActive=true&limit=200', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        // Filter vehicles to only include those with active permits
+        const vehiclesWithPermits = (data.vehicles || []).filter((vehicle: Vehicle) => {
+          return vehicle.permit && 
+                 vehicle.permit.status === 'ACTIVE' && 
+                 new Date(vehicle.permit.expiryDate) > new Date()
+        })
+        setVehicles(vehiclesWithPermits)
+      } else {
+        console.error('Failed to fetch vehicles')
+      }
+    } catch (err) {
+      console.error('Error fetching vehicles:', err)
+    } finally {
+      setVehiclesLoading(false)
+    }
+  }
 
   const getCurrentLocation = () => {
     if (!navigator.geolocation) {
@@ -112,6 +190,19 @@ const IncidentReporting = () => {
     setFormData(prev => ({
       ...prev,
       evidenceFiles: files
+    }))
+  }
+
+  const handleVehicleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const vehicleId = e.target.value
+    const selectedVehicle = vehicles.find(v => v.id === vehicleId)
+    
+    setFormData(prev => ({
+      ...prev,
+      vehicleId,
+      plateNumber: selectedVehicle?.plateNumber || '',
+      vehicleType: selectedVehicle?.vehicleType || '',
+      driverLicense: selectedVehicle?.driverLicense || ''
     }))
   }
 
@@ -159,6 +250,7 @@ const IncidentReporting = () => {
           incidentType: '',
           description: '',
           location: '',
+          vehicleId: '',
           plateNumber: '',
           driverLicense: '',
           vehicleType: '',
@@ -185,7 +277,7 @@ const IncidentReporting = () => {
         </div>
         <h2 className="text-3xl font-bold text-gray-900 mb-2">Report an Incident</h2>
         <p className="text-gray-600">
-          Help maintain fair transportation by reporting violations
+          Help maintain fair transportation by reporting violations. Select the vehicle involved from our registered database.
         </p>
       </div>
 
@@ -200,6 +292,20 @@ const IncidentReporting = () => {
           {success}
         </div>
       )}
+
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <div className="flex items-center mb-2">
+          <span className="text-lg mr-2">💡</span>
+          <h3 className="font-semibold text-blue-800">How to Report</h3>
+        </div>
+        <div className="space-y-1 text-sm text-blue-700">
+          <p>1. Select the vehicle from the dropdown list (only vehicles with active permits are shown)</p>
+          <p>2. Choose the type of incident you witnessed</p>
+          <p>3. Provide detailed description and exact location</p>
+          <p>4. Upload photos or videos as evidence (if available)</p>
+          <p>5. Submit the report - you'll receive a reference number via email</p>
+        </div>
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Incident Type */}
@@ -311,58 +417,83 @@ const IncidentReporting = () => {
           )}
         </div>
 
-        {/* Vehicle Information */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="plateNumber" className="block text-sm font-medium text-gray-700 mb-2">
-              Plate Number
-            </label>
+        {/* Vehicle Selection */}
+        <div>
+          <label htmlFor="vehicleId" className="block text-sm font-medium text-gray-700 mb-2">
+            Select Vehicle to Report *
+          </label>
+          <div className="mb-2 text-xs text-green-600 bg-green-50 border border-green-200 rounded px-2 py-1">
+            ℹ️ Only vehicles with active permits are shown in this list
+          </div>
+          
+          {/* Search Input */}
+          <div className="mb-3">
             <input
               type="text"
-              id="plateNumber"
-              name="plateNumber"
-              value={formData.plateNumber}
-              onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-              placeholder="ABC 1234"
+              placeholder="Search by plate/permit number, vehicle type, make, model, color, owner, or driver name..."
+              value={vehicleSearch}
+              onChange={(e) => setVehicleSearch(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              disabled={vehiclesLoading}
             />
+            {vehicleSearch && (
+              <p className="text-xs text-gray-600 mt-1">
+                Found {filteredVehicles.length} vehicle(s) matching "{vehicleSearch}"
+              </p>
+            )}
           </div>
-          <div>
-            <label htmlFor="vehicleType" className="block text-sm font-medium text-gray-700 mb-2">
-              Vehicle Type
-            </label>
-            <select
-              id="vehicleType"
-              name="vehicleType"
-              value={formData.vehicleType}
-              onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-            >
-              <option value="">Select vehicle type</option>
-              {vehicleTypes.map(type => (
-                <option key={type.value} value={type.value}>
-                  {type.label}
-                </option>
-              ))}
-            </select>
-          </div>
+
+          <select
+            id="vehicleId"
+            name="vehicleId"
+            value={formData.vehicleId}
+            onChange={handleVehicleChange}
+            required
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+            disabled={vehiclesLoading}
+          >
+            <option value="">
+              {vehiclesLoading ? 'Loading vehicles...' : 'Choose a vehicle to report'}
+            </option>
+            {filteredVehicles.map(vehicle => (
+              <option key={vehicle.id} value={vehicle.id}>
+                {vehicle.permit?.permitPlateNumber || vehicle.plateNumber} - {vehicle.vehicleType.replace('_', ' ')} 
+                ({vehicle.make} {vehicle.model}, {vehicle.color})
+                {vehicle.driverName && ` - Driver: ${vehicle.driverName}`}
+                {vehicle.permit && ` - Permit: ${vehicle.permit.permitPlateNumber}`}
+              </option>
+            ))}
+          </select>
+          
+          {filteredVehicles.length === 0 && vehicleSearch && !vehiclesLoading && (
+            <p className="text-sm text-red-600 mt-1">
+              No vehicles found matching your search. Try different keywords.
+            </p>
+          )}
+          
+          {formData.vehicleId && (
+            <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <h4 className="font-medium text-blue-900 mb-1">Selected Vehicle Details:</h4>
+              <div className="text-sm text-blue-700 space-y-1">
+                <p><strong>Plate Number:</strong> {formData.plateNumber}</p>
+                <p><strong>Type:</strong> {formData.vehicleType.replace('_', ' ')}</p>
+                {vehicles.find(v => v.id === formData.vehicleId)?.ownerName && (
+                  <p><strong>Owner:</strong> {vehicles.find(v => v.id === formData.vehicleId)?.ownerName}</p>
+                )}
+                {formData.driverLicense && (
+                  <p><strong>Driver License:</strong> {formData.driverLicense}</p>
+                )}
+                {vehicles.find(v => v.id === formData.vehicleId)?.permit && (
+                  <p><strong>Permit:</strong> {vehicles.find(v => v.id === formData.vehicleId)?.permit?.permitPlateNumber} 
+                    <span className="text-green-600 ml-1">✓ Active</span>
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Driver License */}
-        <div>
-          <label htmlFor="driverLicense" className="block text-sm font-medium text-gray-700 mb-2">
-            Driver's License Number
-          </label>
-          <input
-            type="text"
-            id="driverLicense"
-            name="driverLicense"
-            value={formData.driverLicense}
-            onChange={handleInputChange}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-            placeholder="N01-12-123456"
-          />
-        </div>
+
 
         {/* Evidence Upload */}
         <div>

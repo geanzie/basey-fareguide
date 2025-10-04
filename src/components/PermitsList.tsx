@@ -7,7 +7,7 @@ import ResponsiveTable, { StatusBadge, ActionButton } from './ResponsiveTable'
 
 interface Permit {
   id: string
-  plateNumber: string
+  permitPlateNumber: string
   driverFullName: string
   vehicleType: VehicleType
   issuedDate: string
@@ -139,7 +139,7 @@ export default function PermitsList() {
         if (!permit) return null
         return (
           <div className="font-mono font-medium text-gray-900">
-            {permit.plateNumber || '-'}
+            {permit.permitPlateNumber || '-'}
           </div>
         )
       }
@@ -416,7 +416,7 @@ export default function PermitsList() {
             <div className="p-6">
               <div className="flex justify-between items-start mb-6">
                 <h3 className="text-lg font-semibold text-gray-900">
-                  Permit Details - {selectedPermit.plateNumber}
+                  Permit Details - {selectedPermit.permitPlateNumber}
                 </h3>
                 <button
                   onClick={() => setShowDetails(false)}
@@ -434,7 +434,7 @@ export default function PermitsList() {
                   <div className="space-y-3">
                     <div>
                       <span className="text-sm text-gray-500">Plate Number:</span>
-                      <div className="font-mono font-medium">{selectedPermit.plateNumber}</div>
+                      <div className="font-mono font-medium">{selectedPermit.permitPlateNumber}</div>
                     </div>
                     <div>
                       <span className="text-sm text-gray-500">Driver Name:</span>
