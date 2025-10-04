@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import ResponsiveTable, { StatusBadge, ActionButton } from './ResponsiveTable'
+import EvidenceManager from './EvidenceManager'
 
 interface Incident {
   id: string
@@ -13,6 +14,9 @@ interface Incident {
   incidentDate: string
   createdAt: string
   ticketNumber?: string
+  description?: string
+  penalty?: number
+  evidenceCount?: number
   reportedBy: {
     firstName: string
     lastName: string
@@ -23,6 +27,10 @@ export default function EnforcerIncidentsList() {
   const [incidents, setIncidents] = useState<Incident[]>([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<string>('ALL')
+  const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null)
+  const [showIncidentDetails, setShowIncidentDetails] = useState(false)
+  const [showEvidenceManager, setShowEvidenceManager] = useState(false)
+  const [evidenceIncidentId, setEvidenceIncidentId] = useState<string | null>(null)
 
   useEffect(() => {
     loadIncidents()
@@ -66,6 +74,26 @@ export default function EnforcerIncidentsList() {
     } catch (error) {
       console.error('Error taking incident:', error)
     }
+  }
+
+  const handleViewDetails = (incident: Incident) => {
+    setSelectedIncident(incident)
+    setShowIncidentDetails(true)
+  }
+
+  const handleManageEvidence = (incidentId: string) => {
+    setEvidenceIncidentId(incidentId)
+    setShowEvidenceManager(true)
+  }
+
+  const closeIncidentDetails = () => {
+    setShowIncidentDetails(false)
+    setSelectedIncident(null)
+  }
+
+  const closeEvidenceManager = () => {
+    setShowEvidenceManager(false)
+    setEvidenceIncidentId(null)
   }
 
   const getIncidentTypeLabel = (type: string) => {
@@ -311,13 +339,19 @@ export default function EnforcerIncidentsList() {
                     render: (_, incident) => (
                       <div className="space-y-1">
                         <ActionButton
-                          onClick={() => {
-                            // View details functionality
-                          }}
+                          onClick={() => handleViewDetails(incident)}
                           variant="secondary"
                           size="xs"
                         >
                           View Details
+                        </ActionButton>
+                        
+                        <ActionButton
+                          onClick={() => handleManageEvidence(incident.id)}
+                          variant="secondary"
+                          size="xs"
+                        >
+                          Evidence
                         </ActionButton>
                         
                         {incident.status === 'PENDING' && (
@@ -342,6 +376,101 @@ export default function EnforcerIncidentsList() {
           </div>
         </div>
       </div>
+
+      {/* Incident Details Modal */}
+      {showIncidentDetails && selectedIncident && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-lg bg-white">
+            <div className="mt-3">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-gray-900 flex items-center">
+                  <span className="text-2xl mr-2">🚔</span>
+                  Incident Details
+                </h3>
+                <button
+                  onClick={closeIncidentDetails}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <span className="text-2xl">×</span>
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">Incident Information</h4>
+                    <div className="space-y-2 text-sm">
+                      <p><span className="font-medium">Type:</span> {getIncidentTypeLabel(selectedIncident.incidentType)}</p>
+                      <p><span className="font-medium">Status:</span> <StatusBadge status={selectedIncident.status.toLowerCase()} className={getStatusColor(selectedIncident.status)} /></p>
+                      <p><span className="font-medium">Location:</span> {selectedIncident.location}</p>
+                      <p><span className="font-medium">Date:</span> {formatDate(selectedIncident.incidentDate)}</p>
+                      {selectedIncident.ticketNumber && (
+                        <p><span className="font-medium">Ticket Number:</span> {selectedIncident.ticketNumber}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">Vehicle Information</h4>
+                    <div className="space-y-2 text-sm">
+                      <p><span className="font-medium">Plate Number:</span> {selectedIncident.plateNumber || 'N/A'}</p>
+                      <p><span className="font-medium">Driver License:</span> {selectedIncident.driverLicense || 'N/A'}</p>
+                      <p><span className="font-medium">Reported By:</span> {selectedIncident.reportedBy.firstName} {selectedIncident.reportedBy.lastName}</p>
+                      {selectedIncident.evidenceCount !== undefined && (
+                        <p><span className="font-medium">Evidence Files:</span> {selectedIncident.evidenceCount} file(s)</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {selectedIncident.description && (
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">Description</h4>
+                    <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">
+                      {selectedIncident.description}
+                    </p>
+                  </div>
+                )}
+
+                {selectedIncident.penalty && (
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">Penalty Information</h4>
+                    <p className="text-sm text-gray-700">
+                      Amount: ₱{selectedIncident.penalty.toLocaleString()}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="flex justify-between items-center mt-6 pt-4 border-t">
+                <button
+                  onClick={() => handleManageEvidence(selectedIncident.id)}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Manage Evidence
+                </button>
+                <button
+                  onClick={closeIncidentDetails}
+                  className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Evidence Manager Modal */}
+      {showEvidenceManager && evidenceIncidentId && (
+        <EvidenceManager 
+          incidentId={evidenceIncidentId} 
+          onClose={closeEvidenceManager} 
+        />
+      )}
     </div>
   )
 }

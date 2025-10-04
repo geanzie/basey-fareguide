@@ -332,21 +332,41 @@ const EnforcementMap = () => {
 
       {/* Map */}
       <div className="flex-1 relative">
-        <LoadScript
-          googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || 'AIzaSyA9QraryTkKFAYQw1ipSJEalXhLVjuF92o'}
-          libraries={libraries}
-          loadingElement={
-            <div className="h-full flex items-center justify-center">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                <p className="text-gray-600">Loading map...</p>
+        {!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? (
+          <div className="h-full flex items-center justify-center bg-gray-100">
+            <div className="text-center p-8 max-w-md">
+              <div className="text-6xl mb-4">🗺️</div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Google Maps API Key Required</h3>
+              <p className="text-gray-600 mb-4">
+                Please set up your Google Maps API key in the environment variables to view the map.
+              </p>
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-left">
+                <p className="text-sm text-yellow-800">
+                  <strong>Setup Instructions:</strong><br/>
+                  1. Get API key from Google Cloud Console<br/>
+                  2. Add to .env.local file<br/>
+                  3. Restart the development server
+                </p>
               </div>
             </div>
-          }
-          onError={(error) => {
-            console.error('Google Maps API Error:', error)
-          }}
-        >
+          </div>
+        ) : (
+          <LoadScript
+            googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
+            libraries={libraries}
+            loadingElement={
+              <div className="h-full flex items-center justify-center">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading map...</p>
+                </div>
+              </div>
+            }
+            onError={(error) => {
+              console.error('Google Maps API Error:', error)
+              setMapError('Failed to load Google Maps. Please check your API key and try again.')
+            }}
+          >
           <GoogleMap
             mapContainerStyle={{ height: '100%', width: '100%' }}
             options={mapOptions}
@@ -461,7 +481,8 @@ const EnforcementMap = () => {
               </InfoWindow>
             )}
           </GoogleMap>
-        </LoadScript>
+          </LoadScript>
+        )}
 
         {loading && (
           <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center">

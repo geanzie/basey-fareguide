@@ -32,10 +32,11 @@ export async function getGoogleMapsRoute(
   destination: [number, number]
 ): Promise<GoogleMapsRoute | null> {
   try {
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    // Use server-side API key (without NEXT_PUBLIC prefix for server-side operations)
+    const apiKey = process.env.GOOGLE_MAPS_SERVER_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
     
     if (!apiKey) {
-      console.error('Google Maps API key not found');
+      console.error('Google Maps API key not found. Set GOOGLE_MAPS_SERVER_API_KEY or NEXT_PUBLIC_GOOGLE_MAPS_API_KEY');
       return null;
     }
 
@@ -79,10 +80,11 @@ export async function getDetailedRoute(
   destination: [number, number]
 ): Promise<GoogleMapsRoute | null> {
   try {
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    // Use server-side API key (without NEXT_PUBLIC prefix for server-side operations)
+    const apiKey = process.env.GOOGLE_MAPS_SERVER_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
     
     if (!apiKey) {
-      console.error('Google Maps API key not found');
+      console.error('Google Maps API key not found. Set GOOGLE_MAPS_SERVER_API_KEY or NEXT_PUBLIC_GOOGLE_MAPS_API_KEY');
       return null;
     }
 
