@@ -199,28 +199,7 @@ const EnforcerDashboard = () => {
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="bg-white rounded-xl shadow-sm border p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <button className="flex flex-col items-center p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">
-            <span className="text-2xl mb-2">🚨</span>
-            <span className="text-sm font-medium text-blue-900">Take Next Case</span>
-          </button>
-          <button className="flex flex-col items-center p-4 bg-green-50 hover:bg-green-100 rounded-lg transition-colors">
-            <span className="text-2xl mb-2">📝</span>
-            <span className="text-sm font-medium text-green-900">Create Report</span>
-          </button>
-          <button className="flex flex-col items-center p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors">
-            <span className="text-2xl mb-2">📊</span>
-            <span className="text-sm font-medium text-purple-900">View Analytics</span>
-          </button>
-          <button className="flex flex-col items-center p-4 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors">
-            <span className="text-2xl mb-2">🗺️</span>
-            <span className="text-sm font-medium text-orange-900">Live Map</span>
-          </button>
-        </div>
-      </div>
+
 
       {/* Recent Activity */}
       <div className="bg-white rounded-xl shadow-sm border">
