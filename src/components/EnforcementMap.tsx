@@ -58,6 +58,32 @@ const EnforcementMap = () => {
   const [violationFilter, setViolationFilter] = useState('all')
   const [map, setMap] = useState<google.maps.Map | null>(null)
   const [mapError, setMapError] = useState<string>('')
+  const [isGoogleMapsAvailable, setIsGoogleMapsAvailable] = useState(true)
+
+  // Check Google Maps API availability
+  useEffect(() => {
+    const checkGoogleMaps = () => {
+      if (typeof window !== 'undefined') {
+        const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+        if (!apiKey) {
+          setMapError('Google Maps API key not configured')
+          setIsGoogleMapsAvailable(false)
+          return
+        }
+        
+        // Test if we can load Google Maps
+        const script = document.createElement('script')
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=visualization`
+        script.onload = () => setIsGoogleMapsAvailable(true)
+        script.onerror = () => {
+          setMapError('Failed to load Google Maps API')
+          setIsGoogleMapsAvailable(false)
+        }
+      }
+    }
+    
+    checkGoogleMaps()
+  }, [])
 
   // Basey Municipality coordinates
   const baseyCenter: MapLocation = {
@@ -332,13 +358,18 @@ const EnforcementMap = () => {
 
       {/* Map */}
       <div className="flex-1 relative">
-        {!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? (
+        {!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || !isGoogleMapsAvailable ? (
           <div className="h-full flex items-center justify-center bg-gray-100">
             <div className="text-center p-8 max-w-md">
               <div className="text-6xl mb-4">🗺️</div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Google Maps API Key Required</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
+                {!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? 'Google Maps API Key Required' : 'Map Loading Error'}
+              </h3>
               <p className="text-gray-600 mb-4">
-                Please set up your Google Maps API key in the environment variables to view the map.
+                {mapError || (!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY 
+                  ? 'Please set up your Google Maps API key in the environment variables to view the map.'
+                  : 'Unable to load Google Maps. This may be due to network restrictions or Content Security Policy issues.'
+                )}
               </p>
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-left">
                 <p className="text-sm text-yellow-800">

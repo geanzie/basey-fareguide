@@ -110,6 +110,14 @@ export default function Navigation() {
           <>
             {dashboardLink}
             <Link 
+              href="/enforcer" 
+              className={linkClass}
+              onClick={handleClick}
+              key="enforcement"
+            >
+              🚔 Enforcement Dashboard
+            </Link>
+            <Link 
               href="/calculator" 
               className={linkClass}
               onClick={handleClick}
