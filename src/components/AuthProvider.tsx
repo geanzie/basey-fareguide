@@ -34,7 +34,7 @@ const getDashboardUrl = (userType: string) => {
   switch (userType) {
     case 'ADMIN': return '/admin'
     case 'DATA_ENCODER': return '/encoder'
-    case 'ENFORCER': return '/enforcer'
+    // case 'ENFORCER': return '/enforcer'
     case 'PUBLIC': return '/dashboard'
     default: return '/dashboard'
   }
@@ -112,12 +112,12 @@ export function AuthAwareHeader() {
           
           {/* Navigation Links */}
           <nav className="flex items-center space-x-6">
-            <a href="/" className="flex items-center space-x-1 text-gray-600 hover:text-emerald-600 transition-colors">
+            {/* <a href="/" className="flex items-center space-x-1 text-gray-600 hover:text-emerald-600 transition-colors">
               <span>🏠</span>
               <span className="hidden sm:inline">Home</span>
-            </a>
+            </a> */}
             
-{user ? (
+          {user ? (
               <HeaderNavigation user={user} logout={logout} />
             ) : (
               <a href="/auth" className="flex items-center space-x-1 text-gray-600 hover:text-emerald-600 transition-colors">
@@ -270,78 +270,78 @@ function renderRoleSpecificNavigation(userType: string, setSidebarOpen: (open: b
         </nav>
       )
 
-    case 'ENFORCER':
-      return (
-        <nav className="space-y-3">
-          {/* Enforcer Dashboard */}
-          <div className="mb-6">
-            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Enforcement</h3>
-            <a href="/enforcer" className={`${commonLinkClass} hover:bg-blue-50`} onClick={closeSidebar}>
-              <span className="text-xl mr-3">🚔</span>
-              <div className="text-left">
-                <div className="font-medium text-gray-700 group-hover:text-blue-700">Enforcement Dashboard</div>
-                <div className="text-xs text-gray-500 group-hover:text-blue-600">Monitor enforcement activities</div>
-              </div>
-            </a>
-          </div>
+    // case 'ENFORCER':
+    //   return (
+    //     <nav className="space-y-3">
+    //       {/* Enforcer Dashboard */}
+    //       <div className="mb-6">
+    //         <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Enforcement</h3>
+    //         <a href="/enforcer" className={`${commonLinkClass} hover:bg-blue-50`} onClick={closeSidebar}>
+    //           <span className="text-xl mr-3">🚔</span>
+    //           <div className="text-left">
+    //             <div className="font-medium text-gray-700 group-hover:text-blue-700">Enforcement Dashboard</div>
+    //             <div className="text-xs text-gray-500 group-hover:text-blue-600">Monitor enforcement activities</div>
+    //           </div>
+    //         </a>
+    //       </div>
 
-          {/* Incident Management */}
-          <div className="mb-6">
-            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Incidents</h3>
-            <div className="space-y-2">
-              <button className={`${commonLinkClass} hover:bg-red-50`}>
-                <span className="text-xl mr-3">📝</span>
-                <div className="text-left">
-                  <div className="font-medium text-gray-700 group-hover:text-red-700">Create Incident Report</div>
-                  <div className="text-xs text-gray-500 group-hover:text-red-600">Report new violation</div>
-                </div>
-              </button>
-              <button className={`${commonLinkClass} hover:bg-orange-50`}>
-                <span className="text-xl mr-3">⚠️</span>
-                <div className="text-left">
-                  <div className="font-medium text-gray-700 group-hover:text-orange-700">Active Incidents</div>
-                  <div className="text-xs text-gray-500 group-hover:text-orange-600">View ongoing cases</div>
-                </div>
-              </button>
-              <button className={`${commonLinkClass} hover:bg-green-50`}>
-                <span className="text-xl mr-3">✅</span>
-                <div className="text-left">
-                  <div className="font-medium text-gray-700 group-hover:text-green-700">Resolved Cases</div>
-                  <div className="text-xs text-gray-500 group-hover:text-green-600">View closed incidents</div>
-                </div>
-              </button>
-            </div>
-          </div>
+    //       {/* Incident Management */}
+    //       {/* <div className="mb-6">
+    //         <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Incidents</h3>
+    //         <div className="space-y-2">
+    //           <button className={`${commonLinkClass} hover:bg-red-50`}>
+    //             <span className="text-xl mr-3">📝</span>
+    //             <div className="text-left">
+    //               <div className="font-medium text-gray-700 group-hover:text-red-700">Create Incident Report</div>
+    //               <div className="text-xs text-gray-500 group-hover:text-red-600">Report new violation</div>
+    //             </div>
+    //           </button>
+    //           <button className={`${commonLinkClass} hover:bg-orange-50`}>
+    //             <span className="text-xl mr-3">⚠️</span>
+    //             <div className="text-left">
+    //               <div className="font-medium text-gray-700 group-hover:text-orange-700">Active Incidents</div>
+    //               <div className="text-xs text-gray-500 group-hover:text-orange-600">View ongoing cases</div>
+    //             </div>
+    //           </button>
+    //           <button className={`${commonLinkClass} hover:bg-green-50`}>
+    //             <span className="text-xl mr-3">✅</span>
+    //             <div className="text-left">
+    //               <div className="font-medium text-gray-700 group-hover:text-green-700">Resolved Cases</div>
+    //               <div className="text-xs text-gray-500 group-hover:text-green-600">View closed incidents</div>
+    //             </div>
+    //           </button>
+    //         </div>
+    //       </div> */}
 
-          {/* Field Tools */}
-          <div className="mb-6">
-            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Field Tools</h3>
-            <div className="space-y-2">
-              <button className={`${commonLinkClass} hover:bg-purple-50`}>
-                <span className="text-xl mr-3">🧮</span>
-                <div className="text-left">
-                  <div className="font-medium text-gray-700 group-hover:text-purple-700">Fare Calculator</div>
-                  <div className="text-xs text-gray-500 group-hover:text-purple-600">Calculate fare violations</div>
-                </div>
-              </button>
-              <button className={`${commonLinkClass} hover:bg-indigo-50`}>
-                <span className="text-xl mr-3">📍</span>
-                <div className="text-left">
-                  <div className="font-medium text-gray-700 group-hover:text-indigo-700">Location Verification</div>
-                  <div className="text-xs text-gray-500 group-hover:text-indigo-600">Verify coordinates</div>
-                </div>
-              </button>
-              <button className={`${commonLinkClass} hover:bg-teal-50`}>
-                <span className="text-xl mr-3">💰</span>
-                <div className="text-left">
-                  <div className="font-medium text-gray-700 group-hover:text-teal-700">Penalty Calculator</div>
-                  <div className="text-xs text-gray-500 group-hover:text-teal-600">Calculate penalties</div>
-                </div>
-              </button>
-            </div>
-          </div>
-        </nav>
-      )
+    //       {/* Field Tools */}
+    //       <div className="mb-6">
+    //         <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Field Tools</h3>
+    //         <div className="space-y-2">
+    //           <button className={`${commonLinkClass} hover:bg-purple-50`}>
+    //             <span className="text-xl mr-3">🧮</span>
+    //             <div className="text-left">
+    //               <div className="font-medium text-gray-700 group-hover:text-purple-700">Fare Calculator</div>
+    //               <div className="text-xs text-gray-500 group-hover:text-purple-600">Calculate fare violations</div>
+    //             </div>
+    //           </button>
+    //           <button className={`${commonLinkClass} hover:bg-indigo-50`}>
+    //             <span className="text-xl mr-3">📍</span>
+    //             <div className="text-left">
+    //               <div className="font-medium text-gray-700 group-hover:text-indigo-700">Location Verification</div>
+    //               <div className="text-xs text-gray-500 group-hover:text-indigo-600">Verify coordinates</div>
+    //             </div>
+    //           </button>
+    //           <button className={`${commonLinkClass} hover:bg-teal-50`}>
+    //             <span className="text-xl mr-3">💰</span>
+    //             <div className="text-left">
+    //               <div className="font-medium text-gray-700 group-hover:text-teal-700">Penalty Calculator</div>
+    //               <div className="text-xs text-gray-500 group-hover:text-teal-600">Calculate penalties</div>
+    //             </div>
+    //           </button>
+    //         </div>
+    //       </div>
+    //     </nav>
+    //   )
 
     default:
       return null

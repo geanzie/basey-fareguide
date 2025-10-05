@@ -436,7 +436,9 @@ const QuickActions = () => {
         ...reportData,
         reportedBy: 'enforcer', // Mark as enforcer-created
         assignedTo: localStorage.getItem('userId'), // Auto-assign to current enforcer
-        status: reportData.isTicketOnly ? 'RESOLVED' : 'INVESTIGATING'
+        status: reportData.isTicketOnly ? 'TICKET_ISSUED' : 'INVESTIGATING', // Ticket issued but not yet paid
+        paymentStatus: 'UNPAID', // All new tickets start as unpaid
+        requiresPayment: reportData.isTicketOnly // Flag for payment requirement
       }
 
       const endpoint = reportData.isTicketOnly ? '/api/tickets' : '/api/incidents/enforcer/create'
@@ -453,8 +455,8 @@ const QuickActions = () => {
       if (response.ok) {
         const data = await response.json()
         const message = reportData.isTicketOnly 
-          ? `Ticket ${data.ticketNumber} issued successfully`
-          : `Incident report ${data.incidentId} created successfully`
+          ? `Ticket ${data.ticketNumber} issued successfully. Penalty: ₱${reportData.penalty}. Status: PENDING until payment received.`
+          : `Incident report ${data.incidentId} created successfully for investigation.`
         
         alert(message)
         closeReportForm()

@@ -20,12 +20,12 @@ const HeaderNavigation: React.FC<HeaderNavigationProps> = ({ user, logout }) => 
 
   const getNavigationLinks = () => {
     switch (user.userType) {
-      case 'ENFORCER':
-        return [
-          { href: '/dashboard', label: 'Dashboard', icon: '📊' },
-          { href: '/incidents', label: 'Incidents', icon: '🚨' },
-          { href: '/report', label: 'Report Incident', icon: '📝' },
-        ];
+      // case 'ENFORCER':
+      //   return [
+      //     { href: '/dashboard', label: 'Dashboard', icon: '📊' },
+      //     { href: '/incidents', label: 'Incidents', icon: '🚨' },
+      //     { href: '/report', label: 'Report Incident', icon: '📝' },
+      //   ];
       case 'PUBLIC':
         return [
           { href: '/dashboard', label: 'Dashboard', icon: '📊' },
