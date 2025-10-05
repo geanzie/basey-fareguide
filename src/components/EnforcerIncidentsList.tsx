@@ -4,6 +4,16 @@ import { useState, useEffect } from 'react'
 import ResponsiveTable, { StatusBadge, ActionButton } from './ResponsiveTable'
 import EvidenceManager from './EvidenceManager'
 
+interface ViolationHistory {
+  id: string
+  plateNumber: string
+  violationType: string
+  violationDate: string
+  penaltyAmount: number
+  status: 'PAID' | 'UNPAID' | 'PENDING'
+  ticketNumber?: string
+}
+
 interface Incident {
   id: string
   incidentType: string
@@ -30,7 +40,17 @@ export default function EnforcerIncidentsList() {
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null)
   const [showIncidentDetails, setShowIncidentDetails] = useState(false)
   const [showEvidenceManager, setShowEvidenceManager] = useState(false)
+  const [showTicketModal, setShowTicketModal] = useState(false)
   const [evidenceIncidentId, setEvidenceIncidentId] = useState<string | null>(null)
+  const [ticketIncident, setTicketIncident] = useState<Incident | null>(null)
+  const [ticketData, setTicketData] = useState({
+    ticketNumber: '',
+    penaltyAmount: '',
+    remarks: '',
+    previousOffenses: [] as ViolationHistory[],
+    offenseCount: 0,
+    calculatedPenalty: 500
+  })
 
   useEffect(() => {
     loadIncidents()
@@ -63,13 +83,16 @@ export default function EnforcerIncidentsList() {
   const handleTakeIncident = async (incidentId: string) => {
     try {
       const response = await fetch(`/api/incidents/${incidentId}/take`, {
-        method: 'POST',
+        method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       })
       if (response.ok) {
         loadIncidents() // Refresh the list
+      } else {
+        const errorData = await response.json()
+        console.error('Error taking incident:', errorData.message || 'Unknown error')
       }
     } catch (error) {
       console.error('Error taking incident:', error)
@@ -96,12 +119,125 @@ export default function EnforcerIncidentsList() {
     setEvidenceIncidentId(null)
   }
 
+  const handleIssueTicket = async (incident: Incident) => {
+    setTicketIncident(incident)
+    setShowTicketModal(true)
+    
+    // Fetch violation history if plate number exists
+    if (incident.plateNumber) {
+      const violations = await fetchViolationHistory(incident.plateNumber)
+      const offenseCount = violations.length
+      const calculatedPenalty = getOffensePenalty(offenseCount)
+      
+      setTicketData({
+        ticketNumber: '',
+        penaltyAmount: calculatedPenalty.toString(),
+        remarks: '',
+        previousOffenses: violations,
+        offenseCount: offenseCount,
+        calculatedPenalty: calculatedPenalty
+      })
+    } else {
+      setTicketData({
+        ticketNumber: '',
+        penaltyAmount: '500',
+        remarks: '',
+        previousOffenses: [],
+        offenseCount: 0,
+        calculatedPenalty: 500
+      })
+    }
+  }
+
+  const closeTicketModal = () => {
+    setShowTicketModal(false)
+    setTicketIncident(null)
+    setTicketData({
+      ticketNumber: '',
+      penaltyAmount: '',
+      remarks: '',
+      previousOffenses: [],
+      offenseCount: 0,
+      calculatedPenalty: 500
+    })
+  }
+
+  const handleTicketSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!ticketIncident || !ticketData.ticketNumber || !ticketData.penaltyAmount) {
+      alert('Please fill in all required fields')
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/incidents/${ticketIncident.id}/issue-ticket`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          ticketNumber: ticketData.ticketNumber,
+          penaltyAmount: parseFloat(ticketData.penaltyAmount),
+          remarks: ticketData.remarks
+        })
+      })
+
+      if (response.ok) {
+        alert('Ticket issued successfully!')
+        closeTicketModal()
+        loadIncidents() // Refresh the list
+      } else {
+        const errorData = await response.json()
+        alert(`Error issuing ticket: ${errorData.message || 'Unknown error'}`)
+      }
+    } catch (error) {
+      console.error('Error issuing ticket:', error)
+      alert('Error issuing ticket. Please try again.')
+    }
+  }
+
+  // Penalty amounts based on Municipal Ordinance offense system
+  const getOffensePenalty = (offenseCount: number): number => {
+    switch (offenseCount + 1) { // +1 because we're calculating for the current offense
+      case 1: return 500   // 1st Offense
+      case 2: return 1000  // 2nd Offense
+      case 3: return 1500  // 3rd Offense
+      default: return 1500 // 3rd offense penalty for subsequent violations
+    }
+  }
+
+  // Fetch violation history for a vehicle
+  const fetchViolationHistory = async (plateNumber: string) => {
+    if (!plateNumber.trim()) return []
+    
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/violations/history/${encodeURIComponent(plateNumber)}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        return data.violations || []
+      }
+    } catch (error) {
+      console.error('Error fetching violation history:', error)
+    }
+    return []
+  }
+
   const getIncidentTypeLabel = (type: string) => {
     switch (type) {
       case 'OVERCHARGING': return 'Overcharging'
+      case 'FARE_OVERCHARGE': return 'Fare Overcharge'
       case 'RECKLESS_DRIVING': return 'Reckless Driving'
       case 'NO_PERMIT': return 'No Permit'
       case 'ROUTE_VIOLATION': return 'Route Violation'
+      case 'VEHICLE_VIOLATION': return 'Vehicle Violation'
       default: return type
     }
   }
@@ -363,6 +499,16 @@ export default function EnforcerIncidentsList() {
                             Take Case
                           </ActionButton>
                         )}
+                        
+                        {incident.status === 'INVESTIGATING' && !incident.ticketNumber && (
+                          <ActionButton
+                            onClick={() => handleIssueTicket(incident)}
+                            variant="primary"
+                            size="xs"
+                          >
+                            Issue Ticket
+                          </ActionButton>
+                        )}
                       </div>
                     )
                   }
@@ -470,6 +616,178 @@ export default function EnforcerIncidentsList() {
           incidentId={evidenceIncidentId} 
           onClose={closeEvidenceManager} 
         />
+      )}
+
+      {/* Issue Ticket Modal */}
+      {showTicketModal && ticketIncident && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-10 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-lg bg-white max-h-[90vh] overflow-y-auto">
+            <div className="mt-3">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-gray-900 flex items-center">
+                  <span className="text-2xl mr-2">🎫</span>
+                  Issue Ticket
+                </h3>
+                <button
+                  onClick={closeTicketModal}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <span className="text-2xl">×</span>
+                </button>
+              </div>
+
+              {/* Incident Info */}
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                <h4 className="font-semibold text-gray-800 mb-2">Incident Details</h4>
+                <p className="text-sm text-gray-600">
+                  <strong>Type:</strong> {getIncidentTypeLabel(ticketIncident.incidentType)}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Plate:</strong> {ticketIncident.plateNumber || 'N/A'}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Location:</strong> {ticketIncident.location}
+                </p>
+              </div>
+
+              {/* Violation History and Penalty Calculation */}
+              {ticketIncident.plateNumber && (
+                <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <h4 className="font-semibold text-gray-800 mb-3 flex items-center">
+                    <span className="text-lg mr-2">⚠️</span>
+                    Vehicle Violation History
+                  </h4>
+                  
+                  <div className="text-sm space-y-2">
+                    <div className="flex justify-between">
+                      <span>Previous Violations:</span>
+                      <span className="font-medium">
+                        {ticketData.offenseCount} violation{ticketData.offenseCount !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Current Offense:</span>
+                      <span className="font-medium">
+                        {ticketData.offenseCount + 1}
+                        {ticketData.offenseCount === 0 ? 'st' : 
+                         ticketData.offenseCount === 1 ? 'nd' : 
+                         ticketData.offenseCount === 2 ? 'rd' : 'th'} Offense
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Municipal Ordinance Penalty:</span>
+                      <span className="font-semibold text-red-600">
+                        ₱{ticketData.calculatedPenalty.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      All violations follow uniform penalty structure regardless of violation type
+                    </div>
+                    
+                    {ticketData.previousOffenses.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-yellow-300">
+                        <span className="text-xs text-gray-600 font-medium">Recent violations:</span>
+                        <div className="mt-2 space-y-2 max-h-24 overflow-y-auto">
+                          {ticketData.previousOffenses.slice(-3).map((violation, index) => (
+                            <div key={violation.id} className="text-xs text-gray-600 flex justify-between items-center bg-white p-2 rounded">
+                              <div>
+                                <div className="font-medium">{getIncidentTypeLabel(violation.violationType)}</div>
+                                {violation.ticketNumber && (
+                                  <div className="text-gray-500">Ticket: {violation.ticketNumber}</div>
+                                )}
+                              </div>
+                              <div className="text-right">
+                                <div>{new Date(violation.violationDate).toLocaleDateString()}</div>
+                                <div className="text-gray-500">₱{violation.penaltyAmount}</div>
+                              </div>
+                            </div>
+                          ))}
+                          {ticketData.previousOffenses.length > 3 && (
+                            <div className="text-xs text-gray-500 text-center py-1">
+                              ... and {ticketData.previousOffenses.length - 3} more violation{ticketData.previousOffenses.length - 3 !== 1 ? 's' : ''}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Ticket Form */}
+              <form onSubmit={handleTicketSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Ticket Number *
+                  </label>
+                  <input
+                    type="text"
+                    value={ticketData.ticketNumber}
+                    onChange={(e) => setTicketData(prev => ({ ...prev, ticketNumber: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                    placeholder="Enter ticket number"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Penalty Amount (₱) *
+                  </label>
+                  <input
+                    type="number"
+                    value={ticketData.penaltyAmount}
+                    onChange={(e) => setTicketData(prev => ({ ...prev, penaltyAmount: e.target.value }))}
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                      ticketIncident?.plateNumber ? 'bg-gray-100' : ''
+                    }`}
+                    placeholder="Enter penalty amount"
+                    min="0"
+                    step="0.01"
+                    required
+                    readOnly={!!ticketIncident?.plateNumber}
+                  />
+                  {ticketIncident?.plateNumber && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Penalty automatically calculated based on Municipal Ordinance offense system
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Remarks
+                  </label>
+                  <textarea
+                    value={ticketData.remarks}
+                    onChange={(e) => setTicketData(prev => ({ ...prev, remarks: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                    rows={3}
+                    placeholder="Additional notes or remarks"
+                  />
+                </div>
+
+                {/* Actions */}
+                <div className="flex justify-end space-x-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={closeTicketModal}
+                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
+                  >
+                    Issue Ticket
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
