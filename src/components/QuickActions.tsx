@@ -25,6 +25,17 @@ interface IncidentReportForm {
   evidenceDescription: string
   witnesses: string
   isTicketOnly: boolean
+  offenseCount: number
+  previousOffenses: ViolationHistory[]
+}
+
+interface ViolationHistory {
+  id: string
+  plateNumber: string
+  violationType: string
+  violationDate: string
+  penaltyAmount: number
+  status: 'PAID' | 'UNPAID' | 'PENDING'
 }
 
 interface Vehicle {
@@ -66,7 +77,9 @@ const QuickActions = () => {
     penalty: '',
     evidenceDescription: '',
     witnesses: '',
-    isTicketOnly: true
+    isTicketOnly: true,
+    offenseCount: 0,
+    previousOffenses: []
   })
 
   // Official Barangays and Landmarks of Basey Municipality for location selection
@@ -142,10 +155,22 @@ const QuickActions = () => {
     'Panhulugan Cliff'
   ]
 
-  // Penalty amounts based on violation type
+  // Penalty amounts based on Municipal Ordinance offense system
+  const getOffensePenalty = (offenseCount: number): number => {
+    switch (offenseCount + 1) { // +1 because we're calculating for the current offense
+      case 1: return 500   // 1st Offense
+      case 2: return 1000  // 2nd Offense
+      case 3: return 1500  // 3rd Offense
+      default: return 1500 // 3rd offense penalty for subsequent violations
+    }
+  }
+
+  // Note: All violations now follow uniform Municipal Ordinance penalty structure
+  // Penalty is determined by offense count only, not violation type
+  // Legacy penalty amounts (kept for reference only - not used in calculations)
   const standardPenalties = {
     'FARE_OVERCHARGE': '500',
-    'RECKLESS_DRIVING': '1500',
+    'RECKLESS_DRIVING': '1500', 
     'VEHICLE_VIOLATION': '1000',
     'ROUTE_VIOLATION': '750',
     'NO_PERMIT': '2000',
@@ -299,15 +324,55 @@ const QuickActions = () => {
     setShowReportForm(true)
   }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  // Fetch violation history for a vehicle
+  const fetchViolationHistory = async (plateNumber: string) => {
+    if (!plateNumber.trim()) return []
+    
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/violations/history/${encodeURIComponent(plateNumber)}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        return data.violations || []
+      }
+    } catch (error) {
+      console.error('Error fetching violation history:', error)
+    }
+    return []
+  }
+
+  const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     
-    // Auto-set penalty for violations when incident type changes
-    if (name === 'incidentType' && standardPenalties[value as keyof typeof standardPenalties]) {
+    if (name === 'plateNumber') {
+      // Fetch violation history when plate number changes
+      const violations = await fetchViolationHistory(value)
+      const offenseCount = violations.length
+      const calculatedPenalty = getOffensePenalty(offenseCount)
+      
       setReportData(prev => ({
         ...prev,
         [name]: value,
-        penalty: standardPenalties[value as keyof typeof standardPenalties]
+        previousOffenses: violations,
+        offenseCount: offenseCount,
+        penalty: calculatedPenalty.toString()
+      }))
+    } else if (name === 'incidentType') {
+      // All violations follow the same Municipal Ordinance penalty structure
+      // Penalty is based solely on offense count, not violation type
+      const calculatedPenalty = reportData.plateNumber 
+        ? getOffensePenalty(reportData.offenseCount)
+        : 500 // Default to 1st offense penalty if no plate number
+      
+      setReportData(prev => ({
+        ...prev,
+        [name]: value,
+        penalty: calculatedPenalty.toString()
       }))
     } else {
       setReportData(prev => ({
@@ -328,25 +393,36 @@ const QuickActions = () => {
     }))
   }
 
-  const handleVehicleSelect = (vehicleId: string) => {
+  const handleVehicleSelect = async (vehicleId: string) => {
     if (!vehicleId) {
       // Clear vehicle fields when no vehicle is selected
       setReportData(prev => ({
         ...prev,
         plateNumber: '',
         vehicleType: '',
-        driverLicense: ''
+        driverLicense: '',
+        offenseCount: 0,
+        previousOffenses: [],
+        penalty: '500' // Reset to 1st offense penalty
       }))
       return
     }
     
     const vehicle = vehicles.find(v => v.id === vehicleId)
     if (vehicle) {
+      // Fetch violation history for selected vehicle
+      const violations = await fetchViolationHistory(vehicle.plateNumber)
+      const offenseCount = violations.length
+      const calculatedPenalty = getOffensePenalty(offenseCount)
+      
       setReportData(prev => ({
         ...prev,
         plateNumber: vehicle.plateNumber,
         vehicleType: vehicle.vehicleType,
-        driverLicense: vehicle.driverLicense || ''
+        driverLicense: vehicle.driverLicense || '',
+        previousOffenses: violations,
+        offenseCount: offenseCount,
+        penalty: calculatedPenalty.toString()
       }))
     }
   }
@@ -406,7 +482,9 @@ const QuickActions = () => {
       penalty: '',
       evidenceDescription: '',
       witnesses: '',
-      isTicketOnly: true
+      isTicketOnly: true,
+      offenseCount: 0,
+      previousOffenses: []
     })
   }
 
@@ -774,11 +852,73 @@ const QuickActions = () => {
                       </select>
                     </div>
 
-                    {/* Penalty Amount */}
+                    {/* Offense History & Penalty Amount */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Penalty Amount (₱) {reportMode === 'quick-ticket' ? '*' : ''}
                       </label>
+                      
+                      {/* Offense History Display */}
+                      {reportData.plateNumber && (
+                        <div className="mb-3 p-3 bg-gray-50 rounded-lg border">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-gray-700">
+                              Violation History for {reportData.plateNumber}
+                            </span>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              reportData.offenseCount === 0 ? 'bg-green-100 text-green-800' :
+                              reportData.offenseCount === 1 ? 'bg-yellow-100 text-yellow-800' :
+                              reportData.offenseCount === 2 ? 'bg-orange-100 text-orange-800' :
+                              'bg-red-100 text-red-800'
+                            }`}>
+                              {reportData.offenseCount === 0 ? 'Clean Record' : 
+                               reportData.offenseCount === 1 ? '1 Previous Offense' :
+                               reportData.offenseCount === 2 ? '2 Previous Offenses' :
+                               `${reportData.offenseCount} Previous Offenses`}
+                            </span>
+                          </div>
+                          
+                          <div className="text-sm space-y-1">
+                            <div className="flex justify-between">
+                              <span>Current Offense:</span>
+                              <span className="font-medium">
+                                {reportData.offenseCount + 1}
+                                {reportData.offenseCount === 0 ? 'st' : 
+                                 reportData.offenseCount === 1 ? 'nd' : 
+                                 reportData.offenseCount === 2 ? 'rd' : 'th'} Offense
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Municipal Ordinance Penalty:</span>
+                              <span className="font-semibold text-red-600">
+                                ₱{getOffensePenalty(reportData.offenseCount).toLocaleString()}
+                              </span>
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              All violations follow uniform penalty structure regardless of violation type
+                            </div>
+                            {reportData.previousOffenses.length > 0 && (
+                              <div className="mt-2 pt-2 border-t border-gray-200">
+                                <span className="text-xs text-gray-600">Recent violations:</span>
+                                <div className="mt-1 space-y-1">
+                                  {reportData.previousOffenses.slice(-3).map((violation, index) => (
+                                    <div key={violation.id} className="text-xs text-gray-500 flex justify-between">
+                                      <span>{violation.violationType}</span>
+                                      <span>{new Date(violation.violationDate).toLocaleDateString()}</span>
+                                    </div>
+                                  ))}
+                                  {reportData.previousOffenses.length > 3 && (
+                                    <div className="text-xs text-gray-400">
+                                      ... and {reportData.previousOffenses.length - 3} more
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      
                       <input
                         type="number"
                         name="penalty"
@@ -788,7 +928,13 @@ const QuickActions = () => {
                         step="50"
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         required={reportMode === 'quick-ticket'}
+                        readOnly={reportData.plateNumber !== ''} // Make readonly when auto-calculated
                       />
+                      {reportData.plateNumber && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          Penalty automatically calculated based on Municipal Ordinance offense system
+                        </p>
+                      )}
                     </div>
 
                     {/* Description */}
