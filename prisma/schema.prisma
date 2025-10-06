@@ -38,7 +38,6 @@ model User {
   lockedUntil           DateTime?
   createdAt             DateTime              @default(now())
   updatedAt             DateTime              @updatedAt
-  driverProfile         DriverProfile?
   fareCalculations      FareCalculation[]
   handledIncidents      Incident[]            @relation("HandledBy")
   reportedIncidents     Incident[]            @relation("ReportedBy")
@@ -47,23 +46,6 @@ model User {
   verificationLogs      UserVerificationLog[]
 
   @@map("users")
-}
-
-model DriverProfile {
-  id               String    @id @default(cuid())
-  userId           String    @unique
-  licenseNumber    String    @unique
-  licenseType      String
-  licenseExpiry    DateTime
-  emergencyContact String
-  bloodType        String?
-  medicalRemarks   String?
-  isActive         Boolean   @default(true)
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("driver_profiles")
 }
 
 model Vehicle {

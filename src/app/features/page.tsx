@@ -45,20 +45,6 @@ export default function FeaturesPage() {
       color: 'blue'
     },
     {
-      id: 'driver-profiles',
-      title: 'Driver Profiles',
-      icon: '🚗',
-      description: 'Complete driver information and license management',
-      features: [
-        'License tracking and expiry alerts',
-        'Emergency contact information',
-        'Medical information storage',
-        'Vehicle associations'
-      ],
-      link: '/auth',
-      color: 'purple'
-    },
-    {
       id: 'authority-dashboard',
       title: 'Authority Dashboard',
       icon: '📊',
@@ -259,7 +245,7 @@ export default function FeaturesPage() {
                 <span className="text-2xl">👤</span>
               </div>
               <h3 className="font-semibold text-gray-900 mb-2">General Public</h3>
-              <p className="text-sm text-gray-600">Fare calculation, incident reporting, driver profile management</p>
+              <p className="text-sm text-gray-600">Fare calculation and incident reporting</p>
             </div>
           </div>
         </div>

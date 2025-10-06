@@ -284,12 +284,6 @@ function getNavigationItems(userType: string): NavigationItem[] {
           icon: '🚗',
           href: '/encoder/vehicles'
         },
-        {
-          id: 'drivers',
-          label: 'Driver Profiles',
-          icon: '👨‍💼',
-          href: '/encoder/drivers'
-        },
         ...commonItems
       ]
 

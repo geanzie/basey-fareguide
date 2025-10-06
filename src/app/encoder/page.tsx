@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import RoleGuard from '@/components/RoleGuard'
 import PermitManagement from '@/components/PermitManagement'
@@ -18,13 +18,13 @@ function EncoderContent() {
   return (
     <PageWrapper 
       title="Data Encoder Dashboard"
-      subtitle="Manage driver and vehicle permits for Basey Municipality"
+      subtitle="Manage vehicle permits for Basey Municipality"
     >
       <div className="space-y-8">
         {/* Quick Actions */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <Link
               href="/encoder/permits"
               className="bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg p-4 transition-colors group"
@@ -55,17 +55,6 @@ function EncoderContent() {
                 <div className="text-3xl mb-2 group-hover:scale-110 transition-transform">🔍</div>
                 <h3 className="font-semibold text-purple-700">Vehicle Registry</h3>
                 <p className="text-sm text-purple-600 mt-1">Browse all vehicles</p>
-              </div>
-            </Link>
-
-            <Link
-              href="/encoder/drivers"
-              className="bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-lg p-4 transition-colors group"
-            >
-              <div className="text-center">
-                <div className="text-3xl mb-2 group-hover:scale-110 transition-transform">�</div>
-                <h3 className="font-semibold text-orange-700">Driver Registry</h3>
-                <p className="text-sm text-orange-600 mt-1">View registered drivers</p>
               </div>
             </Link>
           </div>
