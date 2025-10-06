@@ -9,6 +9,7 @@ import HotspotAnalytics from '@/components/HotspotAnalytics'
 import OfflineIncidentMap from '@/components/OfflineIncidentMap'
 import PatrolManagement from '@/components/PatrolManagement'
 import EnforcerReports from '@/components/EnforcerReports'
+import PageWrapper from '@/components/PageWrapper'
 
 export default function EnforcerPage() {
   return (
@@ -33,142 +34,76 @@ function EnforcerContent() {
   const renderTabContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return (
-          <div className="p-4 md:p-6">
-            <EnforcerDashboard />
-          </div>
-        )
+        return <EnforcerDashboard />
       case 'incidents':
         return <EnforcerIncidentsList />
       case 'patrol':
-        return (
-          <div className="p-4 md:p-6">
-            <PatrolManagement />
-          </div>
-        )
+        return <PatrolManagement />
       case 'analytics':
-        return (
-          <div className="p-4 md:p-6">
-            <HotspotAnalytics />
-          </div>
-        )
+        return <HotspotAnalytics />
       case 'reports':
-        return (
-          <div className="p-4 md:p-6">
-            <EnforcerReports />
-          </div>
-        )
+        return <EnforcerReports />
       case 'offline-map':
-        return (
-          <div className="p-4 md:p-6">
-            <OfflineIncidentMap />
-          </div>
-        )
+        return <OfflineIncidentMap />
       default:
-        return (
-          <div className="p-4 md:p-6">
-            <EnforcerDashboard />
-          </div>
-        )
+        return <EnforcerDashboard />
     }
   }
 
   const handleNotificationClick = (notification: any) => {
     if (notification.incidentId) {
       setActiveTab('incidents')
-      // In a real implementation, you would scroll to or highlight the specific incident
     }
   }
 
   return (
-    <main className="flex-1 bg-gray-50 flex flex-col min-h-0">
-      {/* Header with Notifications */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="px-4 md:px-6 py-4">
-          <div className="flex justify-between items-start md:items-center">
-            <div className="flex-1 min-w-0">
-              <h1 className="text-lg md:text-2xl font-bold text-gray-900 truncate">
-                🚔 Traffic Enforcement Center
-              </h1>
-              <p className="text-sm md:text-base text-gray-600 mt-1 hidden sm:block">
-                Comprehensive enforcement management system
-              </p>
-              {/* Mobile: Show current tab */}
-              <p className="text-sm text-blue-600 mt-1 sm:hidden">
-                {tabs.find(tab => tab.id === activeTab)?.icon} {tabs.find(tab => tab.id === activeTab)?.label}
-              </p>
-            </div>
-            <div className="ml-4 flex-shrink-0">
-              <NotificationCenter onNotificationClick={handleNotificationClick} />
-            </div>
-          </div>
-        </div>
-      </div>
-
+    <PageWrapper 
+      title="Traffic Enforcement Center"
+      subtitle="Comprehensive enforcement management system"
+      headerContent={
+        <NotificationCenter onNotificationClick={handleNotificationClick} />
+      }
+    >
       {/* Tab Navigation */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="px-4 md:px-6">
-          {/* Mobile: Dropdown Menu */}
-          <div className="md:hidden">
-            <select
-              value={activeTab}
-              onChange={(e) => setActiveTab(e.target.value)}
-              className="w-full py-3 px-4 border border-gray-300 rounded-lg bg-white text-sm font-medium"
-            >
-              {tabs.map((tab) => (
-                <option key={tab.id} value={tab.id}>
-                  {tab.icon} {tab.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Desktop: Horizontal Tabs */}
-          <nav className="hidden md:flex space-x-8 overflow-x-auto" aria-label="Tabs">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+        {/* Mobile: Dropdown Menu */}
+        <div className="md:hidden p-4">
+          <select
+            value={activeTab}
+            onChange={(e) => setActiveTab(e.target.value)}
+            className="w-full py-3 px-4 border border-gray-300 rounded-lg bg-white text-sm font-medium"
+          >
             {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
-                  activeTab === tab.id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <span>{tab.icon}</span>
-                <span>{tab.label}</span>
-              </button>
+              <option key={tab.id} value={tab.id}>
+                {tab.icon} {tab.label}
+              </option>
             ))}
-          </nav>
-
-          {/* Tablet: Scrollable Horizontal Tabs */}
-          <div className="hidden sm:block md:hidden">
-            <div className="overflow-x-auto">
-              <nav className="flex space-x-6 py-2" aria-label="Tabs">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center space-x-2 py-2 px-3 rounded-lg font-medium text-sm transition-colors whitespace-nowrap ${
-                      activeTab === tab.id
-                        ? 'bg-blue-100 text-blue-600'
-                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    <span>{tab.icon}</span>
-                    <span>{tab.label}</span>
-                  </button>
-                ))}
-              </nav>
-            </div>
-          </div>
+          </select>
         </div>
+
+        {/* Desktop: Horizontal Tabs */}
+        <nav className="hidden md:flex px-4" aria-label="Tabs">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center space-x-2 py-4 px-4 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
+                activeTab === tab.id
+                  ? 'border-emerald-500 text-emerald-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <span>{tab.icon}</span>
+              <span>{tab.label}</span>
+            </button>
+          ))}
+        </nav>
       </div>
 
       {/* Tab Content */}
-      <div className="flex-1 overflow-auto">
+      <div className="min-h-0">
         {renderTabContent()}
       </div>
-    </main>
+    </PageWrapper>
   )
 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import ResponsiveTable, { StatusBadge, ActionButton } from './ResponsiveTable';
+import { PageSection, StatsGrid, StatCard } from './PageWrapper';
 
 // Local enum definition to avoid Prisma import issues
 enum UserType {
@@ -15,7 +16,6 @@ interface AdminUser {
   id?: string;
   firstName: string;
   lastName: string;
-  email: string;
   phoneNumber: string;
   userType: UserType;
   department?: string;
@@ -28,7 +28,6 @@ interface User {
   id: string;
   firstName: string;
   lastName: string;
-  email: string;
   userType: string;
   isActive: boolean;
   isVerified: boolean;
@@ -47,7 +46,6 @@ export default function AdminUserManagement() {
   const [newUser, setNewUser] = useState<AdminUser>({
     firstName: '',
     lastName: '',
-    email: '',
     phoneNumber: '',
     userType: UserType.DATA_ENCODER,
     department: '',
@@ -114,7 +112,6 @@ export default function AdminUserManagement() {
         setNewUser({
           firstName: '',
           lastName: '',
-          email: '',
           phoneNumber: '',
           userType: UserType.DATA_ENCODER,
           department: '',
@@ -277,19 +274,6 @@ export default function AdminUserManagement() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    Email Address *
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={newUser.email}
-                    onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
                     Phone Number *
                   </label>
                   <input
@@ -401,7 +385,6 @@ export default function AdminUserManagement() {
                         <h3 className="font-medium text-gray-900">
                           {user.firstName} {user.lastName}
                         </h3>
-                        <p className="text-sm text-gray-600">{user.email}</p>
                         <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                           <div>
                             <span className="font-medium">Government ID:</span> {user.governmentId || 'N/A'}

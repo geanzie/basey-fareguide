@@ -20,7 +20,7 @@ async function verifyAuth(request: NextRequest) {
         id: true,
         firstName: true,
         lastName: true,
-        email: true,
+        username: true,
         userType: true,
         isActive: true
       }

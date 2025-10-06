@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 
 interface User {
   id: string
-  email: string
   username: string
   firstName: string
   lastName: string
@@ -207,17 +206,6 @@ export default function UserProfile({ user: currentUser }: UserProfileProps) {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500"
               />
               <p className="text-xs text-gray-500 mt-1">Username cannot be changed</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <input
-                type="email"
-                value={user.email}
-                disabled
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500"
-              />
-              <p className="text-xs text-gray-500 mt-1">Email is auto-generated</p>
             </div>
 
             <div>

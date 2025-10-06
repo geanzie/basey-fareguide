@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
     const {
       firstName,
       lastName,
-      email,
+      username,
       phoneNumber,
       userType,
       department,
@@ -22,21 +22,21 @@ export async function POST(request: NextRequest) {
     } = body
 
     // Validate required fields
-    if (!firstName || !lastName || !email || !phoneNumber || !userType) {
+    if (!firstName || !lastName || !username || !phoneNumber || !userType) {
       return NextResponse.json(
         { success: false, error: 'Missing required fields' },
         { status: 400 }
       )
     }
 
-    // Check if email already exists
+    // Check if username already exists
     const existingUser = await prisma.user.findUnique({
-      where: { email }
+      where: { username }
     })
 
     if (existingUser) {
       return NextResponse.json(
-        { success: false, error: 'Email already exists' },
+        { success: false, error: 'Username already exists' },
         { status: 409 }
       )
     }
@@ -50,8 +50,7 @@ export async function POST(request: NextRequest) {
       data: {
         firstName,
         lastName,
-        email,
-        username: email, // Use email as username
+        username,
         password: hashedPassword,
         phoneNumber,
         userType: userType as UserType,
@@ -68,7 +67,6 @@ export async function POST(request: NextRequest) {
         userType: userType as UserType,
         firstName,
         lastName,
-        email,
         phoneNumber,
         department,
         position,
@@ -88,10 +86,10 @@ export async function POST(request: NextRequest) {
         id: user.id,
         firstName: user.firstName,
         lastName: user.lastName,
-        email: user.email,
+        username: user.username,
         userType: user.userType
       },
-      tempPassword // In a real app, you'd send this via email instead
+      tempPassword // In a real app, you'd send this securely instead
     })
   } catch (error) {
     console.error('Error creating user:', error)

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
-import { AuthProvider, AuthAwareHeader, AuthAwareLayout } from '@/components/AuthProvider'
+import { AuthProvider, AuthAwareLayout } from '@/components/AuthProvider'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -31,7 +31,6 @@ export default function RootLayout({
       <body className={`${inter.className} antialiased overflow-x-hidden`}>
         <AuthProvider>
           <div className="min-h-screen flex flex-col max-w-full">
-            <AuthAwareHeader />
 
             {/* Main Content with Conditional Sidebar */}
             <AuthAwareLayout>

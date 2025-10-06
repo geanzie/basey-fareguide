@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { PageSection, StatsGrid, StatCard, ActionButton } from './PageWrapper'
 
 interface Incident {
   id: string
@@ -96,7 +97,7 @@ export default function PublicUserDashboard() {
   return (
     <div className="space-y-6">
       {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl p-6 border border-emerald-200">
+      <PageSection className="bg-gradient-to-r from-emerald-50 to-green-50 border-emerald-200">
         <div className="flex items-center mb-2">
           <span className="text-3xl mr-2">👋</span>
           <h2 className="text-2xl font-bold text-emerald-800">Welcome to Your Dashboard</h2>
@@ -104,7 +105,7 @@ export default function PublicUserDashboard() {
         <p className="text-emerald-700">
           Manage your travel activities and transportation information in Basey Municipality.
         </p>
-      </div>
+      </PageSection>
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

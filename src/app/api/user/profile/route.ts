@@ -19,7 +19,6 @@ export async function GET(request: NextRequest) {
       where: { id: decoded.userId },
       select: {
         id: true,
-        email: true,
         username: true,
         firstName: true,
         lastName: true,
@@ -100,7 +99,6 @@ export async function PUT(request: NextRequest) {
       },
       select: {
         id: true,
-        email: true,
         username: true,
         firstName: true,
         lastName: true,

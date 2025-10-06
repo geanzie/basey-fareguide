@@ -17,9 +17,6 @@ export async function POST(request: NextRequest) {
       userType
     } = await request.json()
 
-    // Generate email from username for schema compatibility
-    const email = `${username}@baseyfare.local`
-
     // Validate required fields
     if (!username || !password || !firstName || !lastName || !phoneNumber) {
       return NextResponse.json(
@@ -56,7 +53,7 @@ export async function POST(request: NextRequest) {
 
     // Check for existing username in database
     const existingUser = await prisma.user.findUnique({
-      where: { email }
+      where: { username }
     })
     
     if (existingUser) {
@@ -76,7 +73,6 @@ export async function POST(request: NextRequest) {
     // Save user to database
     const newUser = await prisma.user.create({
       data: {
-        email,
         username,
         password: hashedPassword,
         firstName,

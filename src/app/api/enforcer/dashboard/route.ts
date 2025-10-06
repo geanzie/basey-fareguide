@@ -18,7 +18,7 @@ async function verifyAuth(request: NextRequest) {
       where: { id: decoded.userId },
       select: {
         id: true,
-        email: true,
+        username: true,
         firstName: true,
         lastName: true,
         userType: true
