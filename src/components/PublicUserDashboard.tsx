@@ -110,7 +110,7 @@ export default function PublicUserDashboard() {
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <Link
-          href="/dashboard/calculator"
+          href="/calculator"
           className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow border border-gray-100 group"
         >
           <div className="text-center">
@@ -121,7 +121,7 @@ export default function PublicUserDashboard() {
         </Link>
         
         <Link
-          href="/dashboard/report"
+          href="/report"
           className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow border border-gray-100 group"
         >
           <div className="text-center">
@@ -132,7 +132,7 @@ export default function PublicUserDashboard() {
         </Link>
         
         <Link
-          href="/dashboard/profile"
+          href="/profile"
           className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow border border-gray-100 group"
         >
           <div className="text-center">
@@ -197,7 +197,7 @@ export default function PublicUserDashboard() {
                 <span className="text-6xl mb-4 block">🚌</span>
                 <p className="text-gray-600">No routes calculated yet</p>
                 <Link 
-                  href="/dashboard/calculator"
+                  href="/calculator"
                   className="mt-4 inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
                 >
                   Calculate Fare
@@ -289,7 +289,7 @@ export default function PublicUserDashboard() {
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Link
-            href="/dashboard/calculator"
+            href="/calculator"
             className="flex items-center p-4 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors"
           >
             <span className="text-2xl mr-3">🧮</span>
