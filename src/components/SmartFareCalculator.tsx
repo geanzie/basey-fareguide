@@ -286,7 +286,7 @@ const SmartFareCalculator = ({
         <button
           onClick={handleCalculate}
           disabled={isCalculating || !fromLocation || !toLocation}
-          className="w-full bg-gradient-to-r from-emerald-600 to-blue-600 text-white font-semibold py-4 px-6 rounded-lg hover:from-emerald-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-[1.02]"
+          className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-4 px-6 rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-[1.02]"
         >
           {isCalculating ? (
             <div className="flex items-center justify-center">
@@ -313,7 +313,7 @@ const SmartFareCalculator = ({
 
         {/* Results */}
         {routeResult && !hideResults && (
-          <div className="bg-gradient-to-r from-emerald-50 to-blue-50 border border-emerald-200 rounded-lg p-6">
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 shadow-sm">
             <div className="text-center mb-4">
               <h3 className="text-xl font-bold text-gray-800 mb-2">Route Calculation Result</h3>
               {fallbackUsed && (
@@ -327,7 +327,7 @@ const SmartFareCalculator = ({
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               <div className="text-center">
-                <div className="text-2xl font-bold text-emerald-600">
+                <div className="text-2xl font-bold text-blue-700">
                   {routeResult.distance.text}
                 </div>
                 <div className="text-sm text-gray-600">Distance</div>
@@ -339,7 +339,7 @@ const SmartFareCalculator = ({
                 <div className="text-sm text-gray-600">Duration</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-green-600">
+                <div className="text-3xl font-bold text-green-700">
                   ₱{routeResult.fare.fare.toFixed(2)}
                 </div>
                 <div className="text-sm text-gray-600">Total Fare</div>

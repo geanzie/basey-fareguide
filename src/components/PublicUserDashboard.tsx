@@ -97,12 +97,12 @@ export default function PublicUserDashboard() {
   return (
     <div className="space-y-6">
       {/* Welcome Section */}
-      <PageSection className="bg-gradient-to-r from-emerald-50 to-green-50 border-emerald-200">
+      <PageSection className="bg-gradient-to-r from-blue-50 to-gray-50 border-blue-200">
         <div className="flex items-center mb-2">
           <span className="text-3xl mr-2">👋</span>
-          <h2 className="text-2xl font-bold text-emerald-800">Welcome to Your Dashboard</h2>
+          <h2 className="text-2xl font-bold text-blue-800">Welcome to Your Dashboard</h2>
         </div>
-        <p className="text-emerald-700">
+        <p className="text-blue-700">
           Manage your travel activities and transportation information in Basey Municipality.
         </p>
       </PageSection>
@@ -198,7 +198,7 @@ export default function PublicUserDashboard() {
                 <p className="text-gray-600">No routes calculated yet</p>
                 <Link 
                   href="/calculator"
-                  className="mt-4 inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                  className="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   Calculate Fare
                 </Link>
@@ -290,7 +290,7 @@ export default function PublicUserDashboard() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Link
             href="/calculator"
-            className="flex items-center p-4 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors"
+            className="flex items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
           >
             <span className="text-2xl mr-3">🧮</span>
             <div>

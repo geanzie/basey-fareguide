@@ -41,7 +41,7 @@ export default function CalculatorPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-slate-50">
       <div className="container mx-auto px-4 py-12">
         {/* Page Header */}
         <div className="text-center mb-12">
@@ -53,11 +53,11 @@ export default function CalculatorPage() {
           </p>
           
           {/* Smart Calculator Features Highlight */}
-          <div className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-emerald-500 to-blue-600 text-white rounded-2xl shadow-lg">
+          <div className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-slate-600 to-blue-600 text-white rounded-2xl shadow-lg">
             <span className="text-2xl mr-3">🧠</span>
             <div className="text-left">
               <div className="font-semibold">Smart Calculator</div>
-              <div className="text-sm text-emerald-100">Google Maps + GPS • Auto-fallback • Always reliable</div>
+              <div className="text-sm text-slate-100">Google Maps + GPS • Auto-fallback • Always reliable</div>
             </div>
           </div>
         </div>
@@ -65,7 +65,7 @@ export default function CalculatorPage() {
         {/* PROMINENT ROUTE RESULT - Displayed at top when available */}
         {routeResult && (
           <div className="mb-8">
-            <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-2xl shadow-xl p-8 border-2 border-green-400">
+            <div className="bg-gradient-to-r from-slate-600 to-blue-700 text-white rounded-2xl shadow-xl p-8 border-2 border-slate-300">
               <div className="flex justify-between items-start mb-6">
                 <div className="flex items-center">
                   <span className="text-4xl mr-4">🎯</span>
@@ -83,8 +83,8 @@ export default function CalculatorPage() {
               </div>
 
               {fallbackUsed && (
-                <div className="bg-amber-500/20 border border-amber-300/50 rounded-lg p-3 mb-6">
-                  <p className="text-amber-100 text-sm flex items-center">
+                <div className="bg-yellow-400/20 border border-yellow-300/50 rounded-lg p-3 mb-6">
+                  <p className="text-yellow-100 text-sm flex items-center">
                     <span className="mr-2">ℹ️</span>
                     Google Maps unavailable - using GPS calculation as fallback
                   </p>
@@ -96,7 +96,7 @@ export default function CalculatorPage() {
                 <div className="text-6xl font-bold mb-2 text-white drop-shadow-lg">
                   ₱{routeResult.fare.fare.toFixed(2)}
                 </div>
-                <div className="text-xl text-green-100">Total Fare</div>
+                <div className="text-xl text-slate-100">Total Fare</div>
               </div>
 
               {/* Trip Details Grid */}
@@ -105,13 +105,13 @@ export default function CalculatorPage() {
                   <div className="text-2xl font-bold text-white mb-1">
                     {routeResult.distance.text}
                   </div>
-                  <div className="text-green-100">Distance</div>
+                  <div className="text-slate-100">Distance</div>
                 </div>
                 <div className="bg-white/10 rounded-xl p-4 text-center">
                   <div className="text-2xl font-bold text-white mb-1">
                     {routeResult.duration.text}
                   </div>
-                  <div className="text-green-100">Duration</div>
+                  <div className="text-slate-100">Duration</div>
                 </div>
               </div>
 
@@ -120,12 +120,12 @@ export default function CalculatorPage() {
                 <h4 className="font-semibold text-white mb-4 text-lg">Fare Breakdown</h4>
                 <div className="space-y-3 text-white">
                   <div className="flex justify-between items-center">
-                    <span className="text-green-100">Base fare (first 3km):</span>
+                    <span className="text-slate-100">Base fare (first 3km):</span>
                     <span className="font-semibold text-lg">₱{routeResult.fare.breakdown.baseFare.toFixed(2)}</span>
                   </div>
                   {routeResult.fare.breakdown.additionalDistance > 0 && (
                     <div className="flex justify-between items-center">
-                      <span className="text-green-100">
+                      <span className="text-slate-100">
                         Additional distance ({routeResult.fare.breakdown.additionalDistance.toFixed(1)}km @ ₱3/km):
                       </span>
                       <span className="font-semibold text-lg">₱{routeResult.fare.breakdown.additionalFare.toFixed(2)}</span>
@@ -139,7 +139,7 @@ export default function CalculatorPage() {
               </div>
 
               {/* Method Info */}
-              <div className="text-center text-green-100 text-sm mt-4">
+              <div className="text-center text-slate-100 text-sm mt-4">
                 Calculated using: {routeResult.source} • Accuracy: {routeResult.accuracy}
               </div>
             </div>
@@ -168,17 +168,17 @@ export default function CalculatorPage() {
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center p-4 bg-gray-50 rounded-xl">
-              <div className="text-2xl font-bold text-emerald-600 mb-2">₱15.00</div>
+              <div className="text-2xl font-bold text-blue-600 mb-2">₱15.00</div>
               <div className="text-sm text-gray-600">Base Fare</div>
               <div className="text-xs text-gray-500 mt-1">First 3 kilometers</div>
             </div>
             <div className="text-center p-4 bg-gray-50 rounded-xl">
-              <div className="text-2xl font-bold text-emerald-600 mb-2">₱3.00</div>
+              <div className="text-2xl font-bold text-blue-600 mb-2">₱3.00</div>
               <div className="text-sm text-gray-600">Additional Rate</div>
               <div className="text-xs text-gray-500 mt-1">Per kilometer after 3km</div>
             </div>
             <div className="text-center p-4 bg-gray-50 rounded-xl">
-              <div className="text-2xl font-bold text-emerald-600 mb-2">51</div>
+              <div className="text-2xl font-bold text-blue-600 mb-2">51</div>
               <div className="text-sm text-gray-600">Barangays</div>
               <div className="text-xs text-gray-500 mt-1">Complete coverage</div>
             </div>
