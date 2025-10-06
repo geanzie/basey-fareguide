@@ -222,9 +222,12 @@ export default function PublicUserDashboard() {
                     </div>
                   </div>
                 ))}
-                <button className="w-full text-center py-2 text-emerald-600 hover:text-emerald-700 font-medium">
+                <Link
+                  href="/history?filter=routes"
+                  className="w-full text-center py-2 text-emerald-600 hover:text-emerald-700 font-medium block"
+                >
                   View All Routes
-                </button>
+                </Link>
               </div>
             )}
           </div>
@@ -318,13 +321,16 @@ export default function PublicUserDashboard() {
             </div>
           </a>
           
-          <button className="flex items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
+          <Link
+            href="/history"
+            className="flex items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors"
+          >
             <span className="text-2xl mr-3">📊</span>
             <div>
               <p className="font-medium text-purple-800">View History</p>
               <p className="text-sm text-purple-600">See all activities</p>
             </div>
-          </button>
+          </Link>
         </div>
       </div>
     </div>

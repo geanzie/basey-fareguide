@@ -70,7 +70,7 @@ export async function PATCH(
           select: {
             firstName: true,
             lastName: true,
-            email: true
+            username: true
           }
         }
       }
@@ -95,14 +95,14 @@ export async function PATCH(
           select: {
             firstName: true,
             lastName: true,
-            email: true
+            username: true
           }
         },
         reviewer: {
           select: {
             firstName: true,
             lastName: true,
-            email: true
+            username: true
           }
         }
       }

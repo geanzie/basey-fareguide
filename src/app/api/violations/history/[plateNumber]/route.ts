@@ -69,14 +69,14 @@ export async function GET(
           select: {
             firstName: true,
             lastName: true,
-            email: true
+            username: true
           }
         },
         handledBy: {
           select: {
             firstName: true,
             lastName: true,
-            email: true
+            username: true
           }
         },
         vehicle: {

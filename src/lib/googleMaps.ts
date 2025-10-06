@@ -36,7 +36,7 @@ export async function getGoogleMapsRoute(
     const apiKey = process.env.GOOGLE_MAPS_SERVER_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
     
     if (!apiKey) {
-      console.error('Google Maps API key not found. Set GOOGLE_MAPS_SERVER_API_KEY or NEXT_PUBLIC_GOOGLE_MAPS_API_KEY');
+      console.error('Google Maps API key not found. Please set GOOGLE_MAPS_SERVER_API_KEY or NEXT_PUBLIC_GOOGLE_MAPS_API_KEY in your environment variables.');
       return null;
     }
 
@@ -84,7 +84,7 @@ export async function getDetailedRoute(
     const apiKey = process.env.GOOGLE_MAPS_SERVER_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
     
     if (!apiKey) {
-      console.error('Google Maps API key not found. Set GOOGLE_MAPS_SERVER_API_KEY or NEXT_PUBLIC_GOOGLE_MAPS_API_KEY');
+      console.error('Google Maps API key not found. Please set GOOGLE_MAPS_SERVER_API_KEY or NEXT_PUBLIC_GOOGLE_MAPS_API_KEY in your environment variables.');
       return null;
     }
 

@@ -41,7 +41,11 @@ export async function POST(request: NextRequest) {
 
     if (!route) {
       return NextResponse.json(
-        { error: 'Unable to calculate route. Please check your coordinates.' },
+        { 
+          error: 'Unable to calculate route using Google Maps. This may be due to API limitations or network issues. Please try using the GPS-based calculator instead.',
+          suggestion: 'Try the GPS-based fare calculator for an alternative calculation method.',
+          fallback: true 
+        },
         { status: 404 }
       );
     }

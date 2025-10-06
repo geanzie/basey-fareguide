@@ -1,6 +1,6 @@
 'use client'
 
-import GoogleMapsFareCalculator from '@/components/GoogleMapsFareCalculator'
+import SmartFareCalculator from '@/components/SmartFareCalculator'
 
 export default function CalculatorPage() {
   return (
@@ -12,22 +12,22 @@ export default function CalculatorPage() {
             Basey Fare Calculator
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
-            GPS-accurate Google Maps routing for precise fare calculations across Basey Municipality.
+            Intelligent fare calculation with multiple methods: Google Maps routing with GPS fallback for reliable service.
           </p>
           
-          {/* Google Maps Features Highlight */}
-          <div className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-2xl shadow-lg">
-            <span className="text-2xl mr-3">🗺️</span>
+          {/* Smart Calculator Features Highlight */}
+          <div className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-emerald-500 to-blue-600 text-white rounded-2xl shadow-lg">
+            <span className="text-2xl mr-3">🧠</span>
             <div className="text-left">
-              <div className="font-semibold">Google Maps Integration</div>
-              <div className="text-sm text-blue-100">Real-time • GPS-accurate • Visual routing</div>
+              <div className="font-semibold">Smart Calculator</div>
+              <div className="text-sm text-emerald-100">Google Maps + GPS • Auto-fallback • Always reliable</div>
             </div>
           </div>
         </div>
 
         {/* Calculator Component */}
         <div className="mb-12">
-          <GoogleMapsFareCalculator />
+          <SmartFareCalculator preferredMethod="auto" />
         </div>
 
         {/* Information Section */}

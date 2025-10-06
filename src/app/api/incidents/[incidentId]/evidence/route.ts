@@ -127,7 +127,7 @@ export async function POST(
           select: {
             firstName: true,
             lastName: true,
-            email: true
+            username: true
           }
         }
       }
@@ -188,14 +188,14 @@ export async function GET(
           select: {
             firstName: true,
             lastName: true,
-            email: true
+            username: true
           }
         },
         reviewer: {
           select: {
             firstName: true,
             lastName: true,
-            email: true
+            username: true
           }
         }
       },

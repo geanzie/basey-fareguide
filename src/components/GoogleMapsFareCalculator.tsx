@@ -26,7 +26,11 @@ interface RouteResult {
   accuracy: string
 }
 
-const GoogleMapsFareCalculator = () => {
+interface GoogleMapsFareCalculatorProps {
+  onError?: (error: string) => void
+}
+
+const GoogleMapsFareCalculator = ({ onError }: GoogleMapsFareCalculatorProps) => {
   const [fromLocation, setFromLocation] = useState('')
   const [toLocation, setToLocation] = useState('')
   const [routeResult, setRouteResult] = useState<RouteResult | null>(null)
@@ -172,6 +176,10 @@ const GoogleMapsFareCalculator = () => {
       const data = await response.json()
 
       if (!response.ok) {
+        // Check if this is a Google Maps API issue and suggest fallback
+        if (data.fallback) {
+          throw new Error(`${data.error}\n\n${data.suggestion}`)
+        }
         throw new Error(data.error || 'Failed to calculate route')
       }
 
@@ -184,7 +192,13 @@ const GoogleMapsFareCalculator = () => {
       }
     } catch (error) {
       console.error('Error calculating route:', error)
-      setError(error instanceof Error ? error.message : 'Failed to calculate route')
+      const errorMessage = error instanceof Error ? error.message : 'Failed to calculate route'
+      setError(errorMessage)
+      
+      // Call the onError callback if provided
+      if (onError) {
+        onError(errorMessage)
+      }
     } finally {
       setIsCalculating(false)
     }

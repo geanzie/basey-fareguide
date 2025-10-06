@@ -20,7 +20,7 @@ async function verifyAuth(request: NextRequest) {
         id: true,
         firstName: true,
         lastName: true,
-        email: true,
+        username: true,
         userType: true,
         isActive: true
       }
@@ -106,14 +106,14 @@ export async function PATCH(
           select: {
             firstName: true,
             lastName: true,
-            email: true
+            username: true
           }
         },
         handledBy: {
           select: {
             firstName: true,
             lastName: true,
-            email: true
+            username: true
           }
         },
         vehicle: {
