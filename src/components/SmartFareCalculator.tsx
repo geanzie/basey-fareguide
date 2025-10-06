@@ -30,9 +30,16 @@ interface RouteResult {
 interface SmartFareCalculatorProps {
   preferredMethod?: 'auto' | 'google-maps' | 'gps'
   onError?: (error: string) => void
+  onRouteCalculated?: (result: RouteResult, fallbackUsed: boolean) => void
+  hideResults?: boolean
 }
 
-const SmartFareCalculator = ({ preferredMethod = 'auto', onError }: SmartFareCalculatorProps) => {
+const SmartFareCalculator = ({ 
+  preferredMethod = 'auto', 
+  onError,
+  onRouteCalculated,
+  hideResults = false
+}: SmartFareCalculatorProps) => {
   const [fromLocation, setFromLocation] = useState('')
   const [toLocation, setToLocation] = useState('')
   const [routeResult, setRouteResult] = useState<RouteResult | null>(null)
@@ -172,7 +179,13 @@ const SmartFareCalculator = ({ preferredMethod = 'auto', onError }: SmartFareCal
       if (data.success && data.route) {
         setRouteResult(data.route)
         setMethodUsed(data.method || 'unknown')
-        setFallbackUsed(data.fallbackUsed || false)
+        const wasFallbackUsed = data.fallbackUsed || false
+        setFallbackUsed(wasFallbackUsed)
+        
+        // Call the onRouteCalculated callback if provided
+        if (onRouteCalculated) {
+          onRouteCalculated(data.route, wasFallbackUsed)
+        }
       } else {
         throw new Error('Invalid response from route calculation')
       }
@@ -299,7 +312,7 @@ const SmartFareCalculator = ({ preferredMethod = 'auto', onError }: SmartFareCal
         )}
 
         {/* Results */}
-        {routeResult && (
+        {routeResult && !hideResults && (
           <div className="bg-gradient-to-r from-emerald-50 to-blue-50 border border-emerald-200 rounded-lg p-6">
             <div className="text-center mb-4">
               <h3 className="text-xl font-bold text-gray-800 mb-2">Route Calculation Result</h3>
