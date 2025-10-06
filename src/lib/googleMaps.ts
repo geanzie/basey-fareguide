@@ -64,7 +64,21 @@ export async function getGoogleMapsRoute(
       polyline: '', // Distance Matrix API doesn't provide polyline
     };
   } catch (error) {
-    console.error('Error fetching Google Maps route:', error);
+    const apiKey = process.env.GOOGLE_MAPS_SERVER_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    console.error('Google Maps Distance Matrix API Error:', {
+      error: error,
+      apiKeyExists: !!apiKey,
+      origin,
+      destination,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Log specific error details for production debugging
+    if (error instanceof Error) {
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+    }
+    
     return null;
   }
 }
