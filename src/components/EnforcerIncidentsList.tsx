@@ -149,6 +149,35 @@ export default function EnforcerIncidentsList() {
     }
   }
 
+  const handleTakeAndIssueTicket = async (incident: Incident) => {
+    try {
+      // First take the incident
+      const response = await fetch(`/api/incidents/${incident.id}/take`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      })
+      
+      if (response.ok) {
+        // Update local state to investigating
+        const updatedIncident = { ...incident, status: 'INVESTIGATING' as const }
+        
+        // Then proceed to issue ticket
+        await handleIssueTicket(updatedIncident)
+        
+        // Refresh the list to show updated status
+        loadIncidents()
+      } else {
+        const errorData = await response.json()
+        alert(`Error taking incident: ${errorData.message || 'Unknown error'}`)
+      }
+    } catch (error) {
+      console.error('Error taking incident:', error)
+      alert('Error taking incident. Please try again.')
+    }
+  }
+
   const closeTicketModal = () => {
     setShowTicketModal(false)
     setTicketIncident(null)
@@ -315,6 +344,31 @@ export default function EnforcerIncidentsList() {
       <div className="px-6 py-8">
         <div className="space-y-8">
           
+          {/* Quick Action Banner */}
+          {stats.pending > 0 && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <span className="text-2xl mr-3">🚨</span>
+                  <div>
+                    <h3 className="text-lg font-semibold text-red-800">
+                      {stats.pending} Incident{stats.pending !== 1 ? 's' : ''} Awaiting Response
+                    </h3>
+                    <p className="text-red-600 text-sm">
+                      Click "Issue Ticket Now" on any pending incident to take the case and issue a ticket immediately.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setStatusFilter('PENDING')}
+                  className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors font-semibold"
+                >
+                  View Pending ({stats.pending})
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Statistics Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="bg-white rounded-lg shadow p-6">
@@ -389,6 +443,18 @@ export default function EnforcerIncidentsList() {
                   </button>
                 ))}
               </nav>
+            </div>
+
+            {/* Help Section */}
+            <div className="px-6 pt-4 pb-2 bg-blue-50 border-b border-blue-200">
+              <div className="flex items-center text-sm text-blue-700">
+                <span className="text-lg mr-2">💡</span>
+                <div>
+                  <strong>Ticket Issuing Guide:</strong> 
+                  Use "🎫 Issue Ticket Now" for pending incidents to take and ticket immediately, 
+                  or "🎫 Issue Ticket" for incidents you're already investigating.
+                </div>
+              </div>
             </div>
 
             {/* Incidents Table */}
@@ -491,13 +557,23 @@ export default function EnforcerIncidentsList() {
                         </ActionButton>
                         
                         {incident.status === 'PENDING' && (
-                          <ActionButton
-                            onClick={() => handleTakeIncident(incident.id)}
-                            variant="primary"
-                            size="xs"
-                          >
-                            Take Case
-                          </ActionButton>
+                          <>
+                            <ActionButton
+                              onClick={() => handleTakeIncident(incident.id)}
+                              variant="secondary"
+                              size="xs"
+                            >
+                              Take Case
+                            </ActionButton>
+                            <ActionButton
+                              onClick={() => handleTakeAndIssueTicket(incident)}
+                              variant="primary"
+                              size="xs"
+                              className="bg-red-600 hover:bg-red-700 text-white font-semibold"
+                            >
+                              🎫 Issue Ticket Now
+                            </ActionButton>
+                          </>
                         )}
                         
                         {incident.status === 'INVESTIGATING' && !incident.ticketNumber && (
@@ -505,9 +581,17 @@ export default function EnforcerIncidentsList() {
                             onClick={() => handleIssueTicket(incident)}
                             variant="primary"
                             size="xs"
+                            className="bg-red-600 hover:bg-red-700 text-white font-semibold"
                           >
-                            Issue Ticket
+                            🎫 Issue Ticket
                           </ActionButton>
+                        )}
+                        
+                        {/* Debug info - remove in production */}
+                        {process.env.NODE_ENV === 'development' && (
+                          <div className="text-xs text-gray-500 mt-1">
+                            Status: {incident.status} | Ticket: {incident.ticketNumber || 'None'}
+                          </div>
                         )}
                       </div>
                     )
@@ -592,12 +676,46 @@ export default function EnforcerIncidentsList() {
 
               {/* Footer */}
               <div className="flex justify-between items-center mt-6 pt-4 border-t">
-                <button
-                  onClick={() => handleManageEvidence(selectedIncident.id)}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Manage Evidence
-                </button>
+                <div className="flex space-x-3">
+                  <button
+                    onClick={() => handleManageEvidence(selectedIncident.id)}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Manage Evidence
+                  </button>
+                  
+                  {/* Issue Ticket Button in Modal */}
+                  {selectedIncident.status === 'PENDING' && (
+                    <button
+                      onClick={() => {
+                        closeIncidentDetails()
+                        handleTakeAndIssueTicket(selectedIncident)
+                      }}
+                      className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors font-semibold"
+                    >
+                      🎫 Take & Issue Ticket
+                    </button>
+                  )}
+                  
+                  {selectedIncident.status === 'INVESTIGATING' && !selectedIncident.ticketNumber && (
+                    <button
+                      onClick={() => {
+                        closeIncidentDetails()
+                        handleIssueTicket(selectedIncident)
+                      }}
+                      className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors font-semibold"
+                    >
+                      🎫 Issue Ticket
+                    </button>
+                  )}
+                  
+                  {selectedIncident.ticketNumber && (
+                    <div className="bg-green-100 text-green-800 px-4 py-2 rounded-lg font-semibold">
+                      ✅ Ticket Issued: {selectedIncident.ticketNumber}
+                    </div>
+                  )}
+                </div>
+                
                 <button
                   onClick={closeIncidentDetails}
                   className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors"
