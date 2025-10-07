@@ -46,14 +46,14 @@ export default function PublicUserDashboard() {
           return
         }
 
-        // Fetch user incidents and routes in parallel
-        const [incidentsResponse, routesResponse] = await Promise.all([
+        // Fetch user incidents and fare calculations in parallel
+        const [incidentsResponse, fareCalculationsResponse] = await Promise.all([
           fetch('/api/incidents', {
             headers: {
               'Authorization': `Bearer ${token}`
             }
           }),
-          fetch('/api/routes', {
+          fetch('/api/fare-calculations', {
             headers: {
               'Authorization': `Bearer ${token}`
             }
@@ -65,9 +65,23 @@ export default function PublicUserDashboard() {
           setReportedIncidents(incidentsData.incidents || [])
         }
 
-        if (routesResponse.ok) {
-          const routesData = await routesResponse.json()
-          setRecentRoutes(routesData.routes || [])
+        if (fareCalculationsResponse.ok) {
+          const fareCalculationsData = await fareCalculationsResponse.json()
+          // Transform fare calculations to match the Route interface for compatibility
+          const transformedRoutes: Route[] = (fareCalculationsData.calculations || []).map((calc: any) => ({
+            id: calc.id,
+            from: calc.fromLocation,
+            to: calc.toLocation,
+            distance: `${parseFloat(calc.distance.toString()).toFixed(1)} km`,
+            fare: `₱${parseFloat(calc.calculatedFare.toString()).toFixed(2)}`,
+            actualFare: calc.actualFare ? `₱${parseFloat(calc.actualFare.toString()).toFixed(2)}` : null,
+            calculationType: calc.calculationType,
+            date: new Date(calc.createdAt).toISOString().split('T')[0],
+            vehicleType: calc.vehicle?.vehicleType || null,
+            plateNumber: calc.vehicle?.plateNumber || null,
+            createdAt: calc.createdAt
+          }))
+          setRecentRoutes(transformedRoutes)
         }
 
       } catch (error) {
@@ -245,7 +259,7 @@ export default function PublicUserDashboard() {
                 <span className="text-6xl mb-4 block">📝</span>
                 <p className="text-gray-600">No incidents reported yet</p>
                 <Link
-                  href="/dashboard/report"
+                  href="/report"
                   className="mt-4 inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
                 >
                   Report Incident
@@ -275,9 +289,12 @@ export default function PublicUserDashboard() {
                     </div>
                   </div>
                 ))}
-                <button className="w-full text-center py-2 text-red-600 hover:text-red-700 font-medium">
+                <Link
+                  href="/history?filter=reports"
+                  className="w-full text-center py-2 text-red-600 hover:text-red-700 font-medium block"
+                >
                   View All Reports
-                </button>
+                </Link>
               </div>
             )}
           </div>

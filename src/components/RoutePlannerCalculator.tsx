@@ -55,6 +55,7 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
   const [routeCoordinates, setRouteCoordinates] = useState<{ lat: number; lng: number }[]>([])
   const [originCoords, setOriginCoords] = useState<{ lat: number; lng: number; name?: string } | null>(null)
   const [destCoords, setDestCoords] = useState<{ lat: number; lng: number; name?: string } | null>(null)
+  const [savedToDatabase, setSavedToDatabase] = useState(false)
 
   // Initialize barangay data
   useEffect(() => {
@@ -106,6 +107,58 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
 
   // Note: Map initialization removed for now - focusing on API integration
   // The visual map can be added later once the core functionality works
+
+  // Helper function to save fare calculation to database
+  const saveFareCalculation = async (routeData: RouteResult) => {
+    try {
+      // Get auth token if available (for logged-in users)
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+      
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      }
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+
+      const response = await fetch('/api/fare-calculations', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          fromLocation,
+          toLocation,
+          distance: routeData.distance.kilometers,
+          calculatedFare: routeData.fare.fare,
+          calculationType: 'Google Maps Route Planner',
+          routeData: {
+            distance: routeData.distance,
+            duration: routeData.duration,
+            polyline: routeData.polyline,
+            source: routeData.source,
+            accuracy: routeData.accuracy,
+            barangayInfo: routeData.barangayInfo,
+            fareBreakdown: routeData.fare.breakdown
+          }
+        }),
+      })
+
+      const result = await response.json()
+      
+      if (response.ok) {
+        console.log('✅ Fare calculation saved to database:', result.calculation.id)
+        setSavedToDatabase(true)
+        // Auto-hide the success indicator after 3 seconds
+        setTimeout(() => setSavedToDatabase(false), 3000)
+      } else {
+        console.warn('⚠️ Failed to save fare calculation to database:', result.error)
+        // Don't show error to user since the calculation still worked
+      }
+    } catch (error) {
+      console.warn('⚠️ Error saving fare calculation to database:', error)
+      // Don't show error to user since the calculation still worked
+    }
+  }
 
   const handleCalculate = async () => {
     setError('')
@@ -177,6 +230,9 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
       if (data.success && data.route) {
         setRouteResult(data.route)
         
+        // Save the fare calculation to database (asynchronously, don't block UI)
+        saveFareCalculation(data.route).catch(console.warn)
+        
         // Route successfully calculated - visual map rendering to be added later
       } else {
         throw new Error('Invalid response from route calculation')
@@ -202,6 +258,7 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
     setToLocation('')
     setRouteResult(null)
     setError('')
+    setSavedToDatabase(false)
     
     // Reset completed
   }
@@ -240,8 +297,16 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
                 </div>
                 <h2 className="text-3xl font-bold text-gray-800 mb-2">🎉 Route Planned Successfully!</h2>
                 <p className="text-lg text-gray-600 mb-4">{routeResult.accuracy}</p>
-                <div className="inline-flex items-center px-4 py-2 bg-white rounded-full shadow-sm border border-emerald-200">
-                  <span className="text-emerald-600 font-semibold text-sm">✓ Route: {fromLocation} → {toLocation}</span>
+                <div className="flex flex-col gap-2 items-center">
+                  <div className="inline-flex items-center px-4 py-2 bg-white rounded-full shadow-sm border border-emerald-200">
+                    <span className="text-emerald-600 font-semibold text-sm">✓ Route: {fromLocation} → {toLocation}</span>
+                  </div>
+                  {savedToDatabase && (
+                    <div className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium border border-blue-200 animate-pulse">
+                      <span className="mr-1">💾</span>
+                      Saved to History
+                    </div>
+                  )}
                 </div>
               </div>
               

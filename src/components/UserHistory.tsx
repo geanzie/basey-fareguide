@@ -57,7 +57,9 @@ interface HistoryResponse {
 
 export default function UserHistory() {
   const searchParams = useSearchParams()
-  const initialFilter = searchParams.get('filter') as 'all' | 'routes' | 'incidents' | null
+  const urlFilter = searchParams.get('filter')
+  // Map 'reports' to 'incidents' for backwards compatibility
+  const initialFilter = urlFilter === 'reports' ? 'incidents' : urlFilter as 'all' | 'routes' | 'incidents' | null
   
   const [historyItems, setHistoryItems] = useState<HistoryItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -87,9 +89,9 @@ export default function UserHistory() {
         return
       }
 
-      // Fetch both routes and incidents
-      const [routesResponse, incidentsResponse] = await Promise.all([
-        fetch(`/api/routes?page=${currentPage}&limit=10`, {
+      // Fetch both fare calculations (routes) and incidents
+      const [fareCalculationsResponse, incidentsResponse] = await Promise.all([
+        fetch(`/api/fare-calculations?page=${currentPage}&limit=10`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -101,23 +103,23 @@ export default function UserHistory() {
         })
       ])
 
-      if (!routesResponse.ok || !incidentsResponse.ok) {
+      if (!fareCalculationsResponse.ok || !incidentsResponse.ok) {
         throw new Error('Failed to fetch history data')
       }
 
-      const routesData = await routesResponse.json()
+      const fareCalculationsData = await fareCalculationsResponse.json()
       const incidentsData = await incidentsResponse.json()
 
-      // Transform routes into history items
-      const routeItems: HistoryItem[] = (routesData.routes || []).map((route: Route) => ({
-        id: `route-${route.id}`,
+      // Transform fare calculations into history items
+      const routeItems: HistoryItem[] = (fareCalculationsData.calculations || []).map((calc: any) => ({
+        id: `route-${calc.id}`,
         type: 'route' as const,
-        title: `${route.from} → ${route.to}`,
-        subtitle: route.distance,
-        description: `${route.calculationType} calculation`,
-        fare: route.fare,
-        date: route.date,
-        createdAt: route.createdAt
+        title: `${calc.fromLocation} → ${calc.toLocation}`,
+        subtitle: `${parseFloat(calc.distance.toString()).toFixed(1)} km`,
+        description: `${calc.calculationType} calculation`,
+        fare: `₱${parseFloat(calc.calculatedFare.toString()).toFixed(2)}`,
+        date: new Date(calc.createdAt).toISOString().split('T')[0],
+        createdAt: calc.createdAt
       }))
 
       // Transform incidents into history items
@@ -137,7 +139,8 @@ export default function UserHistory() {
       
       // Apply filter
       if (filter !== 'all') {
-        combinedItems = combinedItems.filter(item => item.type === filter.slice(0, -1)) // Remove 's' from 'routes'/'incidents'
+        const filterType = filter === 'routes' ? 'route' : filter === 'incidents' ? 'incident' : filter
+        combinedItems = combinedItems.filter(item => item.type === filterType)
       }
 
       // Sort by creation date (most recent first)
@@ -145,8 +148,8 @@ export default function UserHistory() {
 
       setHistoryItems(combinedItems)
       
-      // Use pagination from routes for now (in a real app, you'd want combined pagination)
-      setPagination(routesData.pagination || {
+      // Use pagination from fare calculations for now (in a real app, you'd want combined pagination)
+      setPagination(fareCalculationsData.pagination || {
         page: currentPage,
         limit: 20,
         total: combinedItems.length,
