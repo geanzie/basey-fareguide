@@ -62,6 +62,7 @@ export default function UserHistory() {
   const initialFilter = urlFilter === 'reports' ? 'incidents' : urlFilter as 'all' | 'routes' | 'incidents' | null
   
   const [historyItems, setHistoryItems] = useState<HistoryItem[]>([])
+  const [allHistoryItems, setAllHistoryItems] = useState<HistoryItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [filter, setFilter] = useState<'all' | 'routes' | 'incidents'>(initialFilter || 'all')
@@ -75,7 +76,19 @@ export default function UserHistory() {
 
   useEffect(() => {
     fetchHistory()
-  }, [currentPage, filter])
+  }, [currentPage])
+
+  // Handle filter changes without re-fetching data
+  useEffect(() => {
+    if (allHistoryItems.length > 0) {
+      let filteredItems = allHistoryItems
+      if (filter !== 'all') {
+        const filterType = filter === 'routes' ? 'route' : filter === 'incidents' ? 'incident' : filter
+        filteredItems = allHistoryItems.filter(item => item.type === filterType)
+      }
+      setHistoryItems(filteredItems)
+    }
+  }, [filter, allHistoryItems])
 
   const fetchHistory = async () => {
     try {
@@ -137,16 +150,20 @@ export default function UserHistory() {
       // Combine and sort by creation date
       let combinedItems = [...routeItems, ...incidentItems]
       
-      // Apply filter
-      if (filter !== 'all') {
-        const filterType = filter === 'routes' ? 'route' : filter === 'incidents' ? 'incident' : filter
-        combinedItems = combinedItems.filter(item => item.type === filterType)
-      }
-
       // Sort by creation date (most recent first)
       combinedItems.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
-      setHistoryItems(combinedItems)
+      // Store all items for accurate counting
+      setAllHistoryItems(combinedItems)
+      
+      // Apply filter for display
+      let filteredItems = combinedItems
+      if (filter !== 'all') {
+        const filterType = filter === 'routes' ? 'route' : filter === 'incidents' ? 'incident' : filter
+        filteredItems = combinedItems.filter(item => item.type === filterType)
+      }
+
+      setHistoryItems(filteredItems)
       
       // Use pagination from fare calculations for now (in a real app, you'd want combined pagination)
       setPagination(fareCalculationsData.pagination || {
@@ -193,9 +210,9 @@ export default function UserHistory() {
   }
 
   const filteredCount = {
-    all: historyItems.length,
-    routes: historyItems.filter(item => item.type === 'route').length,
-    incidents: historyItems.filter(item => item.type === 'incident').length
+    all: allHistoryItems.length,
+    routes: allHistoryItems.filter(item => item.type === 'route').length,
+    incidents: allHistoryItems.filter(item => item.type === 'incident').length
   }
 
   if (loading && historyItems.length === 0) {

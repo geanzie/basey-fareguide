@@ -317,7 +317,7 @@ export default function PublicUserDashboard() {
           </Link>
           
           <Link
-            href="/dashboard/report"
+            href="/report"
             className="flex items-center p-4 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
           >
             <span className="text-2xl mr-3">📝</span>
