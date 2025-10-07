@@ -272,18 +272,75 @@ export default function AdminDashboard() {
             </div>
           </div>
         </div>
+
+        {/* Data Quality */}
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Data Quality</h3>
+            <button
+              onClick={() => window.location.href = '/admin/coordinate-verification'}
+              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+            >
+              Verify Coordinates →
+            </button>
+          </div>
+          
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Location Coordinates</span>
+              <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium">
+                Verification Recommended
+              </span>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Barangay Boundaries</span>
+              <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
+                GeoJSON Available
+              </span>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Google Maps Integration</span>
+              <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                API Ready
+              </span>
+            </div>
+          </div>
+          
+          <div className="mt-4 p-3 bg-orange-50 rounded-lg">
+            <div className="flex items-center">
+              <span className="text-orange-500 text-lg mr-2">🔍</span>
+              <div className="text-sm">
+                <p className="text-orange-800 font-medium">Coordinate verification available</p>
+                <p className="text-orange-700">Use the verification tool to validate location accuracy</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Quick Actions */}
       <div className="bg-white rounded-xl shadow-lg p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <button
             onClick={() => window.location.reload()}
             className="flex items-center justify-center px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <span className="mr-2">🔄</span>
             Refresh Data
+          </button>
+          
+          <button
+            onClick={() => {
+              // Navigate to coordinate verification tool
+              window.location.href = '/admin/coordinate-verification'
+            }}
+            className="flex items-center justify-center px-4 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+          >
+            <span className="mr-2">🗺️</span>
+            Verify Coordinates
           </button>
           
           <button

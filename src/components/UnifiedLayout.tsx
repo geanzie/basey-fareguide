@@ -225,13 +225,8 @@ function NavigationLink({
 
 // Navigation items based on user role
 function getNavigationItems(userType: string): NavigationItem[] {
-  const commonItems = [
-    {
-      id: 'verify-coordinates',
-      label: 'Coordinate Verification',
-      icon: '📍',
-      href: '/verify-coordinates'
-    }
+  const commonItems: NavigationItem[] = [
+    // Removed coordinate verification from common items - now admin only
   ]
 
   switch (userType) {
@@ -260,6 +255,12 @@ function getNavigationItems(userType: string): NavigationItem[] {
           label: 'System Reports',
           icon: '📈',
           href: '/admin/reports'
+        },
+        {
+          id: 'coordinate-verification',
+          label: 'Coordinate Verification',
+          icon: '📍',
+          href: '/admin/coordinate-verification'
         },
         ...commonItems
       ]

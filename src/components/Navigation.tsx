@@ -80,7 +80,7 @@ export default function Navigation() {
           <>
             {dashboardLink}
             <Link 
-              href="/verify-coordinates" 
+              href="/admin/coordinate-verification" 
               className={linkClass}
               onClick={handleClick}
               key="coordinates"
@@ -94,14 +94,7 @@ export default function Navigation() {
         return (
           <>
             {dashboardLink}
-            <Link 
-              href="/verify-coordinates" 
-              className={linkClass}
-              onClick={handleClick}
-              key="coordinates"
-            >
-              📍 Coordinate Verification
-            </Link>
+            {/* Coordinate verification moved to admin only */}
           </>
         )
 

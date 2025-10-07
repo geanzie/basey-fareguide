@@ -1,5 +1,11 @@
-// Coordinate Verification Utility for Basey Municipality
-// This utility helps validate and analyze coordinate accuracy
+// Enhanced Coordinate Verification Utility for Basey Municipality
+// This utility helps validate and analyze coordinate accuracy using:
+// 1. Geographic bounds checking
+// 2. Polygon verification against GeoJSON data
+// 3. Google Maps API validation
+
+import { verifyCoordinatesInPolygon, findContainingBarangay } from './polygonVerification';
+import { reverseGeocode } from './googleMapsVerification';
 
 export interface Location {
   name: string;
@@ -15,6 +21,18 @@ export interface CoordinateAnalysis {
   severity: 'low' | 'medium' | 'high';
   googleMapsUrl: string;
   distanceFromCenter: number;
+  polygonVerification?: {
+    isWithinCorrectBarangay: boolean;
+    actualBarangay: string | null;
+    confidence: 'high' | 'medium' | 'low';
+  };
+  googleMapsVerification?: {
+    isValidLocation: boolean;
+    municipality: string | null;
+    province: string | null;
+    confidence: 'high' | 'medium' | 'low';
+    address: string | null;
+  };
 }
 
 // Basey Municipality approximate bounds (based on geographical data)
@@ -64,7 +82,7 @@ export function analyzeCoordinate(location: Location): CoordinateAnalysis {
   const issues: string[] = [];
   let severity: 'low' | 'medium' | 'high' = 'low';
 
-  // Check if coordinates are within Basey Municipality bounds
+  // Basic bounds checking
   if (lat < BASEY_BOUNDS.latMin || lat > BASEY_BOUNDS.latMax) {
     issues.push(`Latitude ${lat} is outside expected Basey bounds (${BASEY_BOUNDS.latMin} to ${BASEY_BOUNDS.latMax})`);
     severity = 'high';
@@ -78,13 +96,12 @@ export function analyzeCoordinate(location: Location): CoordinateAnalysis {
   // Calculate distance from Basey center
   const distanceFromCenter = calculateDistance(location.coords, BASEY_CENTER);
 
-  // Check if distance seems reasonable for the municipality
-  if (distanceFromCenter > 25) { // 25km is quite far for Basey
+  if (distanceFromCenter > 25) {
     issues.push(`Location is ${distanceFromCenter.toFixed(2)}km from Basey center - seems too far`);
     severity = severity === 'high' ? 'high' : 'medium';
   }
 
-  // Check for suspiciously precise coordinates (might be manually entered incorrectly)
+  // Precision checks
   const latDecimals = (lat.toString().split('.')[1] || '').length;
   const lonDecimals = (lon.toString().split('.')[1] || '').length;
   
@@ -93,10 +110,37 @@ export function analyzeCoordinate(location: Location): CoordinateAnalysis {
     severity = severity === 'high' ? 'high' : 'medium';
   }
 
-  // Check for rounded coordinates (might be approximate)
   if (lat === Math.round(lat * 100) / 100 || lon === Math.round(lon * 100) / 100) {
     issues.push('Coordinates appear to be rounded - may lack precision');
     if (severity === 'low') severity = 'medium';
+  }
+
+  // Polygon verification (synchronous)
+  let polygonVerification;
+  try {
+    const polygonResult = verifyCoordinatesInPolygon(location.coords, location.name);
+    polygonVerification = {
+      isWithinCorrectBarangay: polygonResult.isWithinCorrectBarangay,
+      actualBarangay: polygonResult.actualBarangay,
+      confidence: polygonResult.confidence,
+    };
+    
+    if (!polygonResult.isWithinCorrectBarangay) {
+      issues.push(...polygonResult.issues);
+      if (polygonResult.confidence === 'low') {
+        severity = 'high';
+      } else if (polygonResult.confidence === 'medium' && severity === 'low') {
+        severity = 'medium';
+      }
+    }
+  } catch (error) {
+    console.error('Polygon verification error:', error);
+    issues.push('Failed to verify coordinates against barangay boundaries');
+    polygonVerification = {
+      isWithinCorrectBarangay: false,
+      actualBarangay: null,
+      confidence: 'low' as const,
+    };
   }
 
   return {
@@ -106,7 +150,56 @@ export function analyzeCoordinate(location: Location): CoordinateAnalysis {
     issues,
     severity,
     googleMapsUrl: generateGoogleMapsUrl(location.coords, location.name),
-    distanceFromCenter
+    distanceFromCenter,
+    polygonVerification
+  };
+}
+
+/**
+ * Analyze a single location's coordinates with Google Maps verification (async)
+ */
+export async function analyzeCoordinateWithGoogleMaps(location: Location): Promise<CoordinateAnalysis> {
+  // Get basic analysis first
+  const basicAnalysis = analyzeCoordinate(location);
+  
+  // Add Google Maps verification
+  let googleMapsVerification;
+  try {
+    const googleResult = await reverseGeocode(location.coords);
+    googleMapsVerification = {
+      isValidLocation: googleResult.isValidLocation,
+      municipality: googleResult.municipality,
+      province: googleResult.province,
+      confidence: googleResult.confidence,
+      address: googleResult.address?.formattedAddress || null,
+    };
+    
+    // Add Google Maps issues to the analysis
+    if (googleResult.issues.length > 0) {
+      basicAnalysis.issues.push(...googleResult.issues);
+      
+      // Update severity based on Google Maps results
+      if (googleResult.confidence === 'low' && !googleResult.isValidLocation) {
+        basicAnalysis.severity = 'high';
+      } else if (googleResult.confidence === 'medium' && basicAnalysis.severity === 'low') {
+        basicAnalysis.severity = 'medium';
+      }
+    }
+  } catch (error) {
+    console.error('Google Maps verification error:', error);
+    basicAnalysis.issues.push('Failed to verify coordinates with Google Maps API');
+    googleMapsVerification = {
+      isValidLocation: false,
+      municipality: null,
+      province: null,
+      confidence: 'low' as const,
+      address: null,
+    };
+  }
+  
+  return {
+    ...basicAnalysis,
+    googleMapsVerification
   };
 }
 
@@ -203,6 +296,68 @@ export function findDuplicateCoordinates(locations: Location[]): Array<{
       coords: coordStr.split(',').map(Number) as [number, number],
       locations: names
     }));
+}
+
+/**
+ * Analyze all locations with enhanced verification (including Google Maps)
+ */
+export async function analyzeAllCoordinatesEnhanced(locations: Location[]): Promise<{
+  summary: {
+    total: number;
+    highIssues: number;
+    mediumIssues: number;
+    lowIssues: number;
+    clean: number;
+    polygonMismatches: number;
+    googleMapsFailures: number;
+  };
+  analyses: CoordinateAnalysis[];
+  flaggedLocations: CoordinateAnalysis[];
+}> {
+  console.log(`🔍 Starting enhanced analysis of ${locations.length} locations...`);
+  
+  // Process in batches to avoid overwhelming the API
+  const batchSize = 5;
+  const analyses: CoordinateAnalysis[] = [];
+  
+  for (let i = 0; i < locations.length; i += batchSize) {
+    const batch = locations.slice(i, i + batchSize);
+    console.log(`📊 Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(locations.length/batchSize)}...`);
+    
+    const batchPromises = batch.map(location => analyzeCoordinateWithGoogleMaps(location));
+    const batchResults = await Promise.all(batchPromises);
+    analyses.push(...batchResults);
+    
+    // Add delay between batches to respect API limits
+    if (i + batchSize < locations.length) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  }
+  
+  const highIssues = analyses.filter(a => a.severity === 'high');
+  const mediumIssues = analyses.filter(a => a.severity === 'medium');
+  const lowIssues = analyses.filter(a => a.severity === 'low' && a.issues.length > 0);
+  const clean = analyses.filter(a => a.issues.length === 0);
+  const polygonMismatches = analyses.filter(a => a.polygonVerification && !a.polygonVerification.isWithinCorrectBarangay);
+  const googleMapsFailures = analyses.filter(a => a.googleMapsVerification && !a.googleMapsVerification.isValidLocation);
+
+  const flaggedLocations = analyses.filter(a => a.issues.length > 0);
+
+  console.log(`✅ Enhanced analysis complete: ${flaggedLocations.length} locations flagged`);
+
+  return {
+    summary: {
+      total: locations.length,
+      highIssues: highIssues.length,
+      mediumIssues: mediumIssues.length,
+      lowIssues: lowIssues.length,
+      clean: clean.length,
+      polygonMismatches: polygonMismatches.length,
+      googleMapsFailures: googleMapsFailures.length,
+    },
+    analyses,
+    flaggedLocations
+  };
 }
 
 /**
