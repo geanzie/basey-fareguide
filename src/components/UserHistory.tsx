@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { flexibleFetch } from '@/lib/api'
 
 interface HistoryItem {
   id: string
@@ -103,25 +104,28 @@ export default function UserHistory() {
       }
 
       // Fetch both fare calculations (routes) and incidents
-      const [fareCalculationsResponse, incidentsResponse] = await Promise.all([
-        fetch(`/api/fare-calculations?page=${currentPage}&limit=10`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        }),
-        fetch(`/api/incidents?page=${currentPage}&limit=10`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
+      const [fareCalculationsResult, incidentsResult] = await Promise.all([
+        flexibleFetch<{calculations: any[], pagination?: any}>(`/api/fare-calculations?page=${currentPage}&limit=10`),
+        flexibleFetch<{incidents: any[]}>(`/api/incidents?page=${currentPage}&limit=10`)
       ])
 
-      if (!fareCalculationsResponse.ok || !incidentsResponse.ok) {
-        throw new Error('Failed to fetch history data')
+      // Check for authentication issues
+      if (!fareCalculationsResult.success) {
+        if (fareCalculationsResult.requiresAuth) {
+          throw new Error('Please log in to view your calculation history')
+        }
+        throw new Error(`Failed to fetch calculations: ${fareCalculationsResult.message}`)
+      }
+      
+      if (!incidentsResult.success) {
+        if (incidentsResult.requiresAuth) {
+          throw new Error('Please log in to view your incident history')
+        }
+        throw new Error(`Failed to fetch incidents: ${incidentsResult.message}`)
       }
 
-      const fareCalculationsData = await fareCalculationsResponse.json()
-      const incidentsData = await incidentsResponse.json()
+      const fareCalculationsData = fareCalculationsResult.data || { calculations: [] }
+      const incidentsData = incidentsResult.data || { incidents: [] }
 
       // Transform fare calculations into history items
       const routeItems: HistoryItem[] = (fareCalculationsData.calculations || []).map((calc: any) => ({
@@ -175,7 +179,13 @@ export default function UserHistory() {
 
     } catch (error) {
       console.error('Error fetching history:', error)
-      setError('Failed to load history. Please try again.')
+      
+      // Provide more detailed error messages for debugging
+      if (error instanceof Error) {
+        setError(error.message)
+      } else {
+        setError('Failed to load history. Please try again.')
+      }
     } finally {
       setLoading(false)
     }
