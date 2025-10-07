@@ -81,8 +81,8 @@ export default function EnhancedRouteMap({
       const polygons: google.maps.Polygon[] = []
 
       geoJsonData.features.forEach((feature) => {
-        const barangayName = feature.properties.Name
-        const isPoblacion = feature.properties.POB === 'POB'
+        const barangayName = feature.properties.BARANGAY
+        const isPoblacion = feature.properties.POB === true || feature.properties.IN_POB !== null
         
         // Create polygon for each barangay
         const coordinates = feature.geometry.coordinates[0].map(([lng, lat]) => ({
@@ -105,6 +105,7 @@ export default function EnhancedRouteMap({
 
         // Add click listener for barangay selection
         polygon.addListener('click', (event: google.maps.PolyMouseEvent) => {
+          if (!barangayName) return
           const barangay = barangayService.getBarangay(barangayName)
           if (barangay) {
             setSelectedBarangay(barangay)

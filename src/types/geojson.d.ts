@@ -9,9 +9,12 @@ declare module '*.geojson' {
         coordinates: number[][][];
       };
       properties: {
-        Name: string;
-        BARANGAY_C: string;
-        POB: string;
+        Name?: string | null;
+        BARANGAY: string;
+        BRGY_INDEX: number;
+        POB?: boolean | null;
+        IN_POB?: number | null;
+        OUT_POB?: number | null;
         [key: string]: any;
       };
     }>;
@@ -30,9 +33,12 @@ declare module '*Barangay.shp.json' {
         coordinates: number[][][];
       };
       properties: {
-        Name: string;
-        BARANGAY_C: string;
-        POB: string;
+        Name?: string | null;
+        BARANGAY: string;
+        BRGY_INDEX: number;
+        POB?: boolean | null;
+        IN_POB?: number | null;
+        OUT_POB?: number | null;
         [key: string]: any;
       };
     }>;
