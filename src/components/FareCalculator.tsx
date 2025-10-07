@@ -32,7 +32,7 @@ const FareCalculator = () => {
     { name: 'Anglit', coords: [11.2976225, 125.1096464], type: 'rural' as const },
     { name: 'Bacubac', coords: [11.2822154, 125.0484524], type: 'rural' as const },
     { name: 'Baloog', coords: [11.357169691706632,125.0397263836978], type: 'rural' as const },
-    { name: 'Basiao', coords: [11.2469, 125.0739], type: 'rural' as const },
+    { name: 'Basiao', coords: [11.260895816210494, 125.16131895224565], type: 'rural' as const },
     { name: 'Buenavista', coords: [11.2612303,125.1610249], type: 'rural' as const },
     { name: 'Burgos', coords: [11.3127738,125.1524123], type: 'rural' as const },
     { name: 'Cambayan', coords: [11.284089,124.9963614], type: 'rural' as const },

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getGoogleMapsRoute, getDetailedRoute, calculateGoogleMapsFare, metersToKilometers, validateBaseyCoordinates } from '@/lib/googleMaps';
+import { getGoogleMapsRoute, getDetailedRoute, calculateGoogleMapsFare, metersToKilometers, validateBaseyCoordinates, testCoordinates } from '@/lib/googleMaps';
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,11 +40,21 @@ export async function POST(request: NextRequest) {
     const route = await getDetailedRoute(originCoords, destinationCoords);
 
     if (!route) {
+      console.error('❌ Google Maps route calculation failed');
+      console.error('📍 Origin:', originCoords);
+      console.error('📍 Destination:', destinationCoords);
+      console.error('🔑 API Key configured:', !!process.env.GOOGLE_MAPS_SERVER_API_KEY || !!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY);
+      
       return NextResponse.json(
         { 
-          error: 'Unable to calculate route using Google Maps. This may be due to API limitations or network issues. Please try using the GPS-based calculator instead.',
-          suggestion: 'Try the GPS-based fare calculator for an alternative calculation method.',
-          fallback: true 
+          error: 'Google Maps API is required for accurate road-based route calculation. GPS direct distance would be unfair to drivers.',
+          details: 'The API key may not be configured, or the Directions API may not be enabled in Google Cloud Console.',
+          apiKeyConfigured: !!process.env.GOOGLE_MAPS_SERVER_API_KEY || !!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
+          requiredSetup: [
+            'Configure GOOGLE_MAPS_SERVER_API_KEY in .env.local',
+            'Enable Directions API in Google Cloud Console', 
+            'Restart development server'
+          ]
         },
         { status: 404 }
       );

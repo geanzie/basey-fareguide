@@ -1,7 +1,7 @@
 'use client'
 
 import DashboardLayout from '@/components/DashboardLayout'
-import GoogleMapsFareCalculator from '@/components/GoogleMapsFareCalculator'
+import RoutePlannerCalculator from '@/components/RoutePlannerCalculator'
 
 export default function CalculatorPage() {
   return (
@@ -23,7 +23,7 @@ export default function CalculatorPage() {
         
         {/* Calculator Component */}
         <div className="bg-white rounded-lg shadow-sm border">
-          <GoogleMapsFareCalculator />
+          <RoutePlannerCalculator />
         </div>
       </div>
     </DashboardLayout>

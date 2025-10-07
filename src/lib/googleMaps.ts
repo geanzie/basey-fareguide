@@ -1,4 +1,4 @@
-import { Client, TravelMode, UnitSystem } from '@googlemaps/google-maps-services-js';
+import { Client, TravelMode, UnitSystem, Language } from '@googlemaps/google-maps-services-js';
 
 // Initialize Google Maps Services client
 const client = new Client({});
@@ -84,6 +84,39 @@ export async function getGoogleMapsRoute(
 }
 
 /**
+ * Test coordinates by trying to geocode them to verify they're valid locations
+ * @param coords - Coordinates to test [lat, lng]
+ * @returns Promise with location validation result
+ */
+export async function testCoordinates(coords: [number, number]): Promise<boolean> {
+  try {
+    const apiKey = process.env.GOOGLE_MAPS_SERVER_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    if (!apiKey) return false;
+
+    console.log(`🧪 Testing coordinates: [${coords[0]}, ${coords[1]}]`);
+    
+    // Use reverse geocoding to test if coordinates are valid
+    const response = await client.reverseGeocode({
+      params: {
+        latlng: `${coords[0]},${coords[1]}`,
+        key: apiKey,
+      },
+    });
+
+    const isValid = response.data.results.length > 0;
+    console.log(`📍 Coordinate test result: ${isValid ? '✅ Valid' : '❌ Invalid'}`);
+    if (isValid && response.data.results[0]) {
+      console.log(`📮 Address: ${response.data.results[0].formatted_address}`);
+    }
+    
+    return isValid;
+  } catch (error) {
+    console.error('❌ Error testing coordinates:', error);
+    return false;
+  }
+}
+
+/**
  * Get detailed route with polyline using Directions API
  * @param origin - Starting location coordinates [lat, lng]
  * @param destination - Destination coordinates [lat, lng]
@@ -98,24 +131,110 @@ export async function getDetailedRoute(
     const apiKey = process.env.GOOGLE_MAPS_SERVER_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
     
     if (!apiKey) {
-      console.error('Google Maps API key not found. Please set GOOGLE_MAPS_SERVER_API_KEY or NEXT_PUBLIC_GOOGLE_MAPS_API_KEY in your environment variables.');
+      console.error('🚫 Google Maps API key not found!');
+      console.error('📋 Setup Instructions:');
+      console.error('1. Create .env.local file in your project root');
+      console.error('2. Add: GOOGLE_MAPS_SERVER_API_KEY=your_api_key_here');
+      console.error('3. Ensure Directions API is enabled in Google Cloud Console');
+      console.error('4. Restart the development server');
+      return null;
+    }
+    
+    console.log(`🗺️ Calculating route: [${origin[0]}, ${origin[1]}] → [${destination[0]}, ${destination[1]}]`);
+    
+    // Test coordinates validity first
+    const [originValid, destValid] = await Promise.all([
+      testCoordinates(origin),
+      testCoordinates(destination)
+    ]);
+    
+    if (!originValid) {
+      console.error('❌ Origin coordinates are not valid or not found by Google Maps');
+      return null;
+    }
+    
+    if (!destValid) {
+      console.error('❌ Destination coordinates are not valid or not found by Google Maps');
       return null;
     }
 
-    const response = await client.directions({
-      params: {
-        origin: `${origin[0]},${origin[1]}`,
-        destination: `${destination[0]},${destination[1]}`,
-        mode: TravelMode.driving,
-        units: UnitSystem.metric,
-        key: apiKey,
-      },
-    });
+    console.log('✅ Both coordinates validated, proceeding with route calculation...');
+
+    // Try multiple approaches for routing in remote areas
+    let response;
+    let attempts = 0;
+    const maxAttempts = 3;
+    
+    while (attempts < maxAttempts) {
+      attempts++;
+      console.log(`🔄 Route calculation attempt ${attempts}/${maxAttempts}`);
+      
+      try {
+        const requestParams = {
+          origin: `${origin[0]},${origin[1]}`,
+          destination: `${destination[0]},${destination[1]}`,
+          mode: TravelMode.driving,
+          units: UnitSystem.metric,
+          key: apiKey,
+        };
+        
+        // Add region-specific parameters for better routing
+        if (attempts === 1) {
+          // First attempt: Standard routing with Philippines region
+          Object.assign(requestParams, {
+            region: 'ph',
+            language: Language.en,
+            alternatives: false,
+          });
+        } else if (attempts === 2) {
+          // Second attempt: Allow alternatives and different routing
+          Object.assign(requestParams, {
+            alternatives: true,
+            avoid: [], // Clear any restrictions
+          });
+        } else {
+          // Third attempt: Basic routing without extra parameters
+          // Just use the basic params
+        }
+        
+        response = await client.directions({
+          params: requestParams,
+        });
+        
+        if (response.data.routes && response.data.routes.length > 0) {
+          console.log(`✅ Route found on attempt ${attempts}`);
+          break;
+        }
+        
+      } catch (attemptError) {
+        console.error(`❌ Attempt ${attempts} failed:`, attemptError);
+        if (attempts === maxAttempts) {
+          throw attemptError;
+        }
+      }
+    }
+
+    if (!response) {
+      console.error('❌ No response received from Google Maps API after all attempts');
+      return null;
+    }
+
+    console.log('📡 Google Maps Response Status:', response.status);
+    console.log('🛣️ Routes found:', response.data.routes.length);
+    console.log('📊 Response data:', JSON.stringify({
+      status: response.data.status,
+      routes: response.data.routes.length,
+      geocoded_waypoints: response.data.geocoded_waypoints?.length || 0,
+      error_message: response.data.error_message
+    }, null, 2));
 
     const route = response.data.routes[0];
     
     if (!route) {
-      console.error('No route found');
+      console.error('❌ No route found - Google Maps Response:');
+      console.error('   Status:', response.data.status);
+      console.error('   Error Message:', response.data.error_message || 'None provided');
+      console.error('   Available Routes:', response.data.routes.length);
       return null;
     }
 

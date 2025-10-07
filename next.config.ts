@@ -7,6 +7,20 @@ const nextConfig: NextConfig = {
   },
   outputFileTracingRoot: __dirname,
   
+  // Webpack configuration to handle special file types
+  webpack: (config, { buildId, dev, isServer, defaultLoaders, nextRuntime, webpack }) => {
+    // Handle GeoJSON files as JSON
+    config.module.rules.push({
+      test: /\.geojson$/,
+      use: {
+        loader: 'json-loader'
+      },
+      type: 'javascript/auto'
+    });
+
+    return config;
+  },
+  
   // Security headers
   async headers() {
     return [

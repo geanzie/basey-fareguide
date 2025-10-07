@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { barangayService } from '../lib/barangayService'
+import { BarangayInfo } from '../utils/barangayBoundaries'
 
 interface RouteResult {
   distance: {
@@ -23,6 +25,12 @@ interface RouteResult {
   }
   source: string
   accuracy: string
+  barangayInfo?: {
+    originBarangay: string
+    destinationBarangay: string
+    crossesBoundary: boolean
+    recommendations: string[]
+  }
 }
 
 
@@ -47,74 +55,55 @@ const SmartFareCalculator = ({
   const [isCalculating, setIsCalculating] = useState(false)
   const [methodUsed, setMethodUsed] = useState<string>('')
   const [fallbackUsed, setFallbackUsed] = useState(false)
+  const [barangayList, setBarangayList] = useState<BarangayInfo[]>([])
+  const [filteredFromBarangays, setFilteredFromBarangays] = useState<BarangayInfo[]>([])
+  const [filteredToBarangays, setFilteredToBarangays] = useState<BarangayInfo[]>([])
+  const [showFromSuggestions, setShowFromSuggestions] = useState(false)
+  const [showToSuggestions, setShowToSuggestions] = useState(false)
 
-  // Official Barangays of Basey Municipality (51 Barangays + Landmarks)
+  // Initialize barangay data from the comprehensive GeoJSON dataset
+  useEffect(() => {
+    const initializeBarangays = async () => {
+      try {
+        await barangayService.initialize()
+        const allBarangays = barangayService.getBarangays()
+        setBarangayList(allBarangays)
+        setFilteredFromBarangays(allBarangays)
+        setFilteredToBarangays(allBarangays)
+      } catch (error) {
+        console.error('Failed to initialize barangay data:', error)
+      }
+    }
+    initializeBarangays()
+  }, [])
+
+  // Filter barangays based on search input
+  const handleFromLocationChange = (value: string) => {
+    setFromLocation(value)
+    if (value.trim()) {
+      const filtered = barangayService.getBarangays({ searchTerm: value })
+      setFilteredFromBarangays(filtered)
+      setShowFromSuggestions(true)
+    } else {
+      setFilteredFromBarangays(barangayList)
+      setShowFromSuggestions(false)
+    }
+  }
+
+  const handleToLocationChange = (value: string) => {
+    setToLocation(value)
+    if (value.trim()) {
+      const filtered = barangayService.getBarangays({ searchTerm: value })
+      setFilteredToBarangays(filtered)
+      setShowToSuggestions(true)
+    } else {
+      setFilteredToBarangays(barangayList)
+      setShowToSuggestions(false)
+    }
+  }
+
+  // Legacy barangay list for backwards compatibility
   const barangays: string[] = [
-    // Official Barangays of Basey Municipality (51 Barangays)
-    'Amandayehan',
-    'Anglit', 
-    'Bacubac',
-    'Baloog',
-    'Basiao',
-    'Buenavista',
-    'Burgos',
-    'Cambayan',
-    'Can-abay',
-    'Cancaiyas',
-    'Canmanila',
-    'Catadman',
-    'Cogon',
-    'Dolongan',
-    'Guintigui-an',
-    'Guirang',
-    'Balante',
-    'Iba',
-    'Inuntan',
-    'Loog',
-    'Mabini',
-    'Magallanes',
-    'Manlilinab',
-    'Del Pilar',
-    'May-it',
-    'Mongabong',
-    'New San Agustin',
-    'Nouvelas Occidental',
-    'Old San Agustin',
-    'Panugmonon',
-    'Pelit',
-    
-    // Poblacion Barangays (7 Urban Centers)
-    'Baybay (Poblacion)',
-    'Buscada (Poblacion)',
-    'Lawa-an (Poblacion)',
-    'Loyo (Poblacion)',
-    'Mercado (Poblacion)',
-    'Palaypay (Poblacion)',
-    'Sulod (Poblacion)',
-    
-    // Remaining Barangays
-    'Roxas',
-    'Salvacion',
-    'San Antonio',
-    'San Fernando',
-    'Sawa',
-    'Serum',
-    'Sugca',
-    'Sugponon',
-    'Tinaogan',
-    'Tingib',
-    'Villa Aurora',
-    'Binongtu-an',
-    'Bulao',
-    
-    // Key Landmarks and Places of Interest in Basey Municipality
-    'José Rizal Monument (Basey Center - KM 0)',
-    'Sohoton Natural Bridge National Park',
-    'Sohoton Caves',
-    'Panhulugan Cliff',
-    'Basey Church (St. Michael the Archangel)',
-    'Basey Municipal Hall',
-    'Basey Public Market',
     'Basey Central School',
     'Basey National High School',
     'Basey Port/Wharf',
@@ -210,76 +199,142 @@ const SmartFareCalculator = ({
       </h2>
 
       <div className="space-y-6">
-        {/* From Location */}
-        <div>
+        {/* From Location with Enhanced Search */}
+        <div className="relative">
           <label htmlFor="from" className="block text-sm font-semibold text-gray-700 mb-2">
-            From (Origin)
+            From (Origin) - Enhanced with Barangay Boundaries
           </label>
-          <select
+          <input
             id="from"
+            type="text"
             value={fromLocation}
-            onChange={(e) => setFromLocation(e.target.value)}
+            onChange={(e) => handleFromLocationChange(e.target.value)}
+            onFocus={() => setShowFromSuggestions(true)}
+            onBlur={() => setTimeout(() => setShowFromSuggestions(false), 200)}
+            placeholder="Type to search barangays..."
             className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-emerald-500 focus:outline-none transition-colors"
-          >
-            <option value="">Select starting point...</option>
-            <optgroup label="Urban Centers (Poblacion)">
-              {barangays.filter(b => getLocationType(b) === 'urban').map((barangay) => (
-                <option key={barangay} value={barangay}>
-                  {barangay}
-                </option>
-              ))}
-            </optgroup>
-            <optgroup label="Rural Barangays">
-              {barangays.filter(b => getLocationType(b) === 'rural').map((barangay) => (
-                <option key={barangay} value={barangay}>
-                  {barangay}
-                </option>
-              ))}
-            </optgroup>
-            <optgroup label="Landmarks">
-              {barangays.filter(b => getLocationType(b) === 'landmark').map((barangay) => (
-                <option key={barangay} value={barangay}>
-                  {barangay}
-                </option>
-              ))}
-            </optgroup>
-          </select>
+          />
+          
+          {showFromSuggestions && filteredFromBarangays.length > 0 && (
+            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+              <div className="p-2 text-xs text-gray-500 bg-gray-50 border-b">
+                📍 {filteredFromBarangays.length} barangays found
+              </div>
+              
+              {/* Poblacion Barangays */}
+              {filteredFromBarangays.filter(b => b.isPoblacion).length > 0 && (
+                <>
+                  <div className="p-2 text-xs font-medium text-blue-600 bg-blue-50 border-b">
+                    🏛️ Urban Centers (Poblacion)
+                  </div>
+                  {filteredFromBarangays.filter(b => b.isPoblacion).map((barangay) => (
+                    <button
+                      key={barangay.code}
+                      onClick={() => {
+                        setFromLocation(barangay.name)
+                        setShowFromSuggestions(false)
+                      }}
+                      className="w-full text-left px-4 py-2 hover:bg-blue-50 focus:bg-blue-50 focus:outline-none text-sm"
+                    >
+                      <div className="font-medium">{barangay.name}</div>
+                      <div className="text-xs text-gray-500">Code: {barangay.code}</div>
+                    </button>
+                  ))}
+                </>
+              )}
+              
+              {/* Rural Barangays */}
+              {filteredFromBarangays.filter(b => !b.isPoblacion).length > 0 && (
+                <>
+                  <div className="p-2 text-xs font-medium text-green-600 bg-green-50 border-b">
+                    🌾 Rural Barangays
+                  </div>
+                  {filteredFromBarangays.filter(b => !b.isPoblacion).map((barangay) => (
+                    <button
+                      key={barangay.code}
+                      onClick={() => {
+                        setFromLocation(barangay.name)
+                        setShowFromSuggestions(false)
+                      }}
+                      className="w-full text-left px-4 py-2 hover:bg-green-50 focus:bg-green-50 focus:outline-none text-sm"
+                    >
+                      <div className="font-medium">{barangay.name}</div>
+                      <div className="text-xs text-gray-500">Code: {barangay.code}</div>
+                    </button>
+                  ))}
+                </>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* To Location */}
-        <div>
+        {/* To Location with Enhanced Search */}
+        <div className="relative">
           <label htmlFor="to" className="block text-sm font-semibold text-gray-700 mb-2">
-            To (Destination)
+            To (Destination) - Enhanced with Barangay Boundaries  
           </label>
-          <select
+          <input
             id="to"
+            type="text"
             value={toLocation}
-            onChange={(e) => setToLocation(e.target.value)}
+            onChange={(e) => handleToLocationChange(e.target.value)}
+            onFocus={() => setShowToSuggestions(true)}
+            onBlur={() => setTimeout(() => setShowToSuggestions(false), 200)}
+            placeholder="Type to search barangays..."
             className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-emerald-500 focus:outline-none transition-colors"
-          >
-            <option value="">Select destination...</option>
-            <optgroup label="Urban Centers (Poblacion)">
-              {barangays.filter(b => getLocationType(b) === 'urban').map((barangay) => (
-                <option key={barangay} value={barangay}>
-                  {barangay}
-                </option>
-              ))}
-            </optgroup>
-            <optgroup label="Rural Barangays">
-              {barangays.filter(b => getLocationType(b) === 'rural').map((barangay) => (
-                <option key={barangay} value={barangay}>
-                  {barangay}
-                </option>
-              ))}
-            </optgroup>
-            <optgroup label="Landmarks">
-              {barangays.filter(b => getLocationType(b) === 'landmark').map((barangay) => (
-                <option key={barangay} value={barangay}>
-                  {barangay}
-                </option>
-              ))}
-            </optgroup>
-          </select>
+          />
+          
+          {showToSuggestions && filteredToBarangays.length > 0 && (
+            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+              <div className="p-2 text-xs text-gray-500 bg-gray-50 border-b">
+                📍 {filteredToBarangays.length} barangays found
+              </div>
+              
+              {/* Poblacion Barangays */}
+              {filteredToBarangays.filter(b => b.isPoblacion).length > 0 && (
+                <>
+                  <div className="p-2 text-xs font-medium text-blue-600 bg-blue-50 border-b">
+                    🏛️ Urban Centers (Poblacion)
+                  </div>
+                  {filteredToBarangays.filter(b => b.isPoblacion).map((barangay) => (
+                    <button
+                      key={barangay.code}
+                      onClick={() => {
+                        setToLocation(barangay.name)
+                        setShowToSuggestions(false)
+                      }}
+                      className="w-full text-left px-4 py-2 hover:bg-blue-50 focus:bg-blue-50 focus:outline-none text-sm"
+                    >
+                      <div className="font-medium">{barangay.name}</div>
+                      <div className="text-xs text-gray-500">Code: {barangay.code}</div>
+                    </button>
+                  ))}
+                </>
+              )}
+              
+              {/* Rural Barangays */}
+              {filteredToBarangays.filter(b => !b.isPoblacion).length > 0 && (
+                <>
+                  <div className="p-2 text-xs font-medium text-green-600 bg-green-50 border-b">
+                    🌾 Rural Barangays
+                  </div>
+                  {filteredToBarangays.filter(b => !b.isPoblacion).map((barangay) => (
+                    <button
+                      key={barangay.code}
+                      onClick={() => {
+                        setToLocation(barangay.name)
+                        setShowToSuggestions(false)
+                      }}
+                      className="w-full text-left px-4 py-2 hover:bg-green-50 focus:bg-green-50 focus:outline-none text-sm"
+                    >
+                      <div className="font-medium">{barangay.name}</div>
+                      <div className="text-xs text-gray-500">Code: {barangay.code}</div>
+                    </button>
+                  ))}
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Calculate Button */}
@@ -367,9 +422,56 @@ const SmartFareCalculator = ({
               </div>
             </div>
 
+            {/* Barangay Boundary Information */}
+            {routeResult.barangayInfo && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <h4 className="font-semibold text-blue-800 mb-3 flex items-center">
+                  🗺️ Geographic Analysis
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <div className="font-medium text-gray-700">Origin Barangay:</div>
+                    <div className="text-blue-700">{routeResult.barangayInfo.originBarangay}</div>
+                  </div>
+                  <div>
+                    <div className="font-medium text-gray-700">Destination Barangay:</div>
+                    <div className="text-blue-700">{routeResult.barangayInfo.destinationBarangay}</div>
+                  </div>
+                </div>
+                
+                {routeResult.barangayInfo.crossesBoundary && (
+                  <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <div className="flex items-center text-amber-700">
+                      <span className="mr-2">⚠️</span>
+                      <span className="font-medium">Cross-Barangay Trip</span>
+                    </div>
+                    <div className="text-xs text-amber-600 mt-1">
+                      This route crosses barangay boundaries, which may affect fare calculations.
+                    </div>
+                  </div>
+                )}
+
+                {routeResult.barangayInfo.recommendations.length > 0 && (
+                  <div className="mt-3">
+                    <div className="font-medium text-gray-700 mb-2">Recommendations:</div>
+                    <div className="space-y-1">
+                      {routeResult.barangayInfo.recommendations.map((rec, index) => (
+                        <div key={index} className="text-sm text-gray-600 flex items-start">
+                          <span className="mr-2 text-xs">•</span>
+                          <span>{rec}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Method Info */}
             <div className="text-center text-xs text-gray-500">
               Calculated using: {routeResult.source} • Accuracy: {routeResult.accuracy}
+              <br />
+              Enhanced with Basey Municipality Barangay Boundary Data (51 Barangays)
             </div>
           </div>
         )}

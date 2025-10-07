@@ -1,8 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import GoogleMapsFareCalculator from './GoogleMapsFareCalculator'
+import RoutePlannerCalculator from './RoutePlannerCalculator'
 import SmartFareCalculator from './SmartFareCalculator'
+import { barangayService } from '../lib/barangayService'
+import { BarangayInfo } from '../utils/barangayBoundaries'
 
 interface UnifiedCalculatorProps {
   defaultMode?: 'google-maps' | 'gps' | 'auto'
@@ -12,6 +14,11 @@ export default function UnifiedFareCalculator({ defaultMode = 'auto' }: UnifiedC
   const [currentMode, setCurrentMode] = useState<'google-maps' | 'gps'>('google-maps')
   const [googleMapsError, setGoogleMapsError] = useState<string | null>(null)
   const [showFallbackMessage, setShowFallbackMessage] = useState(false)
+  const [barangayStats, setBarangayStats] = useState<{
+    totalBarangays: number;
+    poblacionCount: number;
+    ruralCount: number;
+  } | null>(null)
 
   useEffect(() => {
     if (defaultMode === 'gps') {
@@ -19,6 +26,25 @@ export default function UnifiedFareCalculator({ defaultMode = 'auto' }: UnifiedC
     } else if (defaultMode === 'google-maps') {
       setCurrentMode('google-maps')
     }
+
+    // Initialize barangay service and get stats
+    const initializeBarangayData = async () => {
+      try {
+        await barangayService.initialize()
+        const allBarangays = barangayService.getBarangays()
+        const poblacionBarangays = barangayService.getBarangays({ poblacionOnly: true })
+        
+        setBarangayStats({
+          totalBarangays: allBarangays.length,
+          poblacionCount: poblacionBarangays.length,
+          ruralCount: allBarangays.length - poblacionBarangays.length
+        })
+      } catch (error) {
+        console.error('Failed to initialize barangay data:', error)
+      }
+    }
+
+    initializeBarangayData()
   }, [defaultMode])
 
   const handleGoogleMapsError = (error: string) => {
@@ -84,20 +110,44 @@ export default function UnifiedFareCalculator({ defaultMode = 'auto' }: UnifiedC
             <div className="flex items-start space-x-3">
               <span className="text-lg">🗺️</span>
               <div>
-                <p className="font-medium text-gray-800 mb-1">Google Maps Routing</p>
-                <p>Uses real-time traffic data and precise road networks for the most accurate route calculations.</p>
+                <p className="font-medium text-gray-800 mb-1">Google Maps Routing with Barangay Boundaries</p>
+                <p>Uses real-time traffic data, precise road networks, and local barangay boundary analysis for enhanced fare calculations.</p>
               </div>
             </div>
           ) : (
             <div className="flex items-start space-x-3">
               <span className="text-lg">📡</span>
               <div>
-                <p className="font-medium text-gray-800 mb-1">GPS-Based Calculation</p>
-                <p>Uses direct distance calculations between coordinates. Reliable when map services are unavailable.</p>
+                <p className="font-medium text-gray-800 mb-1">GPS-Based with Geographic Intelligence</p>
+                <p>Uses direct distance calculations with barangay boundary detection. Enhanced with local geographic data for accurate fare computation.</p>
               </div>
             </div>
           )}
         </div>
+
+        {/* Barangay Coverage Stats */}
+        {barangayStats && (
+          <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+            <div className="flex items-center space-x-2 mb-2">
+              <span className="text-lg">🗺️</span>
+              <h4 className="font-medium text-gray-800">Geographic Coverage</h4>
+            </div>
+            <div className="grid grid-cols-3 gap-4 text-sm">
+              <div className="text-center">
+                <div className="text-lg font-bold text-blue-600">{barangayStats.totalBarangays}</div>
+                <div className="text-gray-600">Total Barangays</div>
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-bold text-emerald-600">{barangayStats.poblacionCount}</div>
+                <div className="text-gray-600">Poblacion Areas</div>
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-bold text-orange-600">{barangayStats.ruralCount}</div>
+                <div className="text-gray-600">Rural Areas</div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Fallback Message */}
@@ -131,7 +181,7 @@ export default function UnifiedFareCalculator({ defaultMode = 'auto' }: UnifiedC
       {/* Calculator Component */}
       <div className="transition-all duration-500 ease-in-out">
         {currentMode === 'google-maps' ? (
-          <GoogleMapsFareCalculator onError={handleGoogleMapsError} />
+          <RoutePlannerCalculator onError={handleGoogleMapsError} />
         ) : (
           <SmartFareCalculator preferredMethod="gps" onError={handleGoogleMapsError} />
         )}
@@ -147,8 +197,9 @@ export default function UnifiedFareCalculator({ defaultMode = 'auto' }: UnifiedC
           <ul className="text-sm text-blue-700 space-y-1">
             <li>✓ Real-time traffic data</li>
             <li>✓ Precise road routing</li>
-            <li>✓ Visual map display</li>
-            <li>✓ Turn-by-turn directions</li>
+            <li>✓ Barangay boundary detection</li>
+            <li>✓ Visual map with boundaries</li>
+            <li>✓ Cross-boundary fare adjustments</li>
           </ul>
         </div>
 
@@ -159,8 +210,9 @@ export default function UnifiedFareCalculator({ defaultMode = 'auto' }: UnifiedC
           </div>
           <ul className="text-sm text-emerald-700 space-y-1">
             <li>✓ Works without internet</li>
-            <li>✓ Direct distance calculation</li>
-            <li>✓ Real-time position tracking</li>
+            <li>✓ Geographic boundary analysis</li>
+            <li>✓ Point-in-polygon detection</li>
+            <li>✓ Poblacion/rural rate detection</li>
             <li>✓ Battery efficient</li>
           </ul>
         </div>
