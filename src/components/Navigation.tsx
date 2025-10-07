@@ -75,57 +75,11 @@ export default function Navigation() {
     )
 
     switch (userType) {
-      case 'ADMIN':
-        return (
-          <>
-            {dashboardLink}
-            <Link 
-              href="/admin/coordinate-verification" 
-              className={linkClass}
-              onClick={handleClick}
-              key="coordinates"
-            >
-              📍 Coordinate Verification
-            </Link>
-          </>
-        )
-
       case 'DATA_ENCODER':
         return (
           <>
             {dashboardLink}
             {/* Coordinate verification moved to admin only */}
-          </>
-        )
-
-      case 'ENFORCER':
-        return (
-          <>
-            {dashboardLink}
-            <Link 
-              href="/enforcer" 
-              className={linkClass}
-              onClick={handleClick}
-              key="enforcement"
-            >
-              🚔 Enforcement Dashboard
-            </Link>
-            <Link 
-              href="/calculator" 
-              className={linkClass}
-              onClick={handleClick}
-              key="calculator"
-            >
-              🧮 Fare Calculator
-            </Link>
-            <Link 
-              href="/report" 
-              className={linkClass}
-              onClick={handleClick}
-              key="report"
-            >
-              📝 Report Issue
-            </Link>
           </>
         )
 

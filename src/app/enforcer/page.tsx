@@ -25,7 +25,6 @@ function EnforcerContent() {
   const tabs = [
     { id: 'dashboard', label: 'Dashboard', icon: '📊' },
     { id: 'incidents', label: 'Incident Queue', icon: '📋' },
-    { id: 'patrol', label: 'Patrol Routes', icon: '🚓' },
     { id: 'analytics', label: 'Analytics', icon: '📈' },
     { id: 'reports', label: 'Reports', icon: '📝' },
     { id: 'offline-map', label: 'Offline Map', icon: '📍' }
@@ -37,8 +36,6 @@ function EnforcerContent() {
         return <EnforcerDashboard />
       case 'incidents':
         return <EnforcerIncidentsList />
-      case 'patrol':
-        return <PatrolManagement />
       case 'analytics':
         return <HotspotAnalytics />
       case 'reports':

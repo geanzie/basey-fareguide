@@ -256,12 +256,6 @@ function getNavigationItems(userType: string): NavigationItem[] {
           icon: '📈',
           href: '/admin/reports'
         },
-        {
-          id: 'coordinate-verification',
-          label: 'Coordinate Verification',
-          icon: '📍',
-          href: '/admin/coordinate-verification'
-        },
         ...commonItems
       ]
 
@@ -295,30 +289,6 @@ function getNavigationItems(userType: string): NavigationItem[] {
           label: 'Enforcement Dashboard',
           icon: '📊',
           href: '/enforcer'
-        },
-        {
-          id: 'incidents',
-          label: 'Incident Queue',
-          icon: '📋',
-          href: '/enforcer/incidents'
-        },
-        {
-          id: 'patrol',
-          label: 'Patrol Management',
-          icon: '🚓',
-          href: '/enforcer/patrol'
-        },
-        {
-          id: 'reports',
-          label: 'Enforcement Reports',
-          icon: '📝',
-          href: '/enforcer/reports'
-        },
-        {
-          id: 'map',
-          label: 'Offline Map',
-          icon: '🗺️',
-          href: '/enforcer/map'
         }
       ]
 

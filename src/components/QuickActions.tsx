@@ -209,51 +209,51 @@ const QuickActions = () => {
   const quickActions: QuickAction[] = [
     {
       id: 'take-next-incident',
-      title: 'Take Next Incident',
-      description: 'Claim the next available incident from the queue',
+      title: 'Respond to Incident',
+      description: 'Accept and respond to the next priority incident',
       icon: '🚨',
       action: () => takeNextIncident(),
       color: 'bg-red-50 hover:bg-red-100 border-red-200 text-red-900'
     },
     {
-      id: 'create-report',
-      title: 'Create Report',
-      description: 'Issue tickets or create incident reports',
-      icon: '📋',
-      action: () => openReportForm('quick-ticket'),
+      id: 'update-incident-status',
+      title: 'Update Response Status',
+      description: 'Mark incident as investigating, resolved, or escalated',
+      icon: '🔄',
+      action: () => updateIncidentStatus(),
       color: 'bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-900'
     },
     {
-      id: 'start-patrol',
-      title: 'Start Patrol',
-      description: 'Begin a new patrol route',
-      icon: '🚓',
-      action: () => startPatrol(),
+      id: 'upload-evidence',
+      title: 'Submit Evidence',
+      description: 'Upload photos, videos, and documents for active cases',
+      icon: '📤',
+      action: () => uploadEvidence(),
       color: 'bg-green-50 hover:bg-green-100 border-green-200 text-green-900'
     },
     {
-      id: 'emergency-report',
-      title: 'Emergency Report',
-      description: 'File an urgent critical incident',
-      icon: '🚑',
-      action: () => createEmergencyReport(),
-      color: 'bg-orange-50 hover:bg-orange-100 border-orange-200 text-orange-900'
-    },
-    {
-      id: 'vehicle-check',
-      title: 'Vehicle Check',
-      description: 'Verify vehicle permits and registration',
-      icon: '🔍',
-      action: () => performVehicleCheck(),
+      id: 'issue-citation',
+      title: 'Issue Citation',
+      description: 'Issue violation ticket during incident response',
+      icon: '🎫',
+      action: () => openReportForm('quick-ticket'),
       color: 'bg-purple-50 hover:bg-purple-100 border-purple-200 text-purple-900'
     },
     {
-      id: 'backup-request',
+      id: 'request-backup',
       title: 'Request Backup',
-      description: 'Call for additional enforcement support',
-      icon: '📞',
+      description: 'Call for assistance with current incident response',
+      icon: '🆘',
       action: () => requestBackup(),
-      color: 'bg-yellow-50 hover:bg-yellow-100 border-yellow-200 text-yellow-900'
+      color: 'bg-orange-50 hover:bg-orange-100 border-orange-200 text-orange-900'
+    },
+    {
+      id: 'emergency-escalate',
+      title: 'Emergency Escalation',
+      description: 'Escalate incident to emergency services immediately',
+      icon: '🚑',
+      action: () => escalateEmergency(),
+      color: 'bg-red-100 hover:bg-red-200 border-red-300 text-red-900'
     }
   ]
 
@@ -290,39 +290,37 @@ const QuickActions = () => {
     }
   }
 
-  const startPatrol = () => {
-    // In a real implementation, this would start a patrol session
-    alert('Patrol feature coming soon! This would start GPS tracking and route monitoring.')
+  const updateIncidentStatus = () => {
+    // In a real implementation, this would show a status update modal
+    alert('Status Update feature coming soon! This would allow updating incident status (Investigating, En Route, On Scene, Resolved, Escalated).')
   }
 
+  const uploadEvidence = () => {
+    // In a real implementation, this would open file upload for current incident
+    alert('Evidence Upload feature coming soon! This would allow uploading photos, videos, and documents for active incidents.')
+  }
 
-
-  const performVehicleCheck = () => {
-    const plateNumber = prompt('Enter vehicle plate number to check:')
-    if (plateNumber) {
-      // In a real implementation, this would check vehicle registration
-      alert(`Checking registration for plate: ${plateNumber}. Feature coming soon!`)
+  const escalateEmergency = () => {
+    // In a real implementation, this would immediately escalate to emergency services
+    const confirmed = confirm('EMERGENCY ESCALATION: This will immediately notify emergency services (911, Fire Dept, Medical). Continue?')
+    if (confirmed) {
+      alert('Emergency services have been notified. Incident escalated to highest priority.')
     }
   }
+
+
+
+
 
   const requestBackup = () => {
-    const location = prompt('Enter your current location for backup request:')
-    if (location) {
-      // In a real implementation, this would send backup request
-      alert(`Backup requested at: ${location}. Feature coming soon!`)
+    const incidentId = prompt('Enter current incident ID for backup request:')
+    if (incidentId) {
+      // In a real implementation, this would send backup request with incident context
+      alert(`Backup requested for incident ${incidentId}. Other enforcers will be notified.`)
     }
   }
 
-  const createEmergencyReport = () => {
-    setReportMode('full-incident')
-    setReportData(prev => ({
-      ...prev,
-      isTicketOnly: false,
-      severity: 'CRITICAL',
-      incidentType: 'EMERGENCY'
-    }))
-    setShowReportForm(true)
-  }
+
 
   // Fetch violation history for a vehicle
   const fetchViolationHistory = async (plateNumber: string) => {
@@ -538,23 +536,23 @@ const QuickActions = () => {
 
       {/* Quick Stats */}
       <div className="bg-white rounded-xl shadow-sm border p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">📈 Today's Summary</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">📈 Today's Response Summary</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="text-center p-3 bg-blue-50 rounded-lg">
-            <div className="text-2xl font-bold text-blue-600">3</div>
-            <div className="text-sm text-blue-800">Cases Handled</div>
+          <div className="text-center p-3 bg-red-50 rounded-lg">
+            <div className="text-2xl font-bold text-red-600">5</div>
+            <div className="text-sm text-red-800">Incidents Responded</div>
           </div>
           <div className="text-center p-3 bg-green-50 rounded-lg">
-            <div className="text-2xl font-bold text-green-600">2</div>
-            <div className="text-sm text-green-800">Tickets Issued</div>
+            <div className="text-2xl font-bold text-green-600">3</div>
+            <div className="text-sm text-green-800">Cases Resolved</div>
+          </div>
+          <div className="text-center p-3 bg-blue-50 rounded-lg">
+            <div className="text-2xl font-bold text-blue-600">12m</div>
+            <div className="text-sm text-blue-800">Avg Response Time</div>
           </div>
           <div className="text-center p-3 bg-purple-50 rounded-lg">
-            <div className="text-2xl font-bold text-purple-600">1.5h</div>
-            <div className="text-sm text-purple-800">Avg Resolution</div>
-          </div>
-          <div className="text-center p-3 bg-orange-50 rounded-lg">
-            <div className="text-2xl font-bold text-orange-600">4.2km</div>
-            <div className="text-sm text-orange-800">Patrol Distance</div>
+            <div className="text-2xl font-bold text-purple-600">2</div>
+            <div className="text-sm text-purple-800">Citations Issued</div>
           </div>
         </div>
       </div>
@@ -600,13 +598,13 @@ const QuickActions = () => {
                   </span>
                   <div>
                     <h3 className="text-xl font-bold text-gray-900">
-                      {reportMode === 'quick-ticket' ? 'Issue Traffic Ticket' : 
-                       reportData.severity === 'CRITICAL' ? 'Emergency Incident Report' : 
-                       'Create Incident Report'}
+                      {reportMode === 'full-incident' ? 'Incident Response Report' : 
+                       reportData.severity === 'CRITICAL' ? 'Critical Incident Response' : 
+                       'Issue Violation Citation'}
                     </h3>
                     <p className="text-sm text-gray-600">
-                      {reportMode === 'quick-ticket' ? 'Quick violation ticketing system' : 
-                       'Comprehensive incident documentation system'}
+                      {reportMode === 'full-incident' ? 'Document incident response, investigation findings, and resolution' : 
+                       'Issue citation for violations discovered during incident response'}
                     </p>
                   </div>
                 </div>
@@ -621,36 +619,36 @@ const QuickActions = () => {
               {/* Mode Toggle */}
               <div className="mb-6 bg-gray-50 p-4 rounded-lg">
                 <div className="flex items-center space-x-4">
-                  <span className="text-sm font-medium text-gray-700">Report Type:</span>
+                  <span className="text-sm font-medium text-gray-700">Response Type:</span>
                   <div className="flex space-x-2">
-                    <button
-                      type="button"
-                      onClick={() => handleModeChange('quick-ticket')}
-                      className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                        reportMode === 'quick-ticket' 
-                          ? 'bg-blue-100 text-blue-800 border border-blue-300' 
-                          : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
-                      }`}
-                    >
-                      🎫 Quick Ticket
-                    </button>
                     <button
                       type="button"
                       onClick={() => handleModeChange('full-incident')}
                       className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
                         reportMode === 'full-incident' 
+                          ? 'bg-blue-100 text-blue-800 border border-blue-300' 
+                          : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      📋 Incident Response
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleModeChange('quick-ticket')}
+                      className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                        reportMode === 'quick-ticket' 
                           ? 'bg-purple-100 text-purple-800 border border-purple-300' 
                           : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
                       }`}
                     >
-                      📋 Full Report
+                      🎫 Issue Citation
                     </button>
                   </div>
                 </div>
                 <div className="mt-2 text-xs text-gray-600">
-                  {reportMode === 'quick-ticket' 
-                    ? 'Use for simple traffic violations that require immediate ticketing'
-                    : 'Use for complex incidents requiring investigation, evidence, and detailed documentation'
+                  {reportMode === 'full-incident' 
+                    ? 'Primary mode: Respond to and document incidents with full investigation details'
+                    : 'Secondary mode: Issue violation citations during incident response when applicable'
                   }
                 </div>
               </div>
@@ -662,7 +660,7 @@ const QuickActions = () => {
                     {/* Incident Type */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {reportMode === 'quick-ticket' ? 'Violation Type' : 'Incident Type'} *
+                        {reportMode === 'full-incident' ? 'Incident Type' : 'Violation Discovered'} *
                       </label>
                       <select
                         name="incidentType"
@@ -671,20 +669,26 @@ const QuickActions = () => {
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         required
                       >
-                        <option value="">Select {reportMode === 'quick-ticket' ? 'violation' : 'incident'} type</option>
-                        <option value="FARE_OVERCHARGE">Fare Overcharge</option>
-                        <option value="RECKLESS_DRIVING">Reckless Driving</option>
-                        <option value="VEHICLE_VIOLATION">Vehicle Violation</option>
-                        <option value="ROUTE_VIOLATION">Route Violation</option>
-                        <option value="NO_PERMIT">No Valid Permit</option>
-                        <option value="UNSAFE_VEHICLE">Unsafe Vehicle Condition</option>
-                        <option value="DRIVER_MISCONDUCT">Driver Misconduct</option>
-                        {reportMode === 'full-incident' && (
+                        <option value="">Select {reportMode === 'full-incident' ? 'incident type' : 'violation found during response'}</option>
+                        {reportMode === 'full-incident' ? (
                           <>
-                            <option value="ACCIDENT">Traffic Accident</option>
-                            <option value="EMERGENCY">Emergency Situation</option>
                             <option value="PASSENGER_COMPLAINT">Passenger Complaint</option>
+                            <option value="ACCIDENT">Traffic Accident</option>
+                            <option value="DRIVER_MISCONDUCT">Driver Misconduct</option>
                             <option value="ROAD_OBSTRUCTION">Road Obstruction</option>
+                            <option value="EMERGENCY">Emergency Situation</option>
+                            <option value="FARE_DISPUTE">Fare Dispute</option>
+                            <option value="VEHICLE_BREAKDOWN">Vehicle Breakdown</option>
+                            <option value="PUBLIC_DISTURBANCE">Public Disturbance</option>
+                          </>
+                        ) : (
+                          <>
+                            <option value="FARE_OVERCHARGE">Fare Overcharge</option>
+                            <option value="NO_PERMIT">No Valid Permit</option>
+                            <option value="VEHICLE_VIOLATION">Vehicle Violation</option>
+                            <option value="ROUTE_VIOLATION">Route Violation</option>
+                            <option value="RECKLESS_DRIVING">Reckless Driving</option>
+                            <option value="UNSAFE_VEHICLE">Unsafe Vehicle Condition</option>
                           </>
                         )}
                       </select>
@@ -1015,9 +1019,9 @@ const QuickActions = () => {
                         : 'bg-purple-600 hover:bg-purple-700'
                     }`}
                   >
-                    {reportMode === 'quick-ticket' ? '🎫 Issue Ticket' : 
-                     reportData.severity === 'CRITICAL' ? '🚑 Submit Emergency Report' :
-                     '📋 Create Incident Report'}
+                    {reportMode === 'full-incident' ? 
+                     (reportData.severity === 'CRITICAL' ? '🚑 Submit Critical Response' : '📋 Submit Response Report') :
+                     '🎫 Issue Citation'}
                   </button>
                 </div>
               </form>

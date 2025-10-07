@@ -16,12 +16,6 @@ export default function VerifyCoordinatesPage() {
       return
     }
 
-    // If user is admin, redirect to new admin location
-    if (user.userType === 'ADMIN') {
-      router.push('/admin/coordinate-verification')
-      return
-    }
-
     // For non-admin users, show access denied message
     // This will be handled by the component below
   }, [user, loading, router])
