@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { BASEY_CENTER, BASEY_LANDMARKS, EXTERNAL_LANDMARKS } from '@/utils/baseyCenter'
 
 // Barangay coordinates mapping
 const barangayCoordinates: Record<string, [number, number]> = {
@@ -60,17 +61,18 @@ const barangayCoordinates: Record<string, [number, number]> = {
   'Bulao': [11.3381704, 125.1021105],
   
   // Key Landmarks and Places of Interest in Basey Municipality
-  'José Rizal Monument (Basey Center - KM 0)': [11.280182, 125.06918],
-  'Sohoton Natural Bridge National Park': [11.3329711, 125.1442518],
-  'Sohoton Caves': [11.3588068, 125.1586589],
-  'Panhulugan Cliff': [11.3556, 125.0234],
-  'Basey Church (St. Michael the Archangel)': [11.2809812, 125.0699803],
-  'Basey Municipal Hall': [11.2801061, 125.0691729],
-  'Basey Public Market': [11.2846003, 125.070559],
-  'Basey Central School': [11.2817, 125.0683],
-  'Basey National High School': [11.2847487, 125.0668604],
-  'Basey Port/Wharf': [11.282514, 125.07155],
-  'Rural Health Unit Basey': [11.2817, 125.0683]
+  // Using GeoJSON-based coordinates following the rule: "follow whatever the .geojson file has because this is the most realistic coordinates data"
+  'José Rizal Monument (Basey Center - KM 0)': BASEY_LANDMARKS['José Rizal Monument (Basey Center - KM 0)'],
+  'Sohoton Natural Bridge National Park': EXTERNAL_LANDMARKS['Sohoton Natural Bridge National Park'],
+  'Sohoton Caves': EXTERNAL_LANDMARKS['Sohoton Caves'],
+  'Panhulugan Cliff': EXTERNAL_LANDMARKS['Panhulugan Cliff'],
+  'Basey Church (St. Michael the Archangel)': BASEY_LANDMARKS['Basey Church (St. Michael the Archangel)'],
+  'Basey Municipal Hall': BASEY_LANDMARKS['Basey Municipal Hall'],
+  'Basey Public Market': BASEY_LANDMARKS['Basey Public Market'],
+  'Basey Central School': BASEY_LANDMARKS['Basey Central School'],
+  'Basey National High School': BASEY_LANDMARKS['Basey National High School'],
+  'Basey Port/Wharf': BASEY_LANDMARKS['Basey Port/Wharf'],
+  'Rural Health Unit Basey': BASEY_LANDMARKS['Rural Health Unit Basey']
 }
 
 export async function POST(request: NextRequest) {
@@ -202,7 +204,7 @@ export async function GET() {
           preferredMethod: 'auto'
         },
         'with_coordinates': {
-          origin: [11.280182, 125.06918],
+          origin: BASEY_CENTER,
           destination: [11.2768363, 125.0114879],
           preferredMethod: 'auto'
         }

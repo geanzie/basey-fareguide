@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { barangayService } from '../lib/barangayService'
 import { BarangayInfo } from '../utils/barangayBoundaries'
 import EnhancedRouteMap from './EnhancedRouteMap'
+import { BASEY_LANDMARKS, EXTERNAL_LANDMARKS } from '../utils/baseyCenter'
 
 // Route Planner uses Google Maps API for accurate road-based distance calculation
 // GPS direct distance calculation is not used here as it would be unfair to drivers
@@ -91,18 +92,19 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
     coords: [b.center[1], b.center[0]] as [number, number], // Convert lng,lat to lat,lng
     type: b.isPoblacion ? 'urban' as const : 'rural' as const
   })) as Array<{ name: string; coords: [number, number]; type: 'urban' | 'rural' | 'landmark' }>).concat([
-    // Additional landmarks for enhanced functionality
-    { name: 'José Rizal Monument (Basey Center - KM 0)', coords: [11.280182, 125.06918], type: 'landmark' as const },
-    { name: 'Sohoton Natural Bridge National Park', coords: [11.3329711, 125.1442518], type: 'landmark' as const },
-    { name: 'Sohoton Caves', coords: [11.3588068, 125.1586589], type: 'landmark' as const },
-    { name: 'Panhulugan Cliff', coords: [11.3556, 125.0234], type: 'landmark' as const },
-    { name: 'Basey Church (St. Michael the Archangel)', coords: [11.2809812, 125.0699803], type: 'landmark' as const },
-    { name: 'Basey Municipal Hall', coords: [11.2801061, 125.0691729], type: 'landmark' as const },
-    { name: 'Basey Public Market', coords: [11.2846003, 125.070559], type: 'landmark' as const },
-    { name: 'Basey Central School', coords: [11.2817, 125.0683], type: 'landmark' as const },
-    { name: 'Basey National High School', coords: [11.2847487, 125.0668604], type: 'landmark' as const },
-    { name: 'Basey Port/Wharf', coords: [11.282514, 125.07155], type: 'landmark' as const },
-    { name: 'Rural Health Unit Basey', coords: [11.2817, 125.0683], type: 'landmark' as const }
+    // Additional landmarks using GeoJSON-based coordinates
+    // Following rule: "follow whatever the .geojson file has because this is the most realistic coordinates data"
+    { name: 'José Rizal Monument (Basey Center - KM 0)', coords: BASEY_LANDMARKS['José Rizal Monument (Basey Center - KM 0)'], type: 'landmark' as const },
+    { name: 'Sohoton Natural Bridge National Park', coords: EXTERNAL_LANDMARKS['Sohoton Natural Bridge National Park'], type: 'landmark' as const },
+    { name: 'Sohoton Caves', coords: EXTERNAL_LANDMARKS['Sohoton Caves'], type: 'landmark' as const },
+    { name: 'Panhulugan Cliff', coords: EXTERNAL_LANDMARKS['Panhulugan Cliff'], type: 'landmark' as const },
+    { name: 'Basey Church (St. Michael the Archangel)', coords: BASEY_LANDMARKS['Basey Church (St. Michael the Archangel)'], type: 'landmark' as const },
+    { name: 'Basey Municipal Hall', coords: BASEY_LANDMARKS['Basey Municipal Hall'], type: 'landmark' as const },
+    { name: 'Basey Public Market', coords: BASEY_LANDMARKS['Basey Public Market'], type: 'landmark' as const },
+    { name: 'Basey Central School', coords: BASEY_LANDMARKS['Basey Central School'], type: 'landmark' as const },
+    { name: 'Basey National High School', coords: BASEY_LANDMARKS['Basey National High School'], type: 'landmark' as const },
+    { name: 'Basey Port/Wharf', coords: BASEY_LANDMARKS['Basey Port/Wharf'], type: 'landmark' as const },
+    { name: 'Rural Health Unit Basey', coords: BASEY_LANDMARKS['Rural Health Unit Basey'], type: 'landmark' as const }
   ])
 
   // Note: Map initialization removed for now - focusing on API integration

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getGoogleMapsRoute, getDetailedRoute, calculateGoogleMapsFare, metersToKilometers, validateBaseyCoordinates, testCoordinates } from '@/lib/googleMaps';
+import { BASEY_CENTER } from '@/utils/baseyCenter';
 
 export async function POST(request: NextRequest) {
   try {
@@ -100,7 +101,7 @@ export async function GET() {
       message: 'Google Maps Route API',
       usage: 'POST with { origin: [lat, lng], destination: [lat, lng] }',
       example: {
-        origin: [11.280182, 125.06918], // Basey Center
+        origin: BASEY_CENTER, // Basey Center from GeoJSON data
         destination: [11.2768363, 125.0114879], // San Antonio
       },
     },

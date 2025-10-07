@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { BASEY_CENTER_GOOGLE } from '../utils/baseyCenter'
 
 interface MapProps {
   origin?: [number, number]
@@ -60,7 +61,8 @@ const InteractiveGoogleMap = ({ origin, destination, onRouteCalculated }: MapPro
 
       try {
         // Center on Basey town center (José Rizal Monument)
-        const baseyCenter = { lat: 11.280182, lng: 125.06918 }
+        // Using GeoJSON-calculated Basey center coordinates
+        const baseyCenter = BASEY_CENTER_GOOGLE
         
         const mapInstance = new window.google.maps.Map(mapRef.current, {
           zoom: 13,

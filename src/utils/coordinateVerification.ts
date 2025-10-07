@@ -45,7 +45,8 @@ const BASEY_BOUNDS = {
 };
 
 // Center of Basey (José Rizal Monument - KM 0)
-const BASEY_CENTER: [number, number] = [11.280182, 125.06918];
+// Import the authoritative Basey center coordinates
+import { BASEY_CENTER } from './baseyCenter';
 
 /**
  * Calculate distance between two coordinates using Haversine formula
