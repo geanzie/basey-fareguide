@@ -35,8 +35,16 @@ export async function GET(request: NextRequest) {
   try {
     const user = await verifyAuth(request)
     
+    // If user is not authenticated, return empty history but don't error
+    // This allows public pages to call this endpoint gracefully
     if (!user) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ 
+        calculations: [],
+        total: 0,
+        page: 1,
+        totalPages: 0,
+        message: 'Login required to view calculation history'
+      })
     }
 
     const { searchParams } = new URL(request.url)

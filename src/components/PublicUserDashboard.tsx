@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { PageSection, StatsGrid, StatCard, ActionButton } from './PageWrapper'
+import { flexibleFetch } from '@/lib/api'
 
 interface Incident {
   id: string
@@ -47,28 +48,18 @@ export default function PublicUserDashboard() {
         }
 
         // Fetch user incidents and fare calculations in parallel
-        const [incidentsResponse, fareCalculationsResponse] = await Promise.all([
-          fetch('/api/incidents', {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          }),
-          fetch('/api/fare-calculations', {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          })
+        const [incidentsResult, fareCalculationsResult] = await Promise.all([
+          flexibleFetch<{incidents: any[]}>('/api/incidents'),
+          flexibleFetch<{calculations: any[]}>('/api/fare-calculations')
         ])
 
-        if (incidentsResponse.ok) {
-          const incidentsData = await incidentsResponse.json()
-          setReportedIncidents(incidentsData.incidents || [])
+        if (incidentsResult.success && incidentsResult.data) {
+          setReportedIncidents(incidentsResult.data.incidents || [])
         }
 
-        if (fareCalculationsResponse.ok) {
-          const fareCalculationsData = await fareCalculationsResponse.json()
+        if (fareCalculationsResult.success && fareCalculationsResult.data) {
           // Transform fare calculations to match the Route interface for compatibility
-          const transformedRoutes: Route[] = (fareCalculationsData.calculations || []).map((calc: any) => ({
+          const transformedRoutes: Route[] = (fareCalculationsResult.data.calculations || []).map((calc: any) => ({
             id: calc.id,
             from: calc.fromLocation,
             to: calc.toLocation,

@@ -65,7 +65,12 @@ export default function AdminUserManagement() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/users');
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/users', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       const data = await response.json();
       if (data.success) {
         setUsers(data.users);
@@ -80,7 +85,12 @@ export default function AdminUserManagement() {
   const fetchPendingUsers = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/users/pending');
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/users/pending', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       const data = await response.json();
       if (data.success) {
         setPendingUsers(data.users);

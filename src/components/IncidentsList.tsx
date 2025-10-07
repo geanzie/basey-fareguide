@@ -65,7 +65,12 @@ const IncidentsList = () => {
       if (filter.incidentType !== 'ALL') params.append('type', filter.incidentType)
       if (filter.dateRange !== 'ALL') params.append('dateRange', filter.dateRange)
 
-      const response = await fetch(`/api/incidents?${params.toString()}`)
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/incidents?${params.toString()}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
       if (response.ok) {
         const data = await response.json()
         setIncidents(data.incidents || [])

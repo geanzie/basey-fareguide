@@ -32,7 +32,12 @@ export default function PermitStatistics() {
       setLoading(true)
       
       // Fetch all permits to calculate statistics
-      const response = await fetch('/api/permits?limit=1000')
+      const token = localStorage.getItem('token')
+      const response = await fetch('/api/permits?limit=1000', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
       if (response.ok) {
         const data = await response.json()
         const permits = data.permits
