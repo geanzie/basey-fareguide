@@ -152,13 +152,20 @@ const LoginForm = ({ onSwitchToRegister }: LoginFormProps) => {
             </button>
           </div>
 
-          <div className="text-center">
+          <div className="flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => router.push('/auth/request-reset')}
+              className="text-sm text-emerald-600 hover:text-emerald-500"
+            >
+              Forgot password?
+            </button>
             <button
               type="button"
               onClick={onSwitchToRegister}
               className="text-emerald-600 hover:text-emerald-500 text-sm"
             >
-              Don't have an account? Register here
+              Register here
             </button>
           </div>
         </form>

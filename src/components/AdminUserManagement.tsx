@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import ResponsiveTable, { StatusBadge, ActionButton } from './ResponsiveTable';
 import { PageSection, StatsGrid, StatCard } from './PageWrapper';
+import AdminPasswordReset from './AdminPasswordReset';
 
 // Local enum definition to avoid Prisma import issues
 enum UserType {
@@ -26,6 +27,7 @@ interface AdminUser {
 
 interface User {
   id: string;
+  username: string;
   firstName: string;
   lastName: string;
   userType: string;
@@ -38,7 +40,7 @@ interface User {
 }
 
 export default function AdminUserManagement() {
-  const [activeTab, setActiveTab] = useState<'create' | 'pending' | 'users'>('create');
+  const [activeTab, setActiveTab] = useState<'create' | 'pending' | 'users' | 'password-reset'>('create');
   const [users, setUsers] = useState<User[]>([]);
   const [pendingUsers, setPendingUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
@@ -55,7 +57,7 @@ export default function AdminUserManagement() {
   });
 
   useEffect(() => {
-    if (activeTab === 'users') {
+    if (activeTab === 'users' || activeTab === 'password-reset') {
       fetchUsers();
     } else if (activeTab === 'pending') {
       fetchPendingUsers();
@@ -217,7 +219,8 @@ export default function AdminUserManagement() {
             {[
               { key: 'create', label: 'Create Official User', icon: '➕' },
               { key: 'pending', label: 'Pending Verifications', icon: '⏳' },
-              { key: 'users', label: 'All Users', icon: '👥' }
+              { key: 'users', label: 'All Users', icon: '👥' },
+              { key: 'password-reset', label: 'Password Reset', icon: '🔐' }
             ].map((tab) => (
               <button
                 key={tab.key}
@@ -512,6 +515,16 @@ export default function AdminUserManagement() {
               emptyMessage="No users found"
               className="bg-white rounded-lg shadow"
             />
+          )}
+
+          {/* Password Reset Tab */}
+          {activeTab === 'password-reset' && (
+            <>
+              <AdminPasswordReset 
+                users={users} 
+                onRefresh={fetchUsers}
+              />
+            </>
           )}
         </div>
       </div>
