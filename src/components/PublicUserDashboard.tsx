@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo } from 'react'
 import Link from 'next/link'
 import { PageSection, StatsGrid, StatCard, ActionButton } from './PageWrapper'
 import { flexibleFetch } from '@/lib/api'
@@ -33,7 +33,7 @@ interface Route {
   createdAt: string
 }
 
-export default function PublicUserDashboard() {
+function PublicUserDashboard() {
   const [reportedIncidents, setReportedIncidents] = useState<Incident[]>([])
   const [recentRoutes, setRecentRoutes] = useState<Route[]>([])
   const [loading, setLoading] = useState(true)
@@ -344,3 +344,5 @@ export default function PublicUserDashboard() {
     </div>
   )
 }
+
+export default memo(PublicUserDashboard)

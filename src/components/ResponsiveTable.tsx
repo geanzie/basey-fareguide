@@ -1,6 +1,6 @@
 'use client'
 
-import { ReactNode } from 'react'
+import { ReactNode, memo } from 'react'
 
 interface TableColumn {
   key: string
@@ -19,7 +19,7 @@ interface ResponsiveTableProps {
   mobileCardClassName?: string
 }
 
-export default function ResponsiveTable({ 
+function ResponsiveTable({ 
   columns, 
   data, 
   loading = false,
@@ -198,3 +198,6 @@ export function ActionButton({
     </button>
   )
 }
+
+// Memoize to avoid unnecessary re-renders when props are unchanged
+export default memo(ResponsiveTable)

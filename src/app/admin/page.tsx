@@ -1,11 +1,20 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import dynamic from 'next/dynamic'
 import RoleGuard from '@/components/RoleGuard'
-import AdminUserManagement from '@/components/AdminUserManagement'
-import StorageManagement from '@/components/StorageManagement'
-import AdminDashboard from '@/components/AdminDashboard'
 import PageWrapper from '@/components/PageWrapper'
+
+// Lazy-load admin modules to reduce initial bundle
+const AdminUserManagement = dynamic(() => import('@/components/AdminUserManagement'), {
+  loading: () => <div className="p-6">Loading users...</div>
+})
+const StorageManagement = dynamic(() => import('@/components/StorageManagement'), {
+  loading: () => <div className="p-6">Loading storage tools...</div>
+})
+const AdminDashboard = dynamic(() => import('@/components/AdminDashboard'), {
+  loading: () => <div className="p-6">Loading admin dashboard...</div>
+})
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'storage' | 'settings'>('dashboard')

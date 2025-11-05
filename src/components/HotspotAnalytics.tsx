@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo } from 'react'
+import useSWR from 'swr'
 
 interface HotspotData {
   id: string
@@ -40,35 +41,22 @@ const HotspotAnalytics = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('7') // days
   const [selectedHotspot, setSelectedHotspot] = useState<HotspotData | null>(null)
 
+  // SWR for hotspot data
+  const { data, isLoading, error } = useSWR<{ hotspots: HotspotData[] }>(`/api/analytics/hotspots?period=${selectedPeriod}`)
+
   useEffect(() => {
-    fetchHotspotData()
-    generatePatrolRecommendations()
-  }, [selectedPeriod])
-
-  const fetchHotspotData = async () => {
-    try {
-      setLoading(true)
-      const token = localStorage.getItem('token')
-      
-      const response = await fetch(`/api/analytics/hotspots?period=${selectedPeriod}`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setHotspots(data.hotspots || [])
-      }
-    } catch (error) {
-      console.error('Error fetching hotspot data:', error)
-      // Mock data for demonstration
+    // Update local state when SWR data changes
+    if (data?.hotspots) {
+      setHotspots(data.hotspots)
+    } else if (error) {
+      // Fallback to mock if error
       setHotspots(generateMockHotspots())
-    } finally {
-      setLoading(false)
     }
-  }
+    setLoading(isLoading)
+    generatePatrolRecommendations()
+  }, [data, isLoading, error, selectedPeriod])
+
+  // Removed manual fetch; using SWR
 
   const generatePatrolRecommendations = () => {
     // Mock patrol recommendations based on data analysis
@@ -385,4 +373,4 @@ const HotspotAnalytics = () => {
   )
 }
 
-export default HotspotAnalytics
+export default memo(HotspotAnalytics)

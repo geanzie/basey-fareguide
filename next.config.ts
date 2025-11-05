@@ -1,4 +1,8 @@
 import type { NextConfig } from "next";
+// Importing CJS export; type cast applied below to avoid TS issues
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+import bundleAnalyzer from '@next/bundle-analyzer'
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -53,4 +57,8 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+const withBundleAnalyzer = (bundleAnalyzer as any)({
+  enabled: process.env.ANALYZE === 'true',
+})
+
+export default withBundleAnalyzer(nextConfig as any);

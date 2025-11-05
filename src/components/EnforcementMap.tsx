@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, memo } from 'react'
 import { GoogleMap, LoadScript, Marker, HeatmapLayer, InfoWindow, Circle } from '@react-google-maps/api'
 
 interface Incident {
@@ -575,4 +575,5 @@ const EnforcementMap = () => {
   )
 }
 
-export default EnforcementMap
+// Memoize to prevent re-renders from parent when no props change
+export default memo(EnforcementMap)

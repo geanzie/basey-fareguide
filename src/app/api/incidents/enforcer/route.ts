@@ -117,6 +117,11 @@ export async function GET(request: NextRequest) {
         days: parseInt(days),
         violationType: filter
       }
+    }, {
+      headers: {
+        // Per-user browser cache for 30s with SWR
+        'Cache-Control': 'private, max-age=30, stale-while-revalidate=60'
+      }
     })
 
   } catch (error) {

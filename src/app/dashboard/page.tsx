@@ -1,8 +1,12 @@
 'use client'
 
 import RoleGuard from '@/components/RoleGuard'
-import PublicUserDashboard from '@/components/PublicUserDashboard'
+import dynamic from 'next/dynamic'
 import PageWrapper from '@/components/PageWrapper'
+
+const PublicUserDashboard = dynamic(() => import('@/components/PublicUserDashboard'), {
+  loading: () => <div className="p-6">Loading your dashboard...</div>
+})
 
 export default function DashboardPage() {
   return (

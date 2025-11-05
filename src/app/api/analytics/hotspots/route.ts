@@ -84,6 +84,10 @@ export async function GET(request: NextRequest) {
         analyzedFrom: startDate.toISOString(),
         analyzedTo: endDate.toISOString()
       }
+    }, {
+      headers: {
+        'Cache-Control': 'private, max-age=60, stale-while-revalidate=120'
+      }
     })
 
   } catch (error) {

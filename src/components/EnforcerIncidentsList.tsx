@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
+import useSWR from 'swr'
 import ResponsiveTable, { StatusBadge, ActionButton } from './ResponsiveTable'
 import EvidenceManager from './EvidenceManager'
 
@@ -52,33 +53,26 @@ export default function EnforcerIncidentsList() {
     calculatedPenalty: 500
   })
 
+  const days = 30
+  const [violationFilter, setViolationFilter] = useState<string>('all')
+  const swrKey = `/api/incidents/enforcer?days=${days}&filter=${violationFilter}`
+  const { data, isLoading, mutate } = useSWR<{ incidents: Incident[] }>(swrKey)
+
   useEffect(() => {
-    loadIncidents()
-  }, [])
-
-  const loadIncidents = async () => {
-    try {
-      setLoading(true)
-      const response = await fetch('/api/incidents/enforcer', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
-      if (response.ok) {
-        const data = await response.json()
-        setIncidents(data.incidents || [])
-      }
-    } catch (error) {
-      console.error('Error loading incidents:', error)
-    } finally {
-      setLoading(false)
+    if (data?.incidents) {
+      setIncidents(data.incidents)
     }
-  }
+    setLoading(isLoading)
+  }, [data, isLoading])
 
-  const filteredIncidents = incidents.filter(incident => {
-    if (statusFilter === 'ALL') return true
-    return incident.status === statusFilter
-  })
+  // Removed manual loadIncidents; SWR handles fetching
+
+  const filteredIncidents = useMemo(() => {
+    return incidents.filter(incident => {
+      if (statusFilter === 'ALL') return true
+      return incident.status === statusFilter
+    })
+  }, [incidents, statusFilter])
 
   const handleTakeIncident = async (incidentId: string) => {
     try {
@@ -89,7 +83,7 @@ export default function EnforcerIncidentsList() {
         }
       })
       if (response.ok) {
-        loadIncidents() // Refresh the list
+        mutate() // Refresh the list via SWR
       } else {
         const errorData = await response.json()
         console.error('Error taking incident:', errorData.message || 'Unknown error')
@@ -166,8 +160,8 @@ export default function EnforcerIncidentsList() {
         // Then proceed to issue ticket
         await handleIssueTicket(updatedIncident)
         
-        // Refresh the list to show updated status
-        loadIncidents()
+  // Refresh the list to show updated status
+  mutate()
       } else {
         const errorData = await response.json()
         alert(`Error taking incident: ${errorData.message || 'Unknown error'}`)
@@ -215,8 +209,8 @@ export default function EnforcerIncidentsList() {
 
       if (response.ok) {
         alert('Ticket issued successfully!')
-        closeTicketModal()
-        loadIncidents() // Refresh the list
+  closeTicketModal()
+  mutate() // Refresh the list
       } else {
         const errorData = await response.json()
         alert(`Error issuing ticket: ${errorData.message || 'Unknown error'}`)
@@ -315,12 +309,12 @@ export default function EnforcerIncidentsList() {
     }
   }
 
-  const stats = {
+  const stats = useMemo(() => ({
     total: incidents.length,
     pending: incidents.filter(i => i.status === 'PENDING').length,
     investigating: incidents.filter(i => i.status === 'INVESTIGATING').length,
     resolved: incidents.filter(i => i.status === 'RESOLVED').length
-  }
+  }), [incidents])
 
   return (
     <div className="bg-gray-50 min-h-screen">

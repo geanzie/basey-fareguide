@@ -1,15 +1,32 @@
 'use client'
 
 import { useState } from 'react'
+import dynamic from 'next/dynamic'
 import RoleGuard from '@/components/RoleGuard'
 import NotificationCenter from '@/components/NotificationCenter'
-import EnforcerDashboard from '@/components/EnforcerDashboard'
-import EnforcerIncidentsList from '@/components/EnforcerIncidentsList'
-import HotspotAnalytics from '@/components/HotspotAnalytics'
-import OfflineIncidentMap from '@/components/OfflineIncidentMap'
-import PatrolManagement from '@/components/PatrolManagement'
-import EnforcerReports from '@/components/EnforcerReports'
 import PageWrapper from '@/components/PageWrapper'
+
+// Lazy-load heavy tab content components
+const EnforcerDashboard = dynamic(() => import('@/components/EnforcerDashboard'), { 
+  loading: () => <div className="p-6">Loading dashboard...</div> 
+})
+const EnforcerIncidentsList = dynamic(() => import('@/components/EnforcerIncidentsList'), {
+  loading: () => <div className="p-6">Loading incidents...</div>
+})
+const HotspotAnalytics = dynamic(() => import('@/components/HotspotAnalytics'), {
+  loading: () => <div className="p-6">Loading analytics...</div>
+})
+const OfflineIncidentMap = dynamic(() => import('@/components/OfflineIncidentMap'), {
+  // Map relies on browser APIs – disable SSR and provide a lightweight fallback
+  ssr: false,
+  loading: () => <div className="p-6">Loading map...</div>
+})
+const PatrolManagement = dynamic(() => import('@/components/PatrolManagement'), {
+  loading: () => <div className="p-6">Loading patrol tools...</div>
+})
+const EnforcerReports = dynamic(() => import('@/components/EnforcerReports'), {
+  loading: () => <div className="p-6">Loading reports...</div>
+})
 
 export default function EnforcerPage() {
   return (
