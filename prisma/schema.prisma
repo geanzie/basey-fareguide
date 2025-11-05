@@ -45,6 +45,12 @@ model User {
   reviewedEvidence      Evidence[]            @relation("EvidenceReviewer")
   verificationLogs      UserVerificationLog[]
 
+  @@index([username])
+  @@index([userType])
+  @@index([isActive])
+  @@index([isVerified])
+  @@index([createdAt])
+  @@index([userType, isActive])
   @@map("users")
 }
 
@@ -70,6 +76,11 @@ model Vehicle {
   incidents          Incident[]
   permit             Permit?
 
+  @@index([plateNumber])
+  @@index([vehicleType])
+  @@index([isActive])
+  @@index([ownerName])
+  @@index([vehicleType, isActive])
   @@map("vehicles")
 }
 
@@ -99,6 +110,15 @@ model Incident {
   vehicle       Vehicle?       @relation(fields: [vehicleId], references: [id])
   evidence      Evidence[]
 
+  @@index([status])
+  @@index([incidentType])
+  @@index([reportedById])
+  @@index([handledById])
+  @@index([plateNumber])
+  @@index([incidentDate])
+  @@index([createdAt])
+  @@index([status, incidentType])
+  @@index([status, createdAt])
   @@map("incidents")
 }
 
@@ -120,6 +140,11 @@ model Evidence {
   uploader    User          @relation("EvidenceUploader", fields: [uploadedBy], references: [id])
   reviewer    User?         @relation("EvidenceReviewer", fields: [reviewedBy], references: [id])
 
+  @@index([incidentId])
+  @@index([status])
+  @@index([uploadedBy])
+  @@index([createdAt])
+  @@index([status, createdAt])
   @@map("evidence")
 }
 
@@ -138,6 +163,10 @@ model FareCalculation {
   user            User?    @relation(fields: [userId], references: [id])
   vehicle         Vehicle? @relation(fields: [vehicleId], references: [id])
 
+  @@index([userId])
+  @@index([vehicleId])
+  @@index([createdAt])
+  @@index([calculationType])
   @@map("fare_calculations")
 }
 
@@ -220,6 +249,11 @@ model Permit {
   renewalHistory     PermitRenewal[]
   vehicle            Vehicle      @relation(fields: [vehicleId], references: [id])
   
+  @@index([status])
+  @@index([vehicleType])
+  @@index([permitPlateNumber])
+  @@index([expiryDate])
+  @@index([status, vehicleType])
   @@map("permits")
 }
 

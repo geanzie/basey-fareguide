@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@/generated/prisma'
+import { prisma } from '@/lib/prisma'
 import jwt from 'jsonwebtoken'
 import { writeFile } from 'fs/promises'
 import { join } from 'path'
-
-const prisma = new PrismaClient()
 
 async function verifyAuth(request: NextRequest) {
   try {
