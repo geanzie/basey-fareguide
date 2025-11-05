@@ -4,12 +4,8 @@ import bcrypt from 'bcryptjs'
 
 export async function GET(request: NextRequest) {
   try {
+    // Fetch all users (including PUBLIC users)
     const users = await prisma.user.findMany({
-      where: {
-        userType: {
-          in: ['ADMIN', 'DATA_ENCODER', 'ENFORCER']
-        }
-      },
       select: {
         id: true,
         firstName: true,
@@ -21,7 +17,8 @@ export async function GET(request: NextRequest) {
         createdAt: true,
         governmentId: true,
         barangayResidence: true,
-        reasonForRegistration: true
+        reasonForRegistration: true,
+        phoneNumber: true
       },
       orderBy: { createdAt: 'desc' }
     })

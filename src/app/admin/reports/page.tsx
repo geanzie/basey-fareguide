@@ -44,71 +44,20 @@ export default function AdminReportsPage() {
       setLoading(true)
       const token = localStorage.getItem('token')
       
-      // For now, let's create mock data since we'd need to build comprehensive reporting APIs
-      // In production, this would fetch from /api/admin/reports
-      
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      // Mock report data
-      const mockData: ReportData = {
-        incidents: {
-          total: 145,
-          byStatus: {
-            PENDING: 12,
-            INVESTIGATING: 8,
-            RESOLVED: 118,
-            DISMISSED: 7
-          },
-          byType: {
-            TRAFFIC_VIOLATION: 89,
-            ACCIDENT: 23,
-            ILLEGAL_PARKING: 18,
-            OVERLOADING: 15
-          },
-          monthlyTrends: {
-            '2024-06': { total: 18, resolved: 16 },
-            '2024-07': { total: 25, resolved: 22 },
-            '2024-08': { total: 32, resolved: 28 },
-            '2024-09': { total: 41, resolved: 35 },
-            '2024-10': { total: 29, resolved: 17 }
-          }
-        },
-        users: {
-          total: 1247,
-          active: 1156,
-          byType: {
-            PUBLIC: 1190,
-            ENFORCER: 25,
-            DATA_ENCODER: 15,
-            ADMIN: 3
-          },
-          registrationTrends: {
-            '2024-06': 45,
-            '2024-07': 67,
-            '2024-08': 89,
-            '2024-09': 112,
-            '2024-10': 78
-          }
-        },
-        storage: {
-          totalFiles: 342,
-          totalSizeMB: 1247.5,
-          byType: {
-            IMAGE: { files: 234, sizeMB: 845.2 },
-            VIDEO: { files: 67, sizeMB: 312.8 },
-            DOCUMENT: { files: 28, sizeMB: 67.4 },
-            AUDIO: { files: 13, sizeMB: 22.1 }
-          }
-        },
-        system: {
-          responseTime: 245,
-          uptime: '99.7%',
-          lastGenerated: new Date().toISOString()
+      const response = await fetch(`/api/admin/reports?period=${selectedPeriod}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
         }
-      }
+      })
       
-      setReportData(mockData)
+      const result = await response.json()
+      
+      if (result.success) {
+        setReportData(result.data)
+        setError(null)
+      } else {
+        setError(result.error || 'Failed to load system reports')
+      }
       
     } catch (error) {
       console.error('Error fetching report data:', error)

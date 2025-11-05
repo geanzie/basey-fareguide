@@ -37,6 +37,7 @@ interface User {
   governmentId?: string;
   barangayResidence?: string;
   reasonForRegistration?: string;
+  phoneNumber?: string;
 }
 
 export default function AdminUserManagement() {
@@ -44,6 +45,9 @@ export default function AdminUserManagement() {
   const [users, setUsers] = useState<User[]>([]);
   const [pendingUsers, setPendingUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterUserType, setFilterUserType] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
 
   const [newUser, setNewUser] = useState<AdminUser>({
     firstName: '',
@@ -203,6 +207,31 @@ export default function AdminUserManagement() {
       setLoading(false);
     }
   };
+
+  // Filter users based on search query and filters
+  const filteredUsers = users.filter(user => {
+    // Search filter
+    const searchLower = searchQuery.toLowerCase();
+    const matchesSearch = !searchQuery || 
+      user.firstName.toLowerCase().includes(searchLower) ||
+      user.lastName.toLowerCase().includes(searchLower) ||
+      user.username.toLowerCase().includes(searchLower) ||
+      (user.phoneNumber && user.phoneNumber.toLowerCase().includes(searchLower)) ||
+      (user.governmentId && user.governmentId.toLowerCase().includes(searchLower)) ||
+      (user.barangayResidence && user.barangayResidence.toLowerCase().includes(searchLower));
+    
+    // User type filter
+    const matchesUserType = filterUserType === 'all' || user.userType === filterUserType;
+    
+    // Status filter
+    const matchesStatus = filterStatus === 'all' || 
+      (filterStatus === 'active' && user.isActive) ||
+      (filterStatus === 'inactive' && !user.isActive) ||
+      (filterStatus === 'verified' && user.isVerified) ||
+      (filterStatus === 'pending' && !user.isVerified);
+    
+    return matchesSearch && matchesUserType && matchesStatus;
+  });
 
   return (
     <div className="max-w-7xl mx-auto p-6">
@@ -444,7 +473,118 @@ export default function AdminUserManagement() {
 
           {/* All Users Tab */}
           {activeTab === 'users' && (
-            <ResponsiveTable
+            <div className="space-y-6">
+              {/* Search and Filter Controls */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Search Input */}
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Search Users
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Search by name, username, phone, ID, or barangay..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+
+                  {/* User Type Filter */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      User Type
+                    </label>
+                    <select
+                      value={filterUserType}
+                      onChange={(e) => setFilterUserType(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="all">All Types</option>
+                      <option value="ADMIN">Administrator</option>
+                      <option value="ENFORCER">Enforcer</option>
+                      <option value="DATA_ENCODER">Data Encoder</option>
+                      <option value="PUBLIC">Public</option>
+                    </select>
+                  </div>
+
+                  {/* Status Filter */}
+                  <div className="md:col-span-3">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Status Filter
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => setFilterStatus('all')}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                          filterStatus === 'all'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        All ({users.length})
+                      </button>
+                      <button
+                        onClick={() => setFilterStatus('active')}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                          filterStatus === 'active'
+                            ? 'bg-green-600 text-white'
+                            : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        Active ({users.filter(u => u.isActive).length})
+                      </button>
+                      <button
+                        onClick={() => setFilterStatus('inactive')}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                          filterStatus === 'inactive'
+                            ? 'bg-red-600 text-white'
+                            : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        Inactive ({users.filter(u => !u.isActive).length})
+                      </button>
+                      <button
+                        onClick={() => setFilterStatus('verified')}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                          filterStatus === 'verified'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        Verified ({users.filter(u => u.isVerified).length})
+                      </button>
+                      <button
+                        onClick={() => setFilterStatus('pending')}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                          filterStatus === 'pending'
+                            ? 'bg-yellow-600 text-white'
+                            : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        Pending ({users.filter(u => !u.isVerified).length})
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Results Count */}
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <p className="text-sm text-gray-600">
+                    Showing <span className="font-semibold">{filteredUsers.length}</span> of{' '}
+                    <span className="font-semibold">{users.length}</span> total users
+                    {searchQuery && (
+                      <span className="ml-2">
+                        · Searching for: <span className="font-semibold">"{searchQuery}"</span>
+                      </span>
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              {/* Users Table */}
+              <ResponsiveTable
               columns={[
                 {
                   key: 'user',
@@ -510,11 +650,12 @@ export default function AdminUserManagement() {
                   )
                 }
               ]}
-              data={users}
+              data={filteredUsers}
               loading={loading}
               emptyMessage="No users found"
               className="bg-white rounded-lg shadow"
             />
+            </div>
           )}
 
           {/* Password Reset Tab */}
