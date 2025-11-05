@@ -11,6 +11,9 @@ const nextConfig: NextConfig = {
   },
   outputFileTracingRoot: __dirname,
   
+  // Disable sourcemaps in production
+  productionBrowserSourceMaps: false,
+  
   // Webpack configuration to handle special file types
   webpack: (config, { buildId, dev, isServer, defaultLoaders, nextRuntime, webpack }) => {
     // Handle GeoJSON files as JSON
@@ -21,6 +24,21 @@ const nextConfig: NextConfig = {
       },
       type: 'javascript/auto'
     });
+
+    // Remove console logs in production
+    if (!dev) {
+      config.optimization.minimizer.forEach((plugin: any) => {
+        if (plugin.constructor.name === 'TerserPlugin') {
+          plugin.options.terserOptions = {
+            ...plugin.options.terserOptions,
+            compress: {
+              ...plugin.options.terserOptions?.compress,
+              drop_console: true,
+            },
+          };
+        }
+      });
+    }
 
     return config;
   },
