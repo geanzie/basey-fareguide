@@ -25,6 +25,30 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Validate idType is provided
+    if (!idType || idType.trim() === '') {
+      return NextResponse.json(
+        { message: 'Government ID Type is required' },
+        { status: 400 }
+      )
+    }
+
+    // Validate governmentId is provided
+    if (!governmentId || governmentId.trim() === '') {
+      return NextResponse.json(
+        { message: 'Government ID Number is required' },
+        { status: 400 }
+      )
+    }
+
+    // Validate barangayResidence is provided
+    if (!barangayResidence || barangayResidence.trim() === '') {
+      return NextResponse.json(
+        { message: 'Barangay of Residence is required' },
+        { status: 400 }
+      )
+    }
+
     // Validate phone number format (Philippine mobile)
     const phoneRegex = /^(09|\+639)\d{9}$/
     if (!phoneRegex.test(phoneNumber.replace(/\s/g, ''))) {
@@ -70,6 +94,19 @@ export async function POST(request: NextRequest) {
     // PUBLIC users are auto-approved, official roles need admin approval
     const isPublicUser = userType === 'PUBLIC'
     
+    // Log the data being saved
+    console.log('Creating user with data:', {
+      username,
+      firstName,
+      lastName,
+      phoneNumber,
+      idType,
+      governmentId,
+      barangayResidence,
+      userType,
+      dateOfBirth
+    })
+    
     // Save user to database
     const newUser = await prisma.user.create({
       data: {
@@ -79,9 +116,9 @@ export async function POST(request: NextRequest) {
         lastName,
         phoneNumber,
         dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
-        governmentId: governmentId || null,
-        idType: idType || null,
-        barangayResidence: barangayResidence || null,
+        governmentId: governmentId.trim(),
+        idType: idType.trim(),
+        barangayResidence: barangayResidence.trim(),
         userType,
         isActive: isPublicUser, // Public users are immediately active
         isVerified: isPublicUser, // Public users are immediately verified
@@ -96,6 +133,9 @@ export async function POST(request: NextRequest) {
       firstName: newUser.firstName,
       lastName: newUser.lastName,
       userType: newUser.userType,
+      idType: newUser.idType,
+      governmentId: newUser.governmentId,
+      barangayResidence: newUser.barangayResidence,
       isActive: newUser.isActive,
       isVerified: newUser.isVerified
     })

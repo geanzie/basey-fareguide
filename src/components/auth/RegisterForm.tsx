@@ -77,16 +77,23 @@ const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
       return
     }
 
+    // ID Type validation
+    if (!formData.idType || formData.idType.trim() === '') {
+      setError('Please select a Government ID Type')
+      setLoading(false)
+      return
+    }
+
     try {
+      // Prepare data to send, excluding confirmPassword
+      const { confirmPassword, ...registrationData } = formData
+      
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...formData,
-          confirmPassword: undefined // Remove confirmPassword from request
-        }),
+        body: JSON.stringify(registrationData),
       })
 
       if (response.ok) {
