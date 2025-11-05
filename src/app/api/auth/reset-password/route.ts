@@ -54,8 +54,6 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    console.log('Password successfully reset for user:', user.username)
-
     return NextResponse.json({
       message: 'Password successfully reset. You can now login with your new password.'
     })

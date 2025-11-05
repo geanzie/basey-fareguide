@@ -56,8 +56,6 @@ export async function POST(request: NextRequest) {
         }
       })
 
-      console.log(`Admin ${currentUser?.username} generated reset token for user ${targetUser.username}`)
-
       return NextResponse.json({
         message: 'Password reset token generated successfully',
         token: resetToken,
@@ -102,8 +100,6 @@ export async function POST(request: NextRequest) {
           lockedUntil: null
         }
       })
-
-      console.log(`Admin ${currentUser?.username} directly reset password for user ${targetUser.username}`)
 
       return NextResponse.json({
         message: 'Password successfully reset',

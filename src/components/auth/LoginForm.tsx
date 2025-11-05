@@ -24,8 +24,6 @@ const LoginForm = ({ onSwitchToRegister }: LoginFormProps) => {
     setError('')
 
     try {
-      console.log('Attempting login with:', { username: formData.username })
-      
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
@@ -34,11 +32,8 @@ const LoginForm = ({ onSwitchToRegister }: LoginFormProps) => {
         body: JSON.stringify(formData),
       })
 
-      console.log('Login response status:', response.status)
-
       if (response.ok) {
         const data = await response.json()
-        console.log('Login successful:', data.user)
         
         // Update global auth state
         login(data.user, data.token)
@@ -59,11 +54,9 @@ const LoginForm = ({ onSwitchToRegister }: LoginFormProps) => {
         }
       } else {
         const errorData = await response.json()
-        console.error('Login error:', errorData)
         setError(errorData.message || 'Login failed')
       }
     } catch (err) {
-      console.error('Network error:', err)
       setError('Network error. Please try again.')
     } finally {
       setLoading(false)

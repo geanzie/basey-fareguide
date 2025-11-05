@@ -94,19 +94,6 @@ export async function POST(request: NextRequest) {
     // PUBLIC users are auto-approved, official roles need admin approval
     const isPublicUser = userType === 'PUBLIC'
     
-    // Log the data being saved
-    console.log('Creating user with data:', {
-      username,
-      firstName,
-      lastName,
-      phoneNumber,
-      idType,
-      governmentId,
-      barangayResidence,
-      userType,
-      dateOfBirth
-    })
-    
     // Save user to database
     const newUser = await prisma.user.create({
       data: {
@@ -125,19 +112,6 @@ export async function POST(request: NextRequest) {
         verifiedAt: isPublicUser ? new Date() : null,
         verifiedBy: isPublicUser ? 'AUTO_APPROVED' : null
       }
-    })
-
-    console.log('New user registered:', {
-      id: newUser.id,
-      username: newUser.username,
-      firstName: newUser.firstName,
-      lastName: newUser.lastName,
-      userType: newUser.userType,
-      idType: newUser.idType,
-      governmentId: newUser.governmentId,
-      barangayResidence: newUser.barangayResidence,
-      isActive: newUser.isActive,
-      isVerified: newUser.isVerified
     })
 
     const message = isPublicUser 

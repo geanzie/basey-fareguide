@@ -43,7 +43,6 @@ export async function verifyAuth(request: NextRequest): Promise<AuthUser | null>
 
     return user?.isActive ? user : null
   } catch (error) {
-    console.error('Auth verification error:', error)
     return null
   }
 }

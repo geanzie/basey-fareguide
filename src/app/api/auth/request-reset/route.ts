@@ -44,11 +44,6 @@ export async function POST(request: NextRequest) {
     })
 
     // In a production system, you would send this token via email
-    // For now, we'll log it so admins can provide it to users
-    console.log('Password reset requested for:', username)
-    console.log('Reset token:', resetToken)
-    console.log('Token expires:', resetExpiry)
-
     return NextResponse.json({
       message: 'If the username exists, a password reset token has been generated. Please contact an administrator with your username to get your reset token.',
       // In development, include the token. Remove this in production
