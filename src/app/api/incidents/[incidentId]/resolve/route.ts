@@ -33,7 +33,7 @@ async function verifyAuth(request: NextRequest) {
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ incidentId: string }> }
+  context: { params: Promise<{ incidentId: string }> }
 ) {
   try {
     const user = await verifyAuth(request)
@@ -46,7 +46,7 @@ export async function PATCH(
       return NextResponse.json({ message: 'Access denied. Enforcer role required.' }, { status: 403 })
     }
 
-    const { incidentId } = await params
+    const { incidentId } = await context.params
     const { ticketNumber } = await request.json()
 
     if (!ticketNumber || !ticketNumber.trim()) {

@@ -42,7 +42,7 @@ function getFileType(mimeType: string) {
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ incidentId: string }> }
+  context: { params: Promise<{ incidentId: string }> }
 ) {
   try {
     const user = await verifyAuth(request)
@@ -51,9 +51,7 @@ export async function POST(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 
-    const { incidentId } = await params
-
-    // Check if incident exists
+    const { incidentId } = await context.params    // Check if incident exists
     const incident = await prisma.incident.findUnique({
       where: { id: incidentId }
     })
@@ -147,7 +145,7 @@ export async function POST(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ incidentId: string }> }
+  context: { params: Promise<{ incidentId: string }> }
 ) {
   try {
     const user = await verifyAuth(request)
@@ -156,9 +154,7 @@ export async function GET(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 
-    const { incidentId } = await params
-
-    // Check if incident exists
+    const { incidentId } = await context.params    // Check if incident exists
     const incident = await prisma.incident.findUnique({
       where: { id: incidentId }
     })
