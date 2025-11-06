@@ -110,6 +110,11 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
   // Note: Map initialization removed for now - focusing on API integration
   // The visual map can be added later once the core functionality works
 
+  // Sort barangays alphabetically within each group
+  const sortedUrbanBarangays = barangays.filter(b => b.type === 'urban').sort((a, b) => a.name.localeCompare(b.name))
+  const sortedRuralBarangays = barangays.filter(b => b.type === 'rural').sort((a, b) => a.name.localeCompare(b.name))
+  const sortedLandmarks = barangays.filter(b => b.type === 'landmark').sort((a, b) => a.name.localeCompare(b.name))
+
   // Helper function to save fare calculation to database
   const saveFareCalculation = async (routeData: RouteResult) => {
     try {
@@ -410,35 +415,36 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
                     Starting Location
                   </span>
                 </label>
+                
                 <select
                   id="from-planner"
                   value={fromLocation}
                   onChange={(e) => setFromLocation(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
                 >
-                  <option value="">Choose starting location...</option>
+                  <option value="">🔍 Type to search or choose starting location...</option>
                   
-                  {/* Poblacion Barangays */}
+                  {/* Poblacion Barangays - Sorted Alphabetically */}
                   <optgroup label="🏛️ Poblacion Areas (Urban Centers)">
-                    {barangays.filter(b => b.type === 'urban').map((barangay) => (
+                    {sortedUrbanBarangays.map((barangay) => (
                       <option key={barangay.name} value={barangay.name}>
                         {barangay.name}
                       </option>
                     ))}
                   </optgroup>
                   
-                  {/* Rural Barangays */}
+                  {/* Rural Barangays - Sorted Alphabetically */}
                   <optgroup label="🌾 Rural Barangays">
-                    {barangays.filter(b => b.type === 'rural').map((barangay) => (
+                    {sortedRuralBarangays.map((barangay) => (
                       <option key={barangay.name} value={barangay.name}>
                         {barangay.name}
                       </option>
                     ))}
                   </optgroup>
                   
-                  {/* Landmarks */}
+                  {/* Landmarks - Sorted Alphabetically */}
                   <optgroup label="📍 Landmarks & Points of Interest">
-                    {barangays.filter(b => b.type === 'landmark').map((barangay) => (
+                    {sortedLandmarks.map((barangay) => (
                       <option key={barangay.name} value={barangay.name}>
                         {barangay.name}
                       </option>
@@ -454,35 +460,36 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
                     Destination
                   </span>
                 </label>
+                
                 <select
                   id="to-planner"
                   value={toLocation}
                   onChange={(e) => setToLocation(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
                 >
-                  <option value="">Choose destination...</option>
+                  <option value="">🔍 Type to search or choose destination...</option>
                   
-                  {/* Poblacion Barangays */}
+                  {/* Poblacion Barangays - Sorted Alphabetically */}
                   <optgroup label="🏛️ Poblacion Areas (Urban Centers)">
-                    {barangays.filter(b => b.type === 'urban').map((barangay) => (
+                    {sortedUrbanBarangays.map((barangay) => (
                       <option key={barangay.name} value={barangay.name}>
                         {barangay.name}
                       </option>
                     ))}
                   </optgroup>
                   
-                  {/* Rural Barangays */}
+                  {/* Rural Barangays - Sorted Alphabetically */}
                   <optgroup label="🌾 Rural Barangays">
-                    {barangays.filter(b => b.type === 'rural').map((barangay) => (
+                    {sortedRuralBarangays.map((barangay) => (
                       <option key={barangay.name} value={barangay.name}>
                         {barangay.name}
                       </option>
                     ))}
                   </optgroup>
                   
-                  {/* Landmarks */}
+                  {/* Landmarks - Sorted Alphabetically */}
                   <optgroup label="📍 Landmarks & Points of Interest">
-                    {barangays.filter(b => b.type === 'landmark').map((barangay) => (
+                    {sortedLandmarks.map((barangay) => (
                       <option key={barangay.name} value={barangay.name}>
                         {barangay.name}
                       </option>
