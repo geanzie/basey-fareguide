@@ -101,7 +101,7 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
     { name: 'Basey Church (St. Michael the Archangel)', coords: BASEY_LANDMARKS['Basey Church (St. Michael the Archangel)'], type: 'landmark' as const },
     { name: 'Basey Municipal Hall', coords: BASEY_LANDMARKS['Basey Municipal Hall'], type: 'landmark' as const },
     { name: 'Basey Public Market', coords: BASEY_LANDMARKS['Basey Public Market'], type: 'landmark' as const },
-    { name: 'Basey Central School', coords: BASEY_LANDMARKS['Basey Central School'], type: 'landmark' as const },
+    { name: 'Basey I Central School', coords: BASEY_LANDMARKS['Basey I Central School'], type: 'landmark' as const },
     { name: 'Basey National High School', coords: BASEY_LANDMARKS['Basey National High School'], type: 'landmark' as const },
     { name: 'Basey Port/Wharf', coords: BASEY_LANDMARKS['Basey Port/Wharf'], type: 'landmark' as const },
     { name: 'Rural Health Unit Basey', coords: BASEY_LANDMARKS['Rural Health Unit Basey'], type: 'landmark' as const }
@@ -110,10 +110,13 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
   // Note: Map initialization removed for now - focusing on API integration
   // The visual map can be added later once the core functionality works
 
-  // Sort barangays alphabetically within each group
-  const sortedUrbanBarangays = barangays.filter(b => b.type === 'urban').sort((a, b) => a.name.localeCompare(b.name))
-  const sortedRuralBarangays = barangays.filter(b => b.type === 'rural').sort((a, b) => a.name.localeCompare(b.name))
-  const sortedLandmarks = barangays.filter(b => b.type === 'landmark').sort((a, b) => a.name.localeCompare(b.name))
+  // Sort barangays alphabetically - combine urban and rural, keep landmarks separate
+  const sortedBarangays = barangays
+    .filter(b => b.type === 'urban' || b.type === 'rural')
+    .sort((a, b) => a.name.localeCompare(b.name))
+  const sortedLandmarks = barangays
+    .filter(b => b.type === 'landmark')
+    .sort((a, b) => a.name.localeCompare(b.name))
 
   // Helper function to save fare calculation to database
   const saveFareCalculation = async (routeData: RouteResult) => {
@@ -422,20 +425,11 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
                   onChange={(e) => setFromLocation(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
                 >
-                  <option value="">🔍 Type to search or choose starting location...</option>
+                  <option value="">🔍 Choose starting location...</option>
                   
-                  {/* Poblacion Barangays - Sorted Alphabetically */}
-                  <optgroup label="🏛️ Poblacion Areas (Urban Centers)">
-                    {sortedUrbanBarangays.map((barangay) => (
-                      <option key={barangay.name} value={barangay.name}>
-                        {barangay.name}
-                      </option>
-                    ))}
-                  </optgroup>
-                  
-                  {/* Rural Barangays - Sorted Alphabetically */}
-                  <optgroup label="🌾 Rural Barangays">
-                    {sortedRuralBarangays.map((barangay) => (
+                  {/* All Barangays - Sorted Alphabetically */}
+                  <optgroup label="📍 Barangays">
+                    {sortedBarangays.map((barangay) => (
                       <option key={barangay.name} value={barangay.name}>
                         {barangay.name}
                       </option>
@@ -443,7 +437,7 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
                   </optgroup>
                   
                   {/* Landmarks - Sorted Alphabetically */}
-                  <optgroup label="📍 Landmarks & Points of Interest">
+                  <optgroup label="🏛️ Landmarks & Points of Interest">
                     {sortedLandmarks.map((barangay) => (
                       <option key={barangay.name} value={barangay.name}>
                         {barangay.name}
@@ -467,20 +461,11 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
                   onChange={(e) => setToLocation(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
                 >
-                  <option value="">🔍 Type to search or choose destination...</option>
+                  <option value="">🔍 Choose destination...</option>
                   
-                  {/* Poblacion Barangays - Sorted Alphabetically */}
-                  <optgroup label="🏛️ Poblacion Areas (Urban Centers)">
-                    {sortedUrbanBarangays.map((barangay) => (
-                      <option key={barangay.name} value={barangay.name}>
-                        {barangay.name}
-                      </option>
-                    ))}
-                  </optgroup>
-                  
-                  {/* Rural Barangays - Sorted Alphabetically */}
-                  <optgroup label="🌾 Rural Barangays">
-                    {sortedRuralBarangays.map((barangay) => (
+                  {/* All Barangays - Sorted Alphabetically */}
+                  <optgroup label="📍 Barangays">
+                    {sortedBarangays.map((barangay) => (
                       <option key={barangay.name} value={barangay.name}>
                         {barangay.name}
                       </option>
@@ -488,7 +473,7 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
                   </optgroup>
                   
                   {/* Landmarks - Sorted Alphabetically */}
-                  <optgroup label="📍 Landmarks & Points of Interest">
+                  <optgroup label="🏛️ Landmarks & Points of Interest">
                     {sortedLandmarks.map((barangay) => (
                       <option key={barangay.name} value={barangay.name}>
                         {barangay.name}

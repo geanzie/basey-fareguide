@@ -32,7 +32,7 @@ export const BASEY_LANDMARKS = {
   'Basey Church (St. Michael the Archangel)': BASEY_CENTER, // Within poblacion
   'Basey Municipal Hall': BASEY_CENTER, // Within poblacion
   'Basey Public Market': BASEY_CENTER, // Within poblacion
-  'Basey Central School': BASEY_CENTER, // Within poblacion
+  'Basey I Central School': BASEY_CENTER, // Within poblacion
   'Basey National High School': BASEY_CENTER, // Within poblacion
   'Basey Port/Wharf': BASEY_CENTER, // Within poblacion
   'Rural Health Unit Basey': BASEY_CENTER, // Within poblacion

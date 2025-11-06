@@ -146,7 +146,7 @@ const QuickActions = () => {
     'Basey Municipal Hall',
     'Basey Public Market',
     'Basey Church (St. Michael the Archangel)',
-    'Basey Central School',
+    'Basey I Central School',
     'Basey National High School',
     'Basey Port/Wharf',
     'Rural Health Unit Basey',

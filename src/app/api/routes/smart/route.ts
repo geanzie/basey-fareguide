@@ -69,7 +69,7 @@ const barangayCoordinates: Record<string, [number, number]> = {
   'Basey Church (St. Michael the Archangel)': BASEY_LANDMARKS['Basey Church (St. Michael the Archangel)'],
   'Basey Municipal Hall': BASEY_LANDMARKS['Basey Municipal Hall'],
   'Basey Public Market': BASEY_LANDMARKS['Basey Public Market'],
-  'Basey Central School': BASEY_LANDMARKS['Basey Central School'],
+  'Basey I Central School': BASEY_LANDMARKS['Basey I Central School'],
   'Basey National High School': BASEY_LANDMARKS['Basey National High School'],
   'Basey Port/Wharf': BASEY_LANDMARKS['Basey Port/Wharf'],
   'Rural Health Unit Basey': BASEY_LANDMARKS['Rural Health Unit Basey']

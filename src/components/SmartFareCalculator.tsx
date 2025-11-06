@@ -104,7 +104,7 @@ const SmartFareCalculator = ({
 
   // Legacy barangay list for backwards compatibility
   const barangays: string[] = [
-    'Basey Central School',
+    'Basey I Central School',
     'Basey National High School',
     'Basey Port/Wharf',
     'Rural Health Unit Basey'
