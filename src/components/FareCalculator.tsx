@@ -94,7 +94,7 @@ const FareCalculator = () => {
     { name: 'Basey Church (St. Michael the Archangel)', coords: BASEY_LANDMARKS['Basey Church (St. Michael the Archangel)'], type: 'landmark' as const },
     { name: 'Basey Municipal Hall', coords: BASEY_LANDMARKS['Basey Municipal Hall'], type: 'landmark' as const },
     { name: 'Basey Public Market', coords: BASEY_LANDMARKS['Basey Public Market'], type: 'landmark' as const },
-    { name: 'Basey Central School', coords: BASEY_LANDMARKS['Basey Central School'], type: 'landmark' as const },
+    { name: 'Basey I Central School', coords: BASEY_LANDMARKS['Basey I Central School'], type: 'landmark' as const },
     { name: 'Basey National High School', coords: BASEY_LANDMARKS['Basey National High School'], type: 'landmark' as const },
     { name: 'Basey Port/Wharf', coords: BASEY_LANDMARKS['Basey Port/Wharf'], type: 'landmark' as const },
     { name: 'Rural Health Unit Basey', coords: BASEY_LANDMARKS['Rural Health Unit Basey'], type: 'landmark' as const }
