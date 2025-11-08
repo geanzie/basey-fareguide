@@ -252,13 +252,6 @@ export async function PATCH(request: NextRequest) {
           discountType: discountType as 'SENIOR_CITIZEN' | 'PWD' | 'STUDENT',
         })
 
-        // Log validation result for admin review
-          userId,
-          isValid: idValidation.isValid,
-          confidence: idValidation.confidence,
-          reasons: idValidation.reasons
-        })
-
         // Reject if validation fails (below 60% confidence)
         if (!idValidation.isValid || idValidation.confidence < 60) {
           return NextResponse.json(
