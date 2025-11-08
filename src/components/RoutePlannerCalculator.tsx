@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { barangayService } from '../lib/barangayService'
 import { BarangayInfo } from '../utils/barangayBoundaries'
 import EnhancedRouteMap from './EnhancedRouteMap'
 import { BASEY_LANDMARKS, EXTERNAL_LANDMARKS } from '../utils/baseyCenter'
+import { locationService, Location } from '../lib/locationService'
 
 // Route Planner uses Google Maps API for accurate road-based distance calculation
 // GPS direct distance calculation is not used here as it would be unfair to drivers
@@ -75,6 +76,11 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
   const [savedToDatabase, setSavedToDatabase] = useState(false)
   const [userDiscountCard, setUserDiscountCard] = useState<DiscountCard | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
+  const [allLocations, setAllLocations] = useState<{
+    barangays: Location[]
+    landmarks: Location[]
+    sitios: Location[]
+  }>({ barangays: [], landmarks: [], sitios: [] })
 
   // Fetch user's discount card on mount
   useEffect(() => {
@@ -110,18 +116,27 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
     fetchUserDiscountCard()
   }, [])
 
-  // Initialize barangay data
+  // Initialize barangay data and location data
   useEffect(() => {
-    const initializeBarangays = async () => {
+    const initializeData = async () => {
       try {
+        // Initialize barangay boundaries
         await barangayService.initialize()
         const allBarangays = barangayService.getBarangays()
         setBarangayList(allBarangays)
+
+        // Initialize comprehensive location data
+        await locationService.initialize()
+        const locations = locationService.getGroupedLocations()
+        setAllLocations(locations)
+        
+        const stats = locationService.getStats()
+        console.log('✅ Loaded locations:', stats)
       } catch (error) {
-        console.error('Failed to initialize barangay data:', error)
+        console.error('Failed to initialize location data:', error)
       }
     }
-    initializeBarangays()
+    initializeData()
   }, [])
 
   // Auto-scroll to results when they appear
@@ -137,38 +152,115 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
     }
   }, [routeResult])
 
-  // Dynamic barangays loaded from comprehensive GeoJSON boundary data
-  // Legacy format for backward compatibility
-  const barangays = (barangayList.map(b => ({
-    name: b.name,
-    coords: [b.center[1], b.center[0]] as [number, number], // Convert lng,lat to lat,lng
-    type: b.isPoblacion ? 'urban' as const : 'rural' as const
-  })) as Array<{ name: string; coords: [number, number]; type: 'urban' | 'rural' | 'landmark' }>).concat([
-    // Additional landmarks using GeoJSON-based coordinates
-    // Following rule: "follow whatever the .geojson file has because this is the most realistic coordinates data"
-    { name: 'José Rizal Monument (Basey Center - KM 0)', coords: BASEY_LANDMARKS['José Rizal Monument (Basey Center - KM 0)'], type: 'landmark' as const },
-    { name: 'Sohoton Natural Bridge National Park', coords: EXTERNAL_LANDMARKS['Sohoton Natural Bridge National Park'], type: 'landmark' as const },
-    { name: 'Sohoton Caves', coords: EXTERNAL_LANDMARKS['Sohoton Caves'], type: 'landmark' as const },
-    { name: 'Panhulugan Cliff', coords: EXTERNAL_LANDMARKS['Panhulugan Cliff'], type: 'landmark' as const },
-    { name: 'Basey Church (St. Michael the Archangel)', coords: BASEY_LANDMARKS['Basey Church (St. Michael the Archangel)'], type: 'landmark' as const },
-    { name: 'Basey Municipal Hall', coords: BASEY_LANDMARKS['Basey Municipal Hall'], type: 'landmark' as const },
-    { name: 'Basey Public Market', coords: BASEY_LANDMARKS['Basey Public Market'], type: 'landmark' as const },
-    { name: 'Basey I Central School', coords: BASEY_LANDMARKS['Basey I Central School'], type: 'landmark' as const },
-    { name: 'Basey National High School', coords: BASEY_LANDMARKS['Basey National High School'], type: 'landmark' as const },
-    { name: 'Basey Port/Wharf', coords: BASEY_LANDMARKS['Basey Port/Wharf'], type: 'landmark' as const },
-    { name: 'Rural Health Unit Basey', coords: BASEY_LANDMARKS['Rural Health Unit Basey'], type: 'landmark' as const }
-  ])
+  // Memoize location arrays to avoid recalculating on every render
+  // Poblacion barangays: MERCADO, LOYO, BAYBAY, PALAYPAY, LAWA-AN, SULOD, BUSCADA
+  const poblacionNames = useMemo(() => 
+    ['Mercado', 'Loyo', 'Baybay', 'Palaypay', 'Lawa-An', 'Sulod', 'Buscada'], 
+    []
+  )
+  
+  const sortedPoblacionBarangays = useMemo(() => 
+    allLocations.barangays
+      .filter(loc => poblacionNames.includes(loc.name))
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map(loc => ({
+        name: loc.name,
+        coords: [loc.coordinates.lat, loc.coordinates.lng] as [number, number],
+        type: 'poblacion' as const
+      })),
+    [allLocations.barangays, poblacionNames]
+  )
+  
+  const sortedRuralBarangays = useMemo(() => 
+    allLocations.barangays
+      .filter(loc => !poblacionNames.includes(loc.name))
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map(loc => ({
+        name: loc.name,
+        coords: [loc.coordinates.lat, loc.coordinates.lng] as [number, number],
+        type: 'barangay' as const
+      })),
+    [allLocations.barangays, poblacionNames]
+  )
+  
+  // Group landmarks by category for better organization
+  const landmarksByCategory = useMemo(() => {
+    const categorized = {
+      education: [] as Array<{ name: string; coords: [number, number]; type: 'landmark' }>,
+      government: [] as Array<{ name: string; coords: [number, number]; type: 'landmark' }>,
+      religious: [] as Array<{ name: string; coords: [number, number]; type: 'landmark' }>,
+      healthcare: [] as Array<{ name: string; coords: [number, number]; type: 'landmark' }>,
+      tourist: [] as Array<{ name: string; coords: [number, number]; type: 'landmark' }>,
+      infrastructure: [] as Array<{ name: string; coords: [number, number]; type: 'landmark' }>,
+      commercial: [] as Array<{ name: string; coords: [number, number]; type: 'landmark' }>,
+      other: [] as Array<{ name: string; coords: [number, number]; type: 'landmark' }>
+    }
 
-  // Note: Map initialization removed for now - focusing on API integration
-  // The visual map can be added later once the core functionality works
+    allLocations.landmarks.forEach(loc => {
+      const item = {
+        name: loc.name,
+        coords: [loc.coordinates.lat, loc.coordinates.lng] as [number, number],
+        type: 'landmark' as const
+      }
+      const nameLower = loc.name.toLowerCase()
 
-  // Sort barangays alphabetically - combine urban and rural, keep landmarks separate
-  const sortedBarangays = barangays
-    .filter(b => b.type === 'urban' || b.type === 'rural')
-    .sort((a, b) => a.name.localeCompare(b.name))
-  const sortedLandmarks = barangays
-    .filter(b => b.type === 'landmark')
-    .sort((a, b) => a.name.localeCompare(b.name))
+      // Categorize landmarks
+      if (nameLower.includes('school') || nameLower.includes('elementary') || nameLower.includes('high school') || nameLower.includes('integrated') || nameLower.includes('daycare') || nameLower.includes('learning center')) {
+        categorized.education.push(item)
+      } else if (nameLower.includes('church') || nameLower.includes('chapel') || nameLower.includes('cathedral') || nameLower.includes('shrine')) {
+        categorized.religious.push(item)
+      } else if (nameLower.includes('municipal') || nameLower.includes('town hall') || nameLower.includes('police') || nameLower.includes('fire station') || nameLower.includes('barangay hall')) {
+        categorized.government.push(item)
+      } else if (nameLower.includes('hospital') || nameLower.includes('clinic') || nameLower.includes('health')) {
+        categorized.healthcare.push(item)
+      } else if (nameLower.includes('pharmacy') || nameLower.includes('store') || nameLower.includes('market') || nameLower.includes('terminal') || nameLower.includes('restaurant')) {
+        categorized.commercial.push(item)
+      } else if (nameLower.includes('bridge')) {
+        categorized.infrastructure.push(item)
+      } else if (nameLower.includes('cave') || nameLower.includes('waterfall') || nameLower.includes('beach') || nameLower.includes('resort') || nameLower.includes('park') || nameLower.includes('natural') || nameLower.includes('sohoton')) {
+        categorized.tourist.push(item)
+      } else {
+        categorized.other.push(item)
+      }
+    })
+
+    // Sort each category alphabetically
+    Object.keys(categorized).forEach(key => {
+      categorized[key as keyof typeof categorized].sort((a, b) => a.name.localeCompare(b.name))
+    })
+
+    return categorized
+  }, [allLocations.landmarks])
+
+  const sortedLandmarks = useMemo(() => 
+    allLocations.landmarks
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map(loc => ({
+        name: loc.name,
+        coords: [loc.coordinates.lat, loc.coordinates.lng] as [number, number],
+        type: 'landmark' as const
+      })),
+    [allLocations.landmarks]
+  )
+  
+  const sortedSitios = useMemo(() => 
+    allLocations.sitios
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map(loc => ({
+        name: loc.name,
+        coords: [loc.coordinates.lat, loc.coordinates.lng] as [number, number],
+        type: 'sitio' as const
+      })),
+    [allLocations.sitios]
+  )
+
+  // Build comprehensive location list for backward compatibility
+  const barangays = useMemo(() => [
+    ...sortedPoblacionBarangays,
+    ...sortedRuralBarangays,
+    ...sortedLandmarks,
+    ...sortedSitios
+  ], [sortedPoblacionBarangays, sortedRuralBarangays, sortedLandmarks, sortedSitios])
 
   // Helper function to save fare calculation to database
   const saveFareCalculation = async (routeData: RouteResult) => {
@@ -542,23 +634,115 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
                 >
                   <option value="">🔍 Choose starting location...</option>
                   
-                  {/* All Barangays - Sorted Alphabetically */}
-                  <optgroup label="📍 Barangays">
-                    {sortedBarangays.map((barangay) => (
-                      <option key={barangay.name} value={barangay.name}>
+                  {/* Poblacion Barangays - Urban Center */}
+                  <optgroup label="🏛️ Poblacion Barangays - Urban Center">
+                    {sortedPoblacionBarangays.map((barangay) => (
+                      <option key={`from-poblacion-${barangay.name}`} value={barangay.name}>
                         {barangay.name}
                       </option>
                     ))}
                   </optgroup>
                   
-                  {/* Landmarks - Sorted Alphabetically */}
-                  <optgroup label="🏛️ Landmarks & Points of Interest">
-                    {sortedLandmarks.map((barangay) => (
-                      <option key={barangay.name} value={barangay.name}>
+                  {/* Rural Barangays */}
+                  <optgroup label="🌾 Rural Barangays">
+                    {sortedRuralBarangays.map((barangay) => (
+                      <option key={`from-rural-${barangay.name}`} value={barangay.name}>
                         {barangay.name}
                       </option>
                     ))}
                   </optgroup>
+                  
+                  {/* Landmarks - Grouped by Category */}
+                  {landmarksByCategory.education.length > 0 && (
+                    <optgroup label="🏫 Schools & Education">
+                      {landmarksByCategory.education.map((landmark) => (
+                        <option key={`from-edu-${landmark.name}`} value={landmark.name}>
+                          {landmark.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+
+                  {landmarksByCategory.government.length > 0 && (
+                    <optgroup label="🏛️ Government & Public Services">
+                      {landmarksByCategory.government.map((landmark) => (
+                        <option key={`from-gov-${landmark.name}`} value={landmark.name}>
+                          {landmark.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+
+                  {landmarksByCategory.religious.length > 0 && (
+                    <optgroup label="⛪ Churches & Religious Sites">
+                      {landmarksByCategory.religious.map((landmark) => (
+                        <option key={`from-rel-${landmark.name}`} value={landmark.name}>
+                          {landmark.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+
+                  {landmarksByCategory.healthcare.length > 0 && (
+                    <optgroup label="🏥 Healthcare Facilities">
+                      {landmarksByCategory.healthcare.map((landmark) => (
+                        <option key={`from-health-${landmark.name}`} value={landmark.name}>
+                          {landmark.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+
+                  {landmarksByCategory.tourist.length > 0 && (
+                    <optgroup label="🏞️ Tourist Attractions">
+                      {landmarksByCategory.tourist.map((landmark) => (
+                        <option key={`from-tourist-${landmark.name}`} value={landmark.name}>
+                          {landmark.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+
+                  {landmarksByCategory.infrastructure.length > 0 && (
+                    <optgroup label="🌉 Infrastructure & Bridges">
+                      {landmarksByCategory.infrastructure.map((landmark) => (
+                        <option key={`from-infra-${landmark.name}`} value={landmark.name}>
+                          {landmark.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+
+                  {landmarksByCategory.commercial.length > 0 && (
+                    <optgroup label="🛒 Commercial & Services">
+                      {landmarksByCategory.commercial.map((landmark) => (
+                        <option key={`from-comm-${landmark.name}`} value={landmark.name}>
+                          {landmark.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+
+                  {landmarksByCategory.other.length > 0 && (
+                    <optgroup label="📍 Other Landmarks">
+                      {landmarksByCategory.other.map((landmark) => (
+                        <option key={`from-other-${landmark.name}`} value={landmark.name}>
+                          {landmark.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+
+                  {/* Sitios - Sorted Alphabetically */}
+                  {sortedSitios.length > 0 && (
+                    <optgroup label="📌 Sitios & Subdivisions">
+                      {sortedSitios.map((sitio) => (
+                        <option key={`from-sitio-${sitio.name}`} value={sitio.name}>
+                          {sitio.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
                 </select>
               </div>
 
@@ -578,23 +762,115 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
                 >
                   <option value="">🔍 Choose destination...</option>
                   
-                  {/* All Barangays - Sorted Alphabetically */}
-                  <optgroup label="📍 Barangays">
-                    {sortedBarangays.map((barangay) => (
-                      <option key={barangay.name} value={barangay.name}>
+                  {/* Poblacion Barangays - Urban Center */}
+                  <optgroup label="🏛️ Poblacion Barangays - Urban Center">
+                    {sortedPoblacionBarangays.map((barangay) => (
+                      <option key={`to-poblacion-${barangay.name}`} value={barangay.name}>
                         {barangay.name}
                       </option>
                     ))}
                   </optgroup>
                   
-                  {/* Landmarks - Sorted Alphabetically */}
-                  <optgroup label="🏛️ Landmarks & Points of Interest">
-                    {sortedLandmarks.map((barangay) => (
-                      <option key={barangay.name} value={barangay.name}>
+                  {/* Rural Barangays */}
+                  <optgroup label="🌾 Rural Barangays">
+                    {sortedRuralBarangays.map((barangay) => (
+                      <option key={`to-rural-${barangay.name}`} value={barangay.name}>
                         {barangay.name}
                       </option>
                     ))}
                   </optgroup>
+                  
+                  {/* Landmarks - Grouped by Category */}
+                  {landmarksByCategory.education.length > 0 && (
+                    <optgroup label="🏫 Schools & Education">
+                      {landmarksByCategory.education.map((landmark) => (
+                        <option key={`to-edu-${landmark.name}`} value={landmark.name}>
+                          {landmark.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+
+                  {landmarksByCategory.government.length > 0 && (
+                    <optgroup label="🏛️ Government & Public Services">
+                      {landmarksByCategory.government.map((landmark) => (
+                        <option key={`to-gov-${landmark.name}`} value={landmark.name}>
+                          {landmark.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+
+                  {landmarksByCategory.religious.length > 0 && (
+                    <optgroup label="⛪ Churches & Religious Sites">
+                      {landmarksByCategory.religious.map((landmark) => (
+                        <option key={`to-rel-${landmark.name}`} value={landmark.name}>
+                          {landmark.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+
+                  {landmarksByCategory.healthcare.length > 0 && (
+                    <optgroup label="🏥 Healthcare Facilities">
+                      {landmarksByCategory.healthcare.map((landmark) => (
+                        <option key={`to-health-${landmark.name}`} value={landmark.name}>
+                          {landmark.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+
+                  {landmarksByCategory.tourist.length > 0 && (
+                    <optgroup label="🏞️ Tourist Attractions">
+                      {landmarksByCategory.tourist.map((landmark) => (
+                        <option key={`to-tourist-${landmark.name}`} value={landmark.name}>
+                          {landmark.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+
+                  {landmarksByCategory.infrastructure.length > 0 && (
+                    <optgroup label="🌉 Infrastructure & Bridges">
+                      {landmarksByCategory.infrastructure.map((landmark) => (
+                        <option key={`to-infra-${landmark.name}`} value={landmark.name}>
+                          {landmark.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+
+                  {landmarksByCategory.commercial.length > 0 && (
+                    <optgroup label="🛒 Commercial & Services">
+                      {landmarksByCategory.commercial.map((landmark) => (
+                        <option key={`to-comm-${landmark.name}`} value={landmark.name}>
+                          {landmark.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+
+                  {landmarksByCategory.other.length > 0 && (
+                    <optgroup label="📍 Other Landmarks">
+                      {landmarksByCategory.other.map((landmark) => (
+                        <option key={`to-other-${landmark.name}`} value={landmark.name}>
+                          {landmark.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+
+                  {/* Sitios - Sorted Alphabetically */}
+                  {sortedSitios.length > 0 && (
+                    <optgroup label="📌 Sitios & Subdivisions">
+                      {sortedSitios.map((sitio) => (
+                        <option key={`to-sitio-${sitio.name}`} value={sitio.name}>
+                          {sitio.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
                 </select>
               </div>
 

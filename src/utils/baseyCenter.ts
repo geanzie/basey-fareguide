@@ -23,27 +23,38 @@ export const BASEY_CENTER_GOOGLE = { lat: 11.282621, lng: 125.068848 };
 export const RIZAL_MONUMENT_COORDS: [number, number] = BASEY_CENTER;
 
 /**
- * Other landmark coordinates within Basey poblacion area
- * These should also use the calculated center for consistency
- * unless they have verified specific coordinates from the GeoJSON boundaries
+ * Landmark coordinates with verified data from basey-locations.json
+ * Updated: 2025-11-08
+ * Source: Comprehensive location dataset with 158+ verified locations
  */
 export const BASEY_LANDMARKS = {
+  // Legacy fallback for general Basey center
   'José Rizal Monument (Basey Center - KM 0)': BASEY_CENTER,
-  'Basey Church (St. Michael the Archangel)': BASEY_CENTER, // Within poblacion
-  'Basey Municipal Hall': BASEY_CENTER, // Within poblacion
-  'Basey Public Market': BASEY_CENTER, // Within poblacion
-  'Basey I Central School': BASEY_CENTER, // Within poblacion
-  'Basey National High School': BASEY_CENTER, // Within poblacion
-  'Basey Port/Wharf': BASEY_CENTER, // Within poblacion
-  'Rural Health Unit Basey': BASEY_CENTER, // Within poblacion
+  
+  // Verified landmarks from basey-locations.json
+  'Basey Church (St. Michael the Archangel)': [11.2809812, 125.0699803] as [number, number], // Saint Michael the Archangel Parish Church
+  'Basey Municipal Hall': [11.2795, 125.0653] as [number, number], // Manual verified
+  'Basey Public Market': [11.279, 125.0645] as [number, number], // Manual verified
+  'Basey I Central School': [11.2816766, 125.0679426] as [number, number], // Basey Ⅰ Central Elementary school
+  'Basey National High School': [11.2847487, 125.0668604] as [number, number], // OSM verified
+  'Basey Port/Wharf': BASEY_CENTER, // Within poblacion area
+  'Rural Health Unit Basey': BASEY_CENTER, // Within poblacion area
+  'Basey District Hospital': [11.279244, 125.0651242] as [number, number], // OSM verified
+  'Basey Town Hall': [11.2805435, 125.069069] as [number, number], // OSM verified
+  'Basey Bridge': [11.2798, 125.066] as [number, number], // Manual verified
+  'Basey Terminal': [11.2851283, 125.07055] as [number, number], // OSM verified
 } as const;
 
 /**
  * External landmarks outside Basey poblacion
- * These coordinates should be verified against actual locations
+ * Verified coordinates from basey-locations.json and OSM
  */
 export const EXTERNAL_LANDMARKS = {
-  'Sohoton Natural Bridge National Park': [11.3329711, 125.1442518] as [number, number],
-  'Sohoton Caves': [11.3588068, 125.1586589] as [number, number],
-  'Panhulugan Cliff': [11.3556, 125.0234] as [number, number],
+  'Sohoton Natural Bridge National Park': [11.4167, 125.1167] as [number, number], // Manual verified
+  'Sohoton Natural Bridge': [11.3648129, 125.1633367] as [number, number], // OSM verified
+  'Sohoton Caves': [11.3588068, 125.1586589] as [number, number], // OSM verified
+  'Sohoton Cave': [11.42, 125.12] as [number, number], // Manual verified
+  'Panhulugan Cliff': [11.3556, 125.0234] as [number, number], // Legacy
+  'Balantak waterfall': [11.3540572, 125.1716368] as [number, number], // OSM verified
+  'So-ob Cave': [11.259273, 125.1637711] as [number, number], // OSM verified
 } as const;

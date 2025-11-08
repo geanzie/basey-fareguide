@@ -1,0 +1,1704 @@
+{
+  "metadata": {
+    "municipality": "Basey",
+    "province": "Samar",
+    "total_locations": 158,
+    "last_updated": "2025-11-08 12:01:03",
+    "sources": [
+      "geojson",
+      "google",
+      "osm",
+      "psa",
+      "manual"
+    ]
+  },
+  "locations": {
+    "barangay": [
+      {
+        "name": "Amandayehan",
+        "coordinates": {
+          "lat": 11.278823,
+          "lng": 125.001194
+        },
+        "source": "geojson",
+        "address": "Amandayehan, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Anglit",
+        "coordinates": {
+          "lat": 11.304796,
+          "lng": 125.10899
+        },
+        "source": "geojson",
+        "address": "Anglit, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Bacubac",
+        "coordinates": {
+          "lat": 11.288453,
+          "lng": 125.045164
+        },
+        "source": "geojson",
+        "address": "Bacubac, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Balante",
+        "coordinates": {
+          "lat": 11.343175,
+          "lng": 125.040663
+        },
+        "source": "geojson",
+        "address": "Balante, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Balo-Og",
+        "coordinates": {
+          "lat": 11.38202,
+          "lng": 125.068473
+        },
+        "source": "geojson",
+        "address": "Balo-Og, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Balud",
+        "coordinates": {
+          "lat": 11.292884,
+          "lng": 125.129768
+        },
+        "source": "geojson",
+        "address": "Balud, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Basiao",
+        "coordinates": {
+          "lat": 11.266954,
+          "lng": 125.167988
+        },
+        "source": "geojson",
+        "address": "Basiao, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Baybay",
+        "coordinates": {
+          "lat": 11.282738,
+          "lng": 125.07121
+        },
+        "source": "geojson",
+        "address": "Baybay, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Binungtu-An",
+        "coordinates": {
+          "lat": 11.290687,
+          "lng": 125.118215
+        },
+        "source": "geojson",
+        "address": "Binungtu-An, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Buenavista",
+        "coordinates": {
+          "lat": 11.308429,
+          "lng": 125.066029
+        },
+        "source": "geojson",
+        "address": "Buenavista, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Bulao",
+        "coordinates": {
+          "lat": 11.347156,
+          "lng": 125.114222
+        },
+        "source": "geojson",
+        "address": "Bulao, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Burgos",
+        "coordinates": {
+          "lat": 11.318787,
+          "lng": 125.148627
+        },
+        "source": "geojson",
+        "address": "Burgos, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Buscada",
+        "coordinates": {
+          "lat": 11.282686,
+          "lng": 125.065799
+        },
+        "source": "geojson",
+        "address": "Buscada, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Cambayan",
+        "coordinates": {
+          "lat": 11.285944,
+          "lng": 124.993572
+        },
+        "source": "geojson",
+        "address": "Cambayan, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Can-Abay",
+        "coordinates": {
+          "lat": 11.296427,
+          "lng": 125.018706
+        },
+        "source": "geojson",
+        "address": "Can-Abay, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Can-Manila",
+        "coordinates": {
+          "lat": 11.285361,
+          "lng": 125.05799
+        },
+        "source": "geojson",
+        "address": "Can-Manila, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Canca-Iyas",
+        "coordinates": {
+          "lat": 11.355101,
+          "lng": 125.086084
+        },
+        "source": "geojson",
+        "address": "Canca-Iyas, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Catadman",
+        "coordinates": {
+          "lat": 11.273105,
+          "lng": 125.156632
+        },
+        "source": "geojson",
+        "address": "Catadman, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Cogon",
+        "coordinates": {
+          "lat": 11.358769,
+          "lng": 125.09544
+        },
+        "source": "geojson",
+        "address": "Cogon, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Del Pilar",
+        "coordinates": {
+          "lat": 11.320222,
+          "lng": 125.139218
+        },
+        "source": "geojson",
+        "address": "Del Pilar, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Dolongan",
+        "coordinates": {
+          "lat": 11.33055,
+          "lng": 125.031609
+        },
+        "source": "geojson",
+        "address": "Dolongan, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Guintigui-An",
+        "coordinates": {
+          "lat": 11.309486,
+          "lng": 125.028333
+        },
+        "source": "geojson",
+        "address": "Guintigui-An, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Guirang",
+        "coordinates": {
+          "lat": 11.343589,
+          "lng": 125.149816
+        },
+        "source": "geojson",
+        "address": "Guirang, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Iba",
+        "coordinates": {
+          "lat": 11.295598,
+          "lng": 125.088502
+        },
+        "source": "geojson",
+        "address": "Iba, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Inuntan",
+        "coordinates": {
+          "lat": 11.349132,
+          "lng": 125.134799
+        },
+        "source": "geojson",
+        "address": "Inuntan, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Lawa-An",
+        "coordinates": {
+          "lat": 11.283697,
+          "lng": 125.06865
+        },
+        "source": "geojson",
+        "address": "Lawa-An, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Lo-Og",
+        "coordinates": {
+          "lat": 11.312706,
+          "lng": 125.165448
+        },
+        "source": "geojson",
+        "address": "Lo-Og, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Loyo",
+        "coordinates": {
+          "lat": 11.280123,
+          "lng": 125.067398
+        },
+        "source": "geojson",
+        "address": "Loyo, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Mabini",
+        "coordinates": {
+          "lat": 11.411064,
+          "lng": 125.149778
+        },
+        "source": "geojson",
+        "address": "Mabini, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Magallanes",
+        "coordinates": {
+          "lat": 11.310232,
+          "lng": 125.120808
+        },
+        "source": "geojson",
+        "address": "Magallanes, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Manlilinab",
+        "coordinates": {
+          "lat": 11.443771,
+          "lng": 125.119899
+        },
+        "source": "geojson",
+        "address": "Manlilinab, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "May-It",
+        "coordinates": {
+          "lat": 11.308585,
+          "lng": 125.020485
+        },
+        "source": "geojson",
+        "address": "May-It, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Mercado",
+        "coordinates": {
+          "lat": 11.28039,
+          "lng": 125.069698
+        },
+        "source": "geojson",
+        "address": "Mercado, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Mongabong",
+        "coordinates": {
+          "lat": 11.322006,
+          "lng": 125.024706
+        },
+        "source": "geojson",
+        "address": "Mongabong, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "New San Agustin",
+        "coordinates": {
+          "lat": 11.319005,
+          "lng": 125.09356
+        },
+        "source": "geojson",
+        "address": "New San Agustin, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Old San Agustin",
+        "coordinates": {
+          "lat": 11.327565,
+          "lng": 125.108754
+        },
+        "source": "geojson",
+        "address": "Old San Agustin, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Palaypay",
+        "coordinates": {
+          "lat": 11.286865,
+          "lng": 125.070463
+        },
+        "source": "geojson",
+        "address": "Palaypay, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Panugmonon",
+        "coordinates": {
+          "lat": 11.304963,
+          "lng": 125.145225
+        },
+        "source": "geojson",
+        "address": "Panugmonon, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Pelit",
+        "coordinates": {
+          "lat": 11.299411,
+          "lng": 125.160854
+        },
+        "source": "geojson",
+        "address": "Pelit, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Roxas",
+        "coordinates": {
+          "lat": 11.307039,
+          "lng": 125.050001
+        },
+        "source": "geojson",
+        "address": "Roxas, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Salvacion",
+        "coordinates": {
+          "lat": 11.263576,
+          "lng": 125.076628
+        },
+        "source": "geojson",
+        "address": "Salvacion, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "San Antonio",
+        "coordinates": {
+          "lat": 11.280429,
+          "lng": 125.010858
+        },
+        "source": "geojson",
+        "address": "San Antonio, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "San Fernando",
+        "coordinates": {
+          "lat": 11.28983,
+          "lng": 125.147534
+        },
+        "source": "geojson",
+        "address": "San Fernando, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Sawa",
+        "coordinates": {
+          "lat": 11.309432,
+          "lng": 125.079212
+        },
+        "source": "geojson",
+        "address": "Sawa, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Serum",
+        "coordinates": {
+          "lat": 11.300911,
+          "lng": 125.13114
+        },
+        "source": "geojson",
+        "address": "Serum, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Sogponon",
+        "coordinates": {
+          "lat": 11.290047,
+          "lng": 125.103438
+        },
+        "source": "geojson",
+        "address": "Sogponon, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Sugca",
+        "coordinates": {
+          "lat": 11.292591,
+          "lng": 125.100267
+        },
+        "source": "geojson",
+        "address": "Sugca, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Sulod",
+        "coordinates": {
+          "lat": 11.28185,
+          "lng": 125.068719
+        },
+        "source": "geojson",
+        "address": "Sulod, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Tinaogan",
+        "coordinates": {
+          "lat": 11.295023,
+          "lng": 124.987871
+        },
+        "source": "geojson",
+        "address": "Tinaogan, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Tingib",
+        "coordinates": {
+          "lat": 11.284018,
+          "lng": 125.030309
+        },
+        "source": "geojson",
+        "address": "Tingib, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Villa Aurora",
+        "coordinates": {
+          "lat": 11.353097,
+          "lng": 125.06813
+        },
+        "source": "geojson",
+        "address": "Villa Aurora, Basey, Samar",
+        "verified": true
+      }
+    ],
+    "landmark": [
+      {
+        "name": "Agimit Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.3553084,
+          "lng": 125.1450399
+        },
+        "source": "osm",
+        "address": "Agimit Elementary School, Basey-Sohoton Road, Guirang, Agimit, Inuntan, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Alexis Yu Best Care Pharmacy Convenience Store",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2822693,
+          "lng": 125.0707019
+        },
+        "source": "osm",
+        "address": "Alexis Yu Best Care Pharmacy Convenience Store, Serafin Marabut Street, Pueblo del Basey, Poblacion, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Anglit Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2976063,
+          "lng": 125.1091172
+        },
+        "source": "osm",
+        "address": "Anglit Elementary School, Basey-Marabut Road, Sugca, Iba, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Bacubac Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2829119,
+          "lng": 125.0489222
+        },
+        "source": "osm",
+        "address": "Bacubac Elementary School, San Juanico-Basey Road, Pueblo del Basey, Poblacion, Can-abay, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Balantak waterfall",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.3540572,
+          "lng": 125.1716368
+        },
+        "source": "osm",
+        "address": "Balantak waterfall, Basey, Samar, Eastern Visayas, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Balante Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.3393634,
+          "lng": 125.0437539
+        },
+        "source": "osm",
+        "address": "Balante Elementary School, Balante, Basey, Samar, Eastern Visayas, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Balud Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2885346,
+          "lng": 125.1281945
+        },
+        "source": "osm",
+        "address": "Balud Elementary School, Basey-Marabut Road, Nouvelas Occidental, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Bangon Bridge",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2882821,
+          "lng": 125.0584166
+        },
+        "source": "osm",
+        "address": "Bangon Bridge, Dolongan-Basey Road, Canmanila, Poblacion, Bacubac, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Bangon Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2861651,
+          "lng": 125.0574667
+        },
+        "source": "osm",
+        "address": "Bangon Elementary School, Bangon, Poblacion, Bacubac, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Basey 1 Central Elementary School Gymnasium",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2818107,
+          "lng": 125.067891
+        },
+        "source": "osm",
+        "address": "Basey 1 Central Elementary School Gymnasium, Basey-Sohoton Road, Sulod, Poblacion, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Basey Bridge",
+        "coordinates": {
+          "lat": 11.2798,
+          "lng": 125.066
+        },
+        "source": "manual",
+        "address": "Basey Bridge, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Basey Cemetery",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2850928,
+          "lng": 125.061054
+        },
+        "source": "osm",
+        "address": "Basey Cemetery, Canmanila, Poblacion, Bacubac, Basey, Samar, Eastern Visayas, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Basey Church (San Miguel Archangel Parish)",
+        "coordinates": {
+          "lat": 11.2792,
+          "lng": 125.065
+        },
+        "source": "manual",
+        "address": "Basey Church (San Miguel Archangel Parish), Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Basey District Hospital",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.279244,
+          "lng": 125.0651242
+        },
+        "source": "osm",
+        "address": "Basey District Hospital, Tide Embankment Boulevard, Mercado, Poblacion, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Basey Fire Station",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2804747,
+          "lng": 125.0698745
+        },
+        "source": "osm",
+        "address": "Basey Fire Station, Serafin Marabut Street, Mercado, Poblacion, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Basey Gymnasium",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2802314,
+          "lng": 125.0694775
+        },
+        "source": "osm",
+        "address": "Basey Gymnasium, Serafin Marabut Street, Pueblo del Basey, Poblacion, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Basey II Central Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2849861,
+          "lng": 125.0690523
+        },
+        "source": "osm",
+        "address": "Basey II Central Elementary School, Suguijon Street, Palaypay, Poblacion, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Basey Municipal Hall",
+        "coordinates": {
+          "lat": 11.2795,
+          "lng": 125.0653
+        },
+        "source": "manual",
+        "address": "Basey Municipal Hall, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Basey Municipal Police Station",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2842383,
+          "lng": 125.0706256
+        },
+        "source": "osm",
+        "address": "Basey Municipal Police Station, Luzviminda Street, Palaypay, Poblacion, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Basey National High School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2847487,
+          "lng": 125.0668604
+        },
+        "source": "osm",
+        "address": "Basey National High School, Cago-orom Islet, Pueblo del Basey, Poblacion, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Basey Public Market",
+        "coordinates": {
+          "lat": 11.279,
+          "lng": 125.0645
+        },
+        "source": "manual",
+        "address": "Basey Public Market, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Basey Terminal",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2851283,
+          "lng": 125.07055
+        },
+        "source": "osm",
+        "address": "Basey Terminal, San Fernando Street, Pueblo del Basey, Poblacion, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Basey Town Hall",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2805435,
+          "lng": 125.069069
+        },
+        "source": "osm",
+        "address": "Basey Town Hall, Serafin Marabut Street, Pueblo del Basey, Poblacion, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Basey Ⅰ Central Elementary school",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2816766,
+          "lng": 125.0679426
+        },
+        "source": "osm",
+        "address": "Basey Ⅰ Central Elementary school, Serafin Marabut Street, Pueblo del Basey, Poblacion, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Basiao Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2614464,
+          "lng": 125.1612415
+        },
+        "source": "osm",
+        "address": "Basiao Elementary School, Basiao, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Biga Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.3769575,
+          "lng": 125.1326562
+        },
+        "source": "osm",
+        "address": "Biga Elementary School, Maydolong - Basey Road, Rawis, Biga, Inuntan, Basey, Samar, Eastern Visayas, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Binugho Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.4042789,
+          "lng": 125.150191
+        },
+        "source": "osm",
+        "address": "Binugho Elementary School, Binugho, Basey, Samar, Eastern Visayas, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Buenavista Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.3228766,
+          "lng": 125.0643019
+        },
+        "source": "osm",
+        "address": "Buenavista Elementary School, Buenavista, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Bulao Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.3383227,
+          "lng": 125.1028072
+        },
+        "source": "osm",
+        "address": "Bulao Elementary School, Basey-Sohoton Road, Manila-ay, Old San Agustin, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Burabod Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.3875789,
+          "lng": 125.1440708
+        },
+        "source": "osm",
+        "address": "Burabod Elementary School, Burabod, Basey, Samar, Eastern Visayas, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Burgos Integrated School — Elementary",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.3130686,
+          "lng": 125.1515933
+        },
+        "source": "osm",
+        "address": "Burgos Integrated School — Elementary, Guirang, Burgos, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Burgos Integrated School — High School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.3135834,
+          "lng": 125.1515736
+        },
+        "source": "osm",
+        "address": "Burgos Integrated School — High School, Guirang, Inuntan, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Cabugao Bridge",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2577527,
+          "lng": 125.1658055
+        },
+        "source": "osm",
+        "address": "Cabugao Bridge, Basey-Marabut Road, San Roque, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Calbang Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.3015071,
+          "lng": 124.998566
+        },
+        "source": "osm",
+        "address": "Calbang Elementary School, Calbang, Basey, Samar, Eastern Visayas, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Cambayan Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2833421,
+          "lng": 124.994677
+        },
+        "source": "osm",
+        "address": "Cambayan Elementary School, San Juanico-Basey Road, Pueblo del Basey, Poblacion, Can-abay, Basey, Samar, Eastern Visayas, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Campusanto han Basey",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2853296,
+          "lng": 125.0628685
+        },
+        "source": "osm",
+        "address": "Campusanto han Basey, Canmanila, Poblacion, Basey, Samar, Eastern Visayas, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Can-abay Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2931061,
+          "lng": 125.0205098
+        },
+        "source": "osm",
+        "address": "Can-abay Elementary School, Can-abay, Basey, Samar, Eastern Visayas, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Cancaiyas Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.3499757,
+          "lng": 125.0836064
+        },
+        "source": "osm",
+        "address": "Cancaiyas Elementary School, Cancaiyas, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Catadman Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2701863,
+          "lng": 125.1543859
+        },
+        "source": "osm",
+        "address": "Catadman Elementary School, Catadman, Basey, Samar, Eastern Visayas, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Church Belfry",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.281045,
+          "lng": 125.0696066
+        },
+        "source": "osm",
+        "address": "Church Belfry, Left Wing, Pueblo del Basey, Poblacion, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Cogon Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.3339202,
+          "lng": 125.0958574
+        },
+        "source": "osm",
+        "address": "Cogon Elementary School, Basey-Sohoton Road, Manila-ay, Old San Agustin, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Del Pilar Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.3183993,
+          "lng": 125.1450713
+        },
+        "source": "osm",
+        "address": "Del Pilar Elementary School, Basey-Sohoton Road, Guirang, Del Pilar, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Dolongan Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.3359839,
+          "lng": 125.0282165
+        },
+        "source": "osm",
+        "address": "Dolongan Elementary School, Dolongan-Basey Road, Caoit, Dolongan, Basey, Samar, Eastern Visayas, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Golden Bridge",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2937074,
+          "lng": 125.1196184
+        },
+        "source": "osm",
+        "address": "Golden Bridge, Basey-Marabut Road, Binongtu-an, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Guintigi-an Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.3117735,
+          "lng": 125.031476
+        },
+        "source": "osm",
+        "address": "Guintigi-an Elementary School, Guintigui-an, Basey, Samar, Eastern Visayas, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Guirang Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.3320178,
+          "lng": 125.1463082
+        },
+        "source": "osm",
+        "address": "Guirang Elementary School, Guirang, Inuntan, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Iba Bridge",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2943519,
+          "lng": 125.0922163
+        },
+        "source": "osm",
+        "address": "Iba Bridge, Basey-Marabut Road, Palaypay, Poblacion, Iba, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Iba Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2969098,
+          "lng": 125.0919785
+        },
+        "source": "osm",
+        "address": "Iba Elementary School, Iba, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Inuntan Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.3449624,
+          "lng": 125.1515361
+        },
+        "source": "osm",
+        "address": "Inuntan Elementary School, Inuntan, Basey, Samar, Eastern Visayas, Philippines",
+        "verified": true
+      },
+      {
+        "name": "LaYao Beach Resort",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2567137,
+          "lng": 125.1666594
+        },
+        "source": "osm",
+        "address": "LaYao Beach Resort, Basey-Marabut Road, San Roque, Marabut, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Lawaan Bridge",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2862085,
+          "lng": 125.0690782
+        },
+        "source": "osm",
+        "address": "Lawaan Bridge, Basey-Sohoton Road, Palaypay, Poblacion, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Legaspi Bridge",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2358154,
+          "lng": 125.1776767
+        },
+        "source": "osm",
+        "address": "Legaspi Bridge, Basey-Marabut Road, San Roque, Marabut, Samar, Eastern Visayas, 6721, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Loog Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.3109852,
+          "lng": 125.1571715
+        },
+        "source": "osm",
+        "address": "Loog Elementary School, Loog, Basey, Samar, Eastern Visayas, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Mabaysay Park",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2799632,
+          "lng": 125.0693008
+        },
+        "source": "osm",
+        "address": "Mabaysay Park, Pueblo del Basey, Poblacion, Basey, Samar, Eastern Visayas, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Mabini Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.3724802,
+          "lng": 125.1503735
+        },
+        "source": "osm",
+        "address": "Mabini Elementary School, Maydolong - Basey Road, Rawis, Inuntan, Basey, Samar, Eastern Visayas, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Mabini National High School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.375914,
+          "lng": 125.1489963
+        },
+        "source": "osm",
+        "address": "Mabini National High School, Mabini, Basey, Samar, Eastern Visayas, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Magallanes Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2962809,
+          "lng": 125.1185018
+        },
+        "source": "osm",
+        "address": "Magallanes Elementary School, Magallanes, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Manila-ay Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.3272606,
+          "lng": 125.1223355
+        },
+        "source": "osm",
+        "address": "Manila-ay Elementary School, Basey-Sohoton Road, Manila-ay, Old San Agustin, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "May-it Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.3081217,
+          "lng": 125.0149317
+        },
+        "source": "osm",
+        "address": "May-it Elementary School, May-it, Basey, Samar, Eastern Visayas, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Mhanzykoi Store",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2829914,
+          "lng": 125.0687316
+        },
+        "source": "osm",
+        "address": "Mhanzykoi Store, Pio K. Tabunda Street, Pueblo del Basey, Poblacion, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Mongabong Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.323882,
+          "lng": 125.0254563
+        },
+        "source": "osm",
+        "address": "Mongabong Elementary School, Dolongan-Basey Road, Caoit, Mongabong, Basey, Samar, Eastern Visayas, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Mount Carmel Chapel",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2813419,
+          "lng": 125.0665223
+        },
+        "source": "osm",
+        "address": "Mount Carmel Chapel, Buscada, Poblacion, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "New San Agustin Bridge",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.3151328,
+          "lng": 125.0957352
+        },
+        "source": "osm",
+        "address": "New San Agustin Bridge, Basey-Sohoton Road, New San Agustin, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "New San Agustin Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.3149827,
+          "lng": 125.0973418
+        },
+        "source": "osm",
+        "address": "New San Agustin Elementary School, New San Agustin, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Nouvellas Bridge",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2800712,
+          "lng": 125.1476371
+        },
+        "source": "osm",
+        "address": "Nouvellas Bridge, Basey-Marabut Road, Nouvelas Occidental, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Old San Agustin Bridge",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.3217884,
+          "lng": 125.1048026
+        },
+        "source": "osm",
+        "address": "Old San Agustin Bridge, Basey-Sohoton Road, Manila-ay, Old San Agustin, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Old San Agustin Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.3227166,
+          "lng": 125.1060599
+        },
+        "source": "osm",
+        "address": "Old San Agustin Elementary School, Old San Agustin, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Old San Agustin National High School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.3255179,
+          "lng": 125.1100303
+        },
+        "source": "osm",
+        "address": "Old San Agustin National High School, Basey-Sohoton Road, Manila-ay, Old San Agustin, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Panugmonon Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.3051302,
+          "lng": 125.1497736
+        },
+        "source": "osm",
+        "address": "Panugmonon Elementary School, Basey-Marabut Road, Nouvelas Occidental, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Pelit Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.3030613,
+          "lng": 125.1568631
+        },
+        "source": "osm",
+        "address": "Pelit Elementary School, Pelit, Basey, Samar, Eastern Visayas, Philippines",
+        "verified": true
+      },
+      {
+        "name": "RES Store",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2829235,
+          "lng": 125.0701273
+        },
+        "source": "osm",
+        "address": "RES Store, Trece Martires Street, Pueblo del Basey, Poblacion, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Rawis Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.3361584,
+          "lng": 125.155746
+        },
+        "source": "osm",
+        "address": "Rawis Elementary School, Rawis, Inuntan, Basey, Samar, Eastern Visayas, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Real Store 24/7",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2812954,
+          "lng": 125.0691415
+        },
+        "source": "osm",
+        "address": "Real Store 24/7, Pio K. Tabunda Street, Pueblo del Basey, Poblacion, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Rizal Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.3613234,
+          "lng": 125.1033743
+        },
+        "source": "osm",
+        "address": "Rizal Elementary School, Rizal, Basey, Samar, Eastern Visayas, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Rose Pharmacy",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2816807,
+          "lng": 125.0664881
+        },
+        "source": "osm",
+        "address": "Rose Pharmacy, Basey-Sohoton Road, Pueblo del Basey, Poblacion, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Roxas Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.3043709,
+          "lng": 125.0521879
+        },
+        "source": "osm",
+        "address": "Roxas Elementary School, Dolongan-Basey Road, Bangon, Cancaral, Roxas, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Saint Michael the Archangel Parish Church",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2809812,
+          "lng": 125.0699803
+        },
+        "source": "osm",
+        "address": "Saint Michael the Archangel Parish Church, Right Wing, Sulod, Poblacion, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Salvacion Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2665558,
+          "lng": 125.075549
+        },
+        "source": "osm",
+        "address": "Salvacion Elementary School, Salvacion, Lolobon, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "San Antonio Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2775917,
+          "lng": 125.0114971
+        },
+        "source": "osm",
+        "address": "San Antonio Elementary School, San Juanico-Basey Road, Pueblo del Basey, Poblacion, San Antonio, Basey, Samar, Eastern Visayas, 6500, Philippines",
+        "verified": true
+      },
+      {
+        "name": "San Fernando Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2785064,
+          "lng": 125.1463072
+        },
+        "source": "osm",
+        "address": "San Fernando Elementary School, San Fernando, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "San Fernando National High School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2809117,
+          "lng": 125.1475811
+        },
+        "source": "osm",
+        "address": "San Fernando National High School, San Fernando, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Sawa Bridge",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.3077945,
+          "lng": 125.0817351
+        },
+        "source": "osm",
+        "address": "Sawa Bridge, Basey-Sohoton Road, New San Agustin, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Sawa Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.3049707,
+          "lng": 125.0805413
+        },
+        "source": "osm",
+        "address": "Sawa Elementary School, Sawa, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Serum Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2978781,
+          "lng": 125.1323483
+        },
+        "source": "osm",
+        "address": "Serum Elementary School, Serum, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Simeon Ocdol National High School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2771684,
+          "lng": 125.0068081
+        },
+        "source": "osm",
+        "address": "Simeon Ocdol National High School, San Juanico-Basey Road, Pueblo del Basey, Poblacion, Can-abay, Basey, Samar, Eastern Visayas, 6500, Philippines",
+        "verified": true
+      },
+      {
+        "name": "So-ob Cave",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.259273,
+          "lng": 125.1637711
+        },
+        "source": "osm",
+        "address": "So-ob Cave, Basiao, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Sohoton Cave",
+        "coordinates": {
+          "lat": 11.42,
+          "lng": 125.12
+        },
+        "source": "manual",
+        "address": "Sohoton Cave, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Sohoton National Park",
+        "coordinates": {
+          "lat": 11.4167,
+          "lng": 125.1167
+        },
+        "source": "manual",
+        "address": "Sohoton National Park, Basey, Samar",
+        "verified": true
+      },
+      {
+        "name": "Sohoton Natural Bridge",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.3648129,
+          "lng": 125.1633367
+        },
+        "source": "osm",
+        "address": "Sohoton Natural Bridge, Maydolong - Basey Road, Bagong Silang, Basey, Samar, Eastern Visayas, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Sparkle Sari-Sari Store",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2818109,
+          "lng": 125.1480406
+        },
+        "source": "osm",
+        "address": "Sparkle Sari-Sari Store, Basey-Marabut Road, Nouvelas Occidental, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "St Michael Archangel Chapel",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.3321791,
+          "lng": 125.1470089
+        },
+        "source": "osm",
+        "address": "St Michael Archangel Chapel, Basey-Sohoton Road, Guirang, Inuntan, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "St. Anthony Learning Center Basey Samar",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2841906,
+          "lng": 125.0501075
+        },
+        "source": "osm",
+        "address": "St. Anthony Learning Center Basey Samar, San Juanico-Basey Road, Pueblo del Basey, Poblacion, Can-abay, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Sugca Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2922756,
+          "lng": 125.10349
+        },
+        "source": "osm",
+        "address": "Sugca Elementary School, Sugca, Anglit, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Sugponon Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2878615,
+          "lng": 125.1059086
+        },
+        "source": "osm",
+        "address": "Sugponon Elementary School, Sugponon, Anglit, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Tinaogan Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2908368,
+          "lng": 124.9783905
+        },
+        "source": "osm",
+        "address": "Tinaogan Elementary School, Tinaogan, Basey, Samar, Eastern Visayas, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Tingib Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2792433,
+          "lng": 125.0328951
+        },
+        "source": "osm",
+        "address": "Tingib Elementary School, Tingib, Basey, Samar, Eastern Visayas, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Villa Aurora Elementary School",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.3375233,
+          "lng": 125.0653675
+        },
+        "source": "osm",
+        "address": "Villa Aurora Elementary School, Dolongan-Basey Road, Caoit, Dolongan, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Well Care Pharmacy",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.280824,
+          "lng": 125.067325
+        },
+        "source": "osm",
+        "address": "Well Care Pharmacy, Serafin Marabut Street, Pueblo del Basey, Poblacion, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Yogz Restaurant",
+        "type": "landmark",
+        "coordinates": {
+          "lat": 11.2814667,
+          "lng": 125.0708155
+        },
+        "source": "osm",
+        "address": "Yogz Restaurant, San Roque Street, Pueblo del Basey, Poblacion, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      }
+    ],
+    "sitio": [
+      {
+        "name": "Bacubac Barangay Hall",
+        "type": "sitio",
+        "coordinates": {
+          "lat": 11.2825448,
+          "lng": 125.0487026
+        },
+        "source": "osm",
+        "address": "Bacubac Barangay Hall, San Juanico-Basey Road, Pueblo del Basey, Poblacion, Can-abay, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Bahay Pamahalaan ng Barangay Sulod",
+        "type": "sitio",
+        "coordinates": {
+          "lat": 11.2820056,
+          "lng": 125.0687521
+        },
+        "source": "osm",
+        "address": "Bahay Pamahalaan ng Barangay Sulod, Calle Veteranos, Sulod, Poblacion, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Buscada Barangay Hall",
+        "type": "sitio",
+        "coordinates": {
+          "lat": 11.2818299,
+          "lng": 125.0662794
+        },
+        "source": "osm",
+        "address": "Buscada Barangay Hall, Basey-Sohoton Road, Buscada, Poblacion, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Can-abay Barangay Hall",
+        "type": "sitio",
+        "coordinates": {
+          "lat": 11.2963229,
+          "lng": 125.0170742
+        },
+        "source": "osm",
+        "address": "Can-abay Barangay Hall, Can-abay, Basey, Samar, Eastern Visayas, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Mercado Barangay Gymnasium",
+        "type": "sitio",
+        "coordinates": {
+          "lat": 11.2803232,
+          "lng": 125.0700114
+        },
+        "source": "osm",
+        "address": "Mercado Barangay Gymnasium, Tide Embankment Boulevard, Mercado, Poblacion, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Mercado Barangay Hall",
+        "type": "sitio",
+        "coordinates": {
+          "lat": 11.2807713,
+          "lng": 125.0701635
+        },
+        "source": "osm",
+        "address": "Mercado Barangay Hall, Serafin Marabut Street, Mercado, Poblacion, Basey, Samar, Eastern Visayas, 6720, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Tag-alag Barangay Hall",
+        "type": "sitio",
+        "coordinates": {
+          "lat": 11.2473088,
+          "lng": 125.1813331
+        },
+        "source": "osm",
+        "address": "Tag-alag Barangay Hall, Basey-Marabut Road, Tag-alag, Marabut, Samar, Eastern Visayas, 6721, Philippines",
+        "verified": true
+      },
+      {
+        "name": "Zone 3",
+        "type": "sitio",
+        "coordinates": {
+          "lat": 11.2786926,
+          "lng": 125.0127961
+        },
+        "source": "osm",
+        "address": "Zone 3, San Antonio, Basey, Samar, Eastern Visayas, 6500, Philippines",
+        "verified": true
+      }
+    ]
+  }
+}
