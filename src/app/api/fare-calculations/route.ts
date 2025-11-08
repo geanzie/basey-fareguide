@@ -118,7 +118,12 @@ export async function POST(request: NextRequest) {
       calculatedFare, 
       calculationType, 
       routeData,
-      vehicleId 
+      vehicleId,
+      // Discount card fields
+      discountCardId,
+      originalFare,
+      discountApplied,
+      discountType
     } = body
 
     // Validate required fields
@@ -173,7 +178,12 @@ export async function POST(request: NextRequest) {
         distance: parseFloat(String(distance)),
         calculatedFare: parseFloat(String(calculatedFare)),
         calculationType: String(calculationType),
-        routeData: routeData ? JSON.stringify(routeData) : null
+        routeData: routeData ? JSON.stringify(routeData) : null,
+        // Discount card fields
+        discountCardId: discountCardId || null,
+        originalFare: originalFare ? parseFloat(String(originalFare)) : null,
+        discountApplied: discountApplied ? parseFloat(String(discountApplied)) : null,
+        discountType: discountType || null
       },
       include: {
         user: userId ? {
@@ -190,9 +200,58 @@ export async function POST(request: NextRequest) {
             plateNumber: true,
             vehicleType: true
           }
+        } : false,
+        discountCard: discountCardId ? {
+          select: {
+            id: true,
+            discountType: true,
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true
+              }
+            }
+          }
         } : false
       }
     })
+
+    // Create discount usage log if discount was applied
+    if (discountCardId && userId && discountApplied && discountApplied > 0) {
+      try {
+        await prisma.discountUsageLog.create({
+          data: {
+            discountCardId: discountCardId,
+            fareCalculationId: fareCalculation.id,
+            originalFare: parseFloat(String(originalFare)),
+            discountAmount: parseFloat(String(discountApplied)),
+            finalFare: parseFloat(String(calculatedFare)),
+            discountRate: discountApplied / originalFare, // Calculate actual rate used
+            fromLocation: String(fromLocation),
+            toLocation: String(toLocation),
+            distance: parseFloat(String(distance)),
+            // Optional tracking fields
+            ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || null,
+            gpsCoordinates: null, // Can be added later if needed
+            isSuspicious: false
+          }
+        })
+
+        // Update discount card usage stats
+        await prisma.discountCard.update({
+          where: { id: discountCardId },
+          data: {
+            lastUsedAt: new Date(),
+            usageCount: { increment: 1 },
+            dailyUsageCount: { increment: 1 }
+          }
+        })
+      } catch (logError) {
+        console.error('Error creating discount usage log:', logError)
+        // Don't fail the request if logging fails
+      }
+    }
 
     return NextResponse.json({
       success: true,

@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getGoogleMapsRoute, getDetailedRoute, calculateGoogleMapsFare, metersToKilometers, validateBaseyCoordinates, testCoordinates } from '@/lib/googleMaps';
 import { BASEY_CENTER } from '@/utils/baseyCenter';
+import { prisma } from '@/lib/prisma';
+import jwt from 'jsonwebtoken';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { origin, destination } = body;
+    const { origin, destination, userId } = body;
 
     // Validate input
     if (!origin || !destination || !Array.isArray(origin) || !Array.isArray(destination)) {
@@ -64,8 +66,54 @@ export async function POST(request: NextRequest) {
     // Convert distance to kilometers
     const distanceInKm = metersToKilometers(route.distance.value);
 
-    // Calculate fare using Municipal Ordinance
-    const fareCalculation = calculateGoogleMapsFare(distanceInKm);
+    // Check for active discount card if userId provided
+    let discountCard = null;
+    let discountRate = 0;
+
+    if (userId) {
+      try {
+        const card = await prisma.discountCard.findUnique({
+          where: { userId: userId },
+          select: {
+            id: true,
+            discountType: true,
+            verificationStatus: true,
+            isActive: true,
+            validFrom: true,
+            validUntil: true,
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true
+              }
+            }
+          }
+        });
+
+        if (card) {
+          const now = new Date();
+          const validFrom = new Date(card.validFrom);
+          const validUntil = new Date(card.validUntil);
+          
+          const isValid = card.isActive && 
+                         card.verificationStatus === 'APPROVED' && 
+                         now >= validFrom && 
+                         now <= validUntil;
+
+          if (isValid) {
+            discountCard = card;
+            discountRate = 0.20; // 20% discount for seniors, PWDs, students (Philippine law)
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching discount card:', error);
+        // Continue without discount if error occurs
+      }
+    }
+
+    // Calculate fare using Municipal Ordinance (with discount if applicable)
+    const fareCalculation = calculateGoogleMapsFare(distanceInKm, discountRate);
 
     // Return comprehensive route information including polyline for visualization
     return NextResponse.json({
@@ -84,6 +132,13 @@ export async function POST(request: NextRequest) {
         fare: fareCalculation,
         source: 'Google Maps API',
         accuracy: 'High (GPS-based routing)',
+        discountCard: discountCard ? {
+          id: discountCard.id,
+          discountType: discountCard.discountType,
+          discountRate: discountRate,
+          discountPercentage: discountRate * 100,
+          user: discountCard.user
+        } : null
       },
     });
   } catch (error) {

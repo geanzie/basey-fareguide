@@ -3,6 +3,18 @@
 import { useState, useRef, useEffect } from 'react'
 import { BASEY_LANDMARKS, EXTERNAL_LANDMARKS } from '../utils/baseyCenter'
 
+interface DiscountCard {
+  id: string
+  discountType: 'SENIOR_CITIZEN' | 'PWD' | 'STUDENT'
+  discountRate: number
+  discountPercentage: number
+  user: {
+    id: string
+    firstName: string
+    lastName: string
+  }
+}
+
 interface RouteResult {
   distance: {
     meters: number
@@ -17,6 +29,9 @@ interface RouteResult {
   fare: {
     distance: number
     fare: number
+    originalFare?: number
+    discountApplied?: number
+    discountRate?: number
     breakdown: {
       baseFare: number
       additionalDistance: number
@@ -25,6 +40,7 @@ interface RouteResult {
   }
   source: string
   accuracy: string
+  discountCard?: DiscountCard | null
 }
 
 interface GoogleMapsFareCalculatorProps {
@@ -38,7 +54,42 @@ const GoogleMapsFareCalculator = ({ onError }: GoogleMapsFareCalculatorProps) =>
   const [isCalculating, setIsCalculating] = useState(false)
   const [error, setError] = useState<string>('')
   const [lastCalculationTime, setLastCalculationTime] = useState<number>(0)
+  const [userDiscountCard, setUserDiscountCard] = useState<DiscountCard | null>(null)
+  const [userId, setUserId] = useState<string | null>(null)
   const resultsRef = useRef<HTMLDivElement>(null)
+
+  // Fetch user's discount card on mount
+  useEffect(() => {
+    const fetchUserDiscountCard = async () => {
+      try {
+        const token = localStorage.getItem('token')
+        const userData = localStorage.getItem('user')
+        
+        if (!token || !userData) return
+
+        const user = JSON.parse(userData)
+        setUserId(user.id)
+
+        const response = await fetch('/api/discount-cards/me', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          if (data.hasDiscountCard && data.isValid && data.discountCard) {
+            setUserDiscountCard(data.discountCard)
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching discount card:', error)
+        // Silent fail - discount not critical for calculator to work
+      }
+    }
+
+    fetchUserDiscountCard()
+  }, [])
 
   // Auto-scroll to results when they appear
   useEffect(() => {
@@ -172,6 +223,7 @@ const GoogleMapsFareCalculator = ({ onError }: GoogleMapsFareCalculatorProps) =>
         body: JSON.stringify({
           origin: fromBarangay.coords,
           destination: toBarangay.coords,
+          userId: userId, // Include userId to check for discount card
         }),
       })
 
@@ -236,6 +288,23 @@ const GoogleMapsFareCalculator = ({ onError }: GoogleMapsFareCalculatorProps) =>
             <span className="mx-2 text-gray-300">•</span>
             <span className="text-blue-600 font-medium text-sm">✓ Visual Route</span>
           </div>
+
+          {/* Discount Card Badge */}
+          {userDiscountCard && (
+            <div className="mt-4 inline-flex items-center px-6 py-3 bg-gradient-to-r from-emerald-50 to-green-50 border-2 border-emerald-300 rounded-xl shadow-sm">
+              <span className="text-2xl mr-3">🎫</span>
+              <div className="text-left">
+                <div className="text-sm font-semibold text-emerald-800">
+                  {userDiscountCard.discountType === 'SENIOR_CITIZEN' && 'Senior Citizen Discount Active'}
+                  {userDiscountCard.discountType === 'PWD' && 'PWD Discount Active'}
+                  {userDiscountCard.discountType === 'STUDENT' && 'Student Discount Active'}
+                </div>
+                <div className="text-xs text-emerald-600">
+                  {userDiscountCard.discountPercentage}% discount will be applied to all fares
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Priority Results Section - Appears First After Calculation */}
@@ -260,8 +329,29 @@ const GoogleMapsFareCalculator = ({ onError }: GoogleMapsFareCalculatorProps) =>
                   <div className="text-4xl font-bold text-emerald-600 mb-3">
                     ₱{routeResult.fare.fare.toFixed(2)}
                   </div>
-                  <div className="text-lg font-semibold text-gray-700">Total Fare</div>
+                  <div className="text-lg font-semibold text-gray-700">
+                    {routeResult.fare.discountApplied && routeResult.fare.discountApplied > 0 ? 'Discounted Fare' : 'Total Fare'}
+                  </div>
                   <div className="text-sm text-gray-500 mt-2">Municipal Ordinance 105</div>
+                  
+                  {/* Show discount details if applicable */}
+                  {routeResult.fare.discountApplied && routeResult.fare.discountApplied > 0 && (
+                    <div className="mt-3 pt-3 border-t border-emerald-100">
+                      <div className="text-sm text-gray-500 line-through">
+                        ₱{routeResult.fare.originalFare?.toFixed(2)}
+                      </div>
+                      <div className="text-xs font-semibold text-emerald-600 mt-1">
+                        Saved ₱{routeResult.fare.discountApplied.toFixed(2)} ({(routeResult.fare.discountRate! * 100).toFixed(0)}% off)
+                      </div>
+                      {routeResult.discountCard && (
+                        <div className="text-xs text-emerald-700 mt-1">
+                          {routeResult.discountCard.discountType === 'SENIOR_CITIZEN' && '👴 Senior Citizen'}
+                          {routeResult.discountCard.discountType === 'PWD' && '♿ PWD'}
+                          {routeResult.discountCard.discountType === 'STUDENT' && '🎓 Student'}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div className="bg-white rounded-2xl p-8 text-center shadow-lg border border-blue-100">
                   <div className="text-4xl font-bold text-blue-600 mb-3">

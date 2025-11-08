@@ -86,6 +86,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       icon: '📊',
       path: '/dashboard',
       available: ['ADMIN', 'DATA_ENCODER', 'ENFORCER']
+    },
+    {
+      key: 'discount-cards',
+      label: 'Discount Cards',
+      icon: '🎫',
+      path: '/admin/discount-cards',
+      available: ['ADMIN']
     }
   ]
 

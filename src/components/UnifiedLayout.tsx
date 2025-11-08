@@ -245,6 +245,12 @@ function getNavigationItems(userType: string): NavigationItem[] {
           href: '/admin/users'
         },
         {
+          id: 'discount-cards',
+          label: 'Discount Cards',
+          icon: '🎫',
+          href: '/admin/discount-cards'
+        },
+        {
           id: 'incidents',
           label: 'All Incidents',
           icon: '🚨',

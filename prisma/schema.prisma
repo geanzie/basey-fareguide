@@ -46,6 +46,7 @@ model User {
   uploadedEvidence      Evidence[]            @relation("EvidenceUploader")
   reviewedEvidence      Evidence[]            @relation("EvidenceReviewer")
   verificationLogs      UserVerificationLog[]
+  discountCard          DiscountCard?
 
   @@index([username])
   @@index([userType])
@@ -151,7 +152,7 @@ model Evidence {
 }
 
 model FareCalculation {
-  id              String   @id @default(cuid())
+  id              String            @id @default(cuid())
   userId          String?
   vehicleId       String?
   fromLocation    String
@@ -161,14 +162,21 @@ model FareCalculation {
   actualFare      Decimal?
   calculationType String
   routeData       String?
-  createdAt       DateTime @default(now())
-  user            User?    @relation(fields: [userId], references: [id])
-  vehicle         Vehicle? @relation(fields: [vehicleId], references: [id])
+  discountCardId  String?
+  originalFare    Decimal?
+  discountApplied Decimal?
+  discountType    DiscountType?
+  createdAt       DateTime          @default(now())
+  user            User?             @relation(fields: [userId], references: [id])
+  vehicle         Vehicle?          @relation(fields: [vehicleId], references: [id])
+  discountCard    DiscountCard?     @relation("DiscountedCalculations", fields: [discountCardId], references: [id])
+  usageLog        DiscountUsageLog?
 
   @@index([userId])
   @@index([vehicleId])
   @@index([createdAt])
   @@index([calculationType])
+  @@index([discountCardId])
   @@map("fare_calculations")
 }
 
@@ -331,4 +339,121 @@ enum EvidenceStatus {
   VERIFIED
   REJECTED
   REQUIRES_ADDITIONAL
+}
+
+model DiscountCard {
+  id                    String              @id @default(cuid())
+  userId                String              @unique
+  user                  User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  discountType          DiscountType
+  
+  // Identification Details
+  idNumber              String?             @unique
+  idType                String?
+  issuingAuthority      String?
+  
+  // Supporting Information
+  fullName              String
+  dateOfBirth           DateTime
+  photoUrl              String?
+  
+  // Student-specific
+  schoolName            String?
+  schoolAddress         String?
+  gradeLevel            String?
+  schoolIdExpiry        DateTime?
+  
+  // PWD-specific
+  disabilityType        String?
+  pwdIdExpiry           DateTime?
+  
+  // Verification Status
+  verificationStatus    VerificationStatus  @default(PENDING)
+  verifiedBy            String?
+  verifiedAt            DateTime?
+  verificationNotes     String?
+  rejectionReason       String?
+  
+  // Admin Override Feature
+  isAdminOverride       Boolean             @default(false)
+  overrideReason        String?
+  overrideBy            String?
+  overrideAt            DateTime?
+  
+  // Validity
+  isActive              Boolean             @default(false)
+  validFrom             DateTime
+  validUntil            DateTime
+  
+  // Usage Tracking (Anti-abuse)
+  lastUsedAt            DateTime?
+  usageCount            Int                 @default(0)
+  dailyUsageCount       Int                 @default(0)
+  lastResetDate         DateTime?
+  
+  // Audit Trail
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  
+  // Relations
+  fareCalculations      FareCalculation[]   @relation("DiscountedCalculations")
+  usageLogs             DiscountUsageLog[]
+  
+  @@index([userId])
+  @@index([discountType])
+  @@index([verificationStatus])
+  @@index([isActive])
+  @@index([validUntil])
+  @@index([isAdminOverride])
+  @@map("discount_cards")
+}
+
+model DiscountUsageLog {
+  id                String          @id @default(cuid())
+  discountCardId    String
+  discountCard      DiscountCard    @relation(fields: [discountCardId], references: [id], onDelete: Cascade)
+  
+  fareCalculationId String          @unique
+  fareCalculation   FareCalculation @relation(fields: [fareCalculationId], references: [id])
+  
+  originalFare      Decimal         @db.Decimal(10, 2)
+  discountAmount    Decimal         @db.Decimal(10, 2)
+  finalFare         Decimal         @db.Decimal(10, 2)
+  discountRate      Decimal         @db.Decimal(5, 2)
+  
+  fromLocation      String
+  toLocation        String
+  distance          Decimal         @db.Decimal(10, 2)
+  
+  // Anti-fraud tracking
+  usedAt            DateTime        @default(now())
+  ipAddress         String?
+  deviceFingerprint String?
+  gpsCoordinates    String?
+  
+  // Flags for suspicious activity
+  isSuspicious      Boolean         @default(false)
+  suspiciousReason  String?
+  reviewedBy        String?
+  reviewedAt        DateTime?
+  
+  @@index([discountCardId, usedAt])
+  @@index([usedAt])
+  @@map("discount_usage_logs")
+}
+
+enum DiscountType {
+  SENIOR_CITIZEN
+  PWD
+  STUDENT
+}
+
+enum VerificationStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  SUSPENDED
+  EXPIRED
 }
