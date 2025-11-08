@@ -53,41 +53,53 @@ export default function EnforcerIncidentsList() {
     calculatedPenalty: 500
   })
 
-  const days = 30
+  const [dateRange, setDateRange] = useState<number>(90) // Default to 90 days
   const [violationFilter, setViolationFilter] = useState<string>('all')
-  const swrKey = `/api/incidents/enforcer?days=${days}&filter=${violationFilter}`
-  const { data, isLoading, mutate } = useSWR<{ incidents: Incident[] }>(swrKey)
+  const [searchQuery, setSearchQuery] = useState<string>('')
+  const swrKey = `/api/incidents/enforcer?days=${dateRange}&filter=${violationFilter}`
+  const { data, error, isLoading, mutate } = useSWR<{ incidents: Incident[] }>(swrKey)
 
   useEffect(() => {
     if (data?.incidents) {
+      console.log('Incidents loaded:', data.incidents.length, 'incidents')
       setIncidents(data.incidents)
+    } else if (!isLoading && !error) {
+      console.log('No incidents data received')
     }
     setLoading(isLoading)
-  }, [data, isLoading])
+  }, [data, isLoading, error])
+
+  useEffect(() => {
+    if (error) {
+      console.error('Error loading incidents:', error)
+    }
+  }, [error])
 
   // Removed manual loadIncidents; SWR handles fetching
 
   const filteredIncidents = useMemo(() => {
     return incidents.filter(incident => {
-      if (statusFilter === 'ALL') return true
-      return incident.status === statusFilter
+      // Apply status filter
+      const matchesStatus = statusFilter === 'ALL' || incident.status === statusFilter
+      
+      // Apply search filter
+      if (searchQuery.trim() === '') {
+        return matchesStatus
+      }
+      
+      const query = searchQuery.toLowerCase()
+      const matchesSearch = 
+        incident.plateNumber?.toLowerCase().includes(query) ||
+        incident.location?.toLowerCase().includes(query) ||
+        incident.description?.toLowerCase().includes(query) ||
+        incident.ticketNumber?.toLowerCase().includes(query) ||
+        incident.incidentType?.toLowerCase().includes(query) ||
+        incident.driverLicense?.toLowerCase().includes(query) ||
+        `${incident.reportedBy.firstName} ${incident.reportedBy.lastName}`.toLowerCase().includes(query)
+      
+      return matchesStatus && matchesSearch
     })
-  }, [incidents, statusFilter])
-
-  const handleTakeIncident = async (incidentId: string) => {
-    try {
-      const response = await fetch(`/api/incidents/${incidentId}/take`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
-      if (response.ok) {
-        mutate() // Refresh the list via SWR
-      } else {
-        const errorData = await response.json()      }
-    } catch (error) {}
-  }
+  }, [incidents, statusFilter, searchQuery])
 
   const handleViewDetails = (incident: Incident) => {
     setSelectedIncident(incident)
@@ -113,30 +125,15 @@ export default function EnforcerIncidentsList() {
     setTicketIncident(incident)
     setShowTicketModal(true)
     
-    // Fetch violation history if plate number exists
-    if (incident.plateNumber) {
-      const violations = await fetchViolationHistory(incident.plateNumber)
-      const offenseCount = violations.length
-      const calculatedPenalty = getOffensePenalty(offenseCount)
-      
-      setTicketData({
-        ticketNumber: '',
-        penaltyAmount: calculatedPenalty.toString(),
-        remarks: '',
-        previousOffenses: violations,
-        offenseCount: offenseCount,
-        calculatedPenalty: calculatedPenalty
-      })
-    } else {
-      setTicketData({
-        ticketNumber: '',
-        penaltyAmount: '500',
-        remarks: '',
-        previousOffenses: [],
-        offenseCount: 0,
-        calculatedPenalty: 500
-      })
-    }
+    // Reset ticket data with default penalty
+    setTicketData({
+      ticketNumber: '',
+      penaltyAmount: '500',
+      remarks: '',
+      previousOffenses: [],
+      offenseCount: 0,
+      calculatedPenalty: 500
+    })
   }
 
   const handleTakeAndIssueTicket = async (incident: Incident) => {
@@ -211,36 +208,6 @@ export default function EnforcerIncidentsList() {
       }
     } catch (error) {      alert('Error issuing ticket. Please try again.')
     }
-  }
-
-  // Penalty amounts based on Municipal Ordinance offense system
-  const getOffensePenalty = (offenseCount: number): number => {
-    switch (offenseCount + 1) { // +1 because we're calculating for the current offense
-      case 1: return 500   // 1st Offense
-      case 2: return 1000  // 2nd Offense
-      case 3: return 1500  // 3rd Offense
-      default: return 1500 // 3rd offense penalty for subsequent violations
-    }
-  }
-
-  // Fetch violation history for a vehicle
-  const fetchViolationHistory = async (plateNumber: string) => {
-    if (!plateNumber.trim()) return []
-    
-    try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`/api/violations/history/${encodeURIComponent(plateNumber)}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        return data.violations || []
-      }
-    } catch (error) {}
-    return []
   }
 
   const getIncidentTypeLabel = (type: string) => {
@@ -328,8 +295,31 @@ export default function EnforcerIncidentsList() {
       <div className="px-6 py-8">
         <div className="space-y-8">
           
+          {/* Error Display */}
+          {error && (
+            <div className="bg-red-50 border border-red-300 rounded-lg p-6">
+              <div className="flex items-center">
+                <span className="text-3xl mr-4">⚠️</span>
+                <div>
+                  <h3 className="text-lg font-semibold text-red-800 mb-2">
+                    Failed to Load Incidents
+                  </h3>
+                  <p className="text-red-700 mb-3">
+                    {error?.message || 'Unable to retrieve incident reports. Please check your connection and try again.'}
+                  </p>
+                  <button
+                    onClick={() => mutate()}
+                    className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors font-semibold"
+                  >
+                    Retry
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Quick Action Banner */}
-          {stats.pending > 0 && (
+          {!error && stats.pending > 0 && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
@@ -404,6 +394,69 @@ export default function EnforcerIncidentsList() {
             </div>
           </div>
 
+          {/* Date Range Selector */}
+          <div className="bg-white rounded-lg shadow p-4 mb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <label htmlFor="dateRange" className="text-sm font-medium text-gray-700">
+                  Show resolved incidents from:
+                </label>
+                <select
+                  id="dateRange"
+                  value={dateRange}
+                  onChange={(e) => setDateRange(Number(e.target.value))}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                >
+                  <option value={7}>Last 7 days</option>
+                  <option value={30}>Last 30 days</option>
+                  <option value={90}>Last 90 days</option>
+                  <option value={180}>Last 6 months</option>
+                  <option value={365}>Last year</option>
+                  <option value={3650}>All time (10 years)</option>
+                </select>
+              </div>
+              <div className="text-sm text-gray-500">
+                <span className="font-medium">{incidents.length}</span> incident{incidents.length !== 1 ? 's' : ''} found
+                <span className="ml-2 text-gray-400">• Pending/Investigating always shown</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Search Bar */}
+          <div className="bg-white rounded-lg shadow p-4 mb-4">
+            <div className="flex items-center space-x-4">
+              <div className="flex-1 relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search by plate number, location, description, ticket number, reporter..."
+                  className="block w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                  >
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+              {searchQuery && (
+                <div className="text-sm text-gray-600 whitespace-nowrap">
+                  <span className="font-medium">{filteredIncidents.length}</span> match{filteredIncidents.length !== 1 ? 'es' : ''}
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Filter Tabs */}
           <div className="bg-white rounded-lg shadow">
             <div className="border-b border-gray-200">
@@ -427,18 +480,6 @@ export default function EnforcerIncidentsList() {
                   </button>
                 ))}
               </nav>
-            </div>
-
-            {/* Help Section */}
-            <div className="px-6 pt-4 pb-2 bg-blue-50 border-b border-blue-200">
-              <div className="flex items-center text-sm text-blue-700">
-                <span className="text-lg mr-2">💡</span>
-                <div>
-                  <strong>Ticket Issuing Guide:</strong> 
-                  Use "🎫 Issue Ticket Now" for pending incidents to take and ticket immediately, 
-                  or "🎫 Issue Ticket" for incidents you're already investigating.
-                </div>
-              </div>
             </div>
 
             {/* Incidents Table */}
@@ -541,23 +582,14 @@ export default function EnforcerIncidentsList() {
                         </ActionButton>
                         
                         {incident.status === 'PENDING' && (
-                          <>
-                            <ActionButton
-                              onClick={() => handleTakeIncident(incident.id)}
-                              variant="secondary"
-                              size="xs"
-                            >
-                              Take Case
-                            </ActionButton>
-                            <ActionButton
-                              onClick={() => handleTakeAndIssueTicket(incident)}
-                              variant="primary"
-                              size="xs"
-                              className="bg-red-600 hover:bg-red-700 text-white font-semibold"
-                            >
-                              🎫 Issue Ticket Now
-                            </ActionButton>
-                          </>
+                          <ActionButton
+                            onClick={() => handleTakeAndIssueTicket(incident)}
+                            variant="primary"
+                            size="xs"
+                            className="bg-red-600 hover:bg-red-700 text-white font-semibold"
+                          >
+                            🎫 Issue Ticket
+                          </ActionButton>
                         )}
                         
                         {incident.status === 'INVESTIGATING' && !incident.ticketNumber && (
@@ -569,13 +601,6 @@ export default function EnforcerIncidentsList() {
                           >
                             🎫 Issue Ticket
                           </ActionButton>
-                        )}
-                        
-                        {/* Debug info - remove in production */}
-                        {process.env.NODE_ENV === 'development' && (
-                          <div className="text-xs text-gray-500 mt-1">
-                            Status: {incident.status} | Ticket: {incident.ticketNumber || 'None'}
-                          </div>
                         )}
                       </div>
                     )
@@ -751,71 +776,10 @@ export default function EnforcerIncidentsList() {
                 <p className="text-sm text-gray-600">
                   <strong>Location:</strong> {ticketIncident.location}
                 </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Date:</strong> {formatDate(ticketIncident.incidentDate)}
+                </p>
               </div>
-
-              {/* Violation History and Penalty Calculation */}
-              {ticketIncident.plateNumber && (
-                <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <h4 className="font-semibold text-gray-800 mb-3 flex items-center">
-                    <span className="text-lg mr-2">⚠️</span>
-                    Vehicle Violation History
-                  </h4>
-                  
-                  <div className="text-sm space-y-2">
-                    <div className="flex justify-between">
-                      <span>Previous Violations:</span>
-                      <span className="font-medium">
-                        {ticketData.offenseCount} violation{ticketData.offenseCount !== 1 ? 's' : ''}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Current Offense:</span>
-                      <span className="font-medium">
-                        {ticketData.offenseCount + 1}
-                        {ticketData.offenseCount === 0 ? 'st' : 
-                         ticketData.offenseCount === 1 ? 'nd' : 
-                         ticketData.offenseCount === 2 ? 'rd' : 'th'} Offense
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Municipal Ordinance Penalty:</span>
-                      <span className="font-semibold text-red-600">
-                        ₱{ticketData.calculatedPenalty.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      All violations follow uniform penalty structure regardless of violation type
-                    </div>
-                    
-                    {ticketData.previousOffenses.length > 0 && (
-                      <div className="mt-3 pt-3 border-t border-yellow-300">
-                        <span className="text-xs text-gray-600 font-medium">Recent violations:</span>
-                        <div className="mt-2 space-y-2 max-h-24 overflow-y-auto">
-                          {ticketData.previousOffenses.slice(-3).map((violation, index) => (
-                            <div key={violation.id} className="text-xs text-gray-600 flex justify-between items-center bg-white p-2 rounded">
-                              <div>
-                                <div className="font-medium">{getIncidentTypeLabel(violation.violationType)}</div>
-                                {violation.ticketNumber && (
-                                  <div className="text-gray-500">Ticket: {violation.ticketNumber}</div>
-                                )}
-                              </div>
-                              <div className="text-right">
-                                <div>{new Date(violation.violationDate).toLocaleDateString()}</div>
-                                <div className="text-gray-500">₱{violation.penaltyAmount}</div>
-                              </div>
-                            </div>
-                          ))}
-                          {ticketData.previousOffenses.length > 3 && (
-                            <div className="text-xs text-gray-500 text-center py-1">
-                              ... and {ticketData.previousOffenses.length - 3} more violation{ticketData.previousOffenses.length - 3 !== 1 ? 's' : ''}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
 
               {/* Ticket Form */}
               <form onSubmit={handleTicketSubmit} className="space-y-4">

@@ -50,36 +50,14 @@ const EnforcerDashboard = () => {
 
       if (response.ok) {
         const data = await response.json()
-        setStats(data.stats || stats)
-        setRecentActivity(data.recentActivity || [])
+        setStats(data.stats)
+        setRecentActivity(data.recentActivity)
       } else {
-        // Mock data if API is not implemented yet
-        setStats({
-          activeIncidents: 12,
-          assignedToMe: 3,
-          resolvedToday: 2,
-          pendingEvidence: 5,
-          averageResolutionTime: '2.5h',
-          myTicketsIssued: 15
-        })
-        setRecentActivity([
-          {
-            id: '1',
-            type: 'incident_assigned',
-            message: 'New incident assigned: Fare overcharge at Poblacion Market',
-            timestamp: new Date().toISOString(),
-            incidentId: 'INC001'
-          },
-          {
-            id: '2',
-            type: 'evidence_uploaded',
-            message: 'Evidence uploaded for incident #INC002',
-            timestamp: new Date(Date.now() - 30 * 60000).toISOString(),
-            incidentId: 'INC002'
-          }
-        ])
+        console.error('Failed to fetch dashboard data:', response.status)
       }
-    } catch (error) {} finally {
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error)
+    } finally {
       setLoading(false)
     }
   }

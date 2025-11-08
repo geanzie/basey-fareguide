@@ -13,20 +13,6 @@ const EnforcerDashboard = dynamic(() => import('@/components/EnforcerDashboard')
 const EnforcerIncidentsList = dynamic(() => import('@/components/EnforcerIncidentsList'), {
   loading: () => <div className="p-6">Loading incidents...</div>
 })
-const HotspotAnalytics = dynamic(() => import('@/components/HotspotAnalytics'), {
-  loading: () => <div className="p-6">Loading analytics...</div>
-})
-const OfflineIncidentMap = dynamic(() => import('@/components/OfflineIncidentMap'), {
-  // Map relies on browser APIs – disable SSR and provide a lightweight fallback
-  ssr: false,
-  loading: () => <div className="p-6">Loading map...</div>
-})
-const PatrolManagement = dynamic(() => import('@/components/PatrolManagement'), {
-  loading: () => <div className="p-6">Loading patrol tools...</div>
-})
-const EnforcerReports = dynamic(() => import('@/components/EnforcerReports'), {
-  loading: () => <div className="p-6">Loading reports...</div>
-})
 
 export default function EnforcerPage() {
   return (
@@ -41,10 +27,7 @@ function EnforcerContent() {
 
   const tabs = [
     { id: 'dashboard', label: 'Dashboard', icon: '📊' },
-    { id: 'incidents', label: 'Incident Queue', icon: '📋' },
-    { id: 'analytics', label: 'Analytics', icon: '📈' },
-    { id: 'reports', label: 'Reports', icon: '📝' },
-    { id: 'offline-map', label: 'Offline Map', icon: '📍' }
+    { id: 'incidents', label: 'Incident Queue', icon: '📋' }
   ]
 
   const renderTabContent = () => {
@@ -53,12 +36,6 @@ function EnforcerContent() {
         return <EnforcerDashboard />
       case 'incidents':
         return <EnforcerIncidentsList />
-      case 'analytics':
-        return <HotspotAnalytics />
-      case 'reports':
-        return <EnforcerReports />
-      case 'offline-map':
-        return <OfflineIncidentMap />
       default:
         return <EnforcerDashboard />
     }

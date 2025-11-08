@@ -53,10 +53,20 @@ export async function GET(request: NextRequest) {
     daysAgo.setDate(daysAgo.getDate() - parseInt(days))
 
     // Build where clause
+    // Date filter only applies to RESOLVED incidents
+    // PENDING and INVESTIGATING incidents should always be visible
     const whereClause: any = {
-      createdAt: {
-        gte: daysAgo
-      }
+      OR: [
+        {
+          // Show pending and investigating incidents regardless of age
+          status: { in: ['PENDING', 'INVESTIGATING'] }
+        },
+        {
+          // Show resolved incidents within the date range
+          status: 'RESOLVED',
+          createdAt: { gte: daysAgo }
+        }
+      ]
     }
 
     // Add violation type filter if specified

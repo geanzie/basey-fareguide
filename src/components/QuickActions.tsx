@@ -214,44 +214,12 @@ const QuickActions = () => {
       color: 'bg-red-50 hover:bg-red-100 border-red-200 text-red-900'
     },
     {
-      id: 'update-incident-status',
-      title: 'Update Response Status',
-      description: 'Mark incident as investigating, resolved, or escalated',
-      icon: '🔄',
-      action: () => updateIncidentStatus(),
-      color: 'bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-900'
-    },
-    {
-      id: 'upload-evidence',
-      title: 'Submit Evidence',
-      description: 'Upload photos, videos, and documents for active cases',
-      icon: '📤',
-      action: () => uploadEvidence(),
-      color: 'bg-green-50 hover:bg-green-100 border-green-200 text-green-900'
-    },
-    {
       id: 'issue-citation',
       title: 'Issue Citation',
       description: 'Issue violation ticket during incident response',
       icon: '🎫',
       action: () => openReportForm('quick-ticket'),
       color: 'bg-purple-50 hover:bg-purple-100 border-purple-200 text-purple-900'
-    },
-    {
-      id: 'request-backup',
-      title: 'Request Backup',
-      description: 'Call for assistance with current incident response',
-      icon: '🆘',
-      action: () => requestBackup(),
-      color: 'bg-orange-50 hover:bg-orange-100 border-orange-200 text-orange-900'
-    },
-    {
-      id: 'emergency-escalate',
-      title: 'Emergency Escalation',
-      description: 'Escalate incident to emergency services immediately',
-      icon: '🚑',
-      action: () => escalateEmergency(),
-      color: 'bg-red-100 hover:bg-red-200 border-red-300 text-red-900'
     }
   ]
 
@@ -285,38 +253,6 @@ const QuickActions = () => {
     } catch (error) {      alert('Error taking next incident')
     }
   }
-
-  const updateIncidentStatus = () => {
-    // In a real implementation, this would show a status update modal
-    alert('Status Update feature coming soon! This would allow updating incident status (Investigating, En Route, On Scene, Resolved, Escalated).')
-  }
-
-  const uploadEvidence = () => {
-    // In a real implementation, this would open file upload for current incident
-    alert('Evidence Upload feature coming soon! This would allow uploading photos, videos, and documents for active incidents.')
-  }
-
-  const escalateEmergency = () => {
-    // In a real implementation, this would immediately escalate to emergency services
-    const confirmed = confirm('EMERGENCY ESCALATION: This will immediately notify emergency services (911, Fire Dept, Medical). Continue?')
-    if (confirmed) {
-      alert('Emergency services have been notified. Incident escalated to highest priority.')
-    }
-  }
-
-
-
-
-
-  const requestBackup = () => {
-    const incidentId = prompt('Enter current incident ID for backup request:')
-    if (incidentId) {
-      // In a real implementation, this would send backup request with incident context
-      alert(`Backup requested for incident ${incidentId}. Other enforcers will be notified.`)
-    }
-  }
-
-
 
   // Fetch violation history for a vehicle
   const fetchViolationHistory = async (plateNumber: string) => {
