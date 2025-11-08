@@ -22,6 +22,7 @@ interface AuthContextType {
   loading: boolean
   login: (userData: User, token: string) => void
   logout: () => void
+  refreshUser: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -56,6 +57,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(false)
   }, [])
 
+  const refreshUser = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) return
+
+      const response = await fetch('/api/user/profile', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        const updatedUser = data.user
+        localStorage.setItem('user', JSON.stringify(updatedUser))
+        setUser(updatedUser)
+      }
+    } catch (err) {
+      console.error('Error refreshing user data:', err)
+    }
+  }
+
   const login = (userData: User, token: string) => {
     localStorage.setItem('user', JSON.stringify(userData))
     localStorage.setItem('token', token)
@@ -70,7 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   )

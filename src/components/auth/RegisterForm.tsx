@@ -271,6 +271,7 @@ const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
                 <option value="PHILHEALTH_ID">PhilHealth ID</option>
                 <option value="TIN_ID">TIN ID</option>
                 <option value="POSTAL_ID">Postal ID</option>
+                <option value="STUDENT_ID">Student ID</option>
               </select>
             </div>
           </div>

@@ -37,13 +37,16 @@ interface ApplicationStatus {
   } | null
 }
 
-export default function DiscountApplication({ user }: DiscountApplicationProps) {
+export default function DiscountApplication({ user: initialUser }: DiscountApplicationProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [applicationStatus, setApplicationStatus] = useState<ApplicationStatus | null>(null)
+  
+  // Store fresh user data
+  const [user, setUser] = useState<User>(initialUser)
 
   // Form state
   const [discountType, setDiscountType] = useState<DiscountType>('SENIOR_CITIZEN')
@@ -56,6 +59,12 @@ export default function DiscountApplication({ user }: DiscountApplicationProps) 
   // Photo upload
   const [photoFile, setPhotoFile] = useState<File | null>(null)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
+  const [validatingID, setValidatingID] = useState(false)
+  const [idValidationResult, setIdValidationResult] = useState<{
+    isValid: boolean
+    confidence: number
+    reasons: string[]
+  } | null>(null)
   
   // Student-specific fields
   const [schoolName, setSchoolName] = useState('')
@@ -68,8 +77,38 @@ export default function DiscountApplication({ user }: DiscountApplicationProps) 
   const [pwdIdExpiry, setPwdIdExpiry] = useState('')
 
   useEffect(() => {
+    fetchFreshUserData()
     checkExistingApplication()
   }, [])
+  
+  // Fetch fresh user data from API
+  const fetchFreshUserData = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) return
+
+      const response = await fetch('/api/user/profile', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        const freshUser = data.user
+        setUser(freshUser)
+        
+        // Update form fields with fresh data
+        setFullName(`${freshUser.firstName} ${freshUser.lastName}`)
+        // Format date properly for HTML date input (YYYY-MM-DD)
+        setDateOfBirth(freshUser.dateOfBirth ? freshUser.dateOfBirth.split('T')[0] : '')
+        setIdNumber(freshUser.governmentId || '')
+        setIdType(freshUser.idType || '')
+      }
+    } catch (err) {
+      console.error('Error fetching fresh user data:', err)
+    }
+  }
 
   const checkExistingApplication = async () => {
     try {
@@ -93,7 +132,7 @@ export default function DiscountApplication({ user }: DiscountApplicationProps) 
     }
   }
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
       // Validate photo using utility
@@ -112,6 +151,54 @@ export default function DiscountApplication({ user }: DiscountApplicationProps) 
       }
       reader.readAsDataURL(file)
       setError(null)
+      setIdValidationResult(null)
+
+      // Automatically validate the ID image
+      await validateIDPhoto(file)
+    }
+  }
+
+  const validateIDPhoto = async (file: File) => {
+    try {
+      setValidatingID(true)
+      setError(null)
+      const token = localStorage.getItem('token')
+
+      const formData = new FormData()
+      formData.append('photo', file)
+      formData.append('userName', fullName)
+      formData.append('discountType', discountType)
+      if (idNumber) formData.append('idNumber', idNumber)
+      if (dateOfBirth) formData.append('dateOfBirth', dateOfBirth)
+      if (idType) formData.append('idType', idType)
+
+      const response = await fetch('/api/discount-cards/validate-id', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setIdValidationResult({
+          isValid: data.isValid,
+          confidence: data.confidence,
+          reasons: data.reasons
+        })
+
+        if (!data.isValid) {
+          setError(`ID validation warning: ${data.reasons[0]}. Please ensure your ID is clear and readable.`)
+        }
+      } else {
+        console.error('ID validation failed:', data.error)
+      }
+    } catch (err) {
+      console.error('Error validating ID:', err)
+    } finally {
+      setValidatingID(false)
     }
   }
 
@@ -543,6 +630,51 @@ export default function DiscountApplication({ user }: DiscountApplicationProps) 
               </div>
             )}
             
+            {/* ID Validation Status */}
+            {validatingID && (
+              <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700 flex items-center">
+                <svg className="animate-spin h-5 w-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Validating ID image...
+              </div>
+            )}
+
+            {idValidationResult && !validatingID && (
+              <div className={`mb-4 p-4 border rounded-lg text-sm ${
+                idValidationResult.isValid 
+                  ? 'bg-green-50 border-green-200 text-green-800'
+                  : 'bg-yellow-50 border-yellow-200 text-yellow-800'
+              }`}>
+                <div className="flex items-start">
+                  <span className="text-2xl mr-3">
+                    {idValidationResult.isValid ? '✅' : '⚠️'}
+                  </span>
+                  <div className="flex-1">
+                    <p className="font-semibold mb-2">
+                      {idValidationResult.isValid 
+                        ? 'ID Validated Successfully' 
+                        : 'ID Validation Warning'}
+                    </p>
+                    <p className="mb-2">
+                      Confidence Score: <strong>{idValidationResult.confidence}%</strong>
+                    </p>
+                    <ul className="list-disc list-inside space-y-1 text-xs">
+                      {idValidationResult.reasons.map((reason, idx) => (
+                        <li key={idx}>{reason}</li>
+                      ))}
+                    </ul>
+                    {!idValidationResult.isValid && (
+                      <p className="mt-2 text-xs">
+                        💡 Tip: Ensure your ID is well-lit, in focus, and all text is readable.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <label className="cursor-pointer">
               <div className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                 Choose Photo
@@ -556,8 +688,8 @@ export default function DiscountApplication({ user }: DiscountApplicationProps) 
             </label>
             
             <p className="text-sm text-gray-500 mt-2 text-center">
-              Upload a clear photo for your discount ID card<br />
-              (Max 5MB, JPG or PNG format)
+              Upload a clear photo of your {discountType === 'SENIOR_CITIZEN' ? 'Senior Citizen' : discountType === 'PWD' ? 'PWD' : 'Student'} ID<br />
+              (Max 5MB, JPG or PNG format - ID will be validated automatically)
             </p>
           </div>
         </div>

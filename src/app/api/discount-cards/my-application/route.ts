@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken'
 import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 import { randomUUID } from 'crypto'
+import { validateIDImage } from '@/lib/idValidation'
 
 /**
  * GET /api/discount-cards/my-application
@@ -241,8 +242,41 @@ export async function PATCH(request: NextRequest) {
         )
       }
 
-      // Save new photo
+      // Validate ID image before saving
       try {
+        const bytes = await photo.arrayBuffer()
+        const buffer = Buffer.from(bytes)
+
+        const idValidation = await validateIDImage(buffer, {
+          userName: fullName,
+          idNumber: idNumber || undefined,
+          dateOfBirth,
+          idType: idType || undefined,
+          discountType: discountType as 'SENIOR_CITIZEN' | 'PWD' | 'STUDENT',
+        })
+
+        // Log validation result for admin review
+        console.log('ID Validation Result:', {
+          userId,
+          isValid: idValidation.isValid,
+          confidence: idValidation.confidence,
+          reasons: idValidation.reasons
+        })
+
+        // Reject if validation fails (below 60% confidence)
+        if (!idValidation.isValid || idValidation.confidence < 60) {
+          return NextResponse.json(
+            { 
+              error: 'ID validation failed',
+              details: 'The uploaded image does not appear to be a valid ID. ' + 
+                      idValidation.reasons.join('. '),
+              validationResult: idValidation
+            },
+            { status: 400 }
+          )
+        }
+
+        // Save new photo
         const uploadDir = join(process.cwd(), 'public', 'uploads', 'discount-cards')
         await mkdir(uploadDir, { recursive: true })
 
@@ -250,16 +284,16 @@ export async function PATCH(request: NextRequest) {
         const fileName = `${userId}_${randomUUID()}.${fileExtension}`
         const filePath = join(uploadDir, fileName)
 
-        const bytes = await photo.arrayBuffer()
-        const buffer = Buffer.from(bytes)
         await writeFile(filePath, buffer)
-
         photoUrl = `/uploads/discount-cards/${fileName}`
+
+        // Store validation result for admin review
+        // (You can optionally add a field to the database to store this)
       } catch (fileError: any) {
-        console.error('File upload error:', fileError)
+        console.error('File upload/validation error:', fileError)
         return NextResponse.json(
           { 
-            error: 'Failed to save photo file',
+            error: 'Failed to save or validate photo file',
             details: fileError.message 
           },
           { status: 500 }

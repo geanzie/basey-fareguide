@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useAuth } from './AuthProvider'
 
 interface User {
   id: string
@@ -25,6 +26,7 @@ interface UserProfileProps {
 }
 
 export default function UserProfile({ user: currentUser }: UserProfileProps) {
+  const { refreshUser } = useAuth()
   const [user, setUser] = useState<User | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -101,6 +103,8 @@ export default function UserProfile({ user: currentUser }: UserProfileProps) {
       if (response.ok) {
         setUser(data.user)
         setIsEditing(false)
+        // Refresh user data in AuthProvider to update globally
+        await refreshUser()
         // Show success message (you can add a toast notification here)
       } else {
         setError(data.message || 'Failed to update profile')
@@ -301,6 +305,7 @@ export default function UserProfile({ user: currentUser }: UserProfileProps) {
                 <option value="TIN ID">TIN ID</option>
                 <option value="Senior Citizen ID">Senior Citizen ID</option>
                 <option value="PWD ID">PWD ID</option>
+                <option value="Student ID">Student ID</option>
               </select>
             </div>
 
