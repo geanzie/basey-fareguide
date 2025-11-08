@@ -25,8 +25,9 @@ export interface BarangayInfo {
   bounds: [[number, number], [number, number]];
 }
 
-// Load and parse barangay data
-const barangayFeatures = barangayData.features as BarangayFeature[];
+// Load and parse barangay data, filtering out invalid features
+const barangayFeatures = (barangayData.features as BarangayFeature[])
+  .filter(feature => feature.properties && feature.properties.BARANGAY);
 
 /**
  * Point-in-polygon algorithm using ray casting
@@ -51,27 +52,24 @@ function pointInPolygon(point: [number, number], polygon: number[][][]): boolean
 }
 
 /**
- * Calculate polygon centroid
+ * Calculate polygon centroid using simple arithmetic mean
+ * Note: Using simple mean instead of area-weighted centroid because
+ * area-weighted centroids can fall in inaccessible areas (water, forest, etc.)
+ * causing Google Maps routing to fail with ZERO_RESULTS
  */
 function calculateCentroid(coordinates: number[][][]): [number, number] {
-  let totalArea = 0;
-  let centroidX = 0;
-  let centroidY = 0;
-
   const ring = coordinates[0]; // Use outer ring
+  let sumX = 0;
+  let sumY = 0;
   
-  for (let i = 0; i < ring.length - 1; i++) {
-    const [x0, y0] = ring[i];
-    const [x1, y1] = ring[i + 1];
-    const area = x0 * y1 - x1 * y0;
-    totalArea += area;
-    centroidX += (x0 + x1) * area;
-    centroidY += (y0 + y1) * area;
+  for (let i = 0; i < ring.length; i++) {
+    const [x, y] = ring[i];
+    sumX += x;
+    sumY += y;
   }
-
-  totalArea *= 0.5;
-  centroidX /= (6 * totalArea);
-  centroidY /= (6 * totalArea);
+  
+  const centroidX = sumX / ring.length;
+  const centroidY = sumY / ring.length;
 
   return [centroidX, centroidY];
 }

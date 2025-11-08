@@ -259,12 +259,13 @@ export async function getDetailedRoute(
 export function validateBaseyCoordinates(coords: [number, number]): boolean {
   const [lat, lng] = coords;
   
-  // Rough bounds for Basey Municipality, Samar
+  // Actual bounds for Basey Municipality, Samar (based on GeoJSON data)
+  // Includes all 51 barangays including remote areas like Mabini and Manlilinab
   const bounds = {
-    north: 11.45,
-    south: 11.10,
-    east: 125.20,
-    west: 124.90,
+    north: 11.63,  // Updated to include northern barangays like Mabini (11.575)
+    south: 11.21,  // Updated to include southern areas
+    east: 125.36,  // Updated to include eastern extent (Mabini reaches 125.285)
+    west: 124.93,  // Updated to include western coastal areas
   };
   
   return lat >= bounds.south && lat <= bounds.north && 
