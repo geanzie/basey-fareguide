@@ -102,10 +102,7 @@ export async function GET(request: NextRequest) {
         totalPages: Math.ceil(totalCalculations / limit)
       }
     })
-
-  } catch (error) {
-    console.error('GET /api/routes error:', error)
-    return NextResponse.json(
+      } catch (error) {    return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }
     )
@@ -183,10 +180,7 @@ export async function POST(request: NextRequest) {
       route,
       message: 'Route created successfully'
     }, { status: 201 })
-
-  } catch (error) {
-    console.error('POST /api/routes error:', error)
-    return NextResponse.json(
+      } catch (error) {    return NextResponse.json(
       { 
         error: 'Internal server error',
         details: process.env.NODE_ENV === 'development' ? String(error) : undefined

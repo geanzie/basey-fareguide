@@ -140,12 +140,8 @@ const IncidentReporting = () => {
                  new Date(vehicle.permit.expiryDate) > new Date()
         })
         setVehicles(vehiclesWithPermits)
-      } else {
-        console.error('Failed to fetch vehicles')
-      }
-    } catch (err) {
-      console.error('Error fetching vehicles:', err)
-    } finally {
+      } else {      }
+    } catch (err) {} finally {
       setVehiclesLoading(false)
     }
   }
@@ -165,9 +161,7 @@ const IncidentReporting = () => {
         })
         setLocationLoading(false)
       },
-      (error) => {
-        console.error('Error getting location:', error)
-        setLocationLoading(false)
+      (error) => {        setLocationLoading(false)
       },
       {
         enableHighAccuracy: true,

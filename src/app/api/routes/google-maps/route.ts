@@ -42,13 +42,7 @@ export async function POST(request: NextRequest) {
     // Get detailed route information from Google Maps including polyline
     const route = await getDetailedRoute(originCoords, destinationCoords);
 
-    if (!route) {
-      console.error('❌ Google Maps route calculation failed');
-      console.error('📍 Origin:', originCoords);
-      console.error('📍 Destination:', destinationCoords);
-      console.error('🔑 API Key configured:', !!process.env.GOOGLE_MAPS_SERVER_API_KEY || !!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY);
-      
-      return NextResponse.json(
+    if (!route) {      return NextResponse.json(
         { 
           error: 'Google Maps API is required for accurate road-based route calculation. GPS direct distance would be unfair to drivers.',
           details: 'The API key may not be configured, or the Directions API may not be enabled in Google Cloud Console.',
@@ -107,8 +101,7 @@ export async function POST(request: NextRequest) {
           }
         }
       } catch (error) {
-        console.error('Error fetching discount card:', error);
-        // Continue without discount if error occurs
+      // Continue without discount if error occurs
       }
     }
 
@@ -141,9 +134,7 @@ export async function POST(request: NextRequest) {
         } : null
       },
     });
-  } catch (error) {
-    console.error('Google Maps API error:', error);
-    return NextResponse.json(
+  } catch (error) {    return NextResponse.json(
       { error: 'Internal server error while calculating route' },
       { status: 500 }
     );

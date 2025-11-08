@@ -48,11 +48,9 @@ export async function POST(
     const { id } = await params
     
     // In a real implementation, update the notification in the database
-    console.log(`Marking notification ${id} as read for user ${user.id}`)
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('POST /api/enforcer/notifications/[id]/read error:', error)
     return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }

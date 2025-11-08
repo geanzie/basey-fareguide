@@ -88,9 +88,7 @@ const NotificationCenter = ({ onNotificationClick }: NotificationCenterProps) =>
         ]
         setNotifications(mockNotifications)
       }
-    } catch (error) {
-      console.error('Error fetching notifications:', error)
-    }
+    } catch (error) {}
   }
 
   const markAsRead = async (notificationId: string) => {
@@ -108,9 +106,7 @@ const NotificationCenter = ({ onNotificationClick }: NotificationCenterProps) =>
           ? { ...notification, read: true }
           : notification
       ))
-    } catch (error) {
-      console.error('Error marking notification as read:', error)
-    }
+      } catch (error) {}
   }
 
   const markAllAsRead = async () => {
@@ -124,9 +120,7 @@ const NotificationCenter = ({ onNotificationClick }: NotificationCenterProps) =>
       })
       
       setNotifications(prev => prev.map(notification => ({ ...notification, read: true })))
-    } catch (error) {
-      console.error('Error marking all notifications as read:', error)
-    }
+      } catch (error) {}
   }
 
   const getNotificationIcon = (type: string) => {

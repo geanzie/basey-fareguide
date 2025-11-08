@@ -89,10 +89,7 @@ export async function GET(request: NextRequest) {
         'Cache-Control': 'private, max-age=60, stale-while-revalidate=120'
       }
     })
-
-  } catch (error) {
-    console.error('Error fetching hotspot analytics:', error)
-    return NextResponse.json(
+      } catch (error) {    return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
     )

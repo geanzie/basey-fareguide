@@ -139,17 +139,14 @@ export async function POST(request: NextRequest) {
           })
         } else {
           // Google Maps failed, fall back to GPS if auto mode
-          if (preferredMethod === 'auto') {
-            console.log('Google Maps failed, falling back to GPS calculation')
-          } else {
+          if (preferredMethod === 'auto') {          } else {
             // If specifically requested Google Maps and it failed, return the error
             const errorData = await googleMapsResponse.json()
             return NextResponse.json(errorData, { status: googleMapsResponse.status })
           }
         }
       } catch (error) {
-        console.log('Google Maps API error, falling back to GPS:', error)
-        // Continue to GPS fallback
+      // Continue to GPS fallback
       }
     }
 
@@ -177,9 +174,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-  } catch (error) {
-    console.error('Smart route calculation error:', error)
-    return NextResponse.json(
+  } catch (error) {    return NextResponse.json(
       { error: 'Internal server error while calculating route' },
       { status: 500 }
     )

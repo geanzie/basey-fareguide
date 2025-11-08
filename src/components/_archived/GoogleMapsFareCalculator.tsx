@@ -83,8 +83,7 @@ const GoogleMapsFareCalculator = ({ onError }: GoogleMapsFareCalculatorProps) =>
           }
         }
       } catch (error) {
-        console.error('Error fetching discount card:', error)
-        // Silent fail - discount not critical for calculator to work
+      // Silent fail - discount not critical for calculator to work
       }
     }
 
@@ -244,9 +243,7 @@ const GoogleMapsFareCalculator = ({ onError }: GoogleMapsFareCalculatorProps) =>
       } else {
         throw new Error('Invalid response from route calculation')
       }
-    } catch (error) {
-      console.error('Error calculating route:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Failed to calculate route'
+    } catch (error) {      const errorMessage = error instanceof Error ? error.message : 'Failed to calculate route'
       setError(errorMessage)
       
       // Call the onError callback if provided

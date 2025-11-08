@@ -206,10 +206,7 @@ export default function UserHistory() {
         total: combinedItems.length,
         totalPages: 1
       })
-
-    } catch (error) {
-      console.error('Error fetching history:', error)
-      
+      } catch (error) {
       // Provide more detailed error messages for debugging
       if (error instanceof Error) {
         setError(error.message)

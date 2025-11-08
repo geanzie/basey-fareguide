@@ -39,9 +39,7 @@ export default function UnifiedFareCalculator({ defaultMode = 'auto' }: UnifiedC
           poblacionCount: poblacionBarangays.length,
           ruralCount: allBarangays.length - poblacionBarangays.length
         })
-      } catch (error) {
-        console.error('Failed to initialize barangay data:', error)
-      }
+      } catch (error) {}
     }
 
     initializeBarangayData()

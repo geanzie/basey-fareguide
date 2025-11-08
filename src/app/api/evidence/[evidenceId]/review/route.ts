@@ -112,7 +112,6 @@ export async function PATCH(
     })
 
   } catch (error) {
-    console.error('PATCH /api/evidence/[evidenceId]/review error:', error)
     return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }

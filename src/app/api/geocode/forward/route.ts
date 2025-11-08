@@ -17,17 +17,11 @@ export async function POST(request: NextRequest) {
 
     const apiKey = process.env.GOOGLE_MAPS_SERVER_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
     
-    if (!apiKey) {
-      console.error('Google Maps API key not found');
-      return NextResponse.json(
+    if (!apiKey) {      return NextResponse.json(
         { error: 'Google Maps API not configured' },
         { status: 500 }
       );
-    }
-
-    console.log(`🔍 Forward geocoding: ${query}`);
-
-    const params: any = {
+    }    const params: any = {
       address: query,
       key: apiKey,
     };
@@ -57,10 +51,7 @@ export async function POST(request: NextRequest) {
       results: response.data.results,
     });
 
-  } catch (error) {
-    console.error('Forward geocoding error:', error);
-    
-    return NextResponse.json(
+  } catch (error) {    return NextResponse.json(
       { 
         error: 'Internal server error during geocoding',
         details: error instanceof Error ? error.message : 'Unknown error'

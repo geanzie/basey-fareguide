@@ -101,10 +101,7 @@ export default function AdminDashboard() {
           lastBackup: new Date().toISOString()
         }
       })
-
-    } catch (error) {
-      console.error('Error fetching dashboard stats:', error)
-      setError('Failed to load dashboard statistics')
+      } catch (error) {      setError('Failed to load dashboard statistics')
     } finally {
       setLoading(false)
     }

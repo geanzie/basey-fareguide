@@ -75,9 +75,7 @@ export default function PermitsList() {
         setPermits(data.permits)
         setPagination(data.pagination)
       }
-    } catch (error) {
-      console.error('Error fetching permits:', error)
-    } finally {
+    } catch (error) {} finally {
       setLoading(false)
     }
   }
@@ -99,12 +97,8 @@ export default function PermitsList() {
       if (response.ok) {
         // Refresh the permits list
         fetchPermits()
-      } else {
-        console.error('Failed to update permit status')
-      }
-    } catch (error) {
-      console.error('Error updating permit status:', error)
-    }
+      } else {      }
+    } catch (error) {}
   }
 
   const handleViewDetails = (permit: Permit) => {

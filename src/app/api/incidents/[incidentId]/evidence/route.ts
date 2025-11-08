@@ -101,7 +101,6 @@ export async function POST(
     try {
       await writeFile(filePath, buffer)
     } catch (error) {
-      console.error('File write error:', error)
       return NextResponse.json({ 
         message: 'Failed to save file' 
       }, { status: 500 })
@@ -135,7 +134,6 @@ export async function POST(
     })
 
   } catch (error) {
-    console.error('POST /api/incidents/[incidentId]/evidence error:', error)
     return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }
@@ -202,7 +200,6 @@ export async function GET(
     })
 
   } catch (error) {
-    console.error('GET /api/incidents/[incidentId]/evidence error:', error)
     return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }

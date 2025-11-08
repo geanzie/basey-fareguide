@@ -22,41 +22,21 @@ class BarangayService {
     
     try {
       // Debug the raw data first
-      const debugInfo = debugBarangayData();
-      console.log('Barangay Data Debug:', debugInfo);
+      const debugInfo = debugBarangayData();      if (debugInfo.invalidFeatures.length > 0) {      }
       
-      if (debugInfo.invalidFeatures.length > 0) {
-        console.warn('Found invalid features:', debugInfo.invalidFeatures);
-      }
-      
-      this.allBarangays = getAllBarangays();
-      
-      console.log(`Barangay Service: Loaded ${this.allBarangays.length} barangays`);
-      
-      // Cache barangays by name and code (with null checks)
+      this.allBarangays = getAllBarangays();      // Cache barangays by name and code (with null checks)
       this.allBarangays.forEach((barangay, index) => {
-        if (!barangay) {
-          console.warn(`Barangay Service: Null barangay at index ${index}`);
-          return;
+        if (!barangay) {          return;
         }
         
         if (barangay.name && typeof barangay.name === 'string') {
           this.barangayCache.set(barangay.name.toLowerCase(), barangay);
-        } else {
-          console.warn(`Barangay Service: Invalid name for barangay at index ${index}:`, barangay.name);
-        }
+        } else {        }
         
         if (barangay.code && typeof barangay.code === 'string') {
           this.barangayCache.set(barangay.code, barangay);
-        } else {
-          console.warn(`Barangay Service: Invalid code for barangay at index ${index}:`, barangay.code);
-        }
-      });
-      
-      console.log(`Barangay Service: Cached ${this.barangayCache.size} entries`);
-    } catch (error) {
-      console.error('Barangay Service: Failed to initialize:', error);
-      throw error;
+        } else {        }
+      });    } catch (error) {      throw error;
     }
   }
 
@@ -285,6 +265,6 @@ class BarangayService {
 export const barangayService = new BarangayService();
 
 // Initialize on import
-barangayService.initialize().catch(console.error);
+barangayService.initialize().catch(() => {});
 
 export default barangayService;

@@ -92,7 +92,6 @@ export async function PATCH(
     })
 
   } catch (error) {
-    console.error('PATCH /api/incidents/[incidentId]/take error:', error)
     return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }

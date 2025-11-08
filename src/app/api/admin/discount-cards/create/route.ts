@@ -256,11 +256,7 @@ export async function POST(request: NextRequest) {
         user: discountCard.user
       }
     }, { status: 201 })
-
-  } catch (error: any) {
-    console.error('Error creating admin override discount card:', error)
-    
-    return NextResponse.json(
+      } catch (error: any) {    return NextResponse.json(
       { 
         error: 'Failed to create discount card',
         details: error.message || 'Internal server error'
@@ -348,11 +344,7 @@ export async function GET(request: NextRequest) {
         }
       ]
     })
-
-  } catch (error: any) {
-    console.error('Error fetching eligible users:', error)
-    
-    return NextResponse.json(
+      } catch (error: any) {    return NextResponse.json(
       { 
         error: 'Failed to fetch eligible users',
         details: error.message

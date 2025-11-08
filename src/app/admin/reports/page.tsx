@@ -59,9 +59,7 @@ export default function AdminReportsPage() {
         setError(result.error || 'Failed to load system reports')
       }
       
-    } catch (error) {
-      console.error('Error fetching report data:', error)
-      setError('Failed to load system reports')
+    } catch (error) {      setError('Failed to load system reports')
     } finally {
       setLoading(false)
     }

@@ -98,9 +98,7 @@ const TripTrackerCalculator = () => {
             gpsDistance = Math.round(gpsDistance * 100) / 100
             
             // Log real-time updates for debugging
-            if (shouldAddPosition) {
-              console.log(`Real-time update: ${gpsDistance.toFixed(3)}km, ${updatedWaypoints.length} points, accuracy: ${newPosition.accuracy}m`)
-            }
+            if (shouldAddPosition) {            }
 
             const duration = prev.startPosition 
               ? (newPosition.timestamp - prev.startPosition.timestamp) / 1000 / 60 // minutes
@@ -135,9 +133,7 @@ const TripTrackerCalculator = () => {
                     lastGoogleMapsUpdate: Date.now()
                   }))
                 }
-              }).catch(error => {
-                console.warn('Failed to update Google Maps route:', error)
-              })
+              }).catch(error => {              })
             }
 
             return newTripData
@@ -230,9 +226,7 @@ const TripTrackerCalculator = () => {
         })
       })
 
-      if (!response.ok) {
-        console.warn('Google Maps API request failed:', response.status)
-        return null
+      if (!response.ok) {        return null
       }
 
       const data = await response.json()
@@ -245,9 +239,7 @@ const TripTrackerCalculator = () => {
       }
       
       return null
-    } catch (error) {
-      console.warn('Error calling Google Maps API:', error)
-      return null
+    } catch (error) {      return null
     }
   }
 
@@ -297,9 +289,7 @@ const TripTrackerCalculator = () => {
             fare: calculateFare(finalRoute.distance)
           }))
         }
-      } catch (error) {
-        console.warn('Failed to get final Google Maps route:', error)
-      }
+      } catch (error) {}
     }
   }
 

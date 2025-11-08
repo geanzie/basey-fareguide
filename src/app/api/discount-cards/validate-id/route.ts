@@ -63,9 +63,7 @@ export async function POST(request: NextRequest) {
         ? 'ID appears to be valid'
         : 'ID validation failed. Please ensure the image is clear and contains your information.',
     })
-  } catch (error) {
-    console.error('ID validation error:', error)
-    return NextResponse.json(
+      } catch (error) {    return NextResponse.json(
       { 
         error: 'Failed to validate ID',
         details: (error as Error).message 

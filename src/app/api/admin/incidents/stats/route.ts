@@ -154,10 +154,7 @@ export async function GET(request: NextRequest) {
         averageResolutionTime: null // Could be calculated if needed
       }
     })
-
-  } catch (error) {
-    console.error('GET /api/admin/incidents/stats error:', error)
-    return NextResponse.json(
+      } catch (error) {    return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }
     )

@@ -117,9 +117,7 @@ const PatrolManagement = () => {
 
       setRoutes(mockRoutes)
       setLogs(mockLogs)
-    } catch (error) {
-      console.error('Error fetching patrol data:', error)
-    } finally {
+      } catch (error) {} finally {
       setLoading(false)
     }
   }

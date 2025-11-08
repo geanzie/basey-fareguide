@@ -103,13 +103,10 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
         if (response.ok) {
           const data = await response.json()
           if (data.hasDiscountCard && data.isValid && data.discountCard) {
-            setUserDiscountCard(data.discountCard)
-            console.log('✅ Discount card loaded:', data.discountCard.discountType, `${data.discountCard.discountPercentage}%`)
-          }
+            setUserDiscountCard(data.discountCard)          }
         }
       } catch (error) {
-        console.error('Error fetching discount card:', error)
-        // Silent fail - discount not critical for calculator to work
+      // Silent fail - discount not critical for calculator to work
       }
     }
 
@@ -131,10 +128,7 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
         setAllLocations(locations)
         
         const stats = locationService.getStats()
-        console.log('✅ Loaded locations:', stats)
-      } catch (error) {
-        console.error('Failed to initialize location data:', error)
-      }
+      } catch (error) {}
     }
     initializeData()
   }, [])
@@ -304,17 +298,12 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
 
       const result = await response.json()
       
-      if (response.ok) {
-        console.log('✅ Fare calculation saved to database:', result.calculation.id)
-        setSavedToDatabase(true)
+      if (response.ok) {        setSavedToDatabase(true)
         // Auto-hide the success indicator after 3 seconds
         setTimeout(() => setSavedToDatabase(false), 3000)
-      } else {
-        console.warn('⚠️ Failed to save fare calculation to database:', result.error)
-        // Don't show error to user since the calculation still worked
+      } else {        // Don't show error to user since the calculation still worked
       }
     } catch (error) {
-      console.warn('⚠️ Error saving fare calculation to database:', error)
       // Don't show error to user since the calculation still worked
     }
   }
@@ -367,10 +356,7 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
 
       const data = await response.json()
 
-      if (!response.ok) {
-        console.error('🚫 Google Maps API Error:', data);
-        
-        let errorMessage = 'Google Maps API is required for accurate road-based route calculation.'
+      if (!response.ok) {        let errorMessage = 'Google Maps API is required for accurate road-based route calculation.'
         
         if (data.details) {
           errorMessage += `\n\nDetails: ${data.details}`
@@ -391,15 +377,13 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
         setRouteResult(data.route)
         
         // Save the fare calculation to database (asynchronously, don't block UI)
-        saveFareCalculation(data.route).catch(console.warn)
+        saveFareCalculation(data.route).catch(() => {})
         
         // Route successfully calculated - visual map rendering to be added later
       } else {
         throw new Error('Invalid response from route calculation')
       }
     } catch (error) {
-      console.error('Google Maps API error:', error)
-      
       // No GPS fallback - this would be unfair to drivers as it doesn't account for actual road distance
       const errorMessage = 'Google Maps API is required for accurate road-based route calculation. Please configure the API key to ensure fair fare calculations based on actual driving distance.'
       setError(errorMessage)

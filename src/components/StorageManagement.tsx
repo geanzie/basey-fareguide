@@ -58,9 +58,7 @@ export default function StorageManagement() {
       } else {
         throw new Error('Failed to fetch storage stats')
       }
-    } catch (error) {
-      console.error('Error fetching storage stats:', error)
-      setMessage({ type: 'error', text: 'Failed to load storage statistics' })
+    } catch (error) {      setMessage({ type: 'error', text: 'Failed to load storage statistics' })
     } finally {
       setLoading(false)
     }
@@ -84,9 +82,7 @@ export default function StorageManagement() {
       } else {
         throw new Error('Failed to preview cleanup')
       }
-    } catch (error) {
-      console.error('Error previewing cleanup:', error)
-      setMessage({ type: 'error', text: 'Failed to preview cleanup' })
+    } catch (error) {      setMessage({ type: 'error', text: 'Failed to preview cleanup' })
     }
   }
 
@@ -115,9 +111,7 @@ export default function StorageManagement() {
       } else {
         throw new Error('Cleanup failed')
       }
-    } catch (error) {
-      console.error('Error performing cleanup:', error)
-      setMessage({ type: 'error', text: 'Cleanup operation failed' })
+    } catch (error) {      setMessage({ type: 'error', text: 'Cleanup operation failed' })
     } finally {
       setCleaning(false)
     }

@@ -89,7 +89,7 @@ export default function AdminDiscountOverride({ onSuccess, onCancel }: AdminDisc
       setEligibleUsers(data.eligibleUsers || [])
       setFilteredUsers(data.eligibleUsers || [])
       setDiscountTypes(data.discountTypes || [])
-    } catch (err: any) {
+      } catch (err: any) {
       setError(err.message || 'Failed to load users')
     } finally {
       setLoading(false)
@@ -182,8 +182,7 @@ export default function AdminDiscountOverride({ onSuccess, onCancel }: AdminDisc
       setTimeout(() => {
         fetchEligibleUsers()
       }, 1000)
-
-    } catch (err: any) {
+      } catch (err: any) {
       setError(err.message || 'Failed to create discount card')
     } finally {
       setCreating(false)

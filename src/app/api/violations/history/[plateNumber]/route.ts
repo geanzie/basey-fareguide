@@ -139,7 +139,6 @@ export async function GET(
     })
 
   } catch (error) {
-    console.error('GET /api/violations/history/[plateNumber] error:', error)
     return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }

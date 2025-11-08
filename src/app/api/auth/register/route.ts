@@ -124,10 +124,7 @@ export async function POST(request: NextRequest) {
       requiresApproval: !isPublicUser,
       canLoginImmediately: isPublicUser
     }, { status: 201 })
-
-  } catch (error) {
-    console.error('Registration error:', error)
-    return NextResponse.json(
+      } catch (error) {    return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }
     )

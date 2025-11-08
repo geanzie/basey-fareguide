@@ -124,9 +124,7 @@ const EnforcementMap = () => {
         const data = await response.json()
         setIncidents(data.incidents.filter((incident: Incident) => incident.coordinates))
       }
-    } catch (error) {
-      console.error('Error fetching incidents:', error)
-    } finally {
+    } catch (error) {} finally {
       setLoading(false)
     }
   }
@@ -137,9 +135,7 @@ const EnforcementMap = () => {
       if (!isNaN(lat) && !isNaN(lng)) {
         return { lat, lng }
       }
-    } catch (error) {
-      console.error('Error parsing coordinates:', coordString, error)
-    }
+    } catch (error) {}
     return null
   }
 
@@ -393,9 +389,7 @@ const EnforcementMap = () => {
                 </div>
               </div>
             }
-            onError={(error) => {
-              console.error('Google Maps API Error:', error)
-              setMapError('Failed to load Google Maps. Please check your API key and try again.')
+            onError={(error) => {              setMapError('Failed to load Google Maps. Please check your API key and try again.')
             }}
           >
           <GoogleMap

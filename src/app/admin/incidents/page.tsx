@@ -48,9 +48,7 @@ export default function AdminIncidentsPage() {
       } else {
         throw new Error('Failed to fetch incidents')
       }
-    } catch (error) {
-      console.error('Error fetching incidents:', error)
-      setError('Failed to load incidents')
+    } catch (error) {      setError('Failed to load incidents')
     } finally {
       setLoading(false)
     }

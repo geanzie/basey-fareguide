@@ -79,9 +79,7 @@ const EnforcerDashboard = () => {
           }
         ])
       }
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error)
-    } finally {
+    } catch (error) {} finally {
       setLoading(false)
     }
   }

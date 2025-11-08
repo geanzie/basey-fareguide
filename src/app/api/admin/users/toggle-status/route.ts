@@ -49,9 +49,7 @@ export async function POST(request: NextRequest) {
       message: `User ${newStatus ? 'activated' : 'deactivated'} successfully`,
       newStatus
     })
-  } catch (error) {
-    console.error('Error toggling user status:', error)
-    return NextResponse.json(
+      } catch (error) {    return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }
     )

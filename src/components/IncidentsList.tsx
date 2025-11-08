@@ -74,12 +74,8 @@ const IncidentsList = () => {
       if (response.ok) {
         const data = await response.json()
         setIncidents(data.incidents || [])
-      } else {
-        console.error('Failed to load incidents')
-      }
-    } catch (err) {
-      console.error('Error loading incidents:', err)
-    } finally {
+      } else {      }
+    } catch (err) {} finally {
       setLoading(false)
     }
   }

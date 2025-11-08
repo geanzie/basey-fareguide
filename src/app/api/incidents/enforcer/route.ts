@@ -123,10 +123,7 @@ export async function GET(request: NextRequest) {
         'Cache-Control': 'private, max-age=30, stale-while-revalidate=60'
       }
     })
-
-  } catch (error) {
-    console.error('GET /api/incidents/enforcer error:', error)
-    return NextResponse.json(
+      } catch (error) {    return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }
     )

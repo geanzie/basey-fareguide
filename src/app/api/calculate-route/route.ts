@@ -85,10 +85,7 @@ export async function POST_DISABLED(request: NextRequest) {
       polyline: polyline || null,
       status: 'OK'
     })
-
-  } catch (error) {
-    console.error('Google Maps API Error:', error)
-    return NextResponse.json(
+      } catch (error) {    return NextResponse.json(
       { 
         error: 'Failed to calculate route',
         details: error instanceof Error ? error.message : 'Unknown error'

@@ -20,7 +20,7 @@ export default function Navigation() {
       try {
         setUser(JSON.parse(userData))
       } catch (err) {
-        // Invalid user data, ignore
+      // Invalid user data, ignore
       }
     }
   }, [])

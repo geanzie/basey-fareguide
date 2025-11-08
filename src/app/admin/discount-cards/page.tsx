@@ -30,10 +30,7 @@ export default function AdminDiscountCardsPage() {
   }, [user, loading, router])
 
   const handleSuccess = (discountCard: any) => {
-    // Show success notification
-    console.log('Discount card created successfully:', discountCard)
-    
-    // Switch to list tab and refresh the list
+    // Show success notification    // Switch to list tab and refresh the list
     setActiveTab('list')
     setRefreshKey(prev => prev + 1)
   }

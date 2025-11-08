@@ -70,9 +70,7 @@ const SmartFareCalculator = ({
         setBarangayList(allBarangays)
         setFilteredFromBarangays(allBarangays)
         setFilteredToBarangays(allBarangays)
-      } catch (error) {
-        console.error('Failed to initialize barangay data:', error)
-      }
+      } catch (error) {}
     }
     initializeBarangays()
   }, [])
@@ -178,9 +176,7 @@ const SmartFareCalculator = ({
       } else {
         throw new Error('Invalid response from route calculation')
       }
-    } catch (error) {
-      console.error('Error calculating route:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Failed to calculate route'
+    } catch (error) {      const errorMessage = error instanceof Error ? error.message : 'Failed to calculate route'
       setError(errorMessage)
       
       // Call the onError callback if provided

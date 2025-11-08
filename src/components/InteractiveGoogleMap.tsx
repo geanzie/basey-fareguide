@@ -117,10 +117,7 @@ const InteractiveGoogleMap = ({ origin, destination, onRouteCalculated }: MapPro
             scaledSize: new window.google.maps.Size(32, 32)
           }
         })
-
-      } catch (err) {
-        console.error('Error initializing map:', err)
-        setError('Error initializing map')
+      } catch (err) {        setError('Error initializing map')
       }
     }
 
@@ -165,9 +162,7 @@ const InteractiveGoogleMap = ({ origin, destination, onRouteCalculated }: MapPro
               onRouteCalculated(distance, duration)
             }
           }
-        } else {
-          console.error('Directions request failed due to:', status)
-          setError(`Route calculation failed: ${status}`)
+        } else {          setError(`Route calculation failed: ${status}`)
         }
       })
     }

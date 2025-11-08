@@ -20,7 +20,6 @@ export async function GET(
 
     return NextResponse.json(vehicle)
   } catch (error) {
-    console.error('Error fetching vehicle:', error)
     return NextResponse.json(
       { error: 'Failed to fetch vehicle' },
       { status: 500 }
@@ -61,7 +60,6 @@ export async function PATCH(
 
     return NextResponse.json(vehicle)
   } catch (error) {
-    console.error('Error updating vehicle:', error)
     return NextResponse.json(
       { error: 'Failed to update vehicle' },
       { status: 500 }
@@ -98,7 +96,6 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Vehicle deactivated successfully' })
   } catch (error) {
-    console.error('Error deactivating vehicle:', error)
     return NextResponse.json(
       { error: 'Failed to deactivate vehicle' },
       { status: 500 }

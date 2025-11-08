@@ -42,13 +42,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Access denied. Enforcer role required.' }, { status: 403 })
     }
     
-    // In a real implementation, mark all notifications as read in the database
-    console.log(`Marking all notifications as read for user ${user.id}`)
-
-    return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error('POST /api/enforcer/notifications/read-all error:', error)
-    return NextResponse.json(
+    // In a real implementation, mark all notifications as read in the database    return NextResponse.json({ success: true })
+      } catch (error) {    return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }
     )

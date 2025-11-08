@@ -76,9 +76,7 @@ const GPSFareCalculator = () => {
           }
 
           setCurrentPosition(newPosition)
-          updateTripData(newPosition).catch(error => {
-            console.warn('Error updating trip data:', error)
-          })
+          updateTripData(newPosition).catch(error => {          })
         },
         (error) => {
           setGpsError(`GPS Error: ${error.message}`)
@@ -167,9 +165,7 @@ const GPSFareCalculator = () => {
         })
       })
 
-      if (!response.ok) {
-        console.warn('Google Maps API request failed:', response.status)
-        return null
+      if (!response.ok) {        return null
       }
 
       const data = await response.json()
@@ -182,9 +178,7 @@ const GPSFareCalculator = () => {
       }
       
       return null
-    } catch (error) {
-      console.warn('Error calling Google Maps API:', error)
-      return null
+    } catch (error) {      return null
     }
   }
 
@@ -232,9 +226,7 @@ const GPSFareCalculator = () => {
               lastGoogleMapsUpdate: Date.now()
             }))
           }
-        }).catch(error => {
-          console.warn('Failed to update Google Maps route:', error)
-        })
+        }).catch(error => {        })
       }
 
       return newTripData
@@ -285,9 +277,7 @@ const GPSFareCalculator = () => {
             fare: calculateFare(finalRoute.distance)
           }))
         }
-      } catch (error) {
-        console.warn('Failed to get final Google Maps route:', error)
-      }
+      } catch (error) {}
     }
   }
 

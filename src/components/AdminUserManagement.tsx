@@ -81,9 +81,7 @@ export default function AdminUserManagement() {
       if (data.success) {
         setUsers(data.users);
       }
-    } catch (error) {
-      console.error('Error fetching users:', error);
-    } finally {
+    } catch (error) {} finally {
       setLoading(false);
     }
   };
@@ -101,9 +99,7 @@ export default function AdminUserManagement() {
       if (data.success) {
         setPendingUsers(data.users);
       }
-    } catch (error) {
-      console.error('Error fetching pending users:', error);
-    } finally {
+    } catch (error) {} finally {
       setLoading(false);
     }
   };
@@ -141,9 +137,7 @@ export default function AdminUserManagement() {
       } else {
         alert(data.error || 'Failed to create user');
       }
-    } catch (error) {
-      console.error('Error creating user:', error);
-      alert('Failed to create user');
+    } catch (error) {      alert('Failed to create user');
     } finally {
       setLoading(false);
     }
@@ -172,9 +166,7 @@ export default function AdminUserManagement() {
       } else {
         alert(data.error || `Failed to ${action} user`);
       }
-    } catch (error) {
-      console.error(`Error ${action}ing user:`, error);
-      alert(`Failed to ${action} user`);
+    } catch (error) {      alert(`Failed to ${action} user`);
     } finally {
       setLoading(false);
     }
@@ -200,9 +192,7 @@ export default function AdminUserManagement() {
       } else {
         alert(data.error || 'Failed to update user status');
       }
-    } catch (error) {
-      console.error('Error updating user status:', error);
-      alert('Failed to update user status');
+    } catch (error) {      alert('Failed to update user status');
     } finally {
       setLoading(false);
     }

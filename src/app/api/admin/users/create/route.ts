@@ -89,9 +89,7 @@ export async function POST(request: NextRequest) {
       },
       tempPassword // In a real app, you'd send this securely instead
     })
-  } catch (error) {
-    console.error('Error creating user:', error)
-    return NextResponse.json(
+      } catch (error) {    return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }
     )

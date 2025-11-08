@@ -121,10 +121,8 @@ export default function AdminDiscountList({ onRefresh }: DiscountListProps) {
       const data = await response.json()
       setDiscountCards(data.discountCards)
       setPagination(data.pagination)
-    } catch (err: any) {
-      setError(err.message)
-      console.error('Error fetching discount cards:', err)
-    } finally {
+      } catch (err: any) {
+      setError(err.message)    } finally {
       setLoading(false)
     }
   }

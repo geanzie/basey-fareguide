@@ -108,9 +108,7 @@ export default function PermitManagement() {
         setPermits(data.permits)
         setPagination(data.pagination)
       }
-    } catch (error) {
-      console.error('Error fetching permits:', error)
-    } finally {
+    } catch (error) {} finally {
       setLoading(false)
     }
   }
@@ -123,9 +121,7 @@ export default function PermitManagement() {
         const data = await response.json()
         setVehicles(data.vehicles || [])
       }
-    } catch (error) {
-      console.error('Error fetching vehicles:', error)
-    } finally {
+    } catch (error) {} finally {
       setVehiclesLoading(false)
     }
   }
@@ -217,9 +213,7 @@ export default function PermitManagement() {
         const errorData = await response.json()
         alert(`Error: ${errorData.error}`)
       }
-    } catch (error) {
-      console.error('Error saving permit:', error)
-      alert('Error saving permit')
+    } catch (error) {      alert('Error saving permit')
     }
   }
 
@@ -241,9 +235,7 @@ export default function PermitManagement() {
         const errorData = await response.json()
         alert(`Error: ${errorData.error}`)
       }
-    } catch (error) {
-      console.error('Error renewing permit:', error)
-      alert('Error renewing permit')
+    } catch (error) {      alert('Error renewing permit')
     }
   }
 
@@ -264,9 +256,7 @@ export default function PermitManagement() {
         const errorData = await response.json()
         alert(`Error: ${errorData.error}`)
       }
-    } catch (error) {
-      console.error('Error updating permit status:', error)
-      alert('Error updating permit status')
+    } catch (error) {      alert('Error updating permit status')
     }
   }
 

@@ -49,10 +49,7 @@ export async function POST(request: NextRequest) {
       // In development, include the token. Remove this in production
       token: resetToken
     })
-
-  } catch (error) {
-    console.error('Password reset request error:', error)
-    return NextResponse.json(
+      } catch (error) {    return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }
     )

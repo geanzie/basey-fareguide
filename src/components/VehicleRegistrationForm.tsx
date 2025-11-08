@@ -117,9 +117,7 @@ export default function VehicleRegistrationForm() {
           }
         }
       }
-    } catch (error) {
-      console.error('Error creating vehicle:', error)
-      setErrors({ submit: 'Failed to register vehicle. Please try again.' })
+    } catch (error) {      setErrors({ submit: 'Failed to register vehicle. Please try again.' })
     } finally {
       setLoading(false)
     }

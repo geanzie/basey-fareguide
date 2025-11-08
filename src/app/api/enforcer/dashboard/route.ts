@@ -70,9 +70,7 @@ export async function GET(request: NextRequest) {
     ]
 
     return NextResponse.json({ stats, recentActivity })
-  } catch (error) {
-    console.error('GET /api/enforcer/dashboard error:', error)
-    return NextResponse.json(
+      } catch (error) {    return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }
     )

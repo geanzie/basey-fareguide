@@ -75,9 +75,7 @@ function PublicUserDashboard() {
           setRecentRoutes(transformedRoutes)
         }
 
-      } catch (error) {
-        console.error('Error fetching user data:', error)
-      } finally {
+      } catch (error) {} finally {
         setLoading(false)
       }
     }

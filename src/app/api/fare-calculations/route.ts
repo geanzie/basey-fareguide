@@ -99,7 +99,6 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('GET /api/fare-calculations error:', error)
     return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }
@@ -165,7 +164,6 @@ export async function POST(request: NextRequest) {
       }
     } catch (error) {
       // If token verification fails, continue without user ID (anonymous calculation)
-      console.log('Token verification failed, saving as anonymous calculation')
     }
 
     // Create fare calculation record
@@ -248,7 +246,6 @@ export async function POST(request: NextRequest) {
           }
         })
       } catch (logError) {
-        console.error('Error creating discount usage log:', logError)
         // Don't fail the request if logging fails
       }
     }
@@ -260,7 +257,6 @@ export async function POST(request: NextRequest) {
     }, { status: 201 })
 
   } catch (error) {
-    console.error('POST /api/fare-calculations error:', error)
     return NextResponse.json(
       { 
         error: 'Internal server error',

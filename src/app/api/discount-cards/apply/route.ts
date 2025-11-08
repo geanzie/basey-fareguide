@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret')
-    } catch (err) {
+      } catch (err) {
       return NextResponse.json(
         { error: 'Invalid or expired token' },
         { status: 401 }
@@ -243,7 +243,6 @@ export async function POST(request: NextRequest) {
       })
 
       // Log validation result for admin review
-      console.log('ID Validation Result (New Application):', {
         userId,
         isValid: idValidation.isValid,
         confidence: idValidation.confidence,
@@ -272,9 +271,7 @@ export async function POST(request: NextRequest) {
 
       await writeFile(filePath, buffer)
       photoUrl = `/uploads/discount-cards/${fileName}`
-    } catch (fileError: any) {
-      console.error('File upload/validation error:', fileError)
-      return NextResponse.json(
+    } catch (fileError: any) {      return NextResponse.json(
         { 
           error: 'Failed to save or validate photo file',
           details: fileError.message 
@@ -347,10 +344,7 @@ export async function POST(request: NextRequest) {
         createdAt: discountCard.createdAt,
       }
     }, { status: 201 })
-
-  } catch (error: any) {
-    console.error('Error submitting discount application:', error)
-    return NextResponse.json(
+      } catch (error: any) {    return NextResponse.json(
       { 
         error: 'Failed to submit application',
         details: error.message 

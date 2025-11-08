@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret')
-    } catch (err) {
+      } catch (err) {
       return NextResponse.json(
         { error: 'Invalid or expired token' },
         { status: 401 }
@@ -87,10 +87,7 @@ export async function GET(request: NextRequest) {
       hasApplication: true,
       application: discountCard
     })
-
-  } catch (error: any) {
-    console.error('Error fetching application status:', error)
-    return NextResponse.json(
+      } catch (error: any) {    return NextResponse.json(
       { 
         error: 'Failed to fetch application status',
         details: error.message 
@@ -127,7 +124,7 @@ export async function PATCH(request: NextRequest) {
     
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret')
-    } catch (err) {
+      } catch (err) {
       return NextResponse.json(
         { error: 'Invalid or expired token' },
         { status: 401 }
@@ -256,7 +253,6 @@ export async function PATCH(request: NextRequest) {
         })
 
         // Log validation result for admin review
-        console.log('ID Validation Result:', {
           userId,
           isValid: idValidation.isValid,
           confidence: idValidation.confidence,
@@ -289,9 +285,7 @@ export async function PATCH(request: NextRequest) {
 
         // Store validation result for admin review
         // (You can optionally add a field to the database to store this)
-      } catch (fileError: any) {
-        console.error('File upload/validation error:', fileError)
-        return NextResponse.json(
+      } catch (fileError: any) {        return NextResponse.json(
           { 
             error: 'Failed to save or validate photo file',
             details: fileError.message 
@@ -404,10 +398,7 @@ export async function PATCH(request: NextRequest) {
       message: 'Application updated and resubmitted successfully',
       application: updatedCard
     })
-
-  } catch (error: any) {
-    console.error('Error updating application:', error)
-    return NextResponse.json(
+      } catch (error: any) {    return NextResponse.json(
       { 
         error: 'Failed to update application',
         details: error.message 

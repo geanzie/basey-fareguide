@@ -135,8 +135,7 @@ export function analyzeCoordinate(location: Location): CoordinateAnalysis {
       }
     }
   } catch (error) {
-    console.error('Polygon verification error:', error);
-    issues.push('Failed to verify coordinates against barangay boundaries');
+      issues.push('Failed to verify coordinates against barangay boundaries');
     polygonVerification = {
       isWithinCorrectBarangay: false,
       actualBarangay: null,
@@ -187,8 +186,7 @@ export async function analyzeCoordinateWithGoogleMaps(location: Location): Promi
       }
     }
   } catch (error) {
-    console.error('Google Maps verification error:', error);
-    basicAnalysis.issues.push('Failed to verify coordinates with Google Maps API');
+      basicAnalysis.issues.push('Failed to verify coordinates with Google Maps API');
     googleMapsVerification = {
       isValidLocation: false,
       municipality: null,
@@ -257,16 +255,7 @@ const locations = ${JSON.stringify(flaggedLocations.map(loc => ({
   name: loc.name,
   coords: loc.coords,
   url: generateGoogleMapsUrl(loc.coords, loc.name)
-})), null, 2)};
-
-console.log('=== BASEY COORDINATE VERIFICATION ===');
-console.log(\`Found \${locations.length} locations that need verification:\`);
-
-locations.forEach((loc, index) => {
-  console.log(\`\${index + 1}. \${loc.name}\`);
-  console.log(\`   Coordinates: \${loc.coords[0]}, \${loc.coords[1]}\`);
-  console.log(\`   Google Maps: \${loc.url}\`);
-  console.log('---');
+})), null, 2)};locations.forEach((loc, index) => {
 });
 
 // Uncomment the next line to automatically open all URLs (use with caution)
@@ -315,17 +304,13 @@ export async function analyzeAllCoordinatesEnhanced(locations: Location[]): Prom
   analyses: CoordinateAnalysis[];
   flaggedLocations: CoordinateAnalysis[];
 }> {
-  console.log(`🔍 Starting enhanced analysis of ${locations.length} locations...`);
   
   // Process in batches to avoid overwhelming the API
   const batchSize = 5;
   const analyses: CoordinateAnalysis[] = [];
   
   for (let i = 0; i < locations.length; i += batchSize) {
-    const batch = locations.slice(i, i + batchSize);
-    console.log(`📊 Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(locations.length/batchSize)}...`);
-    
-    const batchPromises = batch.map(location => analyzeCoordinateWithGoogleMaps(location));
+    const batch = locations.slice(i, i + batchSize);    const batchPromises = batch.map(location => analyzeCoordinateWithGoogleMaps(location));
     const batchResults = await Promise.all(batchPromises);
     analyses.push(...batchResults);
     
@@ -344,7 +329,6 @@ export async function analyzeAllCoordinatesEnhanced(locations: Location[]): Prom
 
   const flaggedLocations = analyses.filter(a => a.issues.length > 0);
 
-  console.log(`✅ Enhanced analysis complete: ${flaggedLocations.length} locations flagged`);
 
   return {
     summary: {

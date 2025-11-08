@@ -81,9 +81,7 @@ const OfflineIncidentMap = () => {
         const data = await response.json()
         setIncidents(data.incidents || [])
       }
-    } catch (error) {
-      console.error('Error fetching incidents:', error)
-    } finally {
+    } catch (error) {} finally {
       setLoading(false)
     }
   }
@@ -96,9 +94,7 @@ const OfflineIncidentMap = () => {
           return { lat, lng }
         }
       }
-    } catch (error) {
-      console.error('Error parsing coordinates:', error)
-    }
+    } catch (error) {}
     return null
   }
 

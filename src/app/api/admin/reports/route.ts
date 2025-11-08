@@ -215,9 +215,7 @@ export async function GET(request: NextRequest) {
       success: true,
       data: reportData
     })
-  } catch (error) {
-    console.error('Error generating system reports:', error)
-    return NextResponse.json(
+      } catch (error) {    return NextResponse.json(
       { success: false, error: 'Failed to generate system reports' },
       { status: 500 }
     )

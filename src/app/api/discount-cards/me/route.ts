@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret')
-    } catch (err) {
+      } catch (err) {
       return NextResponse.json(
         { error: 'Invalid or expired token' },
         { status: 401 }
@@ -102,10 +102,7 @@ export async function GET(request: NextRequest) {
         isValid
       }
     })
-
-  } catch (error) {
-    console.error('GET /api/discount-cards/me error:', error)
-    return NextResponse.json(
+      } catch (error) {    return NextResponse.json(
       { 
         error: 'Internal server error',
         details: process.env.NODE_ENV === 'development' ? String(error) : undefined

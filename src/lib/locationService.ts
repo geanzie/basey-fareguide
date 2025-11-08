@@ -80,11 +80,7 @@ class LocationService {
         })
       }
 
-      this.initialized = true
-      console.log(`✅ Location Service: Loaded ${this.locations.length} locations from ${this.metadata?.last_updated}`)
-    } catch (error) {
-      console.error('❌ Failed to initialize location service:', error)
-      throw error
+      this.initialized = true    } catch (error) {      throw error
     }
   }
 

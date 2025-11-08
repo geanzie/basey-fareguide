@@ -35,9 +35,7 @@ export async function getGoogleMapsRoute(
     // Use server-side API key (without NEXT_PUBLIC prefix for server-side operations)
     const apiKey = process.env.GOOGLE_MAPS_SERVER_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
     
-    if (!apiKey) {
-      console.error('Google Maps API key not found. Please set GOOGLE_MAPS_SERVER_API_KEY or NEXT_PUBLIC_GOOGLE_MAPS_API_KEY in your environment variables.');
-      return null;
+    if (!apiKey) {      return null;
     }
 
     const response = await client.distancematrix({
@@ -53,9 +51,7 @@ export async function getGoogleMapsRoute(
 
     const element = response.data.rows[0]?.elements[0];
     
-    if (!element || element.status !== 'OK') {
-      console.error('No route found or API error:', element?.status);
-      return null;
+    if (!element || element.status !== 'OK') {      return null;
     }
 
     return {
@@ -65,19 +61,9 @@ export async function getGoogleMapsRoute(
     };
   } catch (error) {
     const apiKey = process.env.GOOGLE_MAPS_SERVER_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-    console.error('Google Maps Distance Matrix API Error:', {
-      error: error,
-      apiKeyExists: !!apiKey,
-      origin,
-      destination,
-      timestamp: new Date().toISOString()
-    });
     
     // Log specific error details for production debugging
-    if (error instanceof Error) {
-      console.error('Error message:', error.message);
-      console.error('Error stack:', error.stack);
-    }
+    if (error instanceof Error) {    }
     
     return null;
   }
@@ -91,11 +77,7 @@ export async function getGoogleMapsRoute(
 export async function testCoordinates(coords: [number, number]): Promise<boolean> {
   try {
     const apiKey = process.env.GOOGLE_MAPS_SERVER_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-    if (!apiKey) return false;
-
-    console.log(`🧪 Testing coordinates: [${coords[0]}, ${coords[1]}]`);
-    
-    // Use reverse geocoding to test if coordinates are valid
+    if (!apiKey) return false;    // Use reverse geocoding to test if coordinates are valid
     const response = await client.reverseGeocode({
       params: {
         latlng: `${coords[0]},${coords[1]}`,
@@ -103,16 +85,10 @@ export async function testCoordinates(coords: [number, number]): Promise<boolean
       },
     });
 
-    const isValid = response.data.results.length > 0;
-    console.log(`📍 Coordinate test result: ${isValid ? '✅ Valid' : '❌ Invalid'}`);
-    if (isValid && response.data.results[0]) {
-      console.log(`📮 Address: ${response.data.results[0].formatted_address}`);
-    }
+    const isValid = response.data.results.length > 0;    if (isValid && response.data.results[0]) {    }
     
     return isValid;
-  } catch (error) {
-    console.error('❌ Error testing coordinates:', error);
-    return false;
+  } catch (error) {    return false;
   }
 }
 
@@ -130,46 +106,24 @@ export async function getDetailedRoute(
     // Use server-side API key (without NEXT_PUBLIC prefix for server-side operations)
     const apiKey = process.env.GOOGLE_MAPS_SERVER_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
     
-    if (!apiKey) {
-      console.error('🚫 Google Maps API key not found!');
-      console.error('📋 Setup Instructions:');
-      console.error('1. Create .env.local file in your project root');
-      console.error('2. Add: GOOGLE_MAPS_SERVER_API_KEY=your_api_key_here');
-      console.error('3. Ensure Directions API is enabled in Google Cloud Console');
-      console.error('4. Restart the development server');
-      return null;
-    }
-    
-    console.log(`🗺️ Calculating route: [${origin[0]}, ${origin[1]}] → [${destination[0]}, ${destination[1]}]`);
-    
-    // Test coordinates validity first
+    if (!apiKey) {      return null;
+    }    // Test coordinates validity first
     const [originValid, destValid] = await Promise.all([
       testCoordinates(origin),
       testCoordinates(destination)
     ]);
     
-    if (!originValid) {
-      console.error('❌ Origin coordinates are not valid or not found by Google Maps');
-      return null;
+    if (!originValid) {      return null;
     }
     
-    if (!destValid) {
-      console.error('❌ Destination coordinates are not valid or not found by Google Maps');
-      return null;
-    }
-
-    console.log('✅ Both coordinates validated, proceeding with route calculation...');
-
-    // Try multiple approaches for routing in remote areas
+    if (!destValid) {      return null;
+    }    // Try multiple approaches for routing in remote areas
     let response;
     let attempts = 0;
     const maxAttempts = 3;
     
     while (attempts < maxAttempts) {
-      attempts++;
-      console.log(`🔄 Route calculation attempt ${attempts}/${maxAttempts}`);
-      
-      try {
+      attempts++;      try {
         const requestParams = {
           origin: `${origin[0]},${origin[1]}`,
           destination: `${destination[0]},${destination[1]}`,
@@ -201,41 +155,21 @@ export async function getDetailedRoute(
           params: requestParams,
         });
         
-        if (response.data.routes && response.data.routes.length > 0) {
-          console.log(`✅ Route found on attempt ${attempts}`);
-          break;
+        if (response.data.routes && response.data.routes.length > 0) {          break;
         }
         
-      } catch (attemptError) {
-        console.error(`❌ Attempt ${attempts} failed:`, attemptError);
-        if (attempts === maxAttempts) {
+      } catch (attemptError) {        if (attempts === maxAttempts) {
           throw attemptError;
         }
       }
     }
 
-    if (!response) {
-      console.error('❌ No response received from Google Maps API after all attempts');
-      return null;
+    if (!response) {      return null;
     }
-
-    console.log('📡 Google Maps Response Status:', response.status);
-    console.log('🛣️ Routes found:', response.data.routes.length);
-    console.log('📊 Response data:', JSON.stringify({
-      status: response.data.status,
-      routes: response.data.routes.length,
-      geocoded_waypoints: response.data.geocoded_waypoints?.length || 0,
-      error_message: response.data.error_message
-    }, null, 2));
 
     const route = response.data.routes[0];
     
-    if (!route) {
-      console.error('❌ No route found - Google Maps Response:');
-      console.error('   Status:', response.data.status);
-      console.error('   Error Message:', response.data.error_message || 'None provided');
-      console.error('   Available Routes:', response.data.routes.length);
-      return null;
+    if (!route) {      return null;
     }
 
     const leg = route.legs[0];
@@ -245,9 +179,7 @@ export async function getDetailedRoute(
       duration: leg.duration,
       polyline: route.overview_polyline.points,
     };
-  } catch (error) {
-    console.error('Error fetching detailed route:', error);
-    return null;
+  } catch (error) {    return null;
   }
 }
 

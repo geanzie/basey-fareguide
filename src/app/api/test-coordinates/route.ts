@@ -19,11 +19,7 @@ export async function POST(request: NextRequest) {
         { error: 'Coordinates must be numbers.' },
         { status: 400 }
       );
-    }
-
-    console.log(`🧪 Testing coordinates: [${lat}, ${lng}]`);
-    
-    const isValid = await testCoordinates([lat, lng]);
+    }    const isValid = await testCoordinates([lat, lng]);
     
     return NextResponse.json({
       success: true,
@@ -32,9 +28,7 @@ export async function POST(request: NextRequest) {
       message: isValid ? 'Coordinates are valid' : 'Coordinates could not be validated'
     });
     
-  } catch (error) {
-    console.error('Coordinate test error:', error);
-    return NextResponse.json(
+  } catch (error) {    return NextResponse.json(
       { error: 'Internal server error while testing coordinates' },
       { status: 500 }
     );

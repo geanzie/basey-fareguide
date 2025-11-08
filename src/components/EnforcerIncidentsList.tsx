@@ -85,12 +85,8 @@ export default function EnforcerIncidentsList() {
       if (response.ok) {
         mutate() // Refresh the list via SWR
       } else {
-        const errorData = await response.json()
-        console.error('Error taking incident:', errorData.message || 'Unknown error')
-      }
-    } catch (error) {
-      console.error('Error taking incident:', error)
-    }
+        const errorData = await response.json()      }
+    } catch (error) {}
   }
 
   const handleViewDetails = (incident: Incident) => {
@@ -166,9 +162,7 @@ export default function EnforcerIncidentsList() {
         const errorData = await response.json()
         alert(`Error taking incident: ${errorData.message || 'Unknown error'}`)
       }
-    } catch (error) {
-      console.error('Error taking incident:', error)
-      alert('Error taking incident. Please try again.')
+    } catch (error) {      alert('Error taking incident. Please try again.')
     }
   }
 
@@ -215,9 +209,7 @@ export default function EnforcerIncidentsList() {
         const errorData = await response.json()
         alert(`Error issuing ticket: ${errorData.message || 'Unknown error'}`)
       }
-    } catch (error) {
-      console.error('Error issuing ticket:', error)
-      alert('Error issuing ticket. Please try again.')
+    } catch (error) {      alert('Error issuing ticket. Please try again.')
     }
   }
 
@@ -247,9 +239,7 @@ export default function EnforcerIncidentsList() {
         const data = await response.json()
         return data.violations || []
       }
-    } catch (error) {
-      console.error('Error fetching violation history:', error)
-    }
+    } catch (error) {}
     return []
   }
 

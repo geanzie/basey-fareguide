@@ -80,10 +80,7 @@ export async function GET(request: NextRequest) {
         oldIncidentsCount: oldResolvedCount
       }
     })
-
-  } catch (error) {
-    console.error('GET /api/admin/storage error:', error)
-    return NextResponse.json(
+      } catch (error) {    return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }
     )
@@ -154,10 +151,7 @@ export async function POST(request: NextRequest) {
         }))
       })
     } else {
-      // Actually perform the cleanup
-      console.log(`Admin ${user.username} initiated manual evidence cleanup (${daysOld} days old)`)
-      
-      await cleanupOldEvidenceFiles(daysOld)
+      // Actually perform the cleanup      await cleanupOldEvidenceFiles(daysOld)
       
       return NextResponse.json({
         message: `Evidence cleanup completed for incidents resolved more than ${daysOld} days ago`,
@@ -166,9 +160,7 @@ export async function POST(request: NextRequest) {
       })
     }
 
-  } catch (error) {
-    console.error('POST /api/admin/storage error:', error)
-    return NextResponse.json(
+  } catch (error) {    return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }
     )

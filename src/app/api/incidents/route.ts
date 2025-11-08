@@ -104,10 +104,7 @@ export async function GET(request: NextRequest) {
         totalPages: Math.ceil(totalIncidents / limit)
       }
     })
-
-  } catch (error) {
-    console.error('GET /api/incidents error:', error)
-    return NextResponse.json(
+      } catch (error) {    return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }
     )

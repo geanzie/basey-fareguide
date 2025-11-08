@@ -105,9 +105,7 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
         setIdNumber(freshUser.governmentId || '')
         setIdType(freshUser.idType || '')
       }
-    } catch (err) {
-      console.error('Error fetching fresh user data:', err)
-    }
+    } catch (err) {}
   }
 
   const checkExistingApplication = async () => {
@@ -125,9 +123,7 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
         const data = await response.json()
         setApplicationStatus(data)
       }
-    } catch (err) {
-      console.error('Error checking application:', err)
-    } finally {
+    } catch (err) {} finally {
       setLoading(false)
     }
   }
@@ -192,12 +188,8 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
         if (!data.isValid) {
           setError(`ID validation warning: ${data.reasons[0]}. Please ensure your ID is clear and readable.`)
         }
-      } else {
-        console.error('ID validation failed:', data.error)
-      }
-    } catch (err) {
-      console.error('Error validating ID:', err)
-    } finally {
+      } else {      }
+    } catch (err) {} finally {
       setValidatingID(false)
     }
   }
@@ -301,8 +293,7 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
       setTimeout(() => {
         checkExistingApplication()
       }, 2000)
-
-    } catch (err: any) {
+      } catch (err: any) {
       setError(err.message || 'Failed to submit application')
     } finally {
       setSubmitting(false)

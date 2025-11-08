@@ -63,8 +63,7 @@ export async function reverseGeocode(coords: [number, number]): Promise<GoogleMa
 
     return analyzeGeocodingResult(data.result);
   } catch (error) {
-    console.error('Reverse geocoding error:', error);
-    return {
+      return {
       isValidLocation: false,
       address: null,
       municipality: null,
@@ -281,8 +280,7 @@ export async function getSuggestedCoordinates(
       address: firstResult.formatted_address,
     };
   } catch (error) {
-    console.error('Failed to get suggested coordinates:', error);
-    return {
+      return {
       suggestedCoords: null,
       confidence: 'low',
       method: 'error',

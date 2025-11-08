@@ -90,10 +90,7 @@ export async function POST(request: NextRequest) {
       incident,
       message: 'Incident reported successfully'
     })
-
-  } catch (error) {
-    console.error('POST /api/incidents/report error:', error)
-    return NextResponse.json(
+      } catch (error) {    return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }
     )

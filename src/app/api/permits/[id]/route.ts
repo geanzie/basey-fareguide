@@ -36,7 +36,6 @@ export async function GET(
 
     return NextResponse.json(permit)
   } catch (error) {
-    console.error('Error fetching permit:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -97,7 +96,6 @@ export async function PUT(
 
     return NextResponse.json(permit)
   } catch (error) {
-    console.error('Error updating permit:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -128,7 +126,6 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Permit deleted successfully' })
   } catch (error) {
-    console.error('Error deleting permit:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

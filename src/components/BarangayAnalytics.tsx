@@ -43,9 +43,7 @@ export default function BarangayAnalytics({
           const analysis = barangayService.analyzeGeographicHotspots(incidents)
           setAnalyticsData(analysis)
         }
-      } catch (error) {
-        console.error('Failed to initialize barangay analytics:', error)
-      } finally {
+      } catch (error) {} finally {
         setIsLoading(false)
       }
     }

@@ -225,10 +225,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(result)
-
-  } catch (error) {
-    console.error('GPS route calculation error:', error)
-    return NextResponse.json(
+      } catch (error) {    return NextResponse.json(
       { error: 'Internal server error while calculating GPS route' },
       { status: 500 }
     )

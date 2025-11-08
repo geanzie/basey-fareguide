@@ -49,9 +49,7 @@ const MapFallback = () => {
         const data = await response.json()
         setIncidents(data.incidents || [])
       }
-    } catch (error) {
-      console.error('Error fetching incidents:', error)
-    } finally {
+    } catch (error) {} finally {
       setLoading(false)
     }
   }
@@ -71,9 +69,7 @@ const MapFallback = () => {
         const [lat, lng] = coords.split(',').map(c => parseFloat(c.trim()))
         return { lat, lng }
       }
-    } catch (error) {
-      console.error('Error parsing coordinates:', error)
-    }
+    } catch (error) {}
     return null
   }
 

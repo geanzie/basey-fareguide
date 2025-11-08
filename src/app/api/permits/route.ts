@@ -58,9 +58,7 @@ export async function GET(request: NextRequest) {
         totalPages: Math.ceil(total / limit)
       }
     })
-  } catch (error) {
-    console.error('Error fetching permits:', error)
-    return NextResponse.json(
+      } catch (error) {    return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
     )
@@ -147,9 +145,7 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json(permit, { status: 201 })
-  } catch (error) {
-    console.error('Error creating permit:', error)
-    return NextResponse.json(
+      } catch (error) {    return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
     )

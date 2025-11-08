@@ -74,9 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem('user', JSON.stringify(updatedUser))
         setUser(updatedUser)
       }
-    } catch (err) {
-      console.error('Error refreshing user data:', err)
-    }
+    } catch (err) {}
   }
 
   const login = (userData: User, token: string) => {

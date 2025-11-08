@@ -80,9 +80,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
-  } catch (error) {
-    console.error('Error verifying user:', error)
-    return NextResponse.json(
+  } catch (error) {    return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }
     )

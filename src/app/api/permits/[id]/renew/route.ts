@@ -70,7 +70,6 @@ export async function POST(
 
     return NextResponse.json(result)
   } catch (error) {
-    console.error('Error renewing permit:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -42,10 +42,7 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({ user })
-
-  } catch (error) {
-    console.error('Profile fetch error:', error)
-    return NextResponse.json(
+      } catch (error) {    return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }
     )
@@ -118,10 +115,7 @@ export async function PUT(request: NextRequest) {
       message: 'Profile updated successfully',
       user: updatedUser 
     })
-
-  } catch (error) {
-    console.error('Profile update error:', error)
-    return NextResponse.json(
+      } catch (error) {    return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }
     )

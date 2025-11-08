@@ -121,24 +121,18 @@ export async function PATCH(
 
     // **AUTOMATIC EVIDENCE CLEANUP** when incident is resolved
     try {
-      console.log(`Incident ${incidentId} resolved - starting evidence cleanup`)
       
       // Clean up evidence files in background (don't wait for completion)
       cleanupEvidenceFiles(incidentId)
         .then(() => {
-          console.log(`✅ Evidence cleanup completed for incident: ${incidentId}`)
         })
         .catch((error) => {
-          console.error(`❌ Evidence cleanup failed for incident: ${incidentId}`, error)
           // Don't fail the request if cleanup fails - just log the error
         })
       
-      console.log(`📁 Started evidence cleanup process for resolved incident: ${incidentId}`)
-      console.log(`   - Evidence files to be cleaned: ${updatedIncident.evidence?.length || 0}`)
       
     } catch (cleanupError) {
       // Don't fail the request if cleanup fails
-      console.error('Evidence cleanup error (non-blocking):', cleanupError)
     }
 
     return NextResponse.json({
@@ -148,7 +142,6 @@ export async function PATCH(
     })
 
   } catch (error) {
-    console.error('PATCH /api/incidents/[incidentId]/resolve error:', error)
     return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }

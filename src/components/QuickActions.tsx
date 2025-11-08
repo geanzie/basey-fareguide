@@ -199,9 +199,7 @@ const QuickActions = () => {
         const data = await response.json()
         setVehicles(data.vehicles || [])
       }
-    } catch (error) {
-      console.error('Error fetching vehicles:', error)
-    } finally {
+    } catch (error) {} finally {
       setVehiclesLoading(false)
     }
   }
@@ -284,9 +282,7 @@ const QuickActions = () => {
       } else {
         alert('No pending incidents available')
       }
-    } catch (error) {
-      console.error('Error taking next incident:', error)
-      alert('Error taking next incident')
+    } catch (error) {      alert('Error taking next incident')
     }
   }
 
@@ -338,9 +334,7 @@ const QuickActions = () => {
         const data = await response.json()
         return data.violations || []
       }
-    } catch (error) {
-      console.error('Error fetching violation history:', error)
-    }
+    } catch (error) {}
     return []
   }
 
@@ -461,9 +455,7 @@ const QuickActions = () => {
       } else {
         alert(`Error ${reportData.isTicketOnly ? 'issuing ticket' : 'creating incident report'}`)
       }
-    } catch (error) {
-      console.error('Error submitting report:', error)
-      alert(`Error ${reportData.isTicketOnly ? 'issuing ticket' : 'creating incident report'}`)
+    } catch (error) {      alert(`Error ${reportData.isTicketOnly ? 'issuing ticket' : 'creating incident report'}`)
     }
   }
 

@@ -58,7 +58,7 @@ export default function GoogleMapsDiagnostics() {
       const response = await fetch('/api/debug/google-maps')
       const data = await response.json()
       setDiagnostics(data)
-    } catch (err) {
+      } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to refresh diagnostics')
     } finally {
       setLoading(false)

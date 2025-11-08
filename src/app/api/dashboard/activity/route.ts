@@ -71,10 +71,7 @@ export async function GET(request: NextRequest) {
         ticketNumber: incident.ticketNumber
       }))
     })
-
-  } catch (error) {
-    console.error('GET /api/dashboard/activity error:', error)
-    return NextResponse.json(
+      } catch (error) {    return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }
     )

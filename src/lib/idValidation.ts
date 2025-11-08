@@ -132,9 +132,7 @@ export async function validateIDImage(
       reasons,
       detectedInfo,
     };
-  } catch (error) {
-    console.error('ID validation error:', error);
-    return {
+  } catch (error) {    return {
       isValid: false,
       confidence: 0,
       reasons: ['Failed to process image: ' + (error as Error).message],
@@ -186,9 +184,7 @@ async function analyzeImageProperties(imageBuffer: Buffer) {
       hasEnoughText,
       edgeDensity,
     };
-  } catch (error) {
-    console.error('Image analysis error:', error);
-    return {
+  } catch (error) {    return {
       isValidSize: false,
       hasContent: false,
       hasEnoughText: false,
@@ -245,9 +241,7 @@ async function performOCR(imageBuffer: Buffer): Promise<{ text: string; confiden
       text,
       confidence: Math.min(confidence, 85), // Cap at 85 since we're not doing real OCR
     };
-  } catch (error) {
-    console.error('Image analysis error:', error);
-    return { text: '', confidence: 0 };
+  } catch (error) {    return { text: '', confidence: 0 };
   }
 }
 

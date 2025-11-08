@@ -63,9 +63,7 @@ export default function EnhancedRouteMap({
           await loadBarangayBoundaries(mapInstance)
         }
 
-      } catch (error) {
-        console.error('Error initializing map:', error)
-        setMapError('Failed to initialize map. Please check your internet connection.')
+      } catch (error) {        setMapError('Failed to initialize map. Please check your internet connection.')
       }
     }
 
@@ -152,10 +150,7 @@ export default function EnhancedRouteMap({
       })
 
       setBarangayPolygons(polygons)
-
-    } catch (error) {
-      console.error('Error loading barangay boundaries:', error)
-    }
+      } catch (error) {}
   }
 
   // Add markers for origin and destination

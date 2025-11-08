@@ -79,9 +79,7 @@ export default function VehiclesList() {
         setVehicles(data.vehicles)
         setPagination(data.pagination)
       }
-    } catch (error) {
-      console.error('Error fetching vehicles:', error)
-    } finally {
+    } catch (error) {} finally {
       setLoading(false)
     }
   }
@@ -103,12 +101,8 @@ export default function VehiclesList() {
       if (response.ok) {
         // Refresh the vehicles list
         fetchVehicles()
-      } else {
-        console.error('Failed to update vehicle status')
-      }
-    } catch (error) {
-      console.error('Error updating vehicle status:', error)
-    }
+      } else {      }
+    } catch (error) {}
   }
 
   const handleViewDetails = (vehicle: Vehicle) => {

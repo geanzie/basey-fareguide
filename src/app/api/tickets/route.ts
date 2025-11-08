@@ -150,10 +150,7 @@ export async function POST(request: NextRequest) {
       ticketNumber,
       message: 'Ticket issued successfully'
     })
-
-  } catch (error) {
-    console.error('POST /api/tickets error:', error)
-    return NextResponse.json(
+      } catch (error) {    return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }
     )

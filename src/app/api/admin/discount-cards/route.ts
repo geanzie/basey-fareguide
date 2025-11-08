@@ -138,11 +138,7 @@ export async function GET(request: NextRequest) {
         search
       }
     })
-
-  } catch (error: any) {
-    console.error('Error fetching discount cards:', error)
-    
-    return NextResponse.json(
+      } catch (error: any) {    return NextResponse.json(
       { 
         error: 'Failed to fetch discount cards',
         details: error.message
@@ -297,11 +293,7 @@ export async function PATCH(request: NextRequest) {
       message: `Discount card ${action}d successfully`,
       discountCard: updatedCard
     })
-
-  } catch (error: any) {
-    console.error('Error updating discount card:', error)
-    
-    return NextResponse.json(
+      } catch (error: any) {    return NextResponse.json(
       { 
         error: 'Failed to update discount card',
         details: error.message

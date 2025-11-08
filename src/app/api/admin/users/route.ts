@@ -27,9 +27,7 @@ export async function GET(request: NextRequest) {
       success: true,
       users
     })
-  } catch (error) {
-    console.error('Error fetching users:', error)
-    return NextResponse.json(
+      } catch (error) {    return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }
     )

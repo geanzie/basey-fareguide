@@ -62,9 +62,7 @@ export default function PermitStatistics() {
         
         setStats(newStats)
       }
-    } catch (error) {
-      console.error('Error fetching permit statistics:', error)
-    } finally {
+    } catch (error) {} finally {
       setLoading(false)
     }
   }

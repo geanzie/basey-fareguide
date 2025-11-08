@@ -66,9 +66,7 @@ export async function GET(request: NextRequest) {
     ]
 
     return NextResponse.json({ notifications })
-  } catch (error) {
-    console.error('GET /api/enforcer/notifications error:', error)
-    return NextResponse.json(
+      } catch (error) {    return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }
     )

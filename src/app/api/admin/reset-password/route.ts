@@ -115,8 +115,7 @@ export async function POST(request: NextRequest) {
       { message: 'Invalid action. Use "generate-token" or "set-password"' },
       { status: 400 }
     )
-
-  } catch (error) {
+      } catch (error) {
     return createAuthErrorResponse(error)
   }
 }

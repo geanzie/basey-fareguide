@@ -68,9 +68,7 @@ const EnforcerReports = () => {
         ]
       }
       setReportData(mockData)
-    } catch (error) {
-      console.error('Error fetching report data:', error)
-    } finally {
+      } catch (error) {} finally {
       setLoading(false)
     }
   }
