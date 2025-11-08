@@ -10,6 +10,10 @@ interface User {
   firstName: string
   lastName: string
   username: string
+  dateOfBirth?: string
+  phoneNumber?: string
+  governmentId?: string
+  idType?: string
   employeeId?: string
 }
 

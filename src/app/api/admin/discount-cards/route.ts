@@ -50,6 +50,7 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '50')
     const discountType = searchParams.get('discountType') || undefined
+    const verificationStatus = searchParams.get('verificationStatus') || undefined
     const isActive = searchParams.get('isActive')
     const isAdminOverride = searchParams.get('isAdminOverride')
     const search = searchParams.get('search') || undefined
@@ -59,6 +60,10 @@ export async function GET(request: NextRequest) {
 
     if (discountType) {
       where.discountType = discountType
+    }
+
+    if (verificationStatus) {
+      where.verificationStatus = verificationStatus
     }
 
     if (isActive !== null && isActive !== undefined) {

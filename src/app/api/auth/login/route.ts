@@ -63,6 +63,10 @@ export async function POST(request: NextRequest) {
         userType: user.userType,
         firstName: user.firstName,
         lastName: user.lastName,
+        dateOfBirth: user.dateOfBirth ? user.dateOfBirth.toISOString().split('T')[0] : undefined,
+        phoneNumber: user.phoneNumber || undefined,
+        governmentId: user.governmentId || undefined,
+        idType: user.idType || undefined,
         isActive: user.isActive,
         isVerified: user.isVerified
       },

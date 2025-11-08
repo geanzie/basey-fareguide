@@ -169,6 +169,15 @@ export default function UnifiedLayout({ children, user, title, subtitle, headerC
                   >
                     👤 Profile Settings
                   </Link>
+                  {user.userType === 'PUBLIC' && (
+                    <Link
+                      href="/profile/discount"
+                      className="block px-4 py-2 text-sm text-purple-700 hover:bg-purple-50 transition-colors font-medium"
+                      onClick={() => setUserMenuOpen(false)}
+                    >
+                      🎟️ Discount Card
+                    </Link>
+                  )}
                   <button
                     onClick={handleLogout}
                     className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
@@ -311,6 +320,12 @@ function getNavigationItems(userType: string): NavigationItem[] {
           label: 'Fare Calculator',
           icon: '🧮',
           href: '/calculator'
+        },
+        {
+          id: 'discount',
+          label: 'Discount Card',
+          icon: '🎟️',
+          href: '/profile/discount'
         },
         {
           id: 'report',

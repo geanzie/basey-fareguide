@@ -77,6 +77,7 @@ export default function AdminDiscountList({ onRefresh }: DiscountListProps) {
   // Filters
   const [searchTerm, setSearchTerm] = useState('')
   const [discountTypeFilter, setDiscountTypeFilter] = useState<string>('')
+  const [statusFilter, setStatusFilter] = useState<string>('')
   const [activeFilter, setActiveFilter] = useState<string>('')
   const [overrideFilter, setOverrideFilter] = useState<string>('')
   const [selectedCard, setSelectedCard] = useState<DiscountCard | null>(null)
@@ -84,7 +85,7 @@ export default function AdminDiscountList({ onRefresh }: DiscountListProps) {
 
   useEffect(() => {
     fetchDiscountCards()
-  }, [pagination.page, searchTerm, discountTypeFilter, activeFilter, overrideFilter])
+  }, [pagination.page, searchTerm, discountTypeFilter, statusFilter, activeFilter, overrideFilter])
 
   const fetchDiscountCards = async () => {
     try {
@@ -103,6 +104,7 @@ export default function AdminDiscountList({ onRefresh }: DiscountListProps) {
 
       if (searchTerm) params.append('search', searchTerm)
       if (discountTypeFilter) params.append('discountType', discountTypeFilter)
+      if (statusFilter) params.append('verificationStatus', statusFilter)
       if (activeFilter) params.append('isActive', activeFilter)
       if (overrideFilter) params.append('isAdminOverride', overrideFilter)
 
@@ -136,6 +138,7 @@ export default function AdminDiscountList({ onRefresh }: DiscountListProps) {
   const clearFilters = () => {
     setSearchTerm('')
     setDiscountTypeFilter('')
+    setStatusFilter('')
     setActiveFilter('')
     setOverrideFilter('')
     setPagination(prev => ({ ...prev, page: 1 }))
@@ -237,8 +240,8 @@ export default function AdminDiscountList({ onRefresh }: DiscountListProps) {
       {/* Search and Filters */}
       <div className="bg-white rounded-lg shadow-sm p-6">
         <form onSubmit={handleSearch} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <div className="md:col-span-2">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="md:col-span-3">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Search
               </label>
@@ -269,29 +272,48 @@ export default function AdminDiscountList({ onRefresh }: DiscountListProps) {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Status
+                Verification Status
+              </label>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">All Statuses</option>
+                <option value="PENDING">⏳ Pending</option>
+                <option value="UNDER_REVIEW">👁️ Under Review</option>
+                <option value="APPROVED">✓ Approved</option>
+                <option value="REJECTED">✗ Rejected</option>
+                <option value="SUSPENDED">⚠️ Suspended</option>
+                <option value="EXPIRED">⌛ Expired</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Active Status
               </label>
               <select
                 value={activeFilter}
                 onChange={(e) => setActiveFilter(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="">All Status</option>
+                <option value="">All</option>
                 <option value="true">Active</option>
                 <option value="false">Inactive</option>
               </select>
             </div>
 
-            <div>
+            <div className="md:col-span-3">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Override
+                Admin Override
               </label>
               <select
                 value={overrideFilter}
                 onChange={(e) => setOverrideFilter(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="">All</option>
+                <option value="">All Applications</option>
                 <option value="true">Override Only</option>
                 <option value="false">Regular Only</option>
               </select>
@@ -538,6 +560,45 @@ export default function AdminDiscountList({ onRefresh }: DiscountListProps) {
                     </div>
                   </div>
                 </div>
+
+                {/* Photo ID */}
+                {selectedCard.photoUrl && (
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-3">Uploaded Photo ID</h4>
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <div className="flex justify-center">
+                        <img
+                          src={selectedCard.photoUrl}
+                          alt="Discount Card Photo"
+                          className="max-w-md max-h-96 object-contain rounded-lg border-2 border-gray-300 shadow-sm"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = '/placeholder-image.png'
+                          }}
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500 text-center mt-2">
+                        Click to view full size or download
+                      </p>
+                      <div className="flex justify-center mt-2 gap-2">
+                        <a
+                          href={selectedCard.photoUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+                        >
+                          View Full Size
+                        </a>
+                        <a
+                          href={selectedCard.photoUrl}
+                          download
+                          className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm"
+                        >
+                          Download
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Discount Information */}
                 <div>

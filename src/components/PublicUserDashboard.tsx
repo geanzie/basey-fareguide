@@ -135,15 +135,19 @@ function PublicUserDashboard() {
             <p className="text-gray-600 text-sm">Report transportation violations</p>
           </div>
         </Link>
-        
+
         <Link
-          href="/profile"
-          className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow border border-gray-100 group"
+          href="/profile/discount"
+          className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow border-2 border-purple-200 group"
         >
           <div className="text-center">
-            <div className="text-3xl mb-3 group-hover:scale-110 transition-transform">👤</div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">My Profile</h3>
-            <p className="text-gray-600 text-sm">Manage your account settings</p>
+            <div className="text-3xl mb-3 group-hover:scale-110 transition-transform">🎟️</div>
+            <h3 className="text-lg font-semibold text-purple-900 mb-2">Discount Card</h3>
+            <p className="text-purple-700 text-sm">Apply for fare discounts</p>
+            <div className="mt-2 inline-flex items-center gap-1 text-xs text-purple-600 font-medium">
+              <span>20% OFF</span>
+              <span className="px-2 py-0.5 bg-purple-100 rounded-full">Senior • PWD • Student</span>
+            </div>
           </div>
         </Link>
       </div>

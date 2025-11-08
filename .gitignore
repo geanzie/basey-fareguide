@@ -42,3 +42,10 @@ next-env.d.ts
 /src/generated/prisma
 
 .vercel
+
+# uploaded files
+/public/uploads/discount-cards/*.jpg
+/public/uploads/discount-cards/*.jpeg
+/public/uploads/discount-cards/*.png
+/public/uploads/discount-cards/*.gif
+!/public/uploads/discount-cards/.gitkeep
