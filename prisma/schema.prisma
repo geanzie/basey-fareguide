@@ -47,6 +47,8 @@ model User {
   reviewedEvidence      Evidence[]            @relation("EvidenceReviewer")
   verificationLogs      UserVerificationLog[]
   discountCard          DiscountCard?
+  createdLocations      Location[]            @relation("LocationCreator")
+  verifiedLocations     Location[]            @relation("LocationVerifier")
 
   @@index([username])
   @@index([userType])
@@ -194,17 +196,77 @@ model Route {
 }
 
 model Location {
-  id          String       @id @default(cuid())
-  name        String       @unique
-  type        LocationType
-  coordinates String
-  barangay    String?
-  description String?
-  isActive    Boolean      @default(true)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-
+  id                    String              @id @default(cuid())
+  name                  String              @unique
+  type                  LocationType
+  coordinates           String              // Format: "lat,lng"
+  barangay              String?
+  description           String?
+  isActive              Boolean             @default(true)
+  
+  // Administrative fields
+  createdBy             String
+  createdByUser         User                @relation("LocationCreator", fields: [createdBy], references: [id])
+  verifiedBy            String?
+  verifiedByUser        User?               @relation("LocationVerifier", fields: [verifiedBy], references: [id])
+  verifiedAt            DateTime?
+  
+  // Google Maps validation
+  googlePlaceId         String?
+  googleFormattedAddress String?
+  lastValidated         DateTime?
+  validationStatus      LocationValidationStatus @default(PENDING)
+  
+  // Boundary validation
+  isWithinMunicipality  Boolean             @default(false)
+  isWithinBarangay      Boolean             @default(false)
+  actualBarangay        String?
+  
+  // Metadata
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  
+  validationLogs        LocationValidation[]
+  
+  @@index([barangay])
+  @@index([isActive])
+  @@index([validationStatus])
+  @@index([createdBy])
   @@map("locations")
+}
+
+model LocationValidation {
+  id                    String   @id @default(cuid())
+  locationId            String
+  location              Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  
+  validatedBy           String
+  validationType        String   // "CREATION", "UPDATE", "PERIODIC_CHECK"
+  
+  // Validation results
+  isValid               Boolean
+  validationErrors      String[] // JSON array of error messages
+  validationWarnings    String[] // JSON array of warning messages
+  
+  // Boundary check results
+  withinMunicipality    Boolean
+  withinBarangay        Boolean
+  detectedBarangay      String?
+  
+  // Google Maps results
+  googleMapsValid       Boolean?
+  googlePlaceId         String?
+  googleAddress         String?
+  googleConfidence      String?  // "high", "medium", "low"
+  
+  // Coordinates at time of validation
+  validatedCoordinates  String
+  
+  validatedAt           DateTime @default(now())
+  
+  @@index([locationId])
+  @@index([validatedAt])
+  @@map("location_validations")
 }
 
 model UserVerificationLog {
@@ -317,6 +379,13 @@ enum LocationType {
   LANDMARK
   URBAN
   RURAL
+}
+
+enum LocationValidationStatus {
+  PENDING
+  VALIDATED
+  FAILED
+  NEEDS_REVIEW
 }
 
 enum PermitStatus {

@@ -38,12 +38,26 @@ export interface GoogleMapsVerificationResult {
  * @param coords [latitude, longitude]
  * @returns Promise with geocoding result
  */
-export async function reverseGeocode(coords: [number, number]): Promise<GoogleMapsVerificationResult> {
+export async function reverseGeocode(coords: [number, number], baseUrl?: string): Promise<GoogleMapsVerificationResult> {
   const [lat, lng] = coords;
   
   try {
+    // Determine the URL to use
+    // For browser context, use relative URL
+    // For server-side context, baseUrl must be provided or we throw an error
+    const apiUrl = baseUrl 
+      ? `${baseUrl}/api/geocode/reverse`
+      : (typeof window !== 'undefined' 
+        ? '/api/geocode/reverse' 
+        : null);
+    
+    // If no URL available (server-side without baseUrl), throw error - validation is required!
+    if (!apiUrl) {
+      throw new Error('Google Maps verification cannot be performed in server-side context without baseUrl. Please validate from the UI.');
+    }
+    
     // Use the API route instead of direct Google Maps API call
-    const response = await fetch('/api/geocode/reverse', {
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -63,6 +77,7 @@ export async function reverseGeocode(coords: [number, number]): Promise<GoogleMa
 
     return analyzeGeocodingResult(data.result);
   } catch (error) {
+      // Return failed validation - this is critical for data accuracy
       return {
       isValidLocation: false,
       address: null,
@@ -70,7 +85,7 @@ export async function reverseGeocode(coords: [number, number]): Promise<GoogleMa
       province: null,
       country: null,
       confidence: 'low',
-      issues: [`Failed to verify coordinates with Google Maps: ${error instanceof Error ? error.message : 'Unknown error'}`],
+      issues: [`Google Maps verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`],
       placeTypes: [],
     };
   }

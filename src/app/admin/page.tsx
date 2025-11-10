@@ -15,9 +15,12 @@ const StorageManagement = dynamic(() => import('@/components/StorageManagement')
 const AdminDashboard = dynamic(() => import('@/components/AdminDashboard'), {
   loading: () => <div className="p-6">Loading admin dashboard...</div>
 })
+const AdminLocationManager = dynamic(() => import('@/components/AdminLocationManager'), {
+  loading: () => <div className="p-6">Loading location manager...</div>
+})
 
 export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'storage' | 'settings'>('dashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'storage' | 'locations' | 'settings'>('dashboard')
 
   // Listen for custom events from dashboard quick actions
   useEffect(() => {
@@ -37,6 +40,8 @@ export default function AdminPage() {
         return <AdminUserManagement />
       case 'storage':
         return <StorageManagement />
+      case 'locations':
+        return <AdminLocationManager />
       case 'settings':
         return <AdminSettings />
       default:
@@ -57,6 +62,7 @@ export default function AdminPage() {
               { key: 'dashboard', label: '📊 Dashboard', icon: '📊' },
               { key: 'users', label: '👥 User Management', icon: '👥' },
               { key: 'storage', label: '💾 Storage Management', icon: '💾' },
+              { key: 'locations', label: '📍 Location Management', icon: '📍' },
               { key: 'settings', label: '⚙️ System Settings', icon: '⚙️' }
             ].map((tab) => (
               <button
