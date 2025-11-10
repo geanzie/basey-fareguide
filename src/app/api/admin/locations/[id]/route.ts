@@ -8,9 +8,11 @@ import jwt from 'jsonwebtoken';
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
+    
     // Verify admin authentication
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -36,7 +38,7 @@ export async function PUT(
 
     // Check if location exists
     const existingLocation = await prisma.location.findUnique({
-      where: { id: params.id }
+      where: { id }
     });
 
     if (!existingLocation) {
@@ -62,7 +64,7 @@ export async function PUT(
 
     // Update location
     const updatedLocation = await prisma.location.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(name && { name }),
         ...(type && { type }),
@@ -93,9 +95,11 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
+    
     // Verify admin authentication
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -111,7 +115,7 @@ export async function DELETE(
 
     // Check if location exists
     const location = await prisma.location.findUnique({
-      where: { id: params.id }
+      where: { id }
     });
 
     if (!location) {
@@ -123,7 +127,7 @@ export async function DELETE(
 
     // Soft delete (set isActive to false)
     await prisma.location.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         isActive: false,
         updatedAt: new Date()
@@ -148,9 +152,11 @@ export async function DELETE(
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
+    
     // Verify admin authentication
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -161,7 +167,7 @@ export async function GET(
     jwt.verify(token, process.env.JWT_SECRET!) as { userId: string; userType: string };
 
     const location = await prisma.location.findUnique({
-      where: { id: params.id }
+      where: { id }
     });
 
     if (!location) {
