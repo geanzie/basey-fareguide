@@ -26,6 +26,8 @@ interface Route {
   distance: string
   fare: string
   actualFare?: string | null
+  originalFare?: string | null
+  discountApplied?: number | null
   calculationType: string
   date: string
   vehicleType?: string | null
@@ -66,6 +68,8 @@ function PublicUserDashboard() {
             distance: `${parseFloat(calc.distance.toString()).toFixed(1)} km`,
             fare: `₱${parseFloat(calc.calculatedFare.toString()).toFixed(2)}`,
             actualFare: calc.actualFare ? `₱${parseFloat(calc.actualFare.toString()).toFixed(2)}` : null,
+            originalFare: calc.originalFare ? `₱${parseFloat(calc.originalFare.toString()).toFixed(2)}` : null,
+            discountApplied: calc.discountApplied ? parseFloat(calc.discountApplied.toString()) : null,
             calculationType: calc.calculationType,
             date: new Date(calc.createdAt).toISOString().split('T')[0],
             vehicleType: calc.vehicle?.vehicleType || null,
@@ -223,9 +227,25 @@ function PublicUserDashboard() {
                           {route.distance} • {route.date}
                         </p>
                       </div>
-                      <span className="text-lg font-bold text-emerald-600">
-                        {route.fare}
-                      </span>
+                      <div className="text-right">
+                        {route.originalFare && route.discountApplied ? (
+                          <>
+                            <div className="text-xs text-gray-500 line-through">
+                              {route.originalFare}
+                            </div>
+                            <div className="text-lg font-bold text-emerald-600">
+                              {route.fare}
+                            </div>
+                            <div className="text-xs text-emerald-600">
+                              Saved ₱{route.discountApplied.toFixed(2)}
+                            </div>
+                          </>
+                        ) : (
+                          <span className="text-lg font-bold text-emerald-600">
+                            {route.fare}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}

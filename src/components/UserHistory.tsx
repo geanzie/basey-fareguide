@@ -13,6 +13,8 @@ interface HistoryItem {
   description: string
   status?: string
   fare?: string
+  originalFare?: string
+  discountApplied?: number
   date: string
   createdAt: string
 }
@@ -24,6 +26,9 @@ interface Route {
   distance: string
   fare: string
   actualFare?: string | null
+  originalFare?: string | null
+  discountApplied?: string | null
+  discountType?: string | null
   calculationType: string
   date: string
   vehicleType?: string | null
@@ -165,6 +170,8 @@ export default function UserHistory() {
         subtitle: `${parseFloat(calc.distance.toString()).toFixed(1)} km`,
         description: `${calc.calculationType} calculation`,
         fare: `₱${parseFloat(calc.calculatedFare.toString()).toFixed(2)}`,
+        originalFare: calc.originalFare ? `₱${parseFloat(calc.originalFare.toString()).toFixed(2)}` : undefined,
+        discountApplied: calc.discountApplied ? parseFloat(calc.discountApplied.toString()) : undefined,
         date: new Date(calc.createdAt).toISOString().split('T')[0],
         createdAt: calc.createdAt
       }))
@@ -444,9 +451,25 @@ export default function UserHistory() {
                         {/* Right side info */}
                         <div className="flex flex-col items-end space-y-2 ml-4">
                           {item.fare && (
-                            <span className="text-sm font-semibold text-emerald-600">
-                              {item.fare}
-                            </span>
+                            <div className="text-right">
+                              {item.originalFare && item.discountApplied ? (
+                                <>
+                                  <div className="text-xs text-gray-500 line-through">
+                                    {item.originalFare}
+                                  </div>
+                                  <div className="text-sm font-semibold text-emerald-600">
+                                    {item.fare}
+                                  </div>
+                                  <div className="text-xs text-emerald-600">
+                                    Saved ₱{item.discountApplied.toFixed(2)}
+                                  </div>
+                                </>
+                              ) : (
+                                <span className="text-sm font-semibold text-emerald-600">
+                                  {item.fare}
+                                </span>
+                              )}
+                            </div>
                           )}
                           {item.status && getStatusBadge(item.status)}
                           <span className="text-xs text-gray-500">
