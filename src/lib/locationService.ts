@@ -42,6 +42,7 @@ class LocationService {
 
   /**
    * Initialize the location service by loading all locations from JSON
+   * and merging with database locations
    */
   async initialize(): Promise<void> {
     if (this.initialized) return
@@ -50,7 +51,7 @@ class LocationService {
       this.metadata = baseyLocationsData.metadata as LocationMetadata
       this.locations = []
 
-      // Load barangays
+      // Load barangays from JSON
       if (baseyLocationsData.locations.barangay) {
         baseyLocationsData.locations.barangay.forEach((location: any) => {
           this.locations.push({
@@ -60,7 +61,7 @@ class LocationService {
         })
       }
 
-      // Load landmarks
+      // Load landmarks from JSON
       if (baseyLocationsData.locations.landmark) {
         baseyLocationsData.locations.landmark.forEach((location: any) => {
           this.locations.push({
@@ -70,7 +71,7 @@ class LocationService {
         })
       }
 
-      // Load sitios
+      // Load sitios from JSON
       if (baseyLocationsData.locations.sitio) {
         baseyLocationsData.locations.sitio.forEach((location: any) => {
           this.locations.push({
@@ -80,7 +81,33 @@ class LocationService {
         })
       }
 
-      this.initialized = true    } catch (error) {      throw error
+      // Fetch and merge database locations
+      try {
+        const response = await fetch('/api/locations')
+        if (response.ok) {
+          const data = await response.json()
+          if (data.success && data.locations) {
+            // Add database locations, avoiding duplicates by name
+            const existingNames = new Set(this.locations.map(loc => loc.name.toLowerCase().trim()))
+            
+            data.locations.forEach((dbLocation: Location) => {
+              const locationName = dbLocation.name.toLowerCase().trim()
+              if (!existingNames.has(locationName)) {
+                this.locations.push(dbLocation)
+                existingNames.add(locationName)
+              }
+            })
+          }
+        }
+      } catch (fetchError) {
+        console.warn('Could not fetch database locations, using JSON data only:', fetchError)
+        // Continue with JSON data only - don't fail initialization
+      }
+
+      this.initialized = true
+    } catch (error) {
+      console.error('Error initializing location service:', error)
+      throw error
     }
   }
 
