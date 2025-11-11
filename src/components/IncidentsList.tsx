@@ -32,6 +32,7 @@ const IncidentsList = () => {
     incidentType: 'ALL',
     dateRange: 'ALL'
   })
+  const [searchQuery, setSearchQuery] = useState('')
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null)
   const [showModal, setShowModal] = useState(false)
 
@@ -148,6 +149,38 @@ const IncidentsList = () => {
           </div>
         </div>
 
+        {/* Search Bar */}
+        <div className="mb-4">
+          <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-2">
+            Search Incidents
+          </label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <input
+              type="text"
+              id="search"
+              placeholder="Search by plate number, location, or description..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+        </div>
+
         {/* Filters */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
@@ -219,33 +252,48 @@ const IncidentsList = () => {
               <p className="text-gray-600 mt-2">Loading incidents...</p>
             </div>
           </div>
-        ) : incidents.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b">
-                <tr>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Incident
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Vehicle
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Location
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {incidents.map((incident) => (
+        ) : (() => {
+          // Apply search filter
+          const filteredIncidents = incidents.filter(incident => {
+            if (!searchQuery.trim()) return true
+            
+            const query = searchQuery.toLowerCase()
+            return (
+              incident.plateNumber?.toLowerCase().includes(query) ||
+              incident.location?.toLowerCase().includes(query) ||
+              incident.description?.toLowerCase().includes(query) ||
+              incident.incidentType?.toLowerCase().includes(query) ||
+              `${incident.reportedBy?.firstName} ${incident.reportedBy?.lastName}`.toLowerCase().includes(query)
+            )
+          })
+          
+          return filteredIncidents.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Incident
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Vehicle
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Location
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Date
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredIncidents.map((incident) => (
                   <tr key={incident.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4">
                       <div>
@@ -285,19 +333,20 @@ const IncidentsList = () => {
                       </button>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="text-center py-12">
-            <span className="text-4xl mb-4 block">📋</span>
-            <p className="text-gray-500 text-lg">No incidents found</p>
-            <p className="text-gray-400 text-sm mt-2">
-              Try adjusting your filters or check back later
-            </p>
-          </div>
-        )}
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <span className="text-4xl mb-4 block">�</span>
+              <p className="text-gray-500 text-lg">No incidents found</p>
+              <p className="text-gray-400 text-sm mt-2">
+                {searchQuery ? 'Try adjusting your search terms' : 'Try adjusting your filters or check back later'}
+              </p>
+            </div>
+          )
+        })()}
       </div>
 
       {/* Incident Details Modal */}
