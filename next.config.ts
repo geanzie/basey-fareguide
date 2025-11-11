@@ -67,23 +67,35 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            // Improved CSP - removed unsafe-eval, kept unsafe-inline only where necessary for Google Maps
-            // Note: Google Maps requires 'unsafe-inline' for styles and 'unsafe-eval' is needed for some Maps features
-            // In production, consider using nonces for inline scripts
-            value: [
-              "default-src 'self'",
-              "script-src 'self' https://maps.googleapis.com https://maps.gstatic.com",
-              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-              "img-src 'self' data: https: https://maps.gstatic.com https://maps.googleapis.com blob:",
-              "font-src 'self' data: https://fonts.gstatic.com",
-              "connect-src 'self' https://maps.googleapis.com",
-              "frame-src 'none'",
-              "object-src 'none'",
-              "base-uri 'self'",
-              "form-action 'self'",
-              "frame-ancestors 'none'",
-              "upgrade-insecure-requests"
-            ].join('; ')
+            // Improved CSP - In development, we need 'unsafe-eval' and 'unsafe-inline' for Next.js hot reloading
+            // In production, these are more restricted
+            value: process.env.NODE_ENV === 'development' 
+              ? [
+                  "default-src 'self'",
+                  "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://maps.googleapis.com https://maps.gstatic.com",
+                  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+                  "img-src 'self' data: https: https://maps.gstatic.com https://maps.googleapis.com blob:",
+                  "font-src 'self' data: https://fonts.gstatic.com",
+                  "connect-src 'self' https://maps.googleapis.com ws: wss:",
+                  "frame-src 'none'",
+                  "object-src 'none'",
+                  "base-uri 'self'",
+                  "form-action 'self'"
+                ].join('; ')
+              : [
+                  "default-src 'self'",
+                  "script-src 'self' https://maps.googleapis.com https://maps.gstatic.com",
+                  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+                  "img-src 'self' data: https: https://maps.gstatic.com https://maps.googleapis.com blob:",
+                  "font-src 'self' data: https://fonts.gstatic.com",
+                  "connect-src 'self' https://maps.googleapis.com",
+                  "frame-src 'none'",
+                  "object-src 'none'",
+                  "base-uri 'self'",
+                  "form-action 'self'",
+                  "frame-ancestors 'none'",
+                  "upgrade-insecure-requests"
+                ].join('; ')
           },
           {
             key: 'Strict-Transport-Security',
