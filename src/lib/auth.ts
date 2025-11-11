@@ -13,21 +13,43 @@ export interface AuthUser {
 }
 
 /**
- * Verifies the JWT token from the Authorization header and returns the authenticated user.
+ * Gets the JWT secret from environment variables.
+ * Throws an error if not configured.
+ */
+export function getJWTSecret(): string {
+  const secret = process.env.JWT_SECRET
+  if (!secret) {
+    console.error('CRITICAL: JWT_SECRET environment variable is not configured')
+    throw new Error('Server configuration error: JWT_SECRET not set')
+  }
+  return secret
+}
+
+/**
+ * Verifies the JWT token from the Authorization header or httpOnly cookie and returns the authenticated user.
  * Returns null if authentication fails.
  */
 export async function verifyAuth(request: NextRequest): Promise<AuthUser | null> {
   try {
+    let token: string | undefined
+
+    // First, try to get token from Authorization header (for API clients)
     const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7) // Remove 'Bearer ' prefix
+    }
+
+    // If no Authorization header, try httpOnly cookie (for browser clients)
+    if (!token) {
+      token = request.cookies.get('auth-token')?.value
+    }
+
+    // If still no token, authentication failed
+    if (!token) {
       return null
     }
 
-    const token = authHeader.substring(7) // Remove 'Bearer ' prefix
-    const decoded = jwt.verify(
-      token, 
-      process.env.JWT_SECRET || 'fallback-secret'
-    ) as any
+    const decoded = jwt.verify(token, getJWTSecret()) as any
     
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },

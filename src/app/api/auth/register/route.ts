@@ -1,9 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
+import { checkRateLimit, getClientIdentifier, RATE_LIMITS } from '@/lib/rateLimit'
 
 export async function POST(request: NextRequest) {
   try {
+    // Apply rate limiting
+    const clientId = getClientIdentifier(request)
+    const rateLimitResult = checkRateLimit(clientId, RATE_LIMITS.AUTH_REGISTER)
+
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { 
+          message: `Too many registration attempts. Please try again in ${rateLimitResult.retryAfter} seconds.`,
+          retryAfter: rateLimitResult.retryAfter
+        },
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': String(rateLimitResult.retryAfter)
+          }
+        }
+      )
+    }
+
     const {
       username,
       password,

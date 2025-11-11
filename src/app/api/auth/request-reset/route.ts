@@ -1,9 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import crypto from 'crypto'
+import { checkRateLimit, getClientIdentifier, RATE_LIMITS } from '@/lib/rateLimit'
 
 export async function POST(request: NextRequest) {
   try {
+    // Apply rate limiting
+    const clientId = getClientIdentifier(request)
+    const rateLimitResult = checkRateLimit(clientId, RATE_LIMITS.AUTH_RESET)
+
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { 
+          message: `Too many password reset attempts. Please try again in ${rateLimitResult.retryAfter} seconds.`,
+          retryAfter: rateLimitResult.retryAfter
+        },
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': String(rateLimitResult.retryAfter)
+          }
+        }
+      )
+    }
+
     const { username } = await request.json()
 
     // Validate input
@@ -44,10 +64,15 @@ export async function POST(request: NextRequest) {
     })
 
     // In a production system, you would send this token via email
+    // For now, the token must be retrieved by an admin from the database
+    // TODO: Implement email service to send reset tokens securely
+    
+    // Log the token for admin retrieval (should be replaced with email service)
+    console.log(`Password reset requested for user: ${username}`)
+    console.log(`Reset token (admin only - do not expose to client): ${resetToken}`)
+    
     return NextResponse.json({
-      message: 'If the username exists, a password reset token has been generated. Please contact an administrator with your username to get your reset token.',
-      // In development, include the token. Remove this in production
-      token: resetToken
+      message: 'If the username exists, a password reset token has been generated. Please contact an administrator with your username to get your reset token.'
     })
       } catch (error) {    return NextResponse.json(
       { message: 'Internal server error' },

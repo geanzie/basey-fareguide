@@ -1,34 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import jwt from 'jsonwebtoken'
-
-async function verifyAuth(request: NextRequest) {
-  try {
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return null
-    }
-
-    const token = authHeader.split(' ')[1]
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as any
-    
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        username: true,
-        userType: true,
-        isActive: true
-      }
-    })
-
-    return user?.isActive ? user : null
-  } catch {
-    return null
-  }
-}
+import { verifyAuth } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {

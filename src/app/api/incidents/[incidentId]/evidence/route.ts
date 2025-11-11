@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import jwt from 'jsonwebtoken'
-import { writeFile } from 'fs/promises'
+import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
+import { getJWTSecret } from '@/lib/auth'
+import crypto from 'crypto'
 
 async function verifyAuth(request: NextRequest) {
   try {
@@ -12,7 +14,7 @@ async function verifyAuth(request: NextRequest) {
     }
 
     const token = authHeader.split(' ')[1]
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as any
+    const decoded = jwt.verify(token, getJWTSecret()) as any
     
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
@@ -85,22 +87,75 @@ export async function POST(
       }, { status: 400 })
     }
 
-    // Create unique filename
+    // Allowed MIME types for evidence
+    const allowedMimeTypes = [
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'image/webp',
+      'video/mp4',
+      'video/quicktime',
+      'video/x-msvideo',
+      'application/pdf',
+      'audio/mpeg',
+      'audio/wav'
+    ]
+
+    // Validate MIME type
+    if (!allowedMimeTypes.includes(file.type)) {
+      return NextResponse.json({ 
+        message: 'Invalid file type. Only images, videos, PDFs, and audio files are allowed.' 
+      }, { status: 400 })
+    }
+
+    // Validate file extension
+    const allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'mov', 'avi', 'pdf', 'mp3', 'wav']
+    const fileExtension = file.name.split('.').pop()?.toLowerCase()
+    
+    if (!fileExtension || !allowedExtensions.includes(fileExtension)) {
+      return NextResponse.json({ 
+        message: 'Invalid file extension. Only image, video, PDF, and audio files are allowed.' 
+      }, { status: 400 })
+    }
+
+    // Validate filename - prevent directory traversal
+    const originalFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+    
+    // Create unique filename with cryptographically secure random component
+    const crypto = require('crypto')
+    const randomBytes = crypto.randomBytes(16).toString('hex')
     const timestamp = Date.now()
-    const extension = file.name.split('.').pop()
-    const fileName = `evidence_${incidentId}_${timestamp}.${extension}`
+    const fileName = `evidence_${incidentId}_${timestamp}_${randomBytes}.${fileExtension}`
     
     // Create uploads directory if it doesn't exist
     const uploadDir = join(process.cwd(), 'public', 'uploads', 'evidence')
     
+    try {
+      await mkdir(uploadDir, { recursive: true })
+    } catch (error) {
+      // Directory might already exist, which is fine
+    }
+    
     // Save file
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
-    const filePath = join(uploadDir, fileName)
+    
+    // Ensure the filename doesn't contain path traversal characters
+    const safeFileName = fileName.replace(/[\/\\]/g, '')
+    const filePath = join(uploadDir, safeFileName)
+    
+    // Double check the file path is within the upload directory (prevent directory traversal)
+    const normalizedFilePath = join(uploadDir, safeFileName)
+    if (!normalizedFilePath.startsWith(uploadDir)) {
+      return NextResponse.json({ 
+        message: 'Invalid file path' 
+      }, { status: 400 })
+    }
     
     try {
       await writeFile(filePath, buffer)
     } catch (error) {
+      console.error('File upload error:', error)
       return NextResponse.json({ 
         message: 'Failed to save file' 
       }, { status: 500 })
