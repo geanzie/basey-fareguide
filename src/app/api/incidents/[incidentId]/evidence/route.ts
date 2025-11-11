@@ -80,10 +80,16 @@ export async function POST(
       return NextResponse.json({ message: 'No file provided' }, { status: 400 })
     }
 
-    // Validate file size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
+    // Validate file size (max 10MB for images, 50MB for videos)
+    const MAX_IMAGE_SIZE = 10 * 1024 * 1024 // 10MB
+    const MAX_VIDEO_SIZE = 50 * 1024 * 1024 // 50MB
+    
+    const maxSize = file.type.startsWith('video/') ? MAX_VIDEO_SIZE : MAX_IMAGE_SIZE
+    
+    if (file.size > maxSize) {
+      const maxSizeMB = Math.floor(maxSize / (1024 * 1024))
       return NextResponse.json({ 
-        message: 'File size too large. Maximum 10MB allowed.' 
+        message: `File size too large. Maximum ${maxSizeMB}MB allowed for ${file.type.startsWith('video/') ? 'videos' : 'files'}.` 
       }, { status: 400 })
     }
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import crypto from 'crypto'
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS } from '@/lib/rateLimit'
+import { sendPasswordResetEmail } from '@/lib/email'
 
 export async function POST(request: NextRequest) {
   try {
@@ -63,17 +64,26 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // In a production system, you would send this token via email
-    // For now, the token must be retrieved by an admin from the database
-    // TODO: Implement email service to send reset tokens securely
-    
-    // Log the token for admin retrieval (should be replaced with email service)
-    console.log(`Password reset requested for user: ${username}`)
-    console.log(`Reset token (admin only - do not expose to client): ${resetToken}`)
-    
-    return NextResponse.json({
-      message: 'If the username exists, a password reset token has been generated. Please contact an administrator with your username to get your reset token.'
-    })
+    // Send password reset email
+    const emailSent = await sendPasswordResetEmail(
+      user.username, // Using username as email for now - update when email field is added
+      user.username,
+      resetToken
+    )
+
+    if (emailSent) {
+      return NextResponse.json({
+        message: 'Password reset instructions have been sent to your email address.'
+      })
+    } else {
+      // Fallback: Log token for admin retrieval if email fails
+      console.log(`Password reset requested for user: ${username}`)
+      console.log(`Reset token (admin only - email failed): ${resetToken}`)
+      
+      return NextResponse.json({
+        message: 'Password reset token generated. Please contact an administrator if you did not receive the email.'
+      })
+    }
       } catch (error) {    return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }
