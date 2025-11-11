@@ -1,8 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import crypto from 'crypto'
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS } from '@/lib/rateLimit'
-import { sendPasswordResetEmail } from '@/lib/email'
+import { sendOTPEmail } from '@/lib/email'
+
+// Generate a 6-digit OTP code
+function generateOTP(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString()
+}
+
+// Get OTP expiry date (10 minutes from now)
+function getOTPExpiry(): Date {
+  const expiry = new Date()
+  expiry.setMinutes(expiry.getMinutes() + 10)
+  return expiry
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,63 +36,79 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { username } = await request.json()
+    const { email } = await request.json()
 
     // Validate input
-    if (!username) {
+    if (!email) {
       return NextResponse.json(
-        { message: 'Username is required' },
+        { message: 'Email address is required' },
         { status: 400 }
       )
     }
 
-    // Find user in database
-    const user = await prisma.user.findUnique({
-      where: { username }
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { message: 'Please enter a valid email address' },
+        { status: 400 }
+      )
+    }
+
+    // Find user by email
+    const user = await prisma.user.findFirst({
+      where: { email: email.toLowerCase() }
     })
     
     // For security, always return success even if user doesn't exist
-    // This prevents username enumeration attacks
+    // This prevents email enumeration attacks
     if (!user) {
       return NextResponse.json({
-        message: 'If the username exists, a password reset token has been generated. Please contact an administrator with your username to get your reset token.'
+        message: 'If this email is registered, an OTP code has been sent. Please check your inbox and spam folder.'
       })
     }
 
-    // Generate a secure random token
-    const resetToken = crypto.randomBytes(32).toString('hex')
-    
-    // Set token expiry to 1 hour from now
-    const resetExpiry = new Date()
-    resetExpiry.setHours(resetExpiry.getHours() + 1)
+    // Check if user has an email
+    if (!user.email) {
+      return NextResponse.json({
+        message: 'If this email is registered, an OTP code has been sent. Please check your inbox and spam folder.'
+      })
+    }
 
-    // Update user with reset token
+    // Generate a 6-digit OTP
+    const otp = generateOTP()
+    const otpExpiry = getOTPExpiry()
+
+    // Update user with OTP
     await prisma.user.update({
-      where: { username },
+      where: { id: user.id },
       data: {
-        passwordResetToken: resetToken,
-        passwordResetExpiry: resetExpiry
+        passwordResetOtp: otp,
+        passwordResetOtpExpiry: otpExpiry
       }
     })
 
-    // Send password reset email
-    const emailSent = await sendPasswordResetEmail(
-      user.username, // Using username as email for now - update when email field is added
-      user.username,
-      resetToken
-    )
+    // Send OTP via email
+    const emailSent = await sendOTPEmail(user.email, user.username, otp)
 
     if (emailSent) {
+      // Partially mask email
+      const [localPart, domain] = user.email.split('@')
+      const maskedEmail = localPart.length > 2 
+        ? `${localPart[0]}***${localPart[localPart.length - 1]}@${domain}`
+        : `***@${domain}`
+
       return NextResponse.json({
-        message: 'Password reset instructions have been sent to your email address.'
+        message: 'A 6-digit OTP code has been sent to your email address. The code is valid for 10 minutes.',
+        email: maskedEmail
       })
     } else {
-      // Fallback: Log token for admin retrieval if email fails
-      console.log(`Password reset requested for user: ${username}`)
-      console.log(`Reset token (admin only - email failed): ${resetToken}`)
+      // Fallback: Log OTP for development/testing
+      console.log(`Password reset requested for user: ${user.username}`)
+      console.log(`OTP code (development only): ${otp}`)
       
       return NextResponse.json({
-        message: 'Password reset token generated. Please contact an administrator if you did not receive the email.'
+        message: 'OTP code generated. In development mode, check console logs or check your email.'
       })
     }
       } catch (error) {    return NextResponse.json(

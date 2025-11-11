@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import bcrypt from 'bcryptjs'
 
 // Validate OTP format
 function isValidOTP(otp: string): boolean {
@@ -14,12 +13,12 @@ function isOTPExpired(expiryDate: Date): boolean {
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, otp, newPassword } = await request.json()
+    const { email, otp } = await request.json()
 
     // Validate input
-    if (!email || !otp || !newPassword) {
+    if (!email || !otp) {
       return NextResponse.json(
-        { message: 'Email address, OTP code, and new password are required' },
+        { message: 'Email address and OTP code are required' },
         { status: 400 }
       )
     }
@@ -32,19 +31,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate password strength
-    if (newPassword.length < 8) {
-      return NextResponse.json(
-        { message: 'Password must be at least 8 characters long' },
-        { status: 400 }
-      )
-    }
-
     // Find user with this email and OTP
     const user = await prisma.user.findFirst({
       where: {
         email: email.toLowerCase(),
         passwordResetOtp: otp
+      },
+      select: {
+        id: true,
+        username: true,
+        firstName: true,
+        lastName: true,
+        passwordResetOtpExpiry: true
       }
     })
     
@@ -63,25 +61,17 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Hash the new password
-    const hashedPassword = await bcrypt.hash(newPassword, 12)
-
-    // Update password and clear OTP
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        password: hashedPassword,
-        passwordResetOtp: null,
-        passwordResetOtpExpiry: null,
-        loginAttempts: 0, // Reset failed login attempts
-        lockedUntil: null // Unlock account if it was locked
+    return NextResponse.json({
+      valid: true,
+      user: {
+        username: user.username,
+        firstName: user.firstName,
+        lastName: user.lastName
       }
     })
-
-    return NextResponse.json({
-      message: 'Password successfully reset. You can now login with your new password.'
-    })
-      } catch (error) {    return NextResponse.json(
+  } catch (error) {
+    console.error('OTP verification error:', error)
+    return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }
     )

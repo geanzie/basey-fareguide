@@ -13,6 +13,7 @@ const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
+    email: '',
     phoneNumber: '',
     dateOfBirth: '',
     governmentId: '',
@@ -223,6 +224,27 @@ const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
                 onChange={handleInputChange}
                 suppressHydrationWarning
               />
+            </div>
+
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                Email Address *
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                placeholder="your@email.com"
+                value={formData.email}
+                onChange={handleInputChange}
+                suppressHydrationWarning
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Required for password reset
+              </p>
             </div>
           </div>
 

@@ -9,11 +9,11 @@ interface RequestResetFormProps {
 }
 
 const RequestResetForm = ({ onSuccess, onCancel }: RequestResetFormProps) => {
-  const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
-  const [resetToken, setResetToken] = useState('')
+  const [maskedEmail, setMaskedEmail] = useState('')
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -28,14 +28,16 @@ const RequestResetForm = ({ onSuccess, onCancel }: RequestResetFormProps) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ username }),
+        body: JSON.stringify({ email }),
       })
 
       const data = await response.json()
 
       if (response.ok) {
         setSuccess(true)
-        setResetToken(data.token || '')
+        setMaskedEmail(data.email || '')
+        // Store email for next step
+        sessionStorage.setItem('resetEmail', email)
         if (onSuccess) {
           onSuccess()
         }
@@ -60,7 +62,7 @@ const RequestResetForm = ({ onSuccess, onCancel }: RequestResetFormProps) => {
             Reset Password
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Enter your username to request a password reset
+            Enter your email address to receive an OTP code
           </p>
         </div>
         
@@ -75,39 +77,35 @@ const RequestResetForm = ({ onSuccess, onCancel }: RequestResetFormProps) => {
                 </div>
                 <div className="ml-3">
                   <h3 className="text-sm font-medium text-green-800">
-                    Reset Token Generated
+                    OTP Code Sent! �
                   </h3>
                   <div className="mt-2 text-sm text-green-700">
-                    <p>Please contact an administrator with your username to get your reset token.</p>
+                    <p>A 6-digit verification code has been sent to {maskedEmail || 'your email'}.</p>
+                    <p className="mt-1">The code is valid for 10 minutes.</p>
                   </div>
                 </div>
               </div>
             </div>
 
-            {resetToken && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <svg className="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <div className="ml-3 flex-1">
-                    <h3 className="text-sm font-medium text-blue-800">
-                      Development Mode - Reset Token
-                    </h3>
-                    <div className="mt-2">
-                      <div className="bg-white rounded p-2 border border-blue-300">
-                        <code className="text-xs text-blue-900 break-all">{resetToken}</code>
-                      </div>
-                      <p className="mt-2 text-xs text-blue-700">
-                        Copy this token and use it on the password reset page.
-                      </p>
-                    </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3 flex-1">
+                  <h3 className="text-sm font-medium text-blue-800">
+                    Next Steps
+                  </h3>
+                  <div className="mt-2 text-xs text-blue-700">
+                    <p>1. Check your email inbox (and spam folder)</p>
+                    <p>2. Enter the 6-digit code on the next page</p>
+                    <p>3. Set your new password</p>
                   </div>
                 </div>
               </div>
-            )}
+            </div>
 
             <div className="space-y-2">
               <button
@@ -133,20 +131,23 @@ const RequestResetForm = ({ onSuccess, onCancel }: RequestResetFormProps) => {
             )}
             
             <div>
-              <label htmlFor="username" className="sr-only">
-                Username
+              <label htmlFor="email" className="sr-only">
+                Email Address
               </label>
               <input
-                id="username"
-                name="username"
-                type="text"
-                autoComplete="username"
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
                 required
                 className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 focus:z-10 sm:text-sm"
-                placeholder="Enter your username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Enter your email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
+              <p className="mt-1 text-xs text-gray-500">
+                Enter the email address you registered with
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -161,10 +162,10 @@ const RequestResetForm = ({ onSuccess, onCancel }: RequestResetFormProps) => {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    Requesting...
+                    Sending OTP...
                   </span>
                 ) : (
-                  'Request Reset Token'
+                  'Send OTP Code'
                 )}
               </button>
 

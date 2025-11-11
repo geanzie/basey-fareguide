@@ -312,3 +312,166 @@ export async function sendIncidentNotificationEmail(
     html,
   })
 }
+
+/**
+ * Send OTP code via email for password reset
+ */
+export async function sendOTPEmail(
+  email: string,
+  username: string,
+  otp: string
+): Promise<boolean> {
+  // If Resend is not configured, log to console (development fallback)
+  if (!resend) {
+    console.log('='.repeat(60))
+    console.log('📧 EMAIL NOTIFICATION (Development Mode - No API Key)')
+    console.log('='.repeat(60))
+    console.log(`To: ${email}`)
+    console.log(`User: ${username}`)
+    console.log(`OTP Code: ${otp}`)
+    console.log(`Valid for: 10 minutes`)
+    console.log('='.repeat(60))
+    return true
+  }
+
+  // Log in development for debugging (but still send email)
+  if (process.env.NODE_ENV === 'development') {
+    console.log('='.repeat(60))
+    console.log('📧 SENDING EMAIL (Development Mode)')
+    console.log('='.repeat(60))
+    console.log(`To: ${email}`)
+    console.log(`User: ${username}`)
+    console.log(`OTP Code: ${otp}`)
+    console.log('='.repeat(60))
+  }
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>Password Reset OTP</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          line-height: 1.6;
+          color: #333;
+          max-width: 600px;
+          margin: 0 auto;
+          padding: 20px;
+        }
+        .container {
+          background-color: #f9f9f9;
+          border: 1px solid #ddd;
+          border-radius: 5px;
+          padding: 30px;
+        }
+        .header {
+          background-color: #10b981;
+          color: white;
+          padding: 20px;
+          border-radius: 5px 5px 0 0;
+          text-align: center;
+        }
+        .content {
+          background-color: white;
+          padding: 30px;
+          border-radius: 0 0 5px 5px;
+        }
+        .otp-code {
+          background-color: #f3f4f6;
+          border: 2px dashed #10b981;
+          padding: 20px;
+          text-align: center;
+          font-size: 32px;
+          font-weight: bold;
+          letter-spacing: 8px;
+          margin: 20px 0;
+          border-radius: 5px;
+          color: #10b981;
+        }
+        .warning {
+          background-color: #fef3c7;
+          border-left: 4px solid #f59e0b;
+          padding: 12px;
+          margin: 20px 0;
+        }
+        .footer {
+          text-align: center;
+          color: #666;
+          font-size: 12px;
+          margin-top: 30px;
+          padding-top: 20px;
+          border-top: 1px solid #ddd;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1 style="margin: 0;">🔐 Password Reset OTP</h1>
+        </div>
+        <div class="content">
+          <p>Hello <strong>${username}</strong>,</p>
+          
+          <p>You requested to reset your password for your Basey Fare Guide account. Use the following One-Time Password (OTP) to complete your password reset:</p>
+          
+          <div class="otp-code">
+            ${otp}
+          </div>
+          
+          <p style="text-align: center; color: #666;">
+            <strong>This code is valid for 10 minutes.</strong>
+          </p>
+          
+          <div class="warning">
+            <strong>⚠️ Security Notice:</strong>
+            <ul style="margin: 5px 0;">
+              <li>Never share this code with anyone</li>
+              <li>Basey Fare Guide staff will never ask for this code</li>
+              <li>If you didn't request this, please ignore this email</li>
+            </ul>
+          </div>
+          
+          <p>If you didn't request a password reset, you can safely ignore this email. Your password will remain unchanged.</p>
+          
+          <p>Need help? Contact our support team.</p>
+        </div>
+        <div class="footer">
+          <p>This is an automated message from Basey Fare Guide</p>
+          <p>Please do not reply to this email</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `
+
+  const text = `
+Password Reset OTP
+
+Hello ${username},
+
+You requested to reset your password for your Basey Fare Guide account.
+
+Your OTP Code: ${otp}
+
+This code is valid for 10 minutes.
+
+SECURITY NOTICE:
+- Never share this code with anyone
+- Basey Fare Guide staff will never ask for this code
+- If you didn't request this, please ignore this email
+
+If you didn't request a password reset, you can safely ignore this email.
+
+---
+Basey Fare Guide
+  `
+
+  return sendEmail({
+    to: email,
+    subject: 'Password Reset OTP - Basey Fare Guide',
+    html,
+    text,
+  })
+}

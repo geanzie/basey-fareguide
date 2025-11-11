@@ -306,6 +306,13 @@ const AdminPasswordReset = ({ users, onRefresh }: AdminPasswordResetProps) => {
           <li>Both methods will unlock the account if it was locked due to failed login attempts</li>
           <li>Reset tokens expire after 24 hours</li>
         </ul>
+
+        <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <p className="text-xs text-blue-800">
+            <strong>ℹ️ Note:</strong> Users can now reset their passwords independently using OTP codes sent to their registered email addresses. 
+            This admin panel is useful for emergency password resets or when users don't have access to their email.
+          </p>
+        </div>
       </div>
     </div>
   )

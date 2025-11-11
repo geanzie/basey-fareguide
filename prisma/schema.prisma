@@ -12,6 +12,7 @@ model User {
   id                    String                @id @default(cuid())
   username              String                @unique
   password              String
+  email                 String?               @unique
   firstName             String
   lastName              String
   phoneNumber           String?
@@ -38,6 +39,8 @@ model User {
   lockedUntil           DateTime?
   passwordResetToken    String?
   passwordResetExpiry   DateTime?
+  passwordResetOtp      String?
+  passwordResetOtpExpiry DateTime?
   createdAt             DateTime              @default(now())
   updatedAt             DateTime              @updatedAt
   fareCalculations      FareCalculation[]

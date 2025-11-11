@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
         username: true,
         firstName: true,
         lastName: true,
+        email: true,
         phoneNumber: true,
         dateOfBirth: true,
         governmentId: true,
@@ -65,12 +66,39 @@ export async function PUT(request: NextRequest) {
     const {
       firstName,
       lastName,
+      email,
       phoneNumber,
       dateOfBirth,
       governmentId,
       idType,
       barangayResidence
     } = await request.json()
+
+    // Validate email format if provided
+    if (email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(email)) {
+        return NextResponse.json(
+          { message: 'Please enter a valid email address' },
+          { status: 400 }
+        )
+      }
+
+      // Check if email is already taken by another user
+      const existingEmail = await prisma.user.findFirst({
+        where: {
+          email: email.toLowerCase(),
+          NOT: { id: decoded.userId }
+        }
+      })
+
+      if (existingEmail) {
+        return NextResponse.json(
+          { message: 'Email address already in use' },
+          { status: 409 }
+        )
+      }
+    }
 
     // Validate phone number format (Philippine mobile)
     if (phoneNumber) {
@@ -88,6 +116,7 @@ export async function PUT(request: NextRequest) {
       data: {
         firstName,
         lastName,
+        email: email ? email.toLowerCase() : null,
         phoneNumber,
         dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
         governmentId: governmentId || null,
@@ -99,6 +128,7 @@ export async function PUT(request: NextRequest) {
         username: true,
         firstName: true,
         lastName: true,
+        email: true,
         phoneNumber: true,
         dateOfBirth: true,
         governmentId: true,

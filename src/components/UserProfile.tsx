@@ -8,6 +8,7 @@ interface User {
   username: string
   firstName: string
   lastName: string
+  email?: string
   phoneNumber?: string
   dateOfBirth?: string
   governmentId?: string
@@ -35,6 +36,7 @@ export default function UserProfile({ user: currentUser }: UserProfileProps) {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
+    email: '',
     phoneNumber: '',
     dateOfBirth: '',
     governmentId: '',
@@ -67,6 +69,7 @@ export default function UserProfile({ user: currentUser }: UserProfileProps) {
         setFormData({
           firstName: data.user.firstName || '',
           lastName: data.user.lastName || '',
+          email: data.user.email || '',
           phoneNumber: data.user.phoneNumber || '',
           dateOfBirth: data.user.dateOfBirth ? data.user.dateOfBirth.split('T')[0] : '',
           governmentId: data.user.governmentId || '',
@@ -174,6 +177,7 @@ export default function UserProfile({ user: currentUser }: UserProfileProps) {
                 setFormData({
                   firstName: user.firstName || '',
                   lastName: user.lastName || '',
+                  email: user.email || '',
                   phoneNumber: user.phoneNumber || '',
                   dateOfBirth: user.dateOfBirth ? user.dateOfBirth.split('T')[0] : '',
                   governmentId: user.governmentId || '',
@@ -242,6 +246,24 @@ export default function UserProfile({ user: currentUser }: UserProfileProps) {
                     : 'border-gray-300 bg-gray-50'
                 }`}
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+              <input
+                type="email"
+                name="email"
+                value={isEditing ? formData.email : user.email || ''}
+                onChange={handleInputChange}
+                disabled={!isEditing}
+                placeholder="your@email.com"
+                className={`w-full px-3 py-2 border rounded-lg ${
+                  isEditing 
+                    ? 'border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500' 
+                    : 'border-gray-300 bg-gray-50'
+                }`}
+              />
+              <p className="text-xs text-gray-500 mt-1">Required for password reset</p>
             </div>
 
             <div>

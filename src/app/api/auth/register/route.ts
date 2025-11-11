@@ -29,6 +29,7 @@ export async function POST(request: NextRequest) {
       password,
       firstName,
       lastName,
+      email,
       phoneNumber,
       dateOfBirth,
       governmentId,
@@ -38,9 +39,18 @@ export async function POST(request: NextRequest) {
     } = await request.json()
 
     // Validate required fields
-    if (!username || !password || !firstName || !lastName || !phoneNumber) {
+    if (!username || !password || !firstName || !lastName || !email || !phoneNumber) {
       return NextResponse.json(
         { message: 'All required fields must be provided' },
+        { status: 400 }
+      )
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { message: 'Please enter a valid email address' },
         { status: 400 }
       )
     }
@@ -107,6 +117,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Check for existing email
+    const existingEmail = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() }
+    })
+    
+    if (existingEmail) {
+      return NextResponse.json(
+        { message: 'Email address already registered' },
+        { status: 409 }
+      )
+    }
+
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 12)
 
@@ -121,6 +143,7 @@ export async function POST(request: NextRequest) {
         password: hashedPassword,
         firstName,
         lastName,
+        email: email.toLowerCase(),
         phoneNumber,
         dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
         governmentId: governmentId.trim(),

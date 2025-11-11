@@ -4,46 +4,59 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
 const ResetPasswordForm = () => {
-  const [token, setToken] = useState('')
+  const [email, setEmail] = useState('')
+  const [otp, setOtp] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [verifying, setVerifying] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
-  const [tokenValid, setTokenValid] = useState(false)
+  const [otpValid, setOtpValid] = useState(false)
   const [userInfo, setUserInfo] = useState<any>(null)
   const router = useRouter()
 
-  const verifyToken = async (tokenToVerify: string) => {
-    if (!tokenToVerify) return
+  // Load email from session storage if available
+  useEffect(() => {
+    const savedEmail = sessionStorage.getItem('resetEmail')
+    if (savedEmail) {
+      setEmail(savedEmail)
+    }
+  }, [])
+
+  const verifyOtp = async (otpToVerify: string, emailAddress: string) => {
+    if (!otpToVerify || !emailAddress) return
 
     setVerifying(true)
     setError('')
 
     try {
-      const response = await fetch('/api/auth/verify-reset-token', {
+      const response = await fetch('/api/auth/verify-otp', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ token: tokenToVerify }),
+        body: JSON.stringify({ email: emailAddress, otp: otpToVerify }),
       })
 
       const data = await response.json()
 
       if (response.ok) {
-        setTokenValid(true)
+        setOtpValid(true)
         setUserInfo(data.user)
       } else {
-        setTokenValid(false)
-        setError(data.message || 'Invalid or expired reset token')
+        setOtpValid(false)
+        setError(data.message || 'Invalid or expired OTP code')
       }
     } catch (err) {
       setError('Network error. Please try again.')
     } finally {
       setVerifying(false)
     }
+  }
+
+  const handleVerifyOtp = () => {
+    verifyOtp(otp, email)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -68,13 +81,15 @@ const ResetPasswordForm = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ token, newPassword }),
+        body: JSON.stringify({ email, otp, newPassword }),
       })
 
       const data = await response.json()
 
       if (response.ok) {
         setSuccess(true)
+        // Clear session storage
+        sessionStorage.removeItem('resetEmail')
         setTimeout(() => {
           router.push('/auth')
         }, 3000)
@@ -99,7 +114,7 @@ const ResetPasswordForm = () => {
             Reset Your Password
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Enter your reset token and new password
+            Enter the OTP code sent to your email
           </p>
         </div>
         
@@ -129,33 +144,60 @@ const ResetPasswordForm = () => {
               </div>
             )}
 
-            {tokenValid && userInfo && (
+            {otpValid && userInfo && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <p className="text-sm text-blue-800">
-                  Resetting password for: <strong>{userInfo.firstName} {userInfo.lastName}</strong> ({userInfo.username})
+                  ✅ OTP Verified! Resetting password for: <strong>{userInfo.firstName} {userInfo.lastName}</strong>
                 </p>
               </div>
             )}
             
             <div className="space-y-4">
               <div>
-                <label htmlFor="token" className="block text-sm font-medium text-gray-700">
-                  Reset Token
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                  Email Address
                 </label>
                 <input
-                  id="token"
-                  name="token"
-                  type="text"
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
                   required
                   className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 focus:z-10 sm:text-sm"
-                  placeholder="Enter your reset token"
-                  value={token}
-                  onChange={(e) => setToken(e.target.value)}
-                  onBlur={(e) => verifyToken(e.target.value)}
+                  placeholder="Enter your email address"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                 />
-                {verifying && (
-                  <p className="mt-1 text-xs text-gray-500">Verifying token...</p>
-                )}
+              </div>
+
+              <div>
+                <label htmlFor="otp" className="block text-sm font-medium text-gray-700">
+                  OTP Code
+                </label>
+                <div className="mt-1 flex space-x-2">
+                  <input
+                    id="otp"
+                    name="otp"
+                    type="text"
+                    required
+                    maxLength={6}
+                    className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 focus:z-10 sm:text-sm"
+                    placeholder="Enter 6-digit OTP code"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleVerifyOtp}
+                    disabled={verifying || otp.length !== 6}
+                    className="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                  >
+                    {verifying ? 'Verifying...' : 'Verify'}
+                  </button>
+                </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  Enter the 6-digit code sent to your email
+                </p>
               </div>
 
               <div>
@@ -166,8 +208,9 @@ const ResetPasswordForm = () => {
                   id="newPassword"
                   name="newPassword"
                   type="password"
+                  autoComplete="new-password"
                   required
-                  disabled={!tokenValid}
+                  disabled={!otpValid}
                   className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 focus:z-10 sm:text-sm disabled:bg-gray-100"
                   placeholder="Enter new password (min 8 characters)"
                   value={newPassword}
@@ -183,8 +226,9 @@ const ResetPasswordForm = () => {
                   id="confirmPassword"
                   name="confirmPassword"
                   type="password"
+                  autoComplete="new-password"
                   required
-                  disabled={!tokenValid}
+                  disabled={!otpValid}
                   className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 focus:z-10 sm:text-sm disabled:bg-gray-100"
                   placeholder="Re-enter new password"
                   value={confirmPassword}
@@ -196,7 +240,7 @@ const ResetPasswordForm = () => {
             <div className="space-y-2">
               <button
                 type="submit"
-                disabled={loading || !tokenValid}
+                disabled={loading || !otpValid}
                 className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
