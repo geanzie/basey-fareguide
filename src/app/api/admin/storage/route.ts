@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
+import { getJWTSecret } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { cleanupOldEvidenceFiles, getEvidenceStorageStats } from '@/lib/evidenceCleanup'
 
@@ -11,7 +12,7 @@ async function verifyAuth(request: NextRequest) {
     }
 
     const token = authHeader.split(' ')[1]
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as any
+    const decoded = jwt.verify(token, getJWTSecret()) as any
     
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },

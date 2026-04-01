@@ -1,4 +1,5 @@
 'use client'
+// TODO: consolidate into RoutePlannerCalculator
 
 import { useState, useEffect } from 'react'
 import { barangayService } from '../lib/barangayService'
@@ -36,14 +37,12 @@ interface RouteResult {
 
 
 interface SmartFareCalculatorProps {
-  preferredMethod?: 'auto' | 'google-maps' | 'gps'
   onError?: (error: string) => void
   onRouteCalculated?: (result: RouteResult, fallbackUsed: boolean) => void
   hideResults?: boolean
 }
 
-const SmartFareCalculator = ({ 
-  preferredMethod = 'auto', 
+const SmartFareCalculator = ({
   onError,
   onRouteCalculated,
   hideResults = false
@@ -53,8 +52,6 @@ const SmartFareCalculator = ({
   const [routeResult, setRouteResult] = useState<RouteResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isCalculating, setIsCalculating] = useState(false)
-  const [methodUsed, setMethodUsed] = useState<string>('')
-  const [fallbackUsed, setFallbackUsed] = useState(false)
   const [barangayList, setBarangayList] = useState<BarangayInfo[]>([])
   const [filteredFromBarangays, setFilteredFromBarangays] = useState<BarangayInfo[]>([])
   const [filteredToBarangays, setFilteredToBarangays] = useState<BarangayInfo[]>([])
@@ -145,15 +142,14 @@ const SmartFareCalculator = ({
     try {
       // Use the smart API that tries Google Maps and falls back to GPS
       // Since we're using Google Maps API, we send location names instead of coordinates
-      const response = await fetch('/api/routes/smart', {
+      const response = await fetch('/api/routes/calculate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          origin: fromLocation,
-          destination: toLocation,
-          preferredMethod: preferredMethod
+          origin: { type: 'preset', name: fromLocation },
+          destination: { type: 'preset', name: toLocation },
         }),
       })
 
@@ -163,18 +159,34 @@ const SmartFareCalculator = ({
         throw new Error(data.error || 'Failed to calculate route')
       }
 
-      if (data.success && data.route) {
-        setRouteResult(data.route)
-        setMethodUsed(data.method || 'unknown')
-        const wasFallbackUsed = data.fallbackUsed || false
-        setFallbackUsed(wasFallbackUsed)
-        
-        // Call the onRouteCalculated callback if provided
-        if (onRouteCalculated) {
-          onRouteCalculated(data.route, wasFallbackUsed)
-        }
-      } else {
-        throw new Error('Invalid response from route calculation')
+      // Adapt flat response to RouteResult shape used by renders
+      const adaptedResult: RouteResult = {
+        distance: {
+          meters: data.distanceKm * 1000,
+          kilometers: data.distanceKm,
+          text: `${data.distanceKm.toFixed(2)} km`,
+        },
+        duration: {
+          seconds: data.durationMin != null ? Math.round(data.durationMin * 60) : 0,
+          text: data.durationMin != null ? `${Math.round(data.durationMin)} min` : 'N/A',
+        },
+        fare: {
+          distance: data.distanceKm,
+          fare: data.fare,
+          breakdown: {
+            baseFare: data.fareBreakdown.baseFare,
+            additionalDistance: data.fareBreakdown.additionalKm,
+            additionalFare: data.fareBreakdown.additionalFare,
+          },
+        },
+        source: data.method === 'ors' ? 'OpenRouteService' : 'GPS Estimate',
+        accuracy: data.method === 'ors' ? 'Road-based routing' : `GPS estimate${data.fallbackReason ? ' (ORS unavailable)' : ''}`,
+        barangayInfo: undefined,
+      }
+      setRouteResult(adaptedResult)
+
+      if (onRouteCalculated) {
+        onRouteCalculated(adaptedResult, data.method === 'gps')
       }
     } catch (error) {      const errorMessage = error instanceof Error ? error.message : 'Failed to calculate route'
       setError(errorMessage)
@@ -367,13 +379,6 @@ const SmartFareCalculator = ({
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 shadow-sm">
             <div className="text-center mb-4">
               <h3 className="text-xl font-bold text-gray-800 mb-2">Route Calculation Result</h3>
-              {fallbackUsed && (
-                <div className="bg-amber-100 border border-amber-300 rounded-lg p-2 mb-3">
-                  <p className="text-amber-700 text-sm">
-                    ℹ️ Google Maps unavailable - using GPS calculation as fallback
-                  </p>
-                </div>
-              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">

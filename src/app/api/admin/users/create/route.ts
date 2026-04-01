@@ -2,9 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import { UserType } from '@/generated/prisma'
+import { verifyAuth } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
   try {
+    const requestingUser = await verifyAuth(request)
+    if (!requestingUser || (requestingUser.userType !== 'ADMIN' && requestingUser.userType !== 'SUPER_ADMIN')) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
+
     const body = await request.json()
     const {
       firstName,

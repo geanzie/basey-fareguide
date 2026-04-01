@@ -1,6 +1,10 @@
 /**
- * Basey Center Coordinates
- * 
+ * Basey Center Coordinates — DISPLAY ONLY
+ *
+ * These coordinates are used for map centering and marker display.
+ * NOT a source for routing or fare calculation.
+ * Authoritative source for routing/fare: src/lib/locations/coordinates.ts
+ *
  * This file provides the authoritative Basey town center coordinates
  * calculated from the accurate GeoJSON data (Barangay.shp.json).
  * 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { calculateFare } from '@/lib/fare/calculator'
 
 interface GPSPosition {
   latitude: number
@@ -14,8 +15,6 @@ interface RouteSegment {
   endPosition: GPSPosition
   distance: number
   duration: number
-  googleMapsDistance?: number
-  googleMapsDuration?: number
   useGoogleMaps: boolean
 }
 
@@ -23,13 +22,11 @@ interface TripData {
   startPosition: GPSPosition | null
   endPosition: GPSPosition | null
   totalDistance: number
-  googleMapsDistance: number
   duration: number
   fare: number
   isActive: boolean
   waypoints: GPSPosition[]
   routeSegments: RouteSegment[]
-  lastGoogleMapsUpdate: number
 }
 
 const GPSFareCalculator = () => {
@@ -37,13 +34,11 @@ const GPSFareCalculator = () => {
     startPosition: null,
     endPosition: null,
     totalDistance: 0,
-    googleMapsDistance: 0,
     duration: 0,
     fare: 0,
     isActive: false,
     waypoints: [],
-    routeSegments: [],
-    lastGoogleMapsUpdate: 0
+    routeSegments: []
   })
   const [currentPosition, setCurrentPosition] = useState<GPSPosition | null>(null)
   const [gpsError, setGpsError] = useState<string | null>(null)
@@ -135,53 +130,6 @@ const GPSFareCalculator = () => {
     return Math.round((R * c / 1000) * 100) / 100 // Round to hundredths (0.01 km precision)
   }
 
-  const calculateFare = (distance: number): number => {
-    const baseFare = 15.00 // First 3km
-    const baseDistance = 3.0
-    const additionalRate = 3.00 // Per additional km
-
-    if (distance <= baseDistance) {
-      return baseFare
-    }
-
-    // Calculate precise fare without rounding up distance
-    const additionalDistance = distance - baseDistance
-    const additionalFare = additionalDistance * additionalRate
-    
-    // Round final fare to nearest centavo (0.01)
-    return Math.round((baseFare + additionalFare) * 100) / 100
-  }
-
-  const getGoogleMapsRoute = async (origin: GPSPosition, destination: GPSPosition): Promise<{distance: number, duration: number} | null> => {
-    try {
-      const response = await fetch('/api/routes/google-maps', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          origin: [origin.latitude, origin.longitude],
-          destination: [destination.latitude, destination.longitude]
-        })
-      })
-
-      if (!response.ok) {        return null
-      }
-
-      const data = await response.json()
-      
-      if (data.success && data.route) {
-        return {
-          distance: data.route.distance.kilometers,
-          duration: data.route.duration.seconds / 60 // Convert to minutes
-        }
-      }
-      
-      return null
-    } catch (error) {      return null
-    }
-  }
-
   const updateTripData = async (newPosition: GPSPosition) => {
     setTripData(prev => {
       const updatedWaypoints = [...prev.waypoints, newPosition]
@@ -197,9 +145,9 @@ const GPSFareCalculator = () => {
         ? (newPosition.timestamp - prev.startPosition.timestamp) / 1000 / 60 // minutes
         : 0
 
-      // Use Google Maps distance for fare calculation if available, otherwise fall back to GPS
-      const distanceForFare = prev.googleMapsDistance > 0 ? prev.googleMapsDistance : gpsDistance
-      const fare = calculateFare(distanceForFare)
+      // Use imported calculateFare (fixes the missing Math.ceil bug)
+      const distanceForFare = gpsDistance
+      const fare = calculateFare(distanceForFare, 'REGULAR')
 
       const newTripData = {
         ...prev,
@@ -207,26 +155,6 @@ const GPSFareCalculator = () => {
         duration,
         fare,
         waypoints: updatedWaypoints
-      }
-
-      // Update Google Maps route every 30 seconds or every 500 meters of GPS movement
-      const timeSinceLastUpdate = Date.now() - prev.lastGoogleMapsUpdate
-      const shouldUpdateGoogleMaps = 
-        timeSinceLastUpdate > 30000 || // 30 seconds
-        (prev.startPosition && gpsDistance - (prev.googleMapsDistance || 0) > 0.5) // 500 meters difference
-
-      if (shouldUpdateGoogleMaps && prev.startPosition) {
-        // Update Google Maps route asynchronously
-        getGoogleMapsRoute(prev.startPosition, newPosition).then(routeData => {
-          if (routeData) {
-            setTripData(currentData => ({
-              ...currentData,
-              googleMapsDistance: routeData.distance,
-              fare: calculateFare(routeData.distance),
-              lastGoogleMapsUpdate: Date.now()
-            }))
-          }
-        }).catch(error => {        })
       }
 
       return newTripData
@@ -243,13 +171,11 @@ const GPSFareCalculator = () => {
       startPosition: currentPosition,
       endPosition: null,
       totalDistance: 0,
-      googleMapsDistance: 0,
       duration: 0,
       fare: 15.00, // Base fare
       isActive: true,
       waypoints: [currentPosition],
-      routeSegments: [],
-      lastGoogleMapsUpdate: Date.now()
+      routeSegments: []
     })
     setGpsError(null)
   }
@@ -265,20 +191,6 @@ const GPSFareCalculator = () => {
       endPosition: currentPosition,
       isActive: false
     }))
-
-    // Get final Google Maps route for the most accurate total
-    if (tripData.startPosition) {
-      try {
-        const finalRoute = await getGoogleMapsRoute(tripData.startPosition, currentPosition)
-        if (finalRoute) {
-          setTripData(prev => ({
-            ...prev,
-            googleMapsDistance: finalRoute.distance,
-            fare: calculateFare(finalRoute.distance)
-          }))
-        }
-      } catch (error) {}
-    }
   }
 
   const resetTrip = () => {
@@ -286,13 +198,11 @@ const GPSFareCalculator = () => {
       startPosition: null,
       endPosition: null,
       totalDistance: 0,
-      googleMapsDistance: 0,
       duration: 0,
       fare: 0,
       isActive: false,
       waypoints: [],
-      routeSegments: [],
-      lastGoogleMapsUpdate: 0
+      routeSegments: []
     })
     setGpsError(null)
   }
@@ -433,17 +343,10 @@ const GPSFareCalculator = () => {
               <h3 className="font-semibold text-green-800">Trip in Progress</h3>
             </div>
             <div className="flex items-center text-sm">
-              {tripData.googleMapsDistance > 0 ? (
-                <div className="flex items-center text-blue-600">
-                  <span className="mr-1">🗺️</span>
-                  Google Maps Active
-                </div>
-              ) : (
-                <div className="flex items-center text-orange-600">
-                  <span className="mr-1">📍</span>
-                  GPS Tracking
-                </div>
-              )}
+              <div className="flex items-center text-orange-600">
+                <span className="mr-1">📍</span>
+                GPS Tracking
+              </div>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
@@ -452,18 +355,13 @@ const GPSFareCalculator = () => {
                 ₱{tripData.fare.toFixed(2)}
               </div>
               <div className="text-green-700">Current Fare</div>
-              <div className="text-xs text-green-600 mt-1">
-                {tripData.googleMapsDistance > 0 ? 'Google Maps' : 'GPS-based'}
-              </div>
+              <div className="text-xs text-green-600 mt-1">GPS-based</div>
             </div>
             <div className="text-center">
               <div className="text-lg font-bold text-green-600">
-                {tripData.googleMapsDistance > 0 ? tripData.googleMapsDistance.toFixed(2) : tripData.totalDistance.toFixed(2)} km
+                {tripData.totalDistance.toFixed(2)} km
               </div>
               <div className="text-green-700">Route Distance</div>
-              <div className="text-xs text-green-600 mt-1">
-                GPS: {tripData.totalDistance.toFixed(2)} km
-              </div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">
@@ -501,17 +399,10 @@ const GPSFareCalculator = () => {
               <div className="bg-white rounded-lg p-4">
                 <h4 className="font-semibold text-gray-800 mb-2">Distance Traveled</h4>
                 <div className="text-2xl font-bold text-blue-600">
-                  {tripData.googleMapsDistance > 0 ? tripData.googleMapsDistance.toFixed(2) : tripData.totalDistance.toFixed(2)} km
+                  {tripData.totalDistance.toFixed(2)} km
                 </div>
                 <div className="text-sm text-gray-600 mt-2">
-                  {tripData.googleMapsDistance > 0 ? (
-                    <>
-                      <div className="text-green-600 font-semibold">✓ Google Maps Route</div>
-                      <div>GPS tracking: {tripData.totalDistance.toFixed(2)} km</div>
-                    </>
-                  ) : (
-                    <div className="text-orange-600">GPS-based calculation</div>
-                  )}
+                  <div className="text-orange-600">GPS-based calculation</div>
                 </div>
               </div>
             </div>

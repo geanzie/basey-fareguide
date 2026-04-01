@@ -142,6 +142,26 @@ export async function POST(request: NextRequest) {
       // If token verification fails, continue without user ID (anonymous calculation)
     }
 
+    // Verify discount card ownership — prevent using another user's card
+    if (discountCardId) {
+      if (!userId) {
+        return NextResponse.json(
+          { error: 'Authentication required to use a discount card' },
+          { status: 401 }
+        )
+      }
+      const card = await prisma.discountCard.findUnique({
+        where: { id: discountCardId },
+        select: { userId: true, isActive: true }
+      })
+      if (!card || card.userId !== userId || !card.isActive) {
+        return NextResponse.json(
+          { error: 'Invalid or unauthorized discount card' },
+          { status: 403 }
+        )
+      }
+    }
+
     // Create fare calculation record
     const fareCalculation = await prisma.fareCalculation.create({
       data: {

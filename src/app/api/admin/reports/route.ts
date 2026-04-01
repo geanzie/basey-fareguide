@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { verifyAuth } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
+    const user = await verifyAuth(request)
+    if (!user || (user.userType !== 'ADMIN' && user.userType !== 'SUPER_ADMIN')) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { searchParams } = new URL(request.url)
     const period = searchParams.get('period') || '30d'
 

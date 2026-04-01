@@ -1,11 +1,14 @@
 'use client'
 
 import { useState, useRef, useEffect, useMemo } from 'react'
+import dynamic from 'next/dynamic'
 import { barangayService } from '../lib/barangayService'
 import { BarangayInfo } from '../utils/barangayBoundaries'
 import EnhancedRouteMap from './EnhancedRouteMap'
-import { BASEY_LANDMARKS, EXTERNAL_LANDMARKS } from '../utils/baseyCenter'
 import { locationService, Location } from '../lib/locationService'
+
+const PlannedRouteMap = dynamic(() => import('./PlannedRouteMap'), { ssr: false })
+const PinSelectionMap = dynamic(() => import('./PinSelectionMap'), { ssr: false })
 
 // Route Planner uses Google Maps API for accurate road-based distance calculation
 // GPS direct distance calculation is not used here as it would be unfair to drivers
@@ -47,6 +50,10 @@ interface RouteResult {
   }
   source: string
   accuracy: string
+  inputMode?: 'preset' | 'pin'
+  fallbackReason?: string | null
+  snappedOrigin?: { lat: number; lng: number; wasSnapped: boolean } | null
+  snappedDestination?: { lat: number; lng: number; wasSnapped: boolean } | null
   discountCard?: DiscountCard | null
   barangayInfo?: {
     originBarangay: string
@@ -81,6 +88,9 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
     landmarks: Location[]
     sitios: Location[]
   }>({ barangays: [], landmarks: [], sitios: [] })
+  const [calcMode, setCalcMode] = useState<'quick' | 'exact'>('quick')
+  const [pinOrigin, setPinOrigin] = useState<{ lat: number; lng: number } | null>(null)
+  const [pinDestination, setPinDestination] = useState<{ lat: number; lng: number } | null>(null)
 
   // Fetch user's discount card on mount
   useEffect(() => {
@@ -257,7 +267,7 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
   ], [sortedPoblacionBarangays, sortedRuralBarangays, sortedLandmarks, sortedSitios])
 
   // Helper function to save fare calculation to database
-  const saveFareCalculation = async (routeData: RouteResult) => {
+  const saveFareCalculation = async (routeData: RouteResult, fromLabel: string, toLabel: string) => {
     try {
       // Get auth token if available (for logged-in users)
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
@@ -274,8 +284,8 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          fromLocation,
-          toLocation,
+          fromLocation: fromLabel,
+          toLocation: toLabel,
           distance: routeData.distance.kilometers,
           calculatedFare: routeData.fare.fare,
           calculationType: 'Google Maps Route Planner',
@@ -319,79 +329,112 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
     }
     
     // Input validation
-    if (!fromLocation || !toLocation) {
-      setError('Please select both pickup and destination locations')
-      return
+    if (calcMode === 'exact') {
+      if (!pinOrigin || !pinDestination) {
+        setError('Please place both pins on the map')
+        return
+      }
+    } else {
+      if (!fromLocation || !toLocation) {
+        setError('Please select both pickup and destination locations')
+        return
+      }
+      if (fromLocation === toLocation) {
+        setError('Pickup and destination cannot be the same')
+        return
+      }
     }
 
-    if (fromLocation === toLocation) {
-      setError('Pickup and destination cannot be the same')
-      return
-    }
-
-    const fromBarangay = barangays.find(b => b.name === fromLocation)
-    const toBarangay = barangays.find(b => b.name === toLocation)
-    
-    if (!fromBarangay || !toBarangay) {
-      setError('Please select valid locations from the dropdown list')
-      return
-    }
+    // Determine passengerType from discount card
+    const passengerType = userDiscountCard
+      ? userDiscountCard.discountType === 'SENIOR_CITIZEN' ? 'SENIOR' : userDiscountCard.discountType
+      : 'REGULAR'
 
     setIsCalculating(true)
     setLastCalculationTime(now)
 
     try {
-      // Call our API to get Google Maps route data
-      const response = await fetch('/api/routes/google-maps', {
+      const response = await fetch('/api/routes/calculate', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          origin: fromBarangay.coords,
-          destination: toBarangay.coords,
-          userId: userId, // Include userId to check for discount card
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(
+          calcMode === 'exact'
+            ? {
+                origin: { type: 'pin', lat: pinOrigin!.lat, lng: pinOrigin!.lng },
+                destination: { type: 'pin', lat: pinDestination!.lat, lng: pinDestination!.lng },
+                passengerType,
+              }
+            : {
+                origin: { type: 'preset', name: fromLocation },
+                destination: { type: 'preset', name: toLocation },
+                passengerType,
+              },
+        ),
       })
 
       const data = await response.json()
 
-      if (!response.ok) {        let errorMessage = 'Google Maps API is required for accurate road-based route calculation.'
-        
-        if (data.details) {
-          errorMessage += `\n\nDetails: ${data.details}`
-        }
-        
-        if (data.requiredSetup && Array.isArray(data.requiredSetup)) {
-          errorMessage += '\n\nRequired Setup:\n' + data.requiredSetup.map((step: string) => `• ${step}`).join('\n')
-        }
-        
-        if (data.apiKeyConfigured === false) {
-          errorMessage += '\n\n🔑 API Key Status: Not configured'
-        }
-        
-        throw new Error(errorMessage)
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to calculate route')
       }
 
-      if (data.success && data.route) {
-        setRouteResult(data.route)
-        
-        // Save the fare calculation to database (asynchronously, don't block UI)
-        saveFareCalculation(data.route).catch(() => {})
-        
-        // Route successfully calculated - visual map rendering to be added later
+      // Adapt flat API response to the RouteResult shape expected by renders
+      const subtotal = data.fareBreakdown.baseFare + data.fareBreakdown.additionalFare
+      const adaptedResult: RouteResult = {
+        distance: {
+          meters: data.distanceKm * 1000,
+          kilometers: data.distanceKm,
+          text: `${data.distanceKm.toFixed(2)} km`,
+        },
+        duration: {
+          seconds: data.durationMin != null ? Math.round(data.durationMin * 60) : 0,
+          text: data.durationMin != null ? `${Math.round(data.durationMin)} min` : 'N/A',
+        },
+        polyline: data.polyline,
+        fare: {
+          distance: data.distanceKm,
+          fare: data.fare,
+          originalFare: data.fareBreakdown.discount > 0 ? subtotal : undefined,
+          discountApplied: data.fareBreakdown.discount > 0 ? data.fareBreakdown.discount : undefined,
+          discountRate: data.fareBreakdown.discount > 0 ? 0.2 : undefined,
+          breakdown: {
+            baseFare: data.fareBreakdown.baseFare,
+            additionalDistance: data.fareBreakdown.additionalKm,
+            additionalFare: data.fareBreakdown.additionalFare,
+          },
+        },
+        source: data.method === 'ors' ? 'OpenRouteService' : 'GPS Estimate',
+        accuracy: data.method === 'ors' ? 'Road-based routing' : 'GPS estimate',
+        inputMode: (data.inputMode as 'preset' | 'pin') ?? 'preset',
+        fallbackReason: data.fallbackReason ?? null,
+        snappedOrigin: data.snappedOrigin ?? null,
+        snappedDestination: data.snappedDestination ?? null,
+        discountCard: userDiscountCard,
+        barangayInfo: undefined,
+      }
+
+      setRouteResult(adaptedResult)
+
+      // Set map marker coords — exact mode prefers snapped road coords over raw pins
+      if (calcMode === 'exact' && pinOrigin && pinDestination) {
+        const displayOrigin = data.snappedOrigin ?? pinOrigin
+        const displayDest = data.snappedDestination ?? pinDestination
+        setOriginCoords({ lat: displayOrigin.lat, lng: displayOrigin.lng, name: 'Pickup Pin' })
+        setDestCoords({ lat: displayDest.lat, lng: displayDest.lng, name: 'Drop-off Pin' })
       } else {
-        throw new Error('Invalid response from route calculation')
+        const fromBarangay = barangays.find(b => b.name === fromLocation)
+        const toBarangay = barangays.find(b => b.name === toLocation)
+        if (fromBarangay) setOriginCoords({ lat: fromBarangay.coords[0], lng: fromBarangay.coords[1], name: fromLocation })
+        if (toBarangay) setDestCoords({ lat: toBarangay.coords[0], lng: toBarangay.coords[1], name: toLocation })
       }
+      // GPS has no road path — show markers only
+      setRouteCoordinates([])
+
+      saveFareCalculation(adaptedResult, data.origin as string, data.destination as string).catch(() => {})
     } catch (error) {
-      // No GPS fallback - this would be unfair to drivers as it doesn't account for actual road distance
-      const errorMessage = 'Google Maps API is required for accurate road-based route calculation. Please configure the API key to ensure fair fare calculations based on actual driving distance.'
+      const errorMessage = error instanceof Error ? error.message : 'Unable to calculate route. Please try again.'
       setError(errorMessage)
-      
-      // Call the onError callback if provided
-      if (onError) {
-        onError(errorMessage)
-      }
+      if (onError) onError(errorMessage)
     } finally {
       setIsCalculating(false)
     }
@@ -403,8 +446,8 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
     setRouteResult(null)
     setError('')
     setSavedToDatabase(false)
-    
-    // Reset completed
+    setPinOrigin(null)
+    setPinDestination(null)
   }
 
   return (
@@ -457,10 +500,31 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
                   <span className="text-3xl">💰</span>
                 </div>
                 <h2 className="text-3xl font-bold text-gray-800 mb-2">🎉 Route Planned Successfully!</h2>
-                <p className="text-lg text-gray-600 mb-4">{routeResult.accuracy}</p>
+                <p className="text-lg text-gray-600 mb-2">{routeResult.accuracy}</p>
+                {routeResult.inputMode === 'pin' && (
+                  <span className="inline-flex items-center px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-medium border border-indigo-200 mb-2">
+                    📍 From exact map pins
+                  </span>
+                )}
+                {routeResult.inputMode === 'pin' && (routeResult.snappedOrigin?.wasSnapped || routeResult.snappedDestination?.wasSnapped) && (
+                  <span className="inline-flex items-center px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-medium border border-amber-200 mb-4">
+                    📍 Adjusted to nearest road
+                  </span>
+                )}
+
+                {/* ORS fallback warning */}
+                {routeResult.fallbackReason && (
+                  <div className="mt-2 mb-2 mx-auto max-w-lg bg-amber-50 border border-amber-300 rounded-lg px-4 py-3 text-left">
+                    <p className="text-sm font-semibold text-amber-800 mb-1">⚠️ Using GPS Estimate (ORS unavailable)</p>
+                    <p className="text-xs text-amber-700 break-all">{routeResult.fallbackReason}</p>
+                    <p className="text-xs text-amber-600 mt-1">Distance is a straight-line estimate × 1.4 road factor. Configure a valid <code className="font-mono">OPENROUTESERVICE_API_KEY</code> in <code className="font-mono">.env.local</code> for road-based routing.</p>
+                  </div>
+                )}
                 <div className="flex flex-col gap-2 items-center">
                   <div className="inline-flex items-center px-4 py-2 bg-white rounded-full shadow-sm border border-emerald-200">
-                    <span className="text-emerald-600 font-semibold text-sm">✓ Route: {fromLocation} → {toLocation}</span>
+                    <span className="text-emerald-600 font-semibold text-sm">
+                      ✓ Route: {calcMode === 'exact' ? 'Pickup Pin → Drop-off Pin' : `${fromLocation} → ${toLocation}`}
+                    </span>
                   </div>
                   {savedToDatabase && (
                     <div className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium border border-blue-200 animate-pulse">
@@ -599,9 +663,36 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Calculator Form */}
           <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-8">
-            <h3 className="text-xl font-bold text-gray-900 mb-6">Plan Your Route</h3>
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Plan Your Route</h3>
+
+            {/* Mode Toggle */}
+            <div className="flex rounded-lg border border-gray-200 p-1 bg-gray-50 mb-6">
+              <button
+                type="button"
+                onClick={() => setCalcMode('quick')}
+                className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
+                  calcMode === 'quick'
+                    ? 'bg-white text-blue-600 shadow-sm border border-blue-200'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                ⚡ Quick Quote
+              </button>
+              <button
+                type="button"
+                onClick={() => { setCalcMode('exact'); setPinOrigin(null); setPinDestination(null) }}
+                className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
+                  calcMode === 'exact'
+                    ? 'bg-white text-blue-600 shadow-sm border border-blue-200'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                📍 Exact Quote (Map Pin)
+              </button>
+            </div>
             
             <div className="space-y-6">
+              {calcMode === 'quick' && (
               <div>
                 <label htmlFor="from-planner" className="block text-sm font-semibold text-gray-700 mb-3">
                   <span className="inline-flex items-center">
@@ -729,7 +820,9 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
                   )}
                 </select>
               </div>
+              )}
 
+              {calcMode === 'quick' && (
               <div>
                 <label htmlFor="to-planner" className="block text-sm font-semibold text-gray-700 mb-3">
                   <span className="inline-flex items-center">
@@ -857,6 +950,19 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
                   )}
                 </select>
               </div>
+              )}
+
+              {calcMode === 'exact' && (
+              <div>
+                <p className="text-sm text-gray-500 mb-3">
+                  Click the map to pin your <strong>pickup (A)</strong> and <strong>drop-off (B)</strong>. Drag pins to adjust.
+                </p>
+                <PinSelectionMap
+                  onPinChange={(o, d) => { setPinOrigin(o); setPinDestination(d) }}
+                  className="w-full h-72 rounded-lg border border-gray-200"
+                />
+              </div>
+              )}
 
               {/* Error Message */}
               {error && (
@@ -886,7 +992,11 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
               <div className="flex flex-col sm:flex-row gap-4 pt-4">
                 <button
                   onClick={handleCalculate}
-                  disabled={isCalculating || !fromLocation || !toLocation}
+                  disabled={
+                    isCalculating ||
+                    (calcMode === 'quick' && (!fromLocation || !toLocation)) ||
+                    (calcMode === 'exact' && (!pinOrigin || !pinDestination))
+                  }
                   className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-blue-200 focus:ring-offset-2 disabled:bg-gray-400 disabled:cursor-not-allowed flex-1 flex items-center justify-center"
                 >
                   {isCalculating ? (
@@ -923,58 +1033,46 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
               <p className="text-sm text-gray-600">Visual representation of your planned route</p>
             </div>
             
-            {routeResult?.polyline ? (
-              <div className="bg-white rounded-lg border border-gray-200">
-                <div className="bg-blue-50 p-3 border-b border-gray-200">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-semibold text-gray-800">Planned Route</h4>
-                      <p className="text-sm text-gray-600">Google Maps routing</p>
-                    </div>
-                    <div className="text-right text-sm text-gray-600">
-                      <div className="font-medium">{routeResult.distance.kilometers.toFixed(2)} km</div>
-                      <div>{routeResult.duration.text}</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-4">
-                  <div className="h-80 bg-gray-100 rounded border flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <span className="text-2xl">🛣️</span>
+            {(routeResult || (originCoords && destCoords)) ? (
+              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                {routeResult && (
+                  <div className="bg-blue-50 p-3 border-b border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-semibold text-gray-800">Planned Route</h4>
+                        <p className="text-sm text-gray-600">{routeResult.source} routing</p>
                       </div>
-                      <h4 className="text-lg font-semibold text-gray-700 mb-2">Route Planned</h4>
-                      <p className="text-sm text-gray-600 mb-2">Optimal route calculated</p>
-                      <div className="text-xs text-gray-500 space-y-1">
-                        <div>Distance: {routeResult.distance.kilometers.toFixed(2)} km</div>
-                        <div>Duration: {routeResult.duration.text}</div>
-                        <div>Route: {fromLocation} → {toLocation}</div>
+                      <div className="text-right text-sm text-gray-600">
+                        <div className="font-medium">{routeResult.distance.kilometers.toFixed(2)} km</div>
+                        <div>{routeResult.duration.text}</div>
                       </div>
                     </div>
                   </div>
-                </div>
-
+                )}
+                <PlannedRouteMap
+                  polyline={routeResult?.polyline}
+                  origin={originCoords}
+                  destination={destCoords}
+                  fromName={fromLocation}
+                  toName={toLocation}
+                  className="w-full h-80"
+                />
                 <div className="bg-gray-50 px-3 py-2 border-t border-gray-200 text-xs text-gray-600 text-center">
-                  Google Maps routing • Optimized for efficiency
+                  {routeResult
+                    ? `${routeResult.source} • Road-based routing via OpenStreetMap`
+                    : 'OpenStreetMap • Select locations and calculate to see the route'}
                 </div>
               </div>
             ) : (
-              <div className="h-80 bg-gray-50 rounded-lg flex items-center justify-center border border-gray-200">
-                <div className="text-center p-6">
-                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <span className="text-2xl">🗺️</span>
-                  </div>
-                  <h4 className="text-lg font-semibold text-gray-700 mb-2">Route Preview</h4>
-                  <p className="text-gray-500 mb-3">Select locations to plan your route</p>
-                  
-                  {(fromLocation && toLocation) && (
-                    <div className="mt-3 p-2 bg-white rounded border">
-                      <p className="text-sm text-gray-600">
-                        <span className="font-medium">Planning:</span> {fromLocation} → {toLocation}
-                      </p>
-                    </div>
-                  )}
+              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                <div className="bg-gray-50 px-3 py-2 border-b border-gray-200 text-xs text-gray-600 text-center">
+                  Select locations below to preview the route
+                </div>
+                <PlannedRouteMap
+                  className="w-full h-80"
+                />
+                <div className="bg-gray-50 px-3 py-2 border-t border-gray-200 text-xs text-gray-600 text-center">
+                  OpenStreetMap © OpenStreetMap contributors
                 </div>
               </div>
             )}

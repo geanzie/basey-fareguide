@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     const currentUser = await verifyAuth(request)
     requireRole(currentUser, ['ADMIN'])
 
-    const { userId, action } = await request.json()
+    const { userId, action, newPassword } = await request.json()
 
     // Validate input
     if (!userId || !action) {
@@ -69,8 +69,6 @@ export async function POST(request: NextRequest) {
     }
 
     if (action === 'set-password') {
-      const { newPassword } = await request.json()
-
       if (!newPassword) {
         return NextResponse.json(
           { message: 'New password is required' },
