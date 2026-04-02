@@ -3,73 +3,24 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useAuth } from '@/components/AuthProvider'
-import { VehicleType, PermitStatus } from '@/generated/prisma'
+import { VehicleType, PermitStatus } from '@prisma/client'
 import ResponsiveTable, { StatusBadge, ActionButton } from './ResponsiveTable'
-
-interface Permit {
-  id: string
-  permitPlateNumber: string
-  driverFullName: string
-  vehicleType: VehicleType
-  issuedDate: string
-  expiryDate: string
-  status: PermitStatus
-  remarks?: string
-  encodedBy: string
-  encodedAt: string
-  lastUpdatedBy?: string
-  lastUpdatedAt?: string
-  renewalHistory: Array<{
-    id: string
-    previousExpiry: string
-    newExpiry: string
-    renewedBy: string
-    renewedAt: string
-    notes?: string
-  }>
-  vehicle?: {
-    id: string
-    plateNumber: string
-    make: string
-    model: string
-    ownerName: string
-  }
-}
-
-interface Vehicle {
-  id: string
-  plateNumber: string
-  vehicleType: VehicleType
-  make: string
-  model: string
-  year: number
-  color: string
-  ownerName: string
-  ownerContact: string
-  driverName?: string
-  driverLicense?: string
-  isActive: boolean
-}
-
-interface PaginatedResponse {
-  permits: Permit[]
-  pagination: {
-    page: number
-    limit: number
-    total: number
-    totalPages: number
-  }
-}
+import type {
+  PermitDto,
+  PermitsResponseDto,
+  VehicleDto,
+  VehiclesResponseDto,
+} from '@/lib/contracts'
 
 export default function PermitManagement() {
   const { user } = useAuth()
   const searchParams = useSearchParams()
-  const [permits, setPermits] = useState<Permit[]>([])
-  const [vehicles, setVehicles] = useState<Vehicle[]>([])
+  const [permits, setPermits] = useState<PermitDto[]>([])
+  const [vehicles, setVehicles] = useState<VehicleDto[]>([])
   const [loading, setLoading] = useState(true)
   const [vehiclesLoading, setVehiclesLoading] = useState(false)
   const [showAddForm, setShowAddForm] = useState(false)
-  const [editingPermit, setEditingPermit] = useState<Permit | null>(null)
+  const [editingPermit, setEditingPermit] = useState<PermitDto | null>(null)
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -104,7 +55,7 @@ export default function PermitManagement() {
 
       const response = await fetch(`/api/permits?${queryParams}`)
       if (response.ok) {
-        const data: PaginatedResponse = await response.json()
+        const data: PermitsResponseDto = await response.json()
         setPermits(data.permits)
         setPagination(data.pagination)
       }
@@ -118,7 +69,7 @@ export default function PermitManagement() {
       setVehiclesLoading(true)
       const response = await fetch('/api/vehicles?isActive=true&limit=1000')
       if (response.ok) {
-        const data = await response.json()
+        const data: VehiclesResponseDto = await response.json()
         setVehicles(data.vehicles || [])
       }
     } catch (error) {} finally {

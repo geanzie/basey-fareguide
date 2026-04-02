@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import bcrypt from 'bcryptjs'
-import { verifyAuth, requireRole, createAuthErrorResponse } from '@/lib/auth'
+import { ADMIN_ONLY, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
-    // Verify authentication and require ADMIN role
-    const user = await verifyAuth(request)
-    const adminUser = requireRole(user, ['ADMIN'])
+    await requireRequestRole(request, [...ADMIN_ONLY])
     
     // Fetch all users (including PUBLIC users)
     const users = await prisma.user.findMany({
@@ -33,11 +30,11 @@ export async function GET(request: NextRequest) {
       users
     })
   } catch (error) {
-    // Handle authentication/authorization errors
-    if (error instanceof Error && (error.message === 'Unauthorized' || error.message === 'Forbidden')) {
-      return createAuthErrorResponse(error)
+    const authError = createAuthErrorResponse(error)
+    if (authError.status !== 500) {
+      return authError
     }
-    
+
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

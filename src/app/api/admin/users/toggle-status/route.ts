@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { ADMIN_ONLY, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
   try {
+    const adminUser = await requireRequestRole(request, [...ADMIN_ONLY])
     const body = await request.json()
-    const { userId, updatedBy } = body
+    const { userId, isActive } = body
 
-    if (!userId || !updatedBy) {
+    if (!userId) {
       return NextResponse.json(
         { success: false, error: 'Missing required fields' },
         { status: 400 }
@@ -25,7 +27,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Toggle the active status
-    const newStatus = !user.isActive
+    const newStatus = typeof isActive === 'boolean' ? isActive : !user.isActive
     
     await prisma.user.update({
       where: { id: userId },
@@ -39,7 +41,7 @@ export async function POST(request: NextRequest) {
       data: {
         userId,
         action: newStatus ? 'ACTIVATED' : 'DEACTIVATED',
-        performedBy: updatedBy,
+        performedBy: adminUser.id,
         reason: `User ${newStatus ? 'activated' : 'deactivated'} by admin`
       }
     })
@@ -49,9 +51,7 @@ export async function POST(request: NextRequest) {
       message: `User ${newStatus ? 'activated' : 'deactivated'} successfully`,
       newStatus
     })
-      } catch (error) {    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
+  } catch (error) {
+    return createAuthErrorResponse(error)
   }
 }

@@ -1,40 +1,18 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
-
-interface User {
-  userType: string
-  firstName: string
-  lastName: string
-}
+import { useAuth } from './AuthProvider'
 
 export default function Navigation() {
-  const [user, setUser] = useState<User | null>(null)
+  const { user, loading, logout } = useAuth()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
-  useEffect(() => {
-    // Check if user is logged in
-    const userData = localStorage.getItem('user')
-    if (userData) {
-      try {
-        setUser(JSON.parse(userData))
-      } catch (err) {
-      // Invalid user data, ignore
-      }
-    }
-  }, [])
-
-  const handleLogout = () => {
-    localStorage.removeItem('user')
-    localStorage.removeItem('token')
-    setUser(null)
-    window.location.href = '/'
+  const handleLogout = async () => {
+    setMobileMenuOpen(false)
+    await logout()
   }
 
-  const isAuthority = user && ['ADMIN', 'DATA_ENCODER', 'ENFORCER'].includes(user.userType)
-  
-  // Role-based dashboard URLs
   const getDashboardUrl = (userType: string) => {
     switch (userType) {
       case 'ADMIN': return '/admin'
@@ -55,62 +33,41 @@ export default function Navigation() {
     }
   }
 
-  const renderRoleBasedNavigation = (userType: string, isMobile: boolean = false) => {
-    const linkClass = isMobile 
-      ? "block text-gray-600 hover:text-emerald-600 px-3 py-2 font-medium"
-      : "text-gray-600 hover:text-emerald-600 px-3 py-2 font-medium"
-    
+  const renderRoleBasedNavigation = (userType: string, isMobile = false) => {
+    const linkClass = isMobile
+      ? 'block text-gray-600 hover:text-emerald-600 px-3 py-2 font-medium'
+      : 'text-gray-600 hover:text-emerald-600 px-3 py-2 font-medium'
+
     const handleClick = isMobile ? () => setMobileMenuOpen(false) : undefined
 
-    // Common dashboard link for all roles
     const dashboardLink = (
-      <Link 
-        href={getDashboardUrl(userType)} 
+      <Link
+        href={getDashboardUrl(userType)}
         className={linkClass}
         onClick={handleClick}
         key="dashboard"
       >
-        📊 {getDashboardLabel(userType)}
+        ðŸ“Š {getDashboardLabel(userType)}
       </Link>
     )
 
     switch (userType) {
       case 'DATA_ENCODER':
-        return (
-          <>
-            {dashboardLink}
-            {/* Coordinate verification moved to admin only */}
-          </>
-        )
+        return <>{dashboardLink}</>
 
       case 'PUBLIC':
       default:
         return (
           <>
             {dashboardLink}
-            <Link 
-              href="/calculator" 
-              className={linkClass}
-              onClick={handleClick}
-              key="calculator"
-            >
-              🧮 Fare Calculator
+            <Link href="/calculator" className={linkClass} onClick={handleClick} key="calculator">
+              ðŸ§® Fare Calculator
             </Link>
-            <Link 
-              href="/report" 
-              className={linkClass}
-              onClick={handleClick}
-              key="report"
-            >
-              📝 Report Issue
+            <Link href="/report" className={linkClass} onClick={handleClick} key="report">
+              ðŸ“ Report Issue
             </Link>
-            <Link 
-              href="/features" 
-              className={linkClass}
-              onClick={handleClick}
-              key="features"
-            >
-              ⭐ Features
+            <Link href="/features" className={linkClass} onClick={handleClick} key="features">
+              â­ Features
             </Link>
           </>
         )
@@ -122,46 +79,27 @@ export default function Navigation() {
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
-            <span className="text-2xl mr-2">🚌</span>
+            <span className="text-2xl mr-2">ðŸšŒ</span>
             <span className="text-xl font-bold text-gray-800">Basey Fare Guide</span>
           </div>
-          
+
           <div className="hidden md:flex space-x-6">
-            <Link 
-              href="/" 
-              className="text-gray-600 hover:text-emerald-600 px-3 py-2 font-medium"
-            >
-              🏠 Home
+            <Link href="/" className="text-gray-600 hover:text-emerald-600 px-3 py-2 font-medium">
+              ðŸ  Home
             </Link>
-            
-            {!user ? (
-              <Link 
-                href="/auth" 
-                className="text-gray-600 hover:text-emerald-600 px-3 py-2 font-medium"
-              >
-                👤 Login
+
+            {!user && !loading ? (
+              <Link href="/auth" className="text-gray-600 hover:text-emerald-600 px-3 py-2 font-medium">
+                ðŸ‘¤ Login
               </Link>
-            ) : (
+            ) : user ? (
               <>
-                {/* Role-specific navigation */}
                 {renderRoleBasedNavigation(user.userType, false)}
-
-
-                
-                {/* Report - Available to all logged-in users */}
-                <Link 
-                  href="/report" 
-                  className="text-gray-600 hover:text-emerald-600 px-3 py-2 font-medium"
-                >
-                  � Report Issue
+                <Link href="/report" className="text-gray-600 hover:text-emerald-600 px-3 py-2 font-medium">
+                  ï¿½ Report Issue
                 </Link>
-
-
-                
                 <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-600">
-                    Hi, {user.firstName}
-                  </span>
+                  <span className="text-sm text-gray-600">Hi, {user.firstName}</span>
                   <button
                     onClick={handleLogout}
                     className="text-sm text-red-600 hover:text-red-800 px-3 py-2"
@@ -170,9 +108,9 @@ export default function Navigation() {
                   </button>
                 </div>
               </>
-            )}
+            ) : null}
           </div>
-          
+
           <div className="md:hidden">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -185,61 +123,47 @@ export default function Navigation() {
           </div>
         </div>
       </div>
-      
-      {/* Mobile Menu */}
+
       {mobileMenuOpen && (
         <div className="md:hidden bg-white border-t">
           <div className="px-4 py-2 space-y-1">
-            <Link 
-              href="/" 
+            <Link
+              href="/"
               className="block text-gray-600 hover:text-emerald-600 px-3 py-2 font-medium"
               onClick={() => setMobileMenuOpen(false)}
             >
-              🏠 Home
+              ðŸ  Home
             </Link>
-            
-            {!user ? (
-              <Link 
-                href="/auth" 
+
+            {!user && !loading ? (
+              <Link
+                href="/auth"
                 className="block text-gray-600 hover:text-emerald-600 px-3 py-2 font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                👤 Login
+                ðŸ‘¤ Login
               </Link>
-            ) : (
+            ) : user ? (
               <>
-                {/* Role-specific mobile navigation */}
                 {renderRoleBasedNavigation(user.userType, true)}
-
-
-                
-                {/* Report - Available to all logged-in users */}
-                <Link 
-                  href="/report" 
+                <Link
+                  href="/report"
                   className="block text-gray-600 hover:text-emerald-600 px-3 py-2 font-medium"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  � Report Issue
+                  ï¿½ Report Issue
                 </Link>
-
-
-                
                 <div className="px-3 py-2 border-t border-gray-200">
-                  <div className="text-sm text-gray-600 mb-2">
-                    Hi, {user.firstName}
-                  </div>
+                  <div className="text-sm text-gray-600 mb-2">Hi, {user.firstName}</div>
                   <button
-                    onClick={() => {
-                      handleLogout()
-                      setMobileMenuOpen(false)
-                    }}
+                    onClick={handleLogout}
                     className="text-sm text-red-600 hover:text-red-800"
                   >
                     Logout
                   </button>
                 </div>
               </>
-            )}
+            ) : null}
           </div>
         </div>
       )}

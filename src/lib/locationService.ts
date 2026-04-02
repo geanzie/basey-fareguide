@@ -1,39 +1,17 @@
 /**
  * Location Service
  * 
- * This service provides access to all verified locations in Basey, Samar
- * from the comprehensive basey-locations.json file.
- * 
- * Location types:
- * - Barangays (51 total)
- * - Landmarks (96 total - schools, churches, bridges, government buildings, etc.)
- * - Sitios (11 total)
+ * This service provides planner-visible locations from the canonical
+ * database-backed /api/locations endpoint.
  */
+import type {
+  LocationCoordinatesDto,
+  PlannerLocationDto as Location,
+  PlannerLocationsMetadataDto as LocationMetadata,
+  PlannerLocationsResponseDto,
+} from '@/lib/contracts'
 
-import baseyLocationsData from '@/data/basey-locations.json'
-
-export interface LocationCoordinates {
-  lat: number
-  lng: number
-}
-
-export interface Location {
-  name: string
-  coordinates: LocationCoordinates
-  source: string
-  address: string
-  verified: boolean
-  type?: string // For landmarks and sitios
-  category: 'barangay' | 'landmark' | 'sitio'
-}
-
-export interface LocationMetadata {
-  municipality: string
-  province: string
-  total_locations: number
-  last_updated: string
-  sources: string[]
-}
+export type { Location, LocationCoordinatesDto as LocationCoordinates, LocationMetadata }
 
 class LocationService {
   private locations: Location[] = []
@@ -41,69 +19,27 @@ class LocationService {
   private initialized = false
 
   /**
-   * Initialize the location service by loading all locations from JSON
-   * and merging with database locations
+   * Initialize the location service from the canonical database-backed API.
    */
   async initialize(): Promise<void> {
     if (this.initialized) return
 
     try {
-      this.metadata = baseyLocationsData.metadata as LocationMetadata
-      this.locations = []
+      const response = await fetch('/api/locations')
+      const data: PlannerLocationsResponseDto = await response.json()
 
-      // Load barangays from JSON
-      if (baseyLocationsData.locations.barangay) {
-        baseyLocationsData.locations.barangay.forEach((location: any) => {
-          this.locations.push({
-            ...location,
-            category: 'barangay' as const
-          })
-        })
+      if (!response.ok || !data.success || !Array.isArray(data.locations)) {
+        throw new Error(data.error || 'Failed to load planner locations')
       }
 
-      // Load landmarks from JSON
-      if (baseyLocationsData.locations.landmark) {
-        baseyLocationsData.locations.landmark.forEach((location: any) => {
-          this.locations.push({
-            ...location,
-            category: 'landmark' as const
-          })
-        })
+      this.locations = data.locations
+      this.metadata = {
+        municipality: data.metadata?.municipality || 'Basey',
+        province: data.metadata?.province || 'Samar',
+        total_locations: data.metadata?.total_locations || data.locations.length,
+        last_updated: data.metadata?.last_updated || new Date(0).toISOString(),
+        sources: Array.isArray(data.metadata?.sources) ? data.metadata.sources : ['database']
       }
-
-      // Load sitios from JSON
-      if (baseyLocationsData.locations.sitio) {
-        baseyLocationsData.locations.sitio.forEach((location: any) => {
-          this.locations.push({
-            ...location,
-            category: 'sitio' as const
-          })
-        })
-      }
-
-      // Fetch and merge database locations
-      try {
-        const response = await fetch('/api/locations')
-        if (response.ok) {
-          const data = await response.json()
-          if (data.success && data.locations) {
-            // Add database locations, avoiding duplicates by name
-            const existingNames = new Set(this.locations.map(loc => loc.name.toLowerCase().trim()))
-            
-            data.locations.forEach((dbLocation: Location) => {
-              const locationName = dbLocation.name.toLowerCase().trim()
-              if (!existingNames.has(locationName)) {
-                this.locations.push(dbLocation)
-                existingNames.add(locationName)
-              }
-            })
-          }
-        }
-      } catch (fetchError) {
-        console.warn('Could not fetch database locations, using JSON data only:', fetchError)
-        // Continue with JSON data only - don't fail initialization
-      }
-
       this.initialized = true
     } catch (error) {
       console.error('Error initializing location service:', error)
@@ -175,7 +111,7 @@ class LocationService {
   /**
    * Get location coordinates by name
    */
-  getCoordinates(name: string): LocationCoordinates | null {
+  getCoordinates(name: string): LocationCoordinatesDto | null {
     const location = this.findLocationByName(name)
     return location ? location.coordinates : null
   }

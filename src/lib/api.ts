@@ -16,15 +16,16 @@ export async function authenticatedFetch(
   url: string, 
   options: RequestInit = {}
 ): Promise<Response> {
-  const token = localStorage.getItem('token')
-  
+  const headers = new Headers(options.headers)
+
+  if (options.body && !(options.body instanceof FormData) && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json')
+  }
+
   return fetch(url, {
     ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token && { 'Authorization': `Bearer ${token}` }),
-      ...options.headers,
-    },
+    credentials: 'same-origin',
+    headers,
   })
 }
 
@@ -65,24 +66,3 @@ export async function flexibleFetch<T>(
   }
 }
 
-/**
- * Checks if user is currently authenticated
- */
-export function isAuthenticated(): boolean {
-  if (typeof window === 'undefined') return false
-  return !!localStorage.getItem('token')
-}
-
-/**
- * Gets the current user data from localStorage
- */
-export function getCurrentUser() {
-  if (typeof window === 'undefined') return null
-  
-  try {
-    const userData = localStorage.getItem('user')
-    return userData ? JSON.parse(userData) : null
-  } catch {
-    return null
-  }
-}

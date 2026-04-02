@@ -36,7 +36,7 @@ const LoginForm = ({ onSwitchToRegister }: LoginFormProps) => {
         const data = await response.json()
         
         // Update global auth state
-        login(data.user, data.token)
+        login(data.user)
         
         // Redirect based on user type
         switch (data.user.userType) {

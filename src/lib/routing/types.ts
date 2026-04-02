@@ -2,7 +2,7 @@ export type PassengerType = "REGULAR" | "STUDENT" | "SENIOR" | "PWD";
 
 /**
  * Discriminated union for supplying a location to the /api/routes/calculate endpoint.
- * Use "preset" for named locations from basey-locations.json.
+ * Use "preset" for named locations from the database-backed planner location registry.
  * Use "pin" for exact map-pin coordinates.
  */
 export type LocationInput =

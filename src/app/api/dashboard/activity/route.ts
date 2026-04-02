@@ -1,43 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import jwt from 'jsonwebtoken'
-import { getJWTSecret } from '@/lib/auth'
-
-async function verifyAuth(request: NextRequest) {
-  try {
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return null
-    }
-
-    const token = authHeader.split(' ')[1]
-    const decoded = jwt.verify(token, getJWTSecret()) as any
-    
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        username: true,
-        userType: true,
-        isActive: true
-      }
-    })
-
-    return user?.isActive ? user : null
-  } catch {
-    return null
-  }
-}
+import { createAuthErrorResponse, requireRequestUser } from '@/lib/auth'
+import { serializeDashboardActivityItem } from '@/lib/serializers'
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await verifyAuth(request)
-    
-    if (!user) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
-    }
+    await requireRequestUser(request)
 
     // Get recent activity (last 10 incidents)
     const recentIncidents = await prisma.incident.findMany({
@@ -60,21 +28,21 @@ export async function GET(request: NextRequest) {
     })
 
     return NextResponse.json({
-      activity: recentIncidents.map(incident => ({
-        id: incident.id,
-        type: incident.incidentType,
-        description: incident.description,
-        location: incident.location,
-        status: incident.status,
-        reportedBy: `${incident.reportedBy.firstName} ${incident.reportedBy.lastName}`,
-        handledBy: incident.handledBy ? `${incident.handledBy.firstName} ${incident.handledBy.lastName}` : null,
-        createdAt: incident.createdAt,
-        ticketNumber: incident.ticketNumber
-      }))
+      activity: recentIncidents.map((incident) =>
+        serializeDashboardActivityItem({
+          id: incident.id,
+          incidentType: incident.incidentType,
+          description: incident.description,
+          location: incident.location,
+          status: incident.status,
+          createdAt: incident.createdAt,
+          ticketNumber: incident.ticketNumber,
+          reportedBy: incident.reportedBy,
+          handledBy: incident.handledBy,
+        }),
+      )
     })
-      } catch (error) {    return NextResponse.json(
-      { message: 'Internal server error' },
-      { status: 500 }
-    )
+  } catch (error) {
+    return createAuthErrorResponse(error)
   }
 }

@@ -1,21 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { verifyAuth } from '@/lib/auth'
+import { ADMIN_OR_ENFORCER, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await verifyAuth(request)
-    
-    if (!user) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Only admins and enforcers can view incident statistics
-    if (!['ADMIN', 'ENFORCER'].includes(user.userType)) {
-      return NextResponse.json({ 
-        message: 'Access denied. Admin or Enforcer role required.' 
-      }, { status: 403 })
-    }
+    await requireRequestRole(request, [...ADMIN_OR_ENFORCER])
 
     // Get incident counts by status
     const incidentStats = await prisma.incident.groupBy({
@@ -126,9 +115,7 @@ export async function GET(request: NextRequest) {
         averageResolutionTime: null // Could be calculated if needed
       }
     })
-      } catch (error) {    return NextResponse.json(
-      { message: 'Internal server error' },
-      { status: 500 }
-    )
+  } catch (error) {
+    return createAuthErrorResponse(error)
   }
 }

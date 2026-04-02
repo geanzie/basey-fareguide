@@ -1,22 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import jwt from 'jsonwebtoken'
+import { createAuthErrorResponse, requireRequestUser } from '@/lib/auth'
+import { serializeUserProfile } from '@/lib/serializers'
 
 export async function GET(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { message: 'Authentication required' },
-        { status: 401 }
-      )
-    }
+    const user = await requireRequestUser(request)
 
-    const token = authHeader.substring(7)
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string }
-
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
+    const currentUser = await prisma.user.findUnique({
+      where: { id: user.id },
       select: {
         id: true,
         username: true,
@@ -35,33 +27,22 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    if (!user) {
+    if (!currentUser) {
       return NextResponse.json(
         { message: 'User not found' },
         { status: 404 }
       )
     }
 
-    return NextResponse.json({ user })
-      } catch (error) {    return NextResponse.json(
-      { message: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ user: serializeUserProfile(currentUser) })
+  } catch (error) {
+    return createAuthErrorResponse(error)
   }
 }
 
 export async function PUT(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { message: 'Authentication required' },
-        { status: 401 }
-      )
-    }
-
-    const token = authHeader.substring(7)
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string }
+    const user = await requireRequestUser(request)
 
     const {
       firstName,
@@ -88,7 +69,7 @@ export async function PUT(request: NextRequest) {
       const existingEmail = await prisma.user.findFirst({
         where: {
           email: email.toLowerCase(),
-          NOT: { id: decoded.userId }
+          NOT: { id: user.id }
         }
       })
 
@@ -112,7 +93,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const updatedUser = await prisma.user.update({
-      where: { id: decoded.userId },
+      where: { id: user.id },
       data: {
         firstName,
         lastName,
@@ -143,11 +124,9 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ 
       message: 'Profile updated successfully',
-      user: updatedUser 
+      user: serializeUserProfile(updatedUser) 
     })
-      } catch (error) {    return NextResponse.json(
-      { message: 'Internal server error' },
-      { status: 500 }
-    )
+  } catch (error) {
+    return createAuthErrorResponse(error)
   }
 }

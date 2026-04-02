@@ -6,6 +6,24 @@ vi.mock("@/lib/routing", () => ({
   calculateRouteWithFallback: vi.fn(),
 }));
 
+vi.mock("@/lib/locations/plannerLocations", () => ({
+  resolvePlannerLocationByName: vi.fn((name: string) => {
+    const normalized = name.trim().toLowerCase();
+    const knownLocations: Record<string, { name: string; coordinates: { lat: number; lng: number } }> = {
+      amandayehan: {
+        name: "Amandayehan",
+        coordinates: { lat: 11.278823, lng: 125.001194 },
+      },
+      anglit: {
+        name: "Anglit",
+        coordinates: { lat: 11.304796, lng: 125.10899 },
+      },
+    };
+
+    return Promise.resolve(knownLocations[normalized] ?? null);
+  }),
+}));
+
 import { POST } from "@/app/api/routes/calculate/route";
 import { calculateRouteWithFallback } from "@/lib/routing";
 

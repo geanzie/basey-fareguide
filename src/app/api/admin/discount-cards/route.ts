@@ -1,14 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import jwt from 'jsonwebtoken'
-
-interface JWTPayload {
-  userId: string
-  username: string
-  userType: string
-  firstName: string
-  lastName: string
-}
+import { ADMIN_ONLY, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
 
 /**
  * GET /api/admin/discount-cards
@@ -16,34 +8,7 @@ interface JWTPayload {
  */
 export async function GET(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization')
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    const token = authHeader.substring(7)
-    let decodedToken: JWTPayload
-
-    try {
-      decodedToken = jwt.verify(token, process.env.JWT_SECRET!) as JWTPayload
-    } catch (error) {
-      return NextResponse.json(
-        { error: 'Invalid or expired token' },
-        { status: 401 }
-      )
-    }
-
-    // Admin-only authorization
-    if (decodedToken.userType !== 'ADMIN') {
-      return NextResponse.json(
-        { error: 'Forbidden. Admin access required.' },
-        { status: 403 }
-      )
-    }
+    await requireRequestRole(request, [...ADMIN_ONLY])
 
     // Get query parameters
     const { searchParams } = new URL(request.url)
@@ -138,7 +103,12 @@ export async function GET(request: NextRequest) {
         search
       }
     })
-      } catch (error: any) {    return NextResponse.json(
+  } catch (error: any) {
+    const authError = createAuthErrorResponse(error)
+    if (authError.status !== 500) {
+      return authError
+    }
+    return NextResponse.json(
       { 
         error: 'Failed to fetch discount cards',
         details: error.message
@@ -154,33 +124,7 @@ export async function GET(request: NextRequest) {
  */
 export async function PATCH(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization')
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    const token = authHeader.substring(7)
-    let decodedToken: JWTPayload
-
-    try {
-      decodedToken = jwt.verify(token, process.env.JWT_SECRET!) as JWTPayload
-    } catch (error) {
-      return NextResponse.json(
-        { error: 'Invalid or expired token' },
-        { status: 401 }
-      )
-    }
-
-    if (decodedToken.userType !== 'ADMIN') {
-      return NextResponse.json(
-        { error: 'Forbidden. Admin access required.' },
-        { status: 403 }
-      )
-    }
+    const adminUser = await requireRequestRole(request, [...ADMIN_ONLY])
 
     const body = await request.json()
     const { discountCardId, action, reason } = body
@@ -235,7 +179,7 @@ export async function PATCH(request: NextRequest) {
         updateData = { 
           verificationStatus: 'APPROVED',
           isActive: true,
-          verifiedBy: decodedToken.userId,
+          verifiedBy: adminUser.id,
           verifiedAt: new Date()
         }
         logAction = 'DISCOUNT_CARD_APPROVED'
@@ -272,7 +216,7 @@ export async function PATCH(request: NextRequest) {
       data: {
         userId: existingCard.userId,
         action: logAction,
-        performedBy: decodedToken.userId,
+        performedBy: adminUser.id,
         reason: reason || `Admin ${action} action`,
         evidence: JSON.stringify({
           discountCardId: discountCardId,
@@ -280,7 +224,7 @@ export async function PATCH(request: NextRequest) {
           newStatus: updateData.verificationStatus,
           previousActive: existingCard.isActive,
           newActive: updateData.isActive,
-          performedBy: `${decodedToken.firstName} ${decodedToken.lastName}`,
+          performedBy: `${adminUser.firstName} ${adminUser.lastName}`,
           timestamp: new Date().toISOString()
         }),
         ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
@@ -293,7 +237,12 @@ export async function PATCH(request: NextRequest) {
       message: `Discount card ${action}d successfully`,
       discountCard: updatedCard
     })
-      } catch (error: any) {    return NextResponse.json(
+  } catch (error: any) {
+    const authError = createAuthErrorResponse(error)
+    if (authError.status !== 500) {
+      return authError
+    }
+    return NextResponse.json(
       { 
         error: 'Failed to update discount card',
         details: error.message

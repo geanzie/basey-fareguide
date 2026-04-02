@@ -4,15 +4,8 @@ import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { getCurrentPageData, subscribeToPageData } from './PageWrapper'
-
-interface User {
-  id: string
-  userType: 'ADMIN' | 'DATA_ENCODER' | 'ENFORCER' | 'PUBLIC'
-  firstName: string
-  lastName: string
-  username: string
-  employeeId?: string
-}
+import { useAuth } from './AuthProvider'
+import type { SessionUserDto } from '@/lib/contracts'
 
 interface NavigationItem {
   id: string
@@ -25,7 +18,7 @@ interface NavigationItem {
 
 interface UnifiedLayoutProps {
   children: React.ReactNode
-  user: User
+  user: SessionUserDto
   title?: string
   subtitle?: string
   headerContent?: React.ReactNode
@@ -37,6 +30,7 @@ export default function UnifiedLayout({ children, user, title, subtitle, headerC
   const [pageData, setPageData] = useState(getCurrentPageData)
   const pathname = usePathname()
   const router = useRouter()
+  const { logout } = useAuth()
 
   useEffect(() => {
     const unsubscribe = subscribeToPageData(() => {
@@ -45,10 +39,9 @@ export default function UnifiedLayout({ children, user, title, subtitle, headerC
     return unsubscribe
   }, [])
 
-  const handleLogout = () => {
-    localStorage.removeItem('user')
-    localStorage.removeItem('token')
-    router.push('/auth')
+  const handleLogout = async () => {
+    setUserMenuOpen(false)
+    await logout()
   }
 
   const navigationItems: NavigationItem[] = getNavigationItems(user.userType)

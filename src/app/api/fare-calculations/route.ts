@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { verifyAuth, getJWTSecret } from '@/lib/auth'
-import jwt from 'jsonwebtoken'
+import { verifyAuth } from '@/lib/auth'
+import { evaluateDiscountCardPolicy } from '@/lib/discountCardPolicy'
+import { serializeFareCalculation } from '@/lib/serializers'
 
 // GET - Retrieve fare calculation history
 export async function GET(request: NextRequest) {
@@ -65,7 +66,7 @@ export async function GET(request: NextRequest) {
     })
 
     return NextResponse.json({
-      calculations: fareCalculations,
+      calculations: fareCalculations.map((calculation) => serializeFareCalculation(calculation)),
       pagination: {
         page,
         limit,
@@ -120,29 +121,21 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get user ID from token (if provided) - fare calculations can be saved without authentication for public users
+    // Get user ID from the shared auth helper when available.
     let userId: string | undefined = undefined
     
     try {
-      const authHeader = request.headers.get('authorization')
-      if (authHeader && authHeader.startsWith('Bearer ')) {
-        const token = authHeader.split(' ')[1]
-        const decoded = jwt.verify(token, getJWTSecret()) as any
-        
-        const user = await prisma.user.findUnique({
-          where: { id: decoded.userId },
-          select: { id: true, isActive: true }
-        })
-
-        if (user?.isActive) {
-          userId = user.id
-        }
+      const user = await verifyAuth(request)
+      if (user) {
+        userId = user.id
       }
     } catch (error) {
       // If token verification fails, continue without user ID (anonymous calculation)
     }
 
     // Verify discount card ownership — prevent using another user's card
+    let resolvedDiscountType = discountType || null
+
     if (discountCardId) {
       if (!userId) {
         return NextResponse.json(
@@ -150,16 +143,53 @@ export async function POST(request: NextRequest) {
           { status: 401 }
         )
       }
+
+      if (typeof originalFare !== 'number' || typeof discountApplied !== 'number' || discountApplied <= 0) {
+        return NextResponse.json(
+          { error: 'A valid discount usage must include originalFare and a positive discountApplied amount' },
+          { status: 400 }
+        )
+      }
+
       const card = await prisma.discountCard.findUnique({
         where: { id: discountCardId },
-        select: { userId: true, isActive: true }
+        select: {
+          id: true,
+          userId: true,
+          discountType: true,
+          verificationStatus: true,
+          isActive: true,
+          validFrom: true,
+          validUntil: true
+        }
       })
-      if (!card || card.userId !== userId || !card.isActive) {
+
+      if (!card) {
         return NextResponse.json(
-          { error: 'Invalid or unauthorized discount card' },
+          { error: 'Invalid discount card' },
+          { status: 404 }
+        )
+      }
+
+      const evaluation = evaluateDiscountCardPolicy(card, { userId })
+      if (!evaluation.isValid) {
+        return NextResponse.json(
+          {
+            error: 'Invalid or unauthorized discount card',
+            validationChecks: evaluation
+          },
           { status: 403 }
         )
       }
+
+      if (discountType && discountType !== card.discountType) {
+        return NextResponse.json(
+          { error: 'Discount type does not match the supplied discount card' },
+          { status: 400 }
+        )
+      }
+
+      resolvedDiscountType = card.discountType
     }
 
     // Create fare calculation record
@@ -177,7 +207,7 @@ export async function POST(request: NextRequest) {
         discountCardId: discountCardId || null,
         originalFare: originalFare ? parseFloat(String(originalFare)) : null,
         discountApplied: discountApplied ? parseFloat(String(discountApplied)) : null,
-        discountType: discountType || null
+        discountType: resolvedDiscountType
       },
       include: {
         user: userId ? {
@@ -248,7 +278,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      calculation: fareCalculation,
+      calculation: serializeFareCalculation(fareCalculation),
       message: 'Fare calculation saved successfully'
     }, { status: 201 })
 

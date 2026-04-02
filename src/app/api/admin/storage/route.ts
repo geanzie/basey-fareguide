@@ -1,52 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import jwt from 'jsonwebtoken'
-import { getJWTSecret } from '@/lib/auth'
+import { ADMIN_ONLY, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { cleanupOldEvidenceFiles, getEvidenceStorageStats } from '@/lib/evidenceCleanup'
-
-async function verifyAuth(request: NextRequest) {
-  try {
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return null
-    }
-
-    const token = authHeader.split(' ')[1]
-    const decoded = jwt.verify(token, getJWTSecret()) as any
-    
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        username: true,
-        userType: true,
-        isActive: true
-      }
-    })
-
-    return user?.isActive ? user : null
-  } catch {
-    return null
-  }
-}
 
 // GET - Get storage statistics
 export async function GET(request: NextRequest) {
   try {
-    const user = await verifyAuth(request)
-    
-    if (!user) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Only admins can view storage statistics
-    if (user.userType !== 'ADMIN') {
-      return NextResponse.json({ 
-        message: 'Access denied. Admin role required.' 
-      }, { status: 403 })
-    }
+    await requireRequestRole(request, [...ADMIN_ONLY])
 
     const stats = await getEvidenceStorageStats()
 
@@ -81,28 +41,15 @@ export async function GET(request: NextRequest) {
         oldIncidentsCount: oldResolvedCount
       }
     })
-      } catch (error) {    return NextResponse.json(
-      { message: 'Internal server error' },
-      { status: 500 }
-    )
+  } catch (error) {
+    return createAuthErrorResponse(error)
   }
 }
 
 // POST - Manual cleanup of old evidence files
 export async function POST(request: NextRequest) {
   try {
-    const user = await verifyAuth(request)
-    
-    if (!user) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Only admins can perform manual cleanup
-    if (user.userType !== 'ADMIN') {
-      return NextResponse.json({ 
-        message: 'Access denied. Admin role required.' 
-      }, { status: 403 })
-    }
+    const user = await requireRequestRole(request, [...ADMIN_ONLY])
 
     const body = await request.json()
     const { daysOld = 30, dryRun = false } = body
@@ -124,6 +71,9 @@ export async function POST(request: NextRequest) {
         },
         include: {
           evidence: {
+            where: {
+              storageStatus: 'AVAILABLE'
+            },
             select: {
               id: true,
               fileName: true,
@@ -152,7 +102,7 @@ export async function POST(request: NextRequest) {
         }))
       })
     } else {
-      // Actually perform the cleanup      await cleanupOldEvidenceFiles(daysOld)
+      await cleanupOldEvidenceFiles(daysOld)
       
       return NextResponse.json({
         message: `Evidence cleanup completed for incidents resolved more than ${daysOld} days ago`,
@@ -161,9 +111,7 @@ export async function POST(request: NextRequest) {
       })
     }
 
-  } catch (error) {    return NextResponse.json(
-      { message: 'Internal server error' },
-      { status: 500 }
-    )
+  } catch (error) {
+    return createAuthErrorResponse(error)
   }
 }

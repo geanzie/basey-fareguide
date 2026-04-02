@@ -1,50 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import jwt from 'jsonwebtoken'
-import { getJWTSecret } from '@/lib/auth'
-
-async function verifyAuth(request: NextRequest) {
-  try {
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return null
-    }
-
-    const token = authHeader.split(' ')[1]
-    const decoded = jwt.verify(token, getJWTSecret()) as any
-    
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        username: true,
-        userType: true,
-        isActive: true
-      }
-    })
-
-    return user?.isActive ? user : null
-  } catch {
-    return null
-  }
-}
+import { cleanupEvidenceFiles } from '@/lib/evidenceCleanup'
+import { ENFORCER_ONLY, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
 
 export async function PATCH(
   request: NextRequest,
   context: { params: Promise<{ incidentId: string }> }
 ) {
   try {
-    const user = await verifyAuth(request)
-    
-    if (!user) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
-    }
-
-    if (user.userType !== 'ENFORCER') {
-      return NextResponse.json({ message: 'Access denied. Enforcer role required.' }, { status: 403 })
-    }
+    const user = await requireRequestRole(request, [...ENFORCER_ONLY])
 
     const { incidentId } = await context.params
     const body = await request.json()
@@ -70,6 +34,12 @@ export async function PATCH(
       return NextResponse.json({ 
         message: 'Can only issue tickets for incidents under investigation' 
       }, { status: 400 })
+    }
+
+    if (incident.handledById !== user.id) {
+      return NextResponse.json({
+        message: 'You can only issue a ticket for an incident assigned to you'
+      }, { status: 403 })
     }
 
     if (incident.ticketNumber) {
@@ -125,15 +95,15 @@ export async function PATCH(
       }
     })
 
+    cleanupEvidenceFiles(incidentId).catch(() => {})
+
     return NextResponse.json({
       incident: updatedIncident,
-      message: `Ticket ${ticketNumber} issued successfully. Incident marked as resolved.`
+      message: `Ticket ${ticketNumber} issued successfully. Incident marked as resolved and evidence cleanup initiated.`,
+      evidenceCleanupInitiated: true
     })
 
   } catch (error) {
-    return NextResponse.json(
-      { message: 'Internal server error' },
-      { status: 500 }
-    )
+    return createAuthErrorResponse(error)
   }
 }

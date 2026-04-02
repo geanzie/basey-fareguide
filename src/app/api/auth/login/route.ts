@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { getJWTSecret } from '@/lib/auth'
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS } from '@/lib/rateLimit'
+import { serializeSessionUser } from '@/lib/serializers'
 
 export async function POST(request: NextRequest) {
   try {
@@ -82,20 +83,7 @@ export async function POST(request: NextRequest) {
 
     // Create response with user data
     const response = NextResponse.json({
-      user: {
-        id: user.id,
-        username: user.username,
-        userType: user.userType,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        dateOfBirth: user.dateOfBirth ? user.dateOfBirth.toISOString().split('T')[0] : undefined,
-        phoneNumber: user.phoneNumber || undefined,
-        governmentId: user.governmentId || undefined,
-        idType: user.idType || undefined,
-        isActive: user.isActive,
-        isVerified: user.isVerified
-      },
-      token // Still return token for backward compatibility with existing clients
+      user: serializeSessionUser(user)
     })
 
     // Set httpOnly cookie for enhanced security

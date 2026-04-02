@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
-import { validateLocation, LocationValidationRequest } from '@/utils/locationValidation';
+import { prisma } from '@/lib/prisma';
+import { ADMIN_ONLY, createAuthErrorResponse, requireRequestRole } from '@/lib/auth';
+import {
+  buildLocationValidationLog,
+  buildLocationValidationSummary,
+  validateLocation,
+  LocationValidationRequest
+} from '@/utils/locationValidation';
 
 /**
  * POST /api/admin/locations/validate
@@ -8,18 +14,7 @@ import { validateLocation, LocationValidationRequest } from '@/utils/locationVal
  */
 export async function POST(request: NextRequest) {
   try {
-    // Verify admin authentication
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const token = authHeader.substring(7);
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string; userType: string };
-    
-    if (decoded.userType !== 'ADMIN') {
-      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
-    }
+    const adminUser = await requireRequestRole(request, [...ADMIN_ONLY]);
 
     const body = await request.json();
     const {
@@ -49,17 +44,44 @@ export async function POST(request: NextRequest) {
       coordinates,
       barangay,
       type,
-      description
+      description,
+      locationId: body.locationId
     }, baseUrl);
 
+    let persisted = false;
+
+    if (body.locationId) {
+      const existingLocation = await prisma.location.findUnique({
+        where: { id: body.locationId },
+        select: { id: true }
+      });
+
+      if (existingLocation) {
+        const validatedAt = new Date();
+        await prisma.location.update({
+          where: { id: body.locationId },
+          data: {
+            ...buildLocationValidationSummary(validationResult, adminUser.id, validatedAt),
+            validationLogs: {
+              create: buildLocationValidationLog(
+                validationResult,
+                adminUser.id,
+                'VALIDATE',
+                validatedAt
+              )
+            }
+          }
+        });
+        persisted = true;
+      }
+    }
+
     return NextResponse.json({
-      validation: validationResult
+      validation: validationResult,
+      persisted
     });
   } catch (error) {
     console.error('Error validating location:', error);
-    return NextResponse.json(
-      { error: 'Failed to validate location: ' + (error instanceof Error ? error.message : 'Unknown error') },
-      { status: 500 }
-    );
+    return createAuthErrorResponse(error);
   }
 }

@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
-import { verifyAuth, requireRole, createAuthErrorResponse } from '@/lib/auth'
+import { ADMIN_ONLY, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
 import crypto from 'crypto'
 
 export async function POST(request: NextRequest) {
   try {
-    // Verify admin authentication
-    const currentUser = await verifyAuth(request)
-    requireRole(currentUser, ['ADMIN'])
+    await requireRequestRole(request, [...ADMIN_ONLY])
 
     const { userId, action, newPassword } = await request.json()
 
@@ -113,7 +111,7 @@ export async function POST(request: NextRequest) {
       { message: 'Invalid action. Use "generate-token" or "set-password"' },
       { status: 400 }
     )
-      } catch (error) {
+  } catch (error) {
     return createAuthErrorResponse(error)
   }
 }

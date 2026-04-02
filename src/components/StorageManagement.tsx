@@ -45,12 +45,7 @@ export default function StorageManagement() {
 
   const fetchStats = async () => {
     try {
-      const token = localStorage.getItem('token')
-      const response = await fetch('/api/admin/storage', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
+      const response = await fetch('/api/admin/storage')
       
       if (response.ok) {
         const data = await response.json()
@@ -66,11 +61,9 @@ export default function StorageManagement() {
 
   const previewCleanup = async () => {
     try {
-      const token = localStorage.getItem('token')
       const response = await fetch('/api/admin/storage', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ daysOld, dryRun: true })
@@ -93,11 +86,9 @@ export default function StorageManagement() {
 
     setCleaning(true)
     try {
-      const token = localStorage.getItem('token')
       const response = await fetch('/api/admin/storage', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ daysOld, dryRun: false })

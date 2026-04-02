@@ -3,27 +3,10 @@
 import { useState, useEffect } from 'react'
 import RoleGuard from '@/components/RoleGuard'
 import PageWrapper from '@/components/PageWrapper'
-
-interface Incident {
-  id: string
-  incidentType: string
-  description: string
-  location: string
-  status: string
-  createdAt: string
-  reportedBy: {
-    firstName: string
-    lastName: string
-  }
-  handledBy?: {
-    firstName: string
-    lastName: string
-  }
-  ticketNumber?: string
-}
+import type { IncidentListItemDto, IncidentsResponseDto } from '@/lib/contracts'
 
 export default function AdminIncidentsPage() {
-  const [incidents, setIncidents] = useState<Incident[]>([])
+  const [incidents, setIncidents] = useState<IncidentListItemDto[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<string>('all')
@@ -36,15 +19,10 @@ export default function AdminIncidentsPage() {
   const fetchIncidents = async () => {
     try {
       setLoading(true)
-      const token = localStorage.getItem('token')
-      const response = await fetch('/api/incidents', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
+      const response = await fetch('/api/incidents')
       
       if (response.ok) {
-        const data = await response.json()
+        const data: IncidentsResponseDto = await response.json()
         setIncidents(data.incidents || [])
       } else {
         throw new Error('Failed to fetch incidents')
@@ -84,10 +62,10 @@ export default function AdminIncidentsPage() {
     const query = searchQuery.toLowerCase()
     const matchesSearch = 
       incident.ticketNumber?.toLowerCase().includes(query) ||
-      incident.incidentType.toLowerCase().includes(query) ||
+      incident.type.toLowerCase().includes(query) ||
       incident.description.toLowerCase().includes(query) ||
       incident.location.toLowerCase().includes(query) ||
-      `${incident.reportedBy.firstName} ${incident.reportedBy.lastName}`.toLowerCase().includes(query) ||
+      `${incident.reportedBy?.firstName || ''} ${incident.reportedBy?.lastName || ''}`.toLowerCase().includes(query) ||
       (incident.handledBy && `${incident.handledBy.firstName} ${incident.handledBy.lastName}`.toLowerCase().includes(query))
     
     return matchesStatus && matchesSearch
@@ -282,7 +260,7 @@ export default function AdminIncidentsPage() {
                     <td className="px-6 py-4">
                       <div>
                         <div className="text-sm font-medium text-gray-900">
-                          {incident.incidentType.replace('_', ' ')}
+                          {incident.typeLabel}
                         </div>
                         <div className="text-sm text-gray-500 truncate max-w-xs">
                           {incident.description}
@@ -296,7 +274,7 @@ export default function AdminIncidentsPage() {
                       {incident.location}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900">
-                      {incident.reportedBy.firstName} {incident.reportedBy.lastName}
+                      {incident.reportedBy ? `${incident.reportedBy.firstName} ${incident.reportedBy.lastName}` : '-'}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900">
                       {incident.handledBy 

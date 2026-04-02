@@ -9,6 +9,8 @@ interface Evidence {
   fileType: 'IMAGE' | 'VIDEO' | 'AUDIO' | 'DOCUMENT' | 'OTHER'
   fileSize: number
   status: 'PENDING_REVIEW' | 'VERIFIED' | 'REJECTED' | 'REQUIRES_ADDITIONAL'
+  storageStatus?: 'AVAILABLE' | 'DELETED'
+  fileDeletedAt?: string
   remarks?: string
   createdAt: string
   reviewedAt?: string
@@ -46,13 +48,7 @@ const EvidenceManager = ({ incidentId, onClose }: EvidenceManagerProps) => {
   const fetchEvidence = async () => {
     try {
       setLoading(true)
-      const token = localStorage.getItem('token')
-      
-      const response = await fetch(`/api/incidents/${incidentId}/evidence`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
+      const response = await fetch(`/api/incidents/${incidentId}/evidence`)
 
       if (response.ok) {
         const data = await response.json()
@@ -72,16 +68,11 @@ const EvidenceManager = ({ incidentId, onClose }: EvidenceManagerProps) => {
 
     try {
       setUploading(true)
-      const token = localStorage.getItem('token')
-      
       const formData = new FormData()
       formData.append('file', selectedFile)
 
       const response = await fetch(`/api/incidents/${incidentId}/evidence`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
         body: formData
       })
 
@@ -103,13 +94,10 @@ const EvidenceManager = ({ incidentId, onClose }: EvidenceManagerProps) => {
     if (!reviewStatus) return
 
     try {
-      const token = localStorage.getItem('token')
-      
       const response = await fetch(`/api/evidence/${evidenceId}/review`, {
         method: 'PATCH',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           status: reviewStatus,
@@ -195,7 +183,7 @@ const EvidenceManager = ({ incidentId, onClose }: EvidenceManagerProps) => {
             <div className="flex items-center space-x-4">
               <input
                 type="file"
-                accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
+                accept="image/*,video/*,audio/*,.pdf"
                 onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
                 className="flex-1"
                 disabled={uploading}
@@ -219,7 +207,7 @@ const EvidenceManager = ({ incidentId, onClose }: EvidenceManagerProps) => {
               </button>
             </div>
             <p className="text-xs text-gray-500 mt-2">
-              Supported formats: Images, Videos, Audio, PDF, Word documents. Max size: 10MB
+              Supported formats: Images, Videos, Audio, PDF. Images, audio, and PDFs can be up to 10MB; videos can be up to 50MB.
             </p>
           </div>
 
@@ -262,18 +250,31 @@ const EvidenceManager = ({ incidentId, onClose }: EvidenceManagerProps) => {
                               <strong>Remarks:</strong> {item.remarks}
                             </p>
                           )}
+                          {item.storageStatus === 'DELETED' && item.fileDeletedAt && (
+                            <p className="text-xs text-amber-700 mt-2 bg-amber-50 p-2 rounded">
+                              File removed from storage on {formatDate(item.fileDeletedAt)}
+                            </p>
+                          )}
                         </div>
                       </div>
                       
                       <div className="flex items-center space-x-2">
                         {/* Preview/Download button */}
                         <a
-                          href={item.fileUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                          href={item.storageStatus === 'DELETED' ? undefined : item.fileUrl}
+                          target={item.storageStatus === 'DELETED' ? undefined : '_blank'}
+                          rel={item.storageStatus === 'DELETED' ? undefined : 'noopener noreferrer'}
+                          className={`text-sm font-medium ${
+                            item.storageStatus === 'DELETED'
+                              ? 'text-gray-400 cursor-not-allowed pointer-events-none'
+                              : 'text-blue-600 hover:text-blue-800'
+                          }`}
                         >
-                          {item.fileType === 'IMAGE' ? 'View' : 'Download'}
+                          {item.storageStatus === 'DELETED'
+                            ? 'Removed from storage'
+                            : item.fileType === 'IMAGE'
+                              ? 'View'
+                              : 'Download'}
                         </a>
                         
                         {/* Review button for pending evidence */}

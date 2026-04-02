@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { VehicleType } from '@/generated/prisma'
+import { VehicleType } from '@prisma/client'
+import { ADMIN_OR_ENCODER, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
+import { serializeVehicle } from '@/lib/serializers'
 
 export async function GET(request: NextRequest) {
   try {
@@ -59,7 +61,7 @@ export async function GET(request: NextRequest) {
     const totalPages = Math.ceil(total / limit)
 
     return NextResponse.json({
-      vehicles,
+      vehicles: vehicles.map((vehicle) => serializeVehicle(vehicle)),
       pagination: {
         page,
         limit,
@@ -76,6 +78,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    await requireRequestRole(request, [...ADMIN_OR_ENCODER])
     const body = await request.json()
     const {
       plateNumber,
@@ -131,10 +134,8 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    return NextResponse.json(vehicle, { status: 201 })
-      } catch (error) {    return NextResponse.json(
-      { error: 'Failed to create vehicle' },
-      { status: 500 }
-    )
+    return NextResponse.json(serializeVehicle(vehicle), { status: 201 })
+  } catch (error) {
+    return createAuthErrorResponse(error)
   }
 }

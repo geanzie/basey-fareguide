@@ -2,23 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from './AuthProvider'
-
-interface User {
-  id: string
-  username: string
-  firstName: string
-  lastName: string
-  email?: string
-  phoneNumber?: string
-  dateOfBirth?: string
-  governmentId?: string
-  idType?: string
-  barangayResidence?: string
-  userType: string
-  isActive: boolean
-  isVerified: boolean
-  createdAt: string
-}
+import type { UserProfileDto, UserProfileResponseDto } from '@/lib/contracts'
 
 interface UserProfileProps {
   user?: {
@@ -28,7 +12,7 @@ interface UserProfileProps {
 
 export default function UserProfile({ user: currentUser }: UserProfileProps) {
   const { refreshUser } = useAuth()
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<UserProfileDto | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -50,21 +34,10 @@ export default function UserProfile({ user: currentUser }: UserProfileProps) {
 
   const fetchUserProfile = async () => {
     try {
-      const token = localStorage.getItem('token')
-      if (!token) {
-        setError('Authentication required')
-        setLoading(false)
-        return
-      }
-
-      const response = await fetch('/api/user/profile', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
+      const response = await fetch('/api/user/profile')
 
       if (response.ok) {
-        const data = await response.json()
+        const data: UserProfileResponseDto = await response.json()
         setUser(data.user)
         setFormData({
           firstName: data.user.firstName || '',
@@ -91,11 +64,9 @@ export default function UserProfile({ user: currentUser }: UserProfileProps) {
     setError('')
 
     try {
-      const token = localStorage.getItem('token')
       const response = await fetch('/api/user/profile', {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(formData)

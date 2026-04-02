@@ -1,43 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import jwt from 'jsonwebtoken'
-import { getJWTSecret } from '@/lib/auth'
-
-async function verifyAuth(request: NextRequest) {
-  try {
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return null
-    }
-
-    const token = authHeader.split(' ')[1]
-    const decoded = jwt.verify(token, getJWTSecret()) as any
-    
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        username: true,
-        userType: true,
-        isActive: true
-      }
-    })
-
-    return user?.isActive ? user : null
-  } catch {
-    return null
-  }
-}
+import { ADMIN_OR_ENCODER, createAuthErrorResponse, requireRequestRole, requireRequestUser } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await verifyAuth(request)
-    
-    if (!user) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
-    }
+    const user = await requireRequestUser(request)
 
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
@@ -103,29 +70,15 @@ export async function GET(request: NextRequest) {
         totalPages: Math.ceil(totalCalculations / limit)
       }
     })
-      } catch (error) {    return NextResponse.json(
-      { message: 'Internal server error' },
-      { status: 500 }
-    )
+  } catch (error) {
+    return createAuthErrorResponse(error)
   }
 }
 
 // POST - Save a new named route
 export async function POST(request: NextRequest) {
   try {
-    const user = await verifyAuth(request)
-    
-    if (!user) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Only allow admin and data encoder to create named routes
-    if (!['ADMIN', 'DATA_ENCODER'].includes(user.userType)) {
-      return NextResponse.json(
-        { message: 'Insufficient permissions' },
-        { status: 403 }
-      )
-    }
+    await requireRequestRole(request, [...ADMIN_OR_ENCODER])
 
     const body = await request.json()
     const { name, description, waypoints, distance } = body
@@ -181,7 +134,12 @@ export async function POST(request: NextRequest) {
       route,
       message: 'Route created successfully'
     }, { status: 201 })
-      } catch (error) {    return NextResponse.json(
+  } catch (error) {
+    if (error instanceof Error && (error.message === 'Unauthorized' || error.message === 'Forbidden')) {
+      return createAuthErrorResponse(error)
+    }
+
+    return NextResponse.json(
       { 
         error: 'Internal server error',
         details: process.env.NODE_ENV === 'development' ? String(error) : undefined

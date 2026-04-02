@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { ADMIN_ONLY, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
+    await requireRequestRole(request, [...ADMIN_ONLY])
+
     // Get users who are not verified or need approval
     const pendingUsers = await prisma.user.findMany({
       where: {
@@ -31,9 +34,7 @@ export async function GET(request: NextRequest) {
       success: true,
       users: pendingUsers
     })
-      } catch (error) {    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
+  } catch (error) {
+    return createAuthErrorResponse(error)
   }
 }

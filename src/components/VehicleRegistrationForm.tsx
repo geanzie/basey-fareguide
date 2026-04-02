@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/AuthProvider'
-import { VehicleType } from '@/generated/prisma'
+import { VehicleType } from '@prisma/client'
 
 export default function VehicleRegistrationForm() {
   const { user } = useAuth()

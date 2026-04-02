@@ -1,15 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
-import { UserType } from '@/generated/prisma'
-import { verifyAuth } from '@/lib/auth'
+import { UserType } from '@prisma/client'
+import { ADMIN_ONLY, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
+
+const ALLOWED_OFFICIAL_USER_TYPES = new Set<UserType>([
+  UserType.ADMIN,
+  UserType.DATA_ENCODER,
+  UserType.ENFORCER,
+])
 
 export async function POST(request: NextRequest) {
   try {
-    const requestingUser = await verifyAuth(request)
-    if (!requestingUser || (requestingUser.userType !== 'ADMIN' && requestingUser.userType !== 'SUPER_ADMIN')) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
-    }
+    const adminUser = await requireRequestRole(request, [...ADMIN_ONLY])
 
     const body = await request.json()
     const {
@@ -22,13 +25,22 @@ export async function POST(request: NextRequest) {
       position,
       employeeId,
       notes,
-      requestedBy
     } = body
 
     // Validate required fields
     if (!firstName || !lastName || !username || !phoneNumber || !userType) {
       return NextResponse.json(
         { success: false, error: 'Missing required fields' },
+        { status: 400 }
+      )
+    }
+
+    if (!ALLOWED_OFFICIAL_USER_TYPES.has(userType as UserType)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Only administrator, enforcer, and data encoder accounts can be created here',
+        },
         { status: 400 }
       )
     }
@@ -67,7 +79,7 @@ export async function POST(request: NextRequest) {
     // Log the creation in AdminUserCreation table
     await prisma.adminUserCreation.create({
       data: {
-        requestedBy: requestedBy || 'system',
+        requestedBy: adminUser.id,
         userType: userType as UserType,
         firstName,
         lastName,
@@ -77,7 +89,7 @@ export async function POST(request: NextRequest) {
         employeeId,
         notes,
         isActive: true,
-        approvedBy: requestedBy || 'system',
+        approvedBy: adminUser.id,
         approvedAt: new Date(),
         createdUserId: user.id
       }
@@ -95,7 +107,12 @@ export async function POST(request: NextRequest) {
       },
       tempPassword // In a real app, you'd send this securely instead
     })
-      } catch (error) {    return NextResponse.json(
+  } catch (error) {
+    const authError = createAuthErrorResponse(error)
+    if (authError.status !== 500) {
+      return authError
+    }
+    return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }
     )

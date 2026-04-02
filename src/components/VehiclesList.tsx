@@ -2,51 +2,15 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/components/AuthProvider'
-import { VehicleType } from '@/generated/prisma'
+import { VehicleType } from '@prisma/client'
 import ResponsiveTable, { StatusBadge, ActionButton } from './ResponsiveTable'
-
-interface Vehicle {
-  id: string
-  plateNumber: string
-  vehicleType: VehicleType
-  make: string
-  model: string
-  year: number
-  color: string
-  capacity: number
-  isActive: boolean
-  ownerName: string
-  ownerContact: string
-  driverName?: string
-  driverLicense?: string
-  registrationExpiry: string
-  insuranceExpiry?: string
-  createdAt: string
-  updatedAt: string
-  permit?: {
-    id: string
-    permitPlateNumber: string
-    status: string
-    issuedDate: string
-    expiryDate: string
-  }
-}
-
-interface PaginatedResponse {
-  vehicles: Vehicle[]
-  pagination: {
-    page: number
-    limit: number
-    total: number
-    totalPages: number
-  }
-}
+import type { VehicleDto, VehiclesResponseDto } from '@/lib/contracts'
 
 export default function VehiclesList() {
   const { user } = useAuth()
-  const [vehicles, setVehicles] = useState<Vehicle[]>([])
+  const [vehicles, setVehicles] = useState<VehicleDto[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null)
+  const [selectedVehicle, setSelectedVehicle] = useState<VehicleDto | null>(null)
   const [showDetails, setShowDetails] = useState(false)
   const [pagination, setPagination] = useState({
     page: 1,
@@ -75,7 +39,7 @@ export default function VehiclesList() {
 
       const response = await fetch(`/api/vehicles?${queryParams}`)
       if (response.ok) {
-        const data: PaginatedResponse = await response.json()
+        const data: VehiclesResponseDto = await response.json()
         setVehicles(data.vehicles)
         setPagination(data.pagination)
       }
@@ -105,12 +69,12 @@ export default function VehiclesList() {
     } catch (error) {}
   }
 
-  const handleViewDetails = (vehicle: Vehicle) => {
+  const handleViewDetails = (vehicle: VehicleDto) => {
     setSelectedVehicle(vehicle)
     setShowDetails(true)
   }
 
-  const getVehicleTypeColor = (vehicleType: VehicleType) => {
+  const getVehicleTypeColor = (vehicleType: string) => {
     switch (vehicleType) {
       case VehicleType.JEEPNEY: return 'bg-blue-100 text-blue-800'
       case VehicleType.TRICYCLE: return 'bg-purple-100 text-purple-800'
@@ -127,7 +91,7 @@ export default function VehiclesList() {
     {
       key: 'plateNumber',
       label: 'Vehicle Plate',
-      render: (value: any, vehicle: Vehicle) => {
+      render: (value: any, vehicle: VehicleDto) => {
         if (!vehicle) return null
         return (
           <div>
@@ -144,7 +108,7 @@ export default function VehiclesList() {
     {
       key: 'permitPlateNumber',
       label: 'Permit Plate',
-      render: (value: any, vehicle: Vehicle) => {
+      render: (value: any, vehicle: VehicleDto) => {
         if (!vehicle) return null
         if (!vehicle.permit?.permitPlateNumber) {
           return (
@@ -169,7 +133,7 @@ export default function VehiclesList() {
     {
       key: 'vehicleInfo',
       label: 'Vehicle Info',
-      render: (value: any, vehicle: Vehicle) => {
+      render: (value: any, vehicle: VehicleDto) => {
         if (!vehicle) return null
         return (
           <div>
@@ -186,7 +150,7 @@ export default function VehiclesList() {
     {
       key: 'vehicleType',
       label: 'Type',
-      render: (value: any, vehicle: Vehicle) => {
+      render: (value: any, vehicle: VehicleDto) => {
         if (!vehicle || !vehicle.vehicleType) return null
         return (
           <StatusBadge
@@ -199,7 +163,7 @@ export default function VehiclesList() {
     {
       key: 'owner',
       label: 'Owner',
-      render: (value: any, vehicle: Vehicle) => {
+      render: (value: any, vehicle: VehicleDto) => {
         if (!vehicle || !vehicle.ownerName) return null
         return (
           <div>
@@ -216,7 +180,7 @@ export default function VehiclesList() {
     {
       key: 'driver',
       label: 'Driver',
-      render: (value: any, vehicle: Vehicle) => {
+      render: (value: any, vehicle: VehicleDto) => {
         if (!vehicle) return null
         if (!vehicle.driverName) {
           return <span className="text-sm text-gray-500">No driver assigned</span>
@@ -238,7 +202,7 @@ export default function VehiclesList() {
     {
       key: 'registrationExpiry',
       label: 'Registration',
-      render: (value: any, vehicle: Vehicle) => {
+      render: (value: any, vehicle: VehicleDto) => {
         if (!vehicle || !vehicle.registrationExpiry) return null
         
         const expiryDate = new Date(vehicle.registrationExpiry)
@@ -267,7 +231,7 @@ export default function VehiclesList() {
     {
       key: 'status',
       label: 'Status',
-      render: (value: any, vehicle: Vehicle) => {
+      render: (value: any, vehicle: VehicleDto) => {
         if (!vehicle) return null
         return (
           <StatusBadge
@@ -280,7 +244,7 @@ export default function VehiclesList() {
     {
       key: 'actions',
       label: 'Actions',
-      render: (value: any, vehicle: Vehicle) => {
+      render: (value: any, vehicle: VehicleDto) => {
         if (!vehicle || !vehicle.id) return null
         
         return (

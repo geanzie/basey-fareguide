@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyAuth } from '@/lib/auth'
+import { serializeIncident } from '@/lib/serializers'
 
 export async function GET(request: NextRequest) {
   try {
@@ -116,24 +117,26 @@ export async function GET(request: NextRequest) {
     })
 
     // Format incidents for frontend
-    const formattedIncidents = incidents.map(incident => ({
-      id: incident.id,
-      incidentType: incident.incidentType,
-      description: incident.description,
-      location: incident.location,
-      plateNumber: incident.plateNumber || incident.vehicle?.plateNumber || 'N/A',
-      driverLicense: incident.driverLicense || 'N/A',
-      vehicleType: incident.vehicleType || incident.vehicle?.vehicleType || 'N/A',
-      incidentDate: incident.incidentDate.toISOString(),
-      status: incident.status,
-      ticketNumber: incident.ticketNumber || null,
-      penaltyAmount: incident.penaltyAmount ? Number(incident.penaltyAmount) : null,
-      remarks: incident.remarks,
-      reportedBy: incident.reportedBy,
-      handledBy: incident.handledBy,
-      createdAt: incident.createdAt.toISOString(),
-      updatedAt: incident.updatedAt.toISOString()
-    }))
+    const formattedIncidents = incidents.map((incident) =>
+      serializeIncident({
+        id: incident.id,
+        incidentType: incident.incidentType,
+        description: incident.description,
+        location: incident.location,
+        plateNumber: incident.plateNumber || incident.vehicle?.plateNumber || null,
+        driverLicense: incident.driverLicense || null,
+        vehicleType: incident.vehicleType || incident.vehicle?.vehicleType || null,
+        incidentDate: incident.incidentDate,
+        status: incident.status,
+        ticketNumber: incident.ticketNumber || null,
+        penaltyAmount: incident.penaltyAmount ? Number(incident.penaltyAmount) : null,
+        remarks: incident.remarks,
+        reportedBy: incident.reportedBy,
+        handledBy: incident.handledBy,
+        createdAt: incident.createdAt,
+        updatedAt: incident.updatedAt
+      }),
+    )
 
     return NextResponse.json({
       incidents: formattedIncidents,

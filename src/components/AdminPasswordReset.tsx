@@ -61,7 +61,6 @@ const AdminPasswordReset = ({ users, onRefresh }: AdminPasswordResetProps) => {
     setLoading(true)
 
     try {
-      const token = localStorage.getItem('token')
       const body: any = { userId: selectedUserId, action }
       
       if (action === 'set-password') {
@@ -71,8 +70,7 @@ const AdminPasswordReset = ({ users, onRefresh }: AdminPasswordResetProps) => {
       const response = await fetch('/api/admin/reset-password', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(body),
       })

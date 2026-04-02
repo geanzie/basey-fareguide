@@ -1,48 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import jwt from 'jsonwebtoken'
-import { getJWTSecret } from '@/lib/auth'
-
-async function verifyAuth(request: NextRequest) {
-  try {
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return null
-    }
-
-    const token = authHeader.split(' ')[1]
-    const decoded = jwt.verify(token, getJWTSecret()) as any
-    
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        username: true,
-        userType: true,
-        isActive: true
-      }
-    })
-
-    return user?.isActive ? user : null
-  } catch {
-    return null
-  }
-}
+import { ENFORCER_ONLY, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
+import { serializeIncident } from '@/lib/serializers'
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await verifyAuth(request)
-    
-    if (!user) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Only enforcers can access this endpoint
-    if (user.userType !== 'ENFORCER') {
-      return NextResponse.json({ message: 'Access denied. Enforcer role required.' }, { status: 403 })
-    }
+    await requireRequestRole(request, [...ENFORCER_ONLY])
 
     // Get query parameters for filtering
     const { searchParams } = new URL(request.url)
@@ -115,11 +78,27 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    // Add evidence count to each incident
-    const incidentsWithCounts = incidents.map(incident => ({
-      ...incident,
-      evidenceCount: incident.evidence?.length || 0
-    }))
+    const incidentsWithCounts = incidents.map((incident) =>
+      serializeIncident({
+        id: incident.id,
+        incidentType: incident.incidentType,
+        description: incident.description,
+        location: incident.location,
+        plateNumber: incident.plateNumber || incident.vehicle?.plateNumber || null,
+        driverLicense: incident.driverLicense || null,
+        vehicleType: incident.vehicleType || incident.vehicle?.vehicleType || null,
+        incidentDate: incident.incidentDate,
+        status: incident.status,
+        ticketNumber: incident.ticketNumber || null,
+        penaltyAmount: incident.penaltyAmount ? Number(incident.penaltyAmount) : null,
+        remarks: incident.remarks,
+        createdAt: incident.createdAt,
+        updatedAt: incident.updatedAt,
+        reportedBy: incident.reportedBy,
+        handledBy: incident.handledBy,
+        evidenceCount: incident.evidence?.length || 0,
+      }),
+    )
 
     return NextResponse.json({
       incidents: incidentsWithCounts,
@@ -134,9 +113,7 @@ export async function GET(request: NextRequest) {
         'Cache-Control': 'private, max-age=30, stale-while-revalidate=60'
       }
     })
-      } catch (error) {    return NextResponse.json(
-      { message: 'Internal server error' },
-      { status: 500 }
-    )
+  } catch (error) {
+    return createAuthErrorResponse(error)
   }
 }

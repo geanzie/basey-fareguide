@@ -73,7 +73,7 @@ export default function CalculatorPage() {
               </li>
               <li className="flex items-center">
                 <span className="text-green-500 mr-2">✓</span>
-                Google Maps routing
+                Road-based route planning with GPS fallback
               </li>
               <li className="flex items-center">
                 <span className="text-green-500 mr-2">✓</span>

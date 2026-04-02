@@ -10,14 +10,6 @@ interface GPSPosition {
   accuracy: number
 }
 
-interface RouteSegment {
-  startPosition: GPSPosition
-  endPosition: GPSPosition
-  distance: number
-  duration: number
-  useGoogleMaps: boolean
-}
-
 interface TripData {
   startPosition: GPSPosition | null
   endPosition: GPSPosition | null
@@ -26,7 +18,6 @@ interface TripData {
   fare: number
   isActive: boolean
   waypoints: GPSPosition[]
-  routeSegments: RouteSegment[]
 }
 
 const TripTrackerCalculator = () => {
@@ -37,8 +28,7 @@ const TripTrackerCalculator = () => {
     duration: 0,
     fare: 0,
     isActive: false,
-    waypoints: [],
-    routeSegments: []
+    waypoints: []
   })
   const [currentPosition, setCurrentPosition] = useState<GPSPosition | null>(null)
   const [gpsError, setGpsError] = useState<string | null>(null)
@@ -184,8 +174,7 @@ const TripTrackerCalculator = () => {
       duration: 0,
       fare: 15.00, // Base fare
       isActive: true,
-      waypoints: [currentPosition],
-      routeSegments: []
+      waypoints: [currentPosition]
     })
     setGpsError(null)
   }
@@ -211,8 +200,7 @@ const TripTrackerCalculator = () => {
       duration: 0,
       fare: 0,
       isActive: false,
-      waypoints: [],
-      routeSegments: []
+      waypoints: []
     })
     setGpsError(null)
   }
@@ -261,7 +249,7 @@ const TripTrackerCalculator = () => {
           Live Trip Tracker & Fare Calculator
         </h2>
         <p className="text-gray-600">
-          Real-time trip tracking with GPS enhanced by Google Maps routing for accurate fare calculation
+          Real-time trip tracking using live GPS movement and the canonical fare engine
         </p>
       </div>
 
@@ -483,23 +471,24 @@ const TripTrackerCalculator = () => {
         <h3 className="font-semibold text-blue-800 mb-2">🎯 Enhanced Tracking Accuracy</h3>
         <div className="text-blue-700 text-sm space-y-2">
           <p>
-            <strong>Hybrid Tracking System:</strong> This tracker uses both continuous GPS monitoring and periodic Google Maps routing for maximum accuracy.
+            <strong>GPS Tracking System:</strong> This tracker uses continuous GPS monitoring to measure movement throughout the trip.
           </p>
           <p>
             <strong>How it works:</strong>
           </p>
           <ul className="list-disc list-inside ml-4 space-y-1">
             <li><strong>Real-time GPS:</strong> Tracks your exact movement every few seconds</li>
-            <li><strong>Google Maps Updates:</strong> Calculates actual road distances every 30 seconds</li>
-            <li><strong>Smart Switching:</strong> Automatically uses the most accurate method available</li>
-            <li><strong>Final Verification:</strong> Gets precise Google Maps route when trip ends</li>
+            <li><strong>Waypoint Logging:</strong> Builds the trip distance from successive GPS points</li>
+            <li><strong>Fare Engine:</strong> Applies the canonical fare calculator to the measured trip distance</li>
+            <li><strong>Live Updates:</strong> Continuously refreshes duration, distance, and fare while tracking</li>
           </ul>
           <p>
             <strong>Accuracy Levels:</strong>
           </p>
           <ul className="list-disc list-inside ml-4 space-y-1">
-            <li>🗺️ <strong>Google Maps:</strong> Highest accuracy using actual road networks</li>
-            <li>📍 <strong>GPS Tracking:</strong> High accuracy using real-time positioning</li>
+            <li>📍 <strong>Excellent:</strong> Strong GPS signal with frequent, precise waypoint updates</li>
+            <li>📍 <strong>Good:</strong> Reliable GPS tracking with minor signal variation</li>
+            <li>📍 <strong>Fair:</strong> Usable GPS data with larger location drift</li>
           </ul>
           <p>
             <strong>Precision:</strong> All calculations are accurate to 0.01 km distance and 0.01 peso fare.

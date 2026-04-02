@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
 import { prisma } from '@/lib/prisma'
-import { UserType } from '@/generated/prisma'
+import { UserType } from '@prisma/client'
 
 export interface AuthUser {
   id: string
@@ -11,6 +11,13 @@ export interface AuthUser {
   userType: UserType
   isActive: boolean
 }
+
+export const ADMIN_ONLY = [UserType.ADMIN] as const
+export const ENFORCER_ONLY = [UserType.ENFORCER] as const
+export const ENCODER_ONLY = [UserType.DATA_ENCODER] as const
+export const PUBLIC_ONLY = [UserType.PUBLIC] as const
+export const ADMIN_OR_ENCODER = [UserType.ADMIN, UserType.DATA_ENCODER] as const
+export const ADMIN_OR_ENFORCER = [UserType.ADMIN, UserType.ENFORCER] as const
 
 /**
  * Gets the JWT secret from environment variables.
@@ -90,6 +97,17 @@ export function requireRole(user: AuthUser | null, allowedRoles: UserType[]): Au
     throw new Error('Forbidden')
   }
   return authenticated
+}
+
+export async function requireRequestUser(request: NextRequest): Promise<AuthUser> {
+  return requireAuth(await verifyAuth(request))
+}
+
+export async function requireRequestRole(
+  request: NextRequest,
+  allowedRoles: UserType[]
+): Promise<AuthUser> {
+  return requireRole(await verifyAuth(request), allowedRoles)
 }
 
 /**

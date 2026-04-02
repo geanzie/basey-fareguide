@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import jwt from 'jsonwebtoken';
+import { ADMIN_ONLY, createAuthErrorResponse, requireRequestRole } from '@/lib/auth';
+import {
+  buildLocationValidationLog,
+  buildLocationValidationSummary,
+  type LocationValidationResult
+} from '@/utils/locationValidation';
 
 /**
  * PUT /api/admin/locations/[id]
@@ -12,19 +17,7 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
-    
-    // Verify admin authentication
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const token = authHeader.substring(7);
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string; userType: string };
-    
-    if (decoded.userType !== 'ADMIN') {
-      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
-    }
+    const adminUser = await requireRequestRole(request, [...ADMIN_ONLY]);
 
     const body = await request.json();
     const {
@@ -33,7 +26,8 @@ export async function PUT(
       coordinates,
       barangay,
       description,
-      isActive
+      isActive,
+      validationResult
     } = body;
 
     // Check if location exists
@@ -62,6 +56,8 @@ export async function PUT(
       }
     }
 
+    const validatedAt = validationResult ? new Date() : undefined;
+
     // Update location
     const updatedLocation = await prisma.location.update({
       where: { id },
@@ -72,6 +68,25 @@ export async function PUT(
         ...(barangay !== undefined && { barangay }),
         ...(description !== undefined && { description }),
         ...(isActive !== undefined && { isActive }),
+        ...(validationResult
+          ? buildLocationValidationSummary(
+              validationResult as LocationValidationResult,
+              adminUser.id,
+              validatedAt
+            )
+          : {}),
+        ...(validationResult
+          ? {
+              validationLogs: {
+                create: buildLocationValidationLog(
+                  validationResult as LocationValidationResult,
+                  adminUser.id,
+                  'UPDATE',
+                  validatedAt
+                )
+              }
+            }
+          : {}),
         updatedAt: new Date()
       }
     });
@@ -82,10 +97,7 @@ export async function PUT(
     });
   } catch (error) {
     console.error('Error updating location:', error);
-    return NextResponse.json(
-      { error: 'Failed to update location' },
-      { status: 500 }
-    );
+    return createAuthErrorResponse(error);
   }
 }
 
@@ -99,19 +111,7 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    
-    // Verify admin authentication
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const token = authHeader.substring(7);
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string; userType: string };
-    
-    if (decoded.userType !== 'ADMIN') {
-      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
-    }
+    await requireRequestRole(request, [...ADMIN_ONLY]);
 
     // Check if location exists
     const location = await prisma.location.findUnique({
@@ -139,10 +139,7 @@ export async function DELETE(
     });
   } catch (error) {
     console.error('Error deleting location:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete location' },
-      { status: 500 }
-    );
+    return createAuthErrorResponse(error);
   }
 }
 
@@ -156,15 +153,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    
-    // Verify admin authentication
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const token = authHeader.substring(7);
-    jwt.verify(token, process.env.JWT_SECRET!) as { userId: string; userType: string };
+    await requireRequestRole(request, [...ADMIN_ONLY]);
 
     const location = await prisma.location.findUnique({
       where: { id }
@@ -180,9 +169,6 @@ export async function GET(
     return NextResponse.json({ location });
   } catch (error) {
     console.error('Error fetching location:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch location' },
-      { status: 500 }
-    );
+    return createAuthErrorResponse(error);
   }
 }

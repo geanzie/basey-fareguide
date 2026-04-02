@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import jwt from 'jsonwebtoken';
+import { ADMIN_ONLY, createAuthErrorResponse, requireRequestRole } from '@/lib/auth';
+import {
+  buildLocationValidationLog,
+  buildLocationValidationSummary,
+  type LocationValidationResult
+} from '@/utils/locationValidation';
 
 /**
  * GET /api/admin/locations
@@ -8,18 +13,7 @@ import jwt from 'jsonwebtoken';
  */
 export async function GET(request: NextRequest) {
   try {
-    // Verify admin authentication
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const token = authHeader.substring(7);
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string; userType: string };
-    
-    if (decoded.userType !== 'ADMIN') {
-      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
-    }
+    await requireRequestRole(request, [...ADMIN_ONLY]);
 
     // Parse query parameters
     const { searchParams } = new URL(request.url);
@@ -71,10 +65,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching locations:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch locations' },
-      { status: 500 }
-    );
+    return createAuthErrorResponse(error);
   }
 }
 
@@ -84,18 +75,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    // Verify admin authentication
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const token = authHeader.substring(7);
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string; userType: string };
-    
-    if (decoded.userType !== 'ADMIN') {
-      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
-    }
+    const adminUser = await requireRequestRole(request, [...ADMIN_ONLY]);
 
     const body = await request.json();
     const {
@@ -127,6 +107,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const validatedAt = validationResult ? new Date() : undefined;
+
     // Create location with admin user ID
     const location = await prisma.location.create({
       data: {
@@ -136,15 +118,26 @@ export async function POST(request: NextRequest) {
         barangay: barangay || null,
         description: description || null,
         isActive: true,
-        createdBy: decoded.userId, // Add the user ID from JWT token
-        // Store validation results if provided
-        googlePlaceId: validationResult?.googlePlaceId || null,
-        googleFormattedAddress: validationResult?.googleAddress || null,
-        validationStatus: validationResult?.googleMapsValid ? 'VALIDATED' : 'PENDING',
-        isWithinMunicipality: validationResult?.withinMunicipality || false,
-        isWithinBarangay: validationResult?.withinBarangay || false,
-        actualBarangay: validationResult?.detectedBarangay || null,
-        lastValidated: validationResult ? new Date() : null
+        createdBy: adminUser.id,
+        ...(validationResult
+          ? buildLocationValidationSummary(
+              validationResult as LocationValidationResult,
+              adminUser.id,
+              validatedAt
+            )
+          : {}),
+        ...(validationResult
+          ? {
+              validationLogs: {
+                create: buildLocationValidationLog(
+                  validationResult as LocationValidationResult,
+                  adminUser.id,
+                  'CREATION',
+                  validatedAt
+                )
+              }
+            }
+          : {})
       }
     });
 
@@ -154,9 +147,6 @@ export async function POST(request: NextRequest) {
     }, { status: 201 });
   } catch (error) {
     console.error('Error creating location:', error);
-    return NextResponse.json(
-      { error: 'Failed to create location' },
-      { status: 500 }
-    );
+    return createAuthErrorResponse(error);
   }
 }

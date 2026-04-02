@@ -58,16 +58,13 @@ export default function AdminLocationManager() {
 
   const fetchLocations = async () => {
     try {
-      const token = localStorage.getItem('token')
       const params = new URLSearchParams({
         ...(searchTerm && { search: searchTerm }),
         ...(typeFilter && { type: typeFilter }),
         ...(barangayFilter && { barangay: barangayFilter })
       })
 
-      const response = await fetch(`/api/admin/locations?${params}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
+      const response = await fetch(`/api/admin/locations?${params}`)
 
       if (response.ok) {
         const data = await response.json()
@@ -90,14 +87,15 @@ export default function AdminLocationManager() {
     setValidationResult(null)
 
     try {
-      const token = localStorage.getItem('token')
       const response = await fetch('/api/admin/locations/validate', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          ...formData,
+          locationId: editingLocation?.id
+        })
       })
 
       const data = await response.json()
@@ -145,7 +143,6 @@ export default function AdminLocationManager() {
     }
 
     try {
-      const token = localStorage.getItem('token')
       const url = editingLocation
         ? `/api/admin/locations/${editingLocation.id}`
         : '/api/admin/locations'
@@ -153,11 +150,11 @@ export default function AdminLocationManager() {
       const response = await fetch(url, {
         method: editingLocation ? 'PUT' : 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           ...formData,
+          locationId: editingLocation?.id,
           validationResult
         })
       })
@@ -204,10 +201,8 @@ export default function AdminLocationManager() {
     }
 
     try {
-      const token = localStorage.getItem('token')
       const response = await fetch(`/api/admin/locations/${id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
+        method: 'DELETE'
       })
 
       if (response.ok) {
@@ -285,6 +280,7 @@ export default function AdminLocationManager() {
                 >
                   <option value="BARANGAY">Barangay</option>
                   <option value="LANDMARK">Landmark</option>
+                  <option value="SITIO">Sitio</option>
                   <option value="URBAN">Urban</option>
                   <option value="RURAL">Rural</option>
                 </select>
@@ -457,6 +453,7 @@ export default function AdminLocationManager() {
             <option value="">All Types</option>
             <option value="BARANGAY">Barangay</option>
             <option value="LANDMARK">Landmark</option>
+            <option value="SITIO">Sitio</option>
             <option value="URBAN">Urban</option>
             <option value="RURAL">Rural</option>
           </select>

@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { PermitStatus } from '@/generated/prisma'
+import { PermitStatus } from '@prisma/client'
+import { ADMIN_OR_ENCODER, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
+import { serializePermit } from '@/lib/serializers'
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await requireRequestRole(request, [...ADMIN_OR_ENCODER])
     const { id } = await params
     const body = await request.json()
     const { renewedBy, notes } = body
@@ -61,6 +64,16 @@ export async function POST(
         include: {
           renewalHistory: {
             orderBy: { renewedAt: 'desc' }
+          },
+          vehicle: {
+            select: {
+              id: true,
+              plateNumber: true,
+              make: true,
+              model: true,
+              ownerName: true,
+              vehicleType: true
+            }
           }
         }
       })
@@ -68,11 +81,8 @@ export async function POST(
       return updatedPermit
     })
 
-    return NextResponse.json(result)
+    return NextResponse.json(serializePermit(result))
   } catch (error) {
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return createAuthErrorResponse(error)
   }
 }

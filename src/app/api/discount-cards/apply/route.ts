@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import jwt from 'jsonwebtoken'
-import { getJWTSecret } from '@/lib/auth'
 import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 import { randomUUID } from 'crypto'
 import { validateIDImage } from '@/lib/idValidation'
+import { PUBLIC_ONLY, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
 
 /**
  * POST /api/discount-cards/apply
@@ -35,31 +34,10 @@ import { validateIDImage } from '@/lib/idValidation'
 
 export async function POST(request: NextRequest) {
   try {
-    // Verify authentication
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { error: 'Missing or invalid authorization header' },
-        { status: 401 }
-      )
-    }
+    const user = await requireRequestRole(request, [...PUBLIC_ONLY])
+    const userId = user.id
 
-    const token = authHeader.substring(7)
-    let decoded: any
-    
-    try {
-      decoded = jwt.verify(token, getJWTSecret())
-      } catch (err) {
-      return NextResponse.json(
-        { error: 'Invalid or expired token' },
-        { status: 401 }
-      )
-    }
-
-    const userId = decoded.userId
-
-    // Verify user exists and is PUBLIC type
-    const user = await prisma.user.findUnique({
+    const currentUser = await prisma.user.findUnique({
       where: { id: userId },
       select: {
         id: true,
@@ -70,28 +48,21 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    if (!user) {
+    if (!currentUser) {
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
       )
     }
 
-    if (user.userType !== 'PUBLIC') {
-      return NextResponse.json(
-        { error: 'Only PUBLIC users can apply for discount cards' },
-        { status: 403 }
-      )
-    }
-
     // Check if user already has a discount card
-    if (user.discountCard) {
+    if (currentUser.discountCard) {
       return NextResponse.json(
         { 
           error: 'You already have a discount card application',
           existingCard: {
-            id: user.discountCard.id,
-            status: user.discountCard.verificationStatus
+            id: currentUser.discountCard.id,
+            status: currentUser.discountCard.verificationStatus
           }
         },
         { status: 409 }
@@ -338,7 +309,12 @@ export async function POST(request: NextRequest) {
         createdAt: discountCard.createdAt,
       }
     }, { status: 201 })
-      } catch (error: any) {    return NextResponse.json(
+  } catch (error: any) {
+    const authError = createAuthErrorResponse(error)
+    if (authError.status !== 500) {
+      return authError
+    }
+    return NextResponse.json(
       { 
         error: 'Failed to submit application',
         details: error.message 

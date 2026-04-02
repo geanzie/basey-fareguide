@@ -1,14 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import jwt from 'jsonwebtoken'
-
-interface JWTPayload {
-  userId: string
-  username: string
-  userType: string
-  firstName: string
-  lastName: string
-}
+import { ADMIN_ONLY, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
+import { validateDiscountValidityWindow } from '@/lib/discountCardPolicy'
 
 /**
  * POST /api/admin/discount-cards/create
@@ -17,39 +10,7 @@ interface JWTPayload {
  */
 export async function POST(request: NextRequest) {
   try {
-    // Authentication check
-    const authHeader = request.headers.get('authorization')
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { error: 'Unauthorized. Please log in.' },
-        { status: 401 }
-      )
-    }
-
-    const token = authHeader.substring(7)
-    let decodedToken: JWTPayload
-
-    try {
-      decodedToken = jwt.verify(token, process.env.JWT_SECRET!) as JWTPayload
-    } catch (error) {
-      return NextResponse.json(
-        { error: 'Invalid or expired token' },
-        { status: 401 }
-      )
-    }
-
-    // Admin-only authorization
-    if (decodedToken.userType !== 'ADMIN') {
-      return NextResponse.json(
-        { 
-          error: 'Forbidden. Only administrators can create discount cards with override.',
-          requiredRole: 'ADMIN',
-          currentRole: decodedToken.userType
-        },
-        { status: 403 }
-      )
-    }
+    const adminUser = await requireRequestRole(request, [...ADMIN_ONLY])
 
     const body = await request.json()
     const {
@@ -93,18 +54,10 @@ export async function POST(request: NextRequest) {
     // Validate dates
     const fromDate = new Date(validFrom)
     const untilDate = new Date(validUntil)
-    const now = new Date()
-
-    if (isNaN(fromDate.getTime()) || isNaN(untilDate.getTime())) {
+    const validityWindow = validateDiscountValidityWindow(fromDate, untilDate)
+    if (!validityWindow.valid) {
       return NextResponse.json(
-        { error: 'Invalid date format' },
-        { status: 400 }
-      )
-    }
-
-    if (untilDate <= fromDate) {
-      return NextResponse.json(
-        { error: 'Valid until date must be after valid from date' },
+        { error: validityWindow.error },
         { status: 400 }
       )
     }
@@ -183,14 +136,14 @@ export async function POST(request: NextRequest) {
         // Admin Override - KEY FEATURE
         isAdminOverride: true,
         overrideReason: overrideReason,
-        overrideBy: decodedToken.userId,
+        overrideBy: adminUser.id,
         overrideAt: new Date(),
         
         // Auto-approve since it's admin override
         verificationStatus: 'APPROVED',
-        verifiedBy: decodedToken.userId,
+        verifiedBy: adminUser.id,
         verifiedAt: new Date(),
-        verificationNotes: `Admin override by ${decodedToken.firstName} ${decodedToken.lastName}. Reason: ${overrideReason}${notes ? `. Additional notes: ${notes}` : ''}`,
+        verificationNotes: `Admin override by ${adminUser.firstName} ${adminUser.lastName}. Reason: ${overrideReason}${notes ? `. Additional notes: ${notes}` : ''}`,
         
         // Validity
         isActive: true,
@@ -220,7 +173,7 @@ export async function POST(request: NextRequest) {
       data: {
         userId: userId,
         action: 'DISCOUNT_CARD_ADMIN_OVERRIDE_CREATED',
-        performedBy: decodedToken.userId,
+        performedBy: adminUser.id,
         reason: overrideReason,
         evidence: JSON.stringify({
           discountCardId: discountCard.id,
@@ -228,7 +181,7 @@ export async function POST(request: NextRequest) {
           validFrom: validFrom,
           validUntil: validUntil,
           notes: notes || null,
-          createdBy: `${decodedToken.firstName} ${decodedToken.lastName}`,
+          createdBy: `${adminUser.firstName} ${adminUser.lastName}`,
           timestamp: new Date().toISOString()
         }),
         ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
@@ -256,7 +209,12 @@ export async function POST(request: NextRequest) {
         user: discountCard.user
       }
     }, { status: 201 })
-      } catch (error: any) {    return NextResponse.json(
+  } catch (error: any) {
+    const authError = createAuthErrorResponse(error)
+    if (authError.status !== 500) {
+      return authError
+    }
+    return NextResponse.json(
       { 
         error: 'Failed to create discount card',
         details: error.message || 'Internal server error'
@@ -272,33 +230,7 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization')
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    const token = authHeader.substring(7)
-    let decodedToken: JWTPayload
-
-    try {
-      decodedToken = jwt.verify(token, process.env.JWT_SECRET!) as JWTPayload
-    } catch (error) {
-      return NextResponse.json(
-        { error: 'Invalid or expired token' },
-        { status: 401 }
-      )
-    }
-
-    if (decodedToken.userType !== 'ADMIN') {
-      return NextResponse.json(
-        { error: 'Forbidden. Admin access required.' },
-        { status: 403 }
-      )
-    }
+    await requireRequestRole(request, [...ADMIN_ONLY])
 
     // Get users without discount cards
     const eligibleUsers = await prisma.user.findMany({
@@ -344,7 +276,12 @@ export async function GET(request: NextRequest) {
         }
       ]
     })
-      } catch (error: any) {    return NextResponse.json(
+  } catch (error: any) {
+    const authError = createAuthErrorResponse(error)
+    if (authError.status !== 500) {
+      return authError
+    }
+    return NextResponse.json(
       { 
         error: 'Failed to fetch eligible users',
         details: error.message

@@ -73,13 +73,7 @@ export default function AdminDiscountOverride({ onSuccess, onCancel }: AdminDisc
   const fetchEligibleUsers = async () => {
     try {
       setLoading(true)
-      const token = localStorage.getItem('token')
-
-      const response = await fetch('/api/admin/discount-cards/create', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
+      const response = await fetch('/api/admin/discount-cards/create')
 
       if (!response.ok) {
         throw new Error('Failed to fetch eligible users')
@@ -124,8 +118,6 @@ export default function AdminDiscountOverride({ onSuccess, onCancel }: AdminDisc
 
     try {
       setCreating(true)
-      const token = localStorage.getItem('token')
-
       const payload: any = {
         userId: selectedUserId,
         discountType: selectedDiscountType,
@@ -147,8 +139,7 @@ export default function AdminDiscountOverride({ onSuccess, onCancel }: AdminDisc
       const response = await fetch('/api/admin/discount-cards/create', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(payload)
       })

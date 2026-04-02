@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { calculateRouteWithFallback } from "@/lib/routing";
 import { calculateFare, getFareBreakdown } from "@/lib/fare/calculator";
-import { resolveCoordinates } from "@/lib/locations/coordinates";
+import { resolvePlannerLocationByName } from "@/lib/locations/plannerLocations";
 import { serializePinLabel } from "@/lib/locations/pinSerializer";
 import type { PassengerType, LocationInput } from "@/lib/routing/types";
 
@@ -136,15 +136,15 @@ export async function POST(request: NextRequest) {
   let originLabel: string;
 
   if (originInput.type === "preset") {
-    const resolved = resolveCoordinates(originInput.name);
+    const resolved = await resolvePlannerLocationByName(originInput.name);
     if (!resolved) {
       return NextResponse.json(
         { error: `Unknown location: "${originInput.name}"` },
         { status: 400 },
       );
     }
-    originCoords = resolved;
-    originLabel = originInput.name;
+    originCoords = resolved.coordinates;
+    originLabel = resolved.name;
   } else {
     const { lat, lng } = originInput;
     if (!isInBounds(lat, lng, PH_BOUNDS)) {
@@ -170,15 +170,15 @@ export async function POST(request: NextRequest) {
   let destLabel: string;
 
   if (destInput.type === "preset") {
-    const resolved = resolveCoordinates(destInput.name);
+    const resolved = await resolvePlannerLocationByName(destInput.name);
     if (!resolved) {
       return NextResponse.json(
         { error: `Unknown location: "${destInput.name}"` },
         { status: 400 },
       );
     }
-    destCoords = resolved;
-    destLabel = destInput.name;
+    destCoords = resolved.coordinates;
+    destLabel = resolved.name;
   } else {
     const { lat, lng } = destInput;
     if (!isInBounds(lat, lng, PH_BOUNDS)) {

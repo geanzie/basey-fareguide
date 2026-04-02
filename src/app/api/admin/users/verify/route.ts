@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { ADMIN_ONLY, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
   try {
+    const adminUser = await requireRequestRole(request, [...ADMIN_ONLY])
     const body = await request.json()
-    const { userId, verifiedBy, action } = body
+    const { userId, action, reason } = body
 
-    if (!userId || !verifiedBy || !action) {
+    if (!userId || !action) {
       return NextResponse.json(
         { success: false, error: 'Missing required fields' },
         { status: 400 }
@@ -32,7 +34,7 @@ export async function POST(request: NextRequest) {
           isVerified: true,
           isActive: true,
           verifiedAt: new Date(),
-          verifiedBy
+          verifiedBy: adminUser.id
         }
       })
 
@@ -41,8 +43,8 @@ export async function POST(request: NextRequest) {
         data: {
           userId,
           action: 'APPROVED',
-          performedBy: verifiedBy,
-          reason: 'User verification approved'
+          performedBy: adminUser.id,
+          reason: reason?.trim() || 'User verification approved'
         }
       })
 
@@ -65,8 +67,8 @@ export async function POST(request: NextRequest) {
         data: {
           userId,
           action: 'REJECTED',
-          performedBy: verifiedBy,
-          reason: 'User verification rejected'
+          performedBy: adminUser.id,
+          reason: reason?.trim() || 'User verification rejected'
         }
       })
 
@@ -80,9 +82,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
-  } catch (error) {    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    )
+  } catch (error) {
+    return createAuthErrorResponse(error)
   }
 }

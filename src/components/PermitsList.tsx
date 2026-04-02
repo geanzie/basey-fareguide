@@ -1,48 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useAuth } from '@/components/AuthProvider'
-import { VehicleType, PermitStatus } from '@/generated/prisma'
+import { VehicleType, PermitStatus } from '@prisma/client'
 import ResponsiveTable, { StatusBadge, ActionButton } from './ResponsiveTable'
-
-interface Permit {
-  id: string
-  permitPlateNumber: string
-  driverFullName: string
-  vehicleType: VehicleType
-  issuedDate: string
-  expiryDate: string
-  status: PermitStatus
-  remarks?: string
-  encodedBy: string
-  encodedAt: string
-  lastUpdatedBy?: string
-  lastUpdatedAt?: string
-  renewalHistory: Array<{
-    id: string
-    previousExpiry: string
-    newExpiry: string
-    renewedBy: string
-    renewedAt: string
-    notes?: string
-  }>
-}
-
-interface PaginatedResponse {
-  permits: Permit[]
-  pagination: {
-    page: number
-    limit: number
-    total: number
-    totalPages: number
-  }
-}
+import type { PermitDto, PermitsResponseDto } from '@/lib/contracts'
 
 export default function PermitsList() {
-  const { user } = useAuth()
-  const [permits, setPermits] = useState<Permit[]>([])
+  const [permits, setPermits] = useState<PermitDto[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedPermit, setSelectedPermit] = useState<Permit | null>(null)
+  const [selectedPermit, setSelectedPermit] = useState<PermitDto | null>(null)
   const [showDetails, setShowDetails] = useState(false)
   const [pagination, setPagination] = useState({
     page: 1,
@@ -71,7 +37,7 @@ export default function PermitsList() {
 
       const response = await fetch(`/api/permits?${queryParams}`)
       if (response.ok) {
-        const data: PaginatedResponse = await response.json()
+        const data: PermitsResponseDto = await response.json()
         setPermits(data.permits)
         setPagination(data.pagination)
       }
@@ -84,29 +50,12 @@ export default function PermitsList() {
     fetchPermits()
   }, [pagination.page, filters])
 
-  const handleStatusUpdate = async (permitId: string, newStatus: PermitStatus) => {
-    try {
-      const response = await fetch(`/api/permits/${permitId}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status: newStatus }),
-      })
-
-      if (response.ok) {
-        // Refresh the permits list
-        fetchPermits()
-      } else {      }
-    } catch (error) {}
-  }
-
-  const handleViewDetails = (permit: Permit) => {
+  const handleViewDetails = (permit: PermitDto) => {
     setSelectedPermit(permit)
     setShowDetails(true)
   }
 
-  const getStatusColor = (status: PermitStatus) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case PermitStatus.ACTIVE: return 'bg-green-100 text-green-800'
       case PermitStatus.EXPIRED: return 'bg-red-100 text-red-800'
@@ -116,7 +65,7 @@ export default function PermitsList() {
     }
   }
 
-  const getVehicleTypeColor = (vehicleType: VehicleType) => {
+  const getVehicleTypeColor = (vehicleType: string) => {
     switch (vehicleType) {
       case VehicleType.JEEPNEY: return 'bg-blue-100 text-blue-800'
       case VehicleType.TRICYCLE: return 'bg-purple-100 text-purple-800'
@@ -129,7 +78,7 @@ export default function PermitsList() {
     {
       key: 'plateNumber',
       label: 'Plate Number',
-      render: (value: any, permit: Permit) => {
+      render: (value: any, permit: PermitDto) => {
         if (!permit) return null
         return (
           <div className="font-mono font-medium text-gray-900">
@@ -141,7 +90,7 @@ export default function PermitsList() {
     {
       key: 'driverFullName',
       label: 'Driver Name',
-      render: (value: any, permit: Permit) => {
+      render: (value: any, permit: PermitDto) => {
         if (!permit) return null
         return (
           <div className="font-medium text-gray-900">
@@ -153,7 +102,7 @@ export default function PermitsList() {
     {
       key: 'vehicleType',
       label: 'Vehicle Type',
-      render: (value: any, permit: Permit) => {
+      render: (value: any, permit: PermitDto) => {
         if (!permit || !permit.vehicleType) return null
         return (
           <StatusBadge
@@ -166,7 +115,7 @@ export default function PermitsList() {
     {
       key: 'status',
       label: 'Status',
-      render: (value: any, permit: Permit) => {
+      render: (value: any, permit: PermitDto) => {
         if (!permit || !permit.status) return null
         return (
           <StatusBadge
@@ -179,7 +128,7 @@ export default function PermitsList() {
     {
       key: 'issuedDate',
       label: 'Issued Date',
-      render: (value: any, permit: Permit) => {
+      render: (value: any, permit: PermitDto) => {
         if (!permit || !permit.issuedDate) return null
         return (
           <div className="text-sm text-gray-600">
@@ -191,7 +140,7 @@ export default function PermitsList() {
     {
       key: 'expiryDate',
       label: 'Expiry Date',
-      render: (value: any, permit: Permit) => {
+      render: (value: any, permit: PermitDto) => {
         if (!permit || !permit.expiryDate) return null
         
         const expiryDate = new Date(permit.expiryDate)
@@ -220,7 +169,7 @@ export default function PermitsList() {
     {
       key: 'actions',
       label: 'Actions',
-      render: (value: any, permit: Permit) => {
+      render: (value: any, permit: PermitDto) => {
         if (!permit || !permit.id) return null
         
         return (
@@ -232,33 +181,6 @@ export default function PermitsList() {
             >
               View Details
             </ActionButton>
-            {permit.status === PermitStatus.EXPIRED && (
-              <ActionButton
-                onClick={() => handleStatusUpdate(permit.id, PermitStatus.ACTIVE)}
-                variant="primary"
-                size="sm"
-              >
-                Renew
-              </ActionButton>
-            )}
-            {permit.status === PermitStatus.ACTIVE && (
-              <ActionButton
-                onClick={() => handleStatusUpdate(permit.id, PermitStatus.SUSPENDED)}
-                variant="danger"
-                size="sm"
-              >
-                Suspend
-              </ActionButton>
-            )}
-            {permit.status === PermitStatus.SUSPENDED && (
-              <ActionButton
-                onClick={() => handleStatusUpdate(permit.id, PermitStatus.ACTIVE)}
-                variant="primary"
-                size="sm"
-              >
-                Reactivate
-              </ActionButton>
-            )}
           </div>
         )
       }

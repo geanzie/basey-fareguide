@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { PermitStatus, VehicleType } from '@/generated/prisma'
+import { PermitStatus, VehicleType } from '@prisma/client'
+import type { PermitDto, PermitsResponseDto } from '@/lib/contracts'
 
 interface PermitStats {
   total: number
@@ -32,15 +33,10 @@ export default function PermitStatistics() {
       setLoading(true)
       
       // Fetch all permits to calculate statistics
-      const token = localStorage.getItem('token')
-      const response = await fetch('/api/permits?limit=1000', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
+      const response = await fetch('/api/permits?limit=1000')
       if (response.ok) {
-        const data = await response.json()
-        const permits = data.permits
+        const data: PermitsResponseDto = await response.json()
+        const permits: PermitDto[] = data.permits
         
         const today = new Date()
         const thirtyDaysFromNow = new Date()

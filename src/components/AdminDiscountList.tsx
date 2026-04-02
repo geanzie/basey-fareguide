@@ -92,11 +92,6 @@ export default function AdminDiscountList({ onRefresh }: DiscountListProps) {
       setLoading(true)
       setError(null)
 
-      const token = localStorage.getItem('token')
-      if (!token) {
-        throw new Error('No authentication token found')
-      }
-
       const params = new URLSearchParams({
         page: pagination.page.toString(),
         limit: pagination.limit.toString()
@@ -108,11 +103,7 @@ export default function AdminDiscountList({ onRefresh }: DiscountListProps) {
       if (activeFilter) params.append('isActive', activeFilter)
       if (overrideFilter) params.append('isAdminOverride', overrideFilter)
 
-      const response = await fetch(`/api/admin/discount-cards?${params.toString()}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
+      const response = await fetch(`/api/admin/discount-cards?${params.toString()}`)
 
       if (!response.ok) {
         throw new Error('Failed to fetch discount cards')

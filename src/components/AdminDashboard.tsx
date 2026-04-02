@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 interface DashboardStats {
   users: {
@@ -19,6 +19,7 @@ interface DashboardStats {
       type: string
       description: string
       status: string
+      location: string
       createdAt: string
     }>
   }
@@ -26,11 +27,6 @@ interface DashboardStats {
     totalFiles: number
     totalSizeMB: number
     cleanupRecommended: boolean
-  }
-  system: {
-    serverStatus: 'online' | 'offline'
-    lastBackup?: string
-    apiHealth: boolean
   }
 }
 
@@ -46,62 +42,46 @@ export default function AdminDashboard() {
   const fetchDashboardStats = async () => {
     try {
       setLoading(true)
-      const token = localStorage.getItem('token')
-      
-      // Fetch multiple endpoints in parallel
+
       const [usersRes, incidentsRes, storageRes] = await Promise.all([
-        fetch('/api/admin/users', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        }),
-        fetch('/api/admin/incidents/stats', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        }),
-        fetch('/api/admin/storage', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        })
+        fetch('/api/admin/users'),
+        fetch('/api/admin/incidents/stats'),
+        fetch('/api/admin/storage'),
       ])
 
       const [usersData, incidentsData, storageData] = await Promise.all([
         usersRes.ok ? usersRes.json() : { users: [] },
-        incidentsRes.ok ? incidentsRes.json() : { incidents: [] },
-        storageRes.ok ? storageRes.json() : { storage: { total: { files: 0, sizeMB: 0 } } }
+        incidentsRes.ok ? incidentsRes.json() : { total: 0, pending: 0, resolved: 0, investigating: 0, recent: [] },
+        storageRes.ok ? storageRes.json() : { storage: { total: { files: 0, sizeMB: 0 } }, recommendations: { cleanupNeeded: false } },
       ])
 
-      // Process user stats
-      const userStats = {
-        total: usersData.users?.length || 0,
-        active: usersData.users?.filter((u: any) => u.isActive)?.length || 0,
-        pending: usersData.users?.filter((u: any) => !u.isVerified)?.length || 0,
-        byType: usersData.users?.reduce((acc: any, user: any) => {
-          acc[user.userType] = (acc[user.userType] || 0) + 1
-          return acc
-        }, {}) || {}
-      }
-
-      // Process incident stats (mock data for now since endpoint might not exist)
-      const incidentStats = {
-        total: incidentsData.total || 0,
-        pending: incidentsData.pending || 0,
-        resolved: incidentsData.resolved || 0,
-        investigating: incidentsData.investigating || 0,
-        recentActivity: incidentsData.recent || []
-      }
-
       setStats({
-        users: userStats,
-        incidents: incidentStats,
+        users: {
+          total: usersData.users?.length || 0,
+          active: usersData.users?.filter((user: { isActive: boolean }) => user.isActive)?.length || 0,
+          pending: usersData.users?.filter((user: { isVerified: boolean }) => !user.isVerified)?.length || 0,
+          byType:
+            usersData.users?.reduce((acc: Record<string, number>, user: { userType: string }) => {
+              acc[user.userType] = (acc[user.userType] || 0) + 1
+              return acc
+            }, {}) || {},
+        },
+        incidents: {
+          total: incidentsData.total || 0,
+          pending: incidentsData.pending || 0,
+          resolved: incidentsData.resolved || 0,
+          investigating: incidentsData.investigating || 0,
+          recentActivity: incidentsData.recent || [],
+        },
         storage: {
           totalFiles: storageData.storage?.total?.files || 0,
           totalSizeMB: storageData.storage?.total?.sizeMB || 0,
-          cleanupRecommended: storageData.recommendations?.cleanupNeeded || false
+          cleanupRecommended: storageData.recommendations?.cleanupNeeded || false,
         },
-        system: {
-          serverStatus: 'online',
-          apiHealth: true,
-          lastBackup: new Date().toISOString()
-        }
       })
-      } catch (error) {      setError('Failed to load dashboard statistics')
+      setError(null)
+    } catch (_error) {
+      setError('Failed to load dashboard statistics')
     } finally {
       setLoading(false)
     }
@@ -110,10 +90,9 @@ export default function AdminDashboard() {
   if (loading) {
     return (
       <div className="space-y-6">
-        {/* Loading skeleton */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="bg-white rounded-xl shadow-lg p-6 animate-pulse">
+          {[...Array(4)].map((_, index) => (
+            <div key={index} className="bg-white rounded-xl shadow-lg p-6 animate-pulse">
               <div className="h-4 bg-gray-200 rounded mb-2"></div>
               <div className="h-8 bg-gray-200 rounded"></div>
             </div>
@@ -126,188 +105,123 @@ export default function AdminDashboard() {
   if (error) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-        <div className="flex items-center">
-          <span className="text-red-500 text-xl mr-3">❌</span>
-          <div>
-            <h3 className="text-red-800 font-semibold">Dashboard Error</h3>
-            <p className="text-red-700">{error}</p>
-          </div>
-        </div>
+        <h3 className="text-red-800 font-semibold">Dashboard Error</h3>
+        <p className="text-red-700">{error}</p>
       </div>
     )
   }
 
   return (
     <div className="space-y-8">
-      {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-emerald-500 to-blue-600 rounded-xl text-white p-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-3xl font-bold mb-2">Welcome to Admin Dashboard</h2>
-            <p className="text-emerald-100">
-              Monitor and manage the Basey Fare Guide system
-            </p>
-          </div>
-          <div className="text-6xl opacity-20">
-            ⚡
-          </div>
-        </div>
+      <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Administration Overview</h2>
+        <p className="text-gray-600">
+          Real user, incident, and evidence storage data for the active Basey Fare Guide system.
+        </p>
       </div>
 
-      {/* Quick Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Total Users */}
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <div className="flex items-center justify-center h-12 w-12 rounded-md bg-blue-500 text-white text-2xl">
-                👥
-              </div>
-            </div>
-            <div className="ml-4">
-              <div className="text-sm font-medium text-gray-500">Total Users</div>
-              <div className="text-2xl font-bold text-gray-900">{stats?.users.total || 0}</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Active Users */}
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <div className="flex items-center justify-center h-12 w-12 rounded-md bg-green-500 text-white text-2xl">
-                ✅
-              </div>
-            </div>
-            <div className="ml-4">
-              <div className="text-sm font-medium text-gray-500">Active Users</div>
-              <div className="text-2xl font-bold text-gray-900">{stats?.users.active || 0}</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Pending Approvals */}
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <div className="flex items-center justify-center h-12 w-12 rounded-md bg-yellow-500 text-white text-2xl">
-                ⏳
-              </div>
-            </div>
-            <div className="ml-4">
-              <div className="text-sm font-medium text-gray-500">Pending Approvals</div>
-              <div className="text-2xl font-bold text-gray-900">{stats?.users.pending || 0}</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Storage Usage */}
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <div className={`flex items-center justify-center h-12 w-12 rounded-md text-white text-2xl ${
-                stats?.storage.cleanupRecommended ? 'bg-red-500' : 'bg-purple-500'
-              }`}>
-                💾
-              </div>
-            </div>
-            <div className="ml-4">
-              <div className="text-sm font-medium text-gray-500">Storage Usage</div>
-              <div className="text-2xl font-bold text-gray-900">{stats?.storage.totalSizeMB || 0} MB</div>
-              {stats?.storage.cleanupRecommended && (
-                <div className="text-xs text-red-600 font-medium">Cleanup needed</div>
-              )}
-            </div>
-          </div>
-        </div>
+        <StatCard label="Total Users" value={stats?.users.total || 0} />
+        <StatCard label="Pending Approvals" value={stats?.users.pending || 0} />
+        <StatCard label="Open Incidents" value={(stats?.incidents.pending || 0) + (stats?.incidents.investigating || 0)} />
+        <StatCard
+          label="Storage Used"
+          value={`${stats?.storage.totalSizeMB || 0} MB`}
+          detail={stats?.storage.cleanupRecommended ? 'Cleanup recommended' : undefined}
+        />
       </div>
 
-      {/* Detailed Sections */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* User Breakdown */}
         <div className="bg-white rounded-xl shadow-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">User Breakdown by Type</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">User Breakdown</h3>
           <div className="space-y-3">
-            {Object.entries(stats?.users.byType || {}).map(([type, count]) => (
-              <div key={type} className="flex justify-between items-center">
-                <span className="text-gray-600 capitalize">
-                  {type.toLowerCase().replace('_', ' ')}
-                </span>
-                <span className="font-semibold text-gray-900">{count}</span>
-              </div>
-            ))}
+            {Object.entries(stats?.users.byType || {}).length > 0 ? (
+              Object.entries(stats?.users.byType || {}).map(([type, count]) => (
+                <div key={type} className="flex justify-between items-center">
+                  <span className="text-gray-600 capitalize">{type.toLowerCase().replace('_', ' ')}</span>
+                  <span className="font-semibold text-gray-900">{count}</span>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-gray-500">No user data available.</p>
+            )}
           </div>
         </div>
 
-        {/* System Status */}
         <div className="bg-white rounded-xl shadow-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">System Status</h3>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-gray-600">Server Status</span>
-              <span className="flex items-center">
-                <div className={`w-3 h-3 rounded-full mr-2 ${
-                  stats?.system.serverStatus === 'online' ? 'bg-green-500' : 'bg-red-500'
-                }`}></div>
-                <span className="font-semibold capitalize">{stats?.system.serverStatus}</span>
-              </span>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Incident Activity</h3>
+          {stats?.incidents.recentActivity?.length ? (
+            <div className="space-y-4">
+              {stats.incidents.recentActivity.slice(0, 5).map((incident) => (
+                <div key={incident.id} className="border-l-4 border-emerald-500 pl-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <p className="font-medium text-gray-900">{incident.type.replace(/_/g, ' ')}</p>
+                    <span className="text-xs text-gray-500">
+                      {new Date(incident.createdAt).toLocaleString()}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600 mt-1">{incident.description}</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {incident.location} - {incident.status}
+                  </p>
+                </div>
+              ))}
             </div>
-            
-            <div className="flex items-center justify-between">
-              <span className="text-gray-600">API Health</span>
-              <span className="flex items-center">
-                <div className={`w-3 h-3 rounded-full mr-2 ${
-                  stats?.system.apiHealth ? 'bg-green-500' : 'bg-red-500'
-                }`}></div>
-                <span className="font-semibold">{stats?.system.apiHealth ? 'Healthy' : 'Issues'}</span>
-              </span>
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <span className="text-gray-600">Total Evidence Files</span>
-              <span className="font-semibold">{stats?.storage.totalFiles || 0}</span>
-            </div>
-          </div>
+          ) : (
+            <p className="text-sm text-gray-500">No recent incident activity available.</p>
+          )}
         </div>
       </div>
 
-      {/* Quick Actions */}
       <div className="bg-white rounded-xl shadow-lg p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <button
             onClick={() => window.location.reload()}
             className="flex items-center justify-center px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
-            <span className="mr-2">🔄</span>
             Refresh Data
           </button>
-          
+
           <button
             onClick={() => {
-              // This would navigate to storage management
-              const event = new CustomEvent('adminTabChange', { detail: 'storage' })
+              const event = new CustomEvent('adminTabChange', { detail: 'storage' as const })
               window.dispatchEvent(event)
             }}
             className="flex items-center justify-center px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
           >
-            <span className="mr-2">🧹</span>
             Manage Storage
           </button>
-          
+
           <button
             onClick={() => {
-              // This would navigate to user management
-              const event = new CustomEvent('adminTabChange', { detail: 'users' })
+              const event = new CustomEvent('adminTabChange', { detail: 'users' as const })
               window.dispatchEvent(event)
             }}
             className="flex items-center justify-center px-4 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
           >
-            <span className="mr-2">👥</span>
             Manage Users
           </button>
         </div>
       </div>
+    </div>
+  )
+}
+
+function StatCard({
+  label,
+  value,
+  detail,
+}: {
+  label: string
+  value: number | string
+  detail?: string
+}) {
+  return (
+    <div className="bg-white rounded-xl shadow-lg p-6">
+      <div className="text-sm font-medium text-gray-500">{label}</div>
+      <div className="text-2xl font-bold text-gray-900 mt-1">{value}</div>
+      {detail ? <div className="text-xs text-red-600 font-medium mt-1">{detail}</div> : null}
     </div>
   )
 }

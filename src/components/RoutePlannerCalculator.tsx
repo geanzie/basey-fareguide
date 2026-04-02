@@ -6,24 +6,14 @@ import { barangayService } from '../lib/barangayService'
 import { BarangayInfo } from '../utils/barangayBoundaries'
 import EnhancedRouteMap from './EnhancedRouteMap'
 import { locationService, Location } from '../lib/locationService'
+import { useAuth } from './AuthProvider'
+import type { DiscountCardDto, DiscountCardMeResponseDto } from '@/lib/contracts'
 
 const PlannedRouteMap = dynamic(() => import('./PlannedRouteMap'), { ssr: false })
 const PinSelectionMap = dynamic(() => import('./PinSelectionMap'), { ssr: false })
 
-// Route Planner uses Google Maps API for accurate road-based distance calculation
-// GPS direct distance calculation is not used here as it would be unfair to drivers
-
-interface DiscountCard {
-  id: string
-  discountType: 'SENIOR_CITIZEN' | 'PWD' | 'STUDENT'
-  discountRate: number
-  discountPercentage: number
-  user: {
-    id: string
-    firstName: string
-    lastName: string
-  }
-}
+// Route Planner uses ORS road routing first and GPS estimates only as fallback.
+// Saved planner calculations should describe the live route stack truthfully.
 
 interface RouteResult {
   distance: {
@@ -54,7 +44,7 @@ interface RouteResult {
   fallbackReason?: string | null
   snappedOrigin?: { lat: number; lng: number; wasSnapped: boolean } | null
   snappedDestination?: { lat: number; lng: number; wasSnapped: boolean } | null
-  discountCard?: DiscountCard | null
+  discountCard?: DiscountCardDto | null
   barangayInfo?: {
     originBarangay: string
     destinationBarangay: string
@@ -81,8 +71,7 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
   const [originCoords, setOriginCoords] = useState<{ lat: number; lng: number; name?: string } | null>(null)
   const [destCoords, setDestCoords] = useState<{ lat: number; lng: number; name?: string } | null>(null)
   const [savedToDatabase, setSavedToDatabase] = useState(false)
-  const [userDiscountCard, setUserDiscountCard] = useState<DiscountCard | null>(null)
-  const [userId, setUserId] = useState<string | null>(null)
+  const [userDiscountCard, setUserDiscountCard] = useState<DiscountCardDto | null>(null)
   const [allLocations, setAllLocations] = useState<{
     barangays: Location[]
     landmarks: Location[]
@@ -91,29 +80,22 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
   const [calcMode, setCalcMode] = useState<'quick' | 'exact'>('quick')
   const [pinOrigin, setPinOrigin] = useState<{ lat: number; lng: number } | null>(null)
   const [pinDestination, setPinDestination] = useState<{ lat: number; lng: number } | null>(null)
+  const { user } = useAuth()
 
   // Fetch user's discount card on mount
   useEffect(() => {
     const fetchUserDiscountCard = async () => {
       try {
-        const token = localStorage.getItem('token')
-        const userData = localStorage.getItem('user')
-        
-        if (!token || !userData) return
+        if (!user) return
 
-        const user = JSON.parse(userData)
-        setUserId(user.id)
-
-        const response = await fetch('/api/discount-cards/me', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
+        const response = await fetch('/api/discount-cards/me')
 
         if (response.ok) {
-          const data = await response.json()
+          const data: DiscountCardMeResponseDto = await response.json()
           if (data.hasDiscountCard && data.isValid && data.discountCard) {
             setUserDiscountCard(data.discountCard)          }
+        } else {
+          setUserDiscountCard(null)
         }
       } catch (error) {
       // Silent fail - discount not critical for calculator to work
@@ -121,7 +103,7 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
     }
 
     fetchUserDiscountCard()
-  }, [])
+  }, [user])
 
   // Initialize barangay data and location data
   useEffect(() => {
@@ -269,26 +251,17 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
   // Helper function to save fare calculation to database
   const saveFareCalculation = async (routeData: RouteResult, fromLabel: string, toLabel: string) => {
     try {
-      // Get auth token if available (for logged-in users)
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
-      
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-      }
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
-      }
-
       const response = await fetch('/api/fare-calculations', {
         method: 'POST',
-        headers,
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           fromLocation: fromLabel,
           toLocation: toLabel,
           distance: routeData.distance.kilometers,
           calculatedFare: routeData.fare.fare,
-          calculationType: 'Google Maps Route Planner',
+          calculationType: 'Road Route Planner',
           routeData: {
             distance: routeData.distance,
             duration: routeData.duration,
@@ -462,14 +435,14 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
             Route Planner & Fare Calculator
           </h2>
           <p className="text-lg text-gray-600">
-            Plan your trip and calculate fares between any two locations in Basey Municipality
+            Plan your trip with road-based routing first and GPS estimates only when routing is unavailable
           </p>
           <div className="mt-4 inline-flex items-center px-4 py-2 bg-blue-50 rounded-lg">
             <span className="text-blue-600 font-medium text-sm">✓ Pre-trip Planning</span>
             <span className="mx-2 text-gray-300">•</span>
-            <span className="text-blue-600 font-medium text-sm">✓ Google Maps Accuracy</span>
+            <span className="text-blue-600 font-medium text-sm">✓ Road-based routing first</span>
             <span className="mx-2 text-gray-300">•</span>
-            <span className="text-blue-600 font-medium text-sm">✓ All Barangays Covered</span>
+            <span className="text-blue-600 font-medium text-sm">✓ GPS fallback available</span>
           </div>
 
           {/* Discount Card Badge */}
@@ -970,7 +943,7 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
                   <div className="flex items-start">
                     <span className="text-red-600 mr-3 text-xl">🚫</span>
                     <div className="flex-1">
-                      <p className="text-red-800 font-semibold mb-2">Google Maps API Required</p>
+                      <p className="text-red-800 font-semibold mb-2">Road routing unavailable</p>
                       <p className="text-red-700 mb-3">{error}</p>
                       <div className="bg-red-100 rounded-lg p-3 text-sm">
                         <p className="font-semibold text-red-800 mb-2">Why This Matters:</p>
@@ -981,7 +954,7 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
                         </ul>
                       </div>
                       <div className="mt-3 text-xs text-red-600">
-                        <strong>Setup Required:</strong> Configure GOOGLE_MAPS_SERVER_API_KEY in .env.local file
+                        <strong>Setup Required:</strong> Configure OPENROUTESERVICE_API_KEY in .env.local file for road-based routing.
                       </div>
                     </div>
                   </div>

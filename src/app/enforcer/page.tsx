@@ -3,15 +3,14 @@
 import { useState } from 'react'
 import dynamic from 'next/dynamic'
 import RoleGuard from '@/components/RoleGuard'
-import NotificationCenter from '@/components/NotificationCenter'
 import PageWrapper from '@/components/PageWrapper'
 
-// Lazy-load heavy tab content components
-const EnforcerDashboard = dynamic(() => import('@/components/EnforcerDashboard'), { 
-  loading: () => <div className="p-6">Loading dashboard...</div> 
+const EnforcerDashboard = dynamic(() => import('@/components/EnforcerDashboard'), {
+  loading: () => <div className="p-6">Loading dashboard...</div>,
 })
+
 const EnforcerIncidentsList = dynamic(() => import('@/components/EnforcerIncidentsList'), {
-  loading: () => <div className="p-6">Loading incidents...</div>
+  loading: () => <div className="p-6">Loading incidents...</div>,
 })
 
 export default function EnforcerPage() {
@@ -23,45 +22,23 @@ export default function EnforcerPage() {
 }
 
 function EnforcerContent() {
-  const [activeTab, setActiveTab] = useState('dashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'incidents'>('dashboard')
 
   const tabs = [
-    { id: 'dashboard', label: 'Dashboard', icon: '📊' },
-    { id: 'incidents', label: 'Incident Queue', icon: '📋' }
+    { id: 'dashboard' as const, label: 'Dashboard', icon: 'Chart' },
+    { id: 'incidents' as const, label: 'Incident Queue', icon: 'Queue' },
   ]
 
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case 'dashboard':
-        return <EnforcerDashboard />
-      case 'incidents':
-        return <EnforcerIncidentsList />
-      default:
-        return <EnforcerDashboard />
-    }
-  }
-
-  const handleNotificationClick = (notification: any) => {
-    if (notification.incidentId) {
-      setActiveTab('incidents')
-    }
-  }
-
   return (
-    <PageWrapper 
+    <PageWrapper
       title="Traffic Enforcement Center"
-      subtitle="Comprehensive enforcement management system"
-      headerContent={
-        <NotificationCenter onNotificationClick={handleNotificationClick} />
-      }
+      subtitle="Queue, evidence, and resolution work for the active enforcement team"
     >
-      {/* Tab Navigation */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
-        {/* Mobile: Dropdown Menu */}
         <div className="md:hidden p-4">
           <select
             value={activeTab}
-            onChange={(e) => setActiveTab(e.target.value)}
+            onChange={(e) => setActiveTab(e.target.value as 'dashboard' | 'incidents')}
             className="w-full py-3 px-4 border border-gray-300 rounded-lg bg-white text-sm font-medium"
           >
             {tabs.map((tab) => (
@@ -72,7 +49,6 @@ function EnforcerContent() {
           </select>
         </div>
 
-        {/* Desktop: Horizontal Tabs */}
         <nav className="hidden md:flex px-4" aria-label="Tabs">
           {tabs.map((tab) => (
             <button
@@ -91,9 +67,8 @@ function EnforcerContent() {
         </nav>
       </div>
 
-      {/* Tab Content */}
       <div className="min-h-0">
-        {renderTabContent()}
+        {activeTab === 'incidents' ? <EnforcerIncidentsList /> : <EnforcerDashboard />}
       </div>
     </PageWrapper>
   )

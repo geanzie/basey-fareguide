@@ -1,52 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import jwt from 'jsonwebtoken'
-import { getJWTSecret } from '@/lib/auth'
-
-async function verifyAuth(request: NextRequest) {
-  try {
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return null
-    }
-
-    const token = authHeader.split(' ')[1]
-    const decoded = jwt.verify(token, getJWTSecret()) as any
-    
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        username: true,
-        userType: true,
-        isActive: true
-      }
-    })
-
-    return user?.isActive ? user : null
-  } catch {
-    return null
-  }
-}
+import { ENFORCER_ONLY, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
 
 export async function PATCH(
   request: NextRequest,
   context: { params: Promise<{ incidentId: string }> }
 ) {
   try {
-    const user = await verifyAuth(request)
-    
-    if (!user) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
-    }
+    const user = await requireRequestRole(request, [...ENFORCER_ONLY])
 
-    if (user.userType !== 'ENFORCER') {
-      return NextResponse.json({ message: 'Access denied. Enforcer role required.' }, { status: 403 })
-    }
+    const { incidentId } = await context.params
 
-    const { incidentId } = await context.params    // Check if incident exists and is still pending
     const incident = await prisma.incident.findUnique({
       where: { id: incidentId }
     })
@@ -93,9 +57,6 @@ export async function PATCH(
     })
 
   } catch (error) {
-    return NextResponse.json(
-      { message: 'Internal server error' },
-      { status: 500 }
-    )
+    return createAuthErrorResponse(error)
   }
 }

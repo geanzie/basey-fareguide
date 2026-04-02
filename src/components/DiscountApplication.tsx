@@ -3,38 +3,18 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { validateDiscountApplication, validatePhoto } from '@/lib/discountValidation'
-
-interface User {
-  id: string
-  username: string
-  firstName: string
-  lastName: string
-  dateOfBirth?: string
-  phoneNumber?: string
-  governmentId?: string
-  idType?: string
-  userType: string
-}
+import type {
+  DiscountCardApplicationResponseDto,
+  DiscountType,
+  UserProfileDto,
+  UserProfileResponseDto,
+} from '@/lib/contracts'
 
 interface DiscountApplicationProps {
-  user: User
-}
-
-type DiscountType = 'SENIOR_CITIZEN' | 'PWD' | 'STUDENT'
-
-interface ApplicationStatus {
-  hasApplication: boolean
-  application: {
-    id: string
-    discountType: DiscountType
-    verificationStatus: string
-    isActive: boolean
-    validFrom: string
-    validUntil: string
-    rejectionReason?: string
-    createdAt: string
-    photoUrl?: string
-  } | null
+  user: Pick<
+    UserProfileDto,
+    'id' | 'username' | 'firstName' | 'lastName' | 'dateOfBirth' | 'phoneNumber' | 'governmentId' | 'idType' | 'userType'
+  >
 }
 
 export default function DiscountApplication({ user: initialUser }: DiscountApplicationProps) {
@@ -43,10 +23,10 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
-  const [applicationStatus, setApplicationStatus] = useState<ApplicationStatus | null>(null)
+  const [applicationStatus, setApplicationStatus] = useState<DiscountCardApplicationResponseDto | null>(null)
   
   // Store fresh user data
-  const [user, setUser] = useState<User>(initialUser)
+  const [user, setUser] = useState<DiscountApplicationProps['user']>(initialUser)
 
   // Form state
   const [discountType, setDiscountType] = useState<DiscountType>('SENIOR_CITIZEN')
@@ -84,17 +64,10 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
   // Fetch fresh user data from API
   const fetchFreshUserData = async () => {
     try {
-      const token = localStorage.getItem('token')
-      if (!token) return
-
-      const response = await fetch('/api/user/profile', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
+      const response = await fetch('/api/user/profile')
 
       if (response.ok) {
-        const data = await response.json()
+        const data: UserProfileResponseDto = await response.json()
         const freshUser = data.user
         setUser(freshUser)
         
@@ -111,16 +84,10 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
   const checkExistingApplication = async () => {
     try {
       setLoading(true)
-      const token = localStorage.getItem('token')
-      
-      const response = await fetch('/api/discount-cards/my-application', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
+      const response = await fetch('/api/discount-cards/my-application')
 
       if (response.ok) {
-        const data = await response.json()
+        const data: DiscountCardApplicationResponseDto = await response.json()
         setApplicationStatus(data)
       }
     } catch (err) {} finally {
@@ -158,7 +125,6 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
     try {
       setValidatingID(true)
       setError(null)
-      const token = localStorage.getItem('token')
 
       const formData = new FormData()
       formData.append('photo', file)
@@ -170,9 +136,6 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
 
       const response = await fetch('/api/discount-cards/validate-id', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
         body: formData
       })
 
@@ -239,8 +202,6 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
 
     try {
       setSubmitting(true)
-      const token = localStorage.getItem('token')
-
       // Prepare form data
       const formData = new FormData()
       formData.append('discountType', discountType)
@@ -277,9 +238,6 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
 
       const response = await fetch(endpoint, {
         method,
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
         body: formData
       })
 
@@ -289,7 +247,7 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
         throw new Error(data.error || 'Failed to submit application')
       }
 
-      setSuccess('Application submitted successfully! Please wait for admin approval.')
+      setSuccess('Application submitted successfully. Check this page again for review status and approval details.')
       setTimeout(() => {
         checkExistingApplication()
       }, 2000)
@@ -345,7 +303,7 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
             <div>
               <span className="text-sm font-medium text-gray-700">Applied On:</span>
               <p className="text-gray-900 mt-1">
-                {new Date(app.createdAt).toLocaleDateString()}
+                {app.createdAt ? new Date(app.createdAt).toLocaleDateString() : 'Not available'}
               </p>
             </div>
 
@@ -354,7 +312,7 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
                 <div>
                   <span className="text-sm font-medium text-gray-700">Valid Period:</span>
                   <p className="text-gray-900 mt-1">
-                    {new Date(app.validFrom).toLocaleDateString()} - {new Date(app.validUntil).toLocaleDateString()}
+                    {app.validFrom ? new Date(app.validFrom).toLocaleDateString() : 'Not available'} - {app.validUntil ? new Date(app.validUntil).toLocaleDateString() : 'Not available'}
                   </p>
                 </div>
                 
@@ -390,7 +348,7 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                 <p className="text-yellow-800 font-medium">⏳ Application Pending</p>
                 <p className="text-yellow-700 text-sm mt-1">
-                  Your application is waiting for admin review. You will be notified once it's processed.
+                  Your application is waiting for admin review. Return to this page to check whether it has been approved, rejected, or sent back for updates.
                 </p>
               </div>
             )}

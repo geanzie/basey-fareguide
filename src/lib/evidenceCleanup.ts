@@ -1,9 +1,7 @@
-import { PrismaClient } from '@/generated/prisma'
+import { prisma } from '@/lib/prisma'
 import { unlink } from 'fs/promises'
 import { join } from 'path'
 import { existsSync } from 'fs'
-
-const prisma = new PrismaClient()
 
 /**
  * Delete evidence files from filesystem when an incident is resolved
@@ -12,7 +10,10 @@ const prisma = new PrismaClient()
 export async function cleanupEvidenceFiles(incidentId: string): Promise<void> {
   try {    // Get all evidence for this incident
     const evidenceList = await prisma.evidence.findMany({
-      where: { incidentId },
+      where: {
+        incidentId,
+        storageStatus: 'AVAILABLE'
+      },
       select: {
         id: true,
         fileName: true,
@@ -41,11 +42,17 @@ export async function cleanupEvidenceFiles(incidentId: string): Promise<void> {
         errorCount++      }
     }
 
-    // Update evidence records to mark as cleaned up (optional - keeps audit trail)
+    const deletedAt = new Date()
+
+    // Update evidence records to mark storage cleanup without touching review remarks
     await prisma.evidence.updateMany({
-      where: { incidentId },
+      where: {
+        incidentId,
+        storageStatus: 'AVAILABLE'
+      },
       data: { 
-        remarks: 'Evidence files deleted after incident resolution'
+        storageStatus: 'DELETED',
+        fileDeletedAt: deletedAt
       }
     })
       } catch (error) {    throw error
@@ -86,6 +93,9 @@ export async function getEvidenceStorageStats() {
   try {
     const stats = await prisma.evidence.groupBy({
       by: ['fileType'],
+      where: {
+        storageStatus: 'AVAILABLE'
+      },
       _sum: {
         fileSize: true
       },
@@ -95,6 +105,9 @@ export async function getEvidenceStorageStats() {
     })
 
     const totalStats = await prisma.evidence.aggregate({
+      where: {
+        storageStatus: 'AVAILABLE'
+      },
       _sum: {
         fileSize: true
       },

@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import jwt from 'jsonwebtoken'
-import { getJWTSecret } from '@/lib/auth'
 import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 import { randomUUID } from 'crypto'
 import { validateIDImage } from '@/lib/idValidation'
+import { PUBLIC_ONLY, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
+import {
+  buildDiscountCardResponse,
+  evaluateDiscountCardPolicy
+} from '@/lib/discountCardPolicy'
+import { serializeDiscountCard } from '@/lib/serializers'
 
 /**
  * GET /api/discount-cards/my-application
@@ -19,34 +23,15 @@ import { validateIDImage } from '@/lib/idValidation'
  */
 export async function GET(request: NextRequest) {
   try {
-    // Verify authentication
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
-
-    const token = authHeader.substring(7)
-    let decoded: any
-    
-    try {
-      decoded = jwt.verify(token, getJWTSecret())
-      } catch (err) {
-      return NextResponse.json(
-        { error: 'Invalid or expired token' },
-        { status: 401 }
-      )
-    }
-
-    const userId = decoded.userId
+    const user = await requireRequestRole(request, [...PUBLIC_ONLY])
+    const userId = user.id
 
     // Get user's discount card application
     const discountCard = await prisma.discountCard.findUnique({
       where: { userId },
       select: {
         id: true,
+        userId: true,
         discountType: true,
         fullName: true,
         dateOfBirth: true,
@@ -84,11 +69,18 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    const evaluation = evaluateDiscountCardPolicy(discountCard, { userId })
+
     return NextResponse.json({
       hasApplication: true,
-      application: discountCard
+      application: serializeDiscountCard(buildDiscountCardResponse(discountCard, evaluation))
     })
-      } catch (error: any) {    return NextResponse.json(
+  } catch (error: any) {
+    const authError = createAuthErrorResponse(error)
+    if (authError.status !== 500) {
+      return authError
+    }
+    return NextResponse.json(
       { 
         error: 'Failed to fetch application status',
         details: error.message 
@@ -111,28 +103,8 @@ export async function GET(request: NextRequest) {
  */
 export async function PATCH(request: NextRequest) {
   try {
-    // Verify authentication
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
-
-    const token = authHeader.substring(7)
-    let decoded: any
-    
-    try {
-      decoded = jwt.verify(token, getJWTSecret())
-      } catch (err) {
-      return NextResponse.json(
-        { error: 'Invalid or expired token' },
-        { status: 401 }
-      )
-    }
-
-    const userId = decoded.userId
+    const user = await requireRequestRole(request, [...PUBLIC_ONLY])
+    const userId = user.id
 
     // Check existing application
     const existingCard = await prisma.discountCard.findUnique({
@@ -392,7 +364,12 @@ export async function PATCH(request: NextRequest) {
       message: 'Application updated and resubmitted successfully',
       application: updatedCard
     })
-      } catch (error: any) {    return NextResponse.json(
+  } catch (error: any) {
+    const authError = createAuthErrorResponse(error)
+    if (authError.status !== 500) {
+      return authError
+    }
+    return NextResponse.json(
       { 
         error: 'Failed to update application',
         details: error.message 

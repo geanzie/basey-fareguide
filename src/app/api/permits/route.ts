@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { VehicleType, PermitStatus } from '@/generated/prisma'
+import { VehicleType, PermitStatus } from '@prisma/client'
+import { ADMIN_OR_ENCODER, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
+import { serializePermit } from '@/lib/serializers'
 
 export async function GET(request: NextRequest) {
   try {
@@ -50,7 +52,7 @@ export async function GET(request: NextRequest) {
     ])
 
     return NextResponse.json({
-      permits,
+      permits: permits.map((permit) => serializePermit(permit)),
       pagination: {
         page,
         limit,
@@ -67,6 +69,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    await requireRequestRole(request, [...ADMIN_OR_ENCODER])
     const body = await request.json()
     const { vehicleId, permitPlateNumber, driverFullName, vehicleType, encodedBy, remarks } = body
 
@@ -144,10 +147,8 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    return NextResponse.json(permit, { status: 201 })
-      } catch (error) {    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json(serializePermit(permit), { status: 201 })
+  } catch (error) {
+    return createAuthErrorResponse(error)
   }
 }

@@ -1,31 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-
-interface Incident {
-  id: string
-  incidentType: string
-  description: string
-  location: string
-  plateNumber: string
-  driverLicense: string
-  status: string
-  incidentDate: string
-  createdAt: string
-  reportedBy: {
-    firstName: string
-    lastName: string
-  }
-  handledBy?: {
-    firstName: string
-    lastName: string
-  }
-  penaltyAmount?: number
-  remarks?: string
-}
+import type { IncidentListItemDto, IncidentsResponseDto } from '@/lib/contracts'
 
 const IncidentsList = () => {
-  const [incidents, setIncidents] = useState<Incident[]>([])
+  const [incidents, setIncidents] = useState<IncidentListItemDto[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState({
     status: 'ALL',
@@ -33,7 +12,7 @@ const IncidentsList = () => {
     dateRange: 'ALL'
   })
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null)
+  const [selectedIncident, setSelectedIncident] = useState<IncidentListItemDto | null>(null)
   const [showModal, setShowModal] = useState(false)
 
   const statusOptions = [
@@ -66,14 +45,9 @@ const IncidentsList = () => {
       if (filter.incidentType !== 'ALL') params.append('type', filter.incidentType)
       if (filter.dateRange !== 'ALL') params.append('dateRange', filter.dateRange)
 
-      const token = localStorage.getItem('token')
-      const response = await fetch(`/api/incidents?${params.toString()}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
+      const response = await fetch(`/api/incidents?${params.toString()}`)
       if (response.ok) {
-        const data = await response.json()
+        const data: IncidentsResponseDto = await response.json()
         setIncidents(data.incidents || [])
       } else {      }
     } catch (err) {} finally {
@@ -99,19 +73,7 @@ const IncidentsList = () => {
     return badges[status as keyof typeof badges] || 'bg-gray-100 text-gray-800'
   }
 
-  const getIncidentTypeLabel = (type: string) => {
-    const labels = {
-      FARE_OVERCHARGE: 'Fare Overcharge',
-      FARE_UNDERCHARGE: 'Fare Undercharge',
-      RECKLESS_DRIVING: 'Reckless Driving',
-      VEHICLE_VIOLATION: 'Vehicle Violation',
-      ROUTE_VIOLATION: 'Route Violation',
-      OTHER: 'Other'
-    }
-    return labels[type as keyof typeof labels] || type
-  }
-
-  const handleViewDetails = (incident: Incident) => {
+  const handleViewDetails = (incident: IncidentListItemDto) => {
     setSelectedIncident(incident)
     setShowModal(true)
   }
@@ -262,8 +224,8 @@ const IncidentsList = () => {
               incident.plateNumber?.toLowerCase().includes(query) ||
               incident.location?.toLowerCase().includes(query) ||
               incident.description?.toLowerCase().includes(query) ||
-              incident.incidentType?.toLowerCase().includes(query) ||
-              `${incident.reportedBy?.firstName} ${incident.reportedBy?.lastName}`.toLowerCase().includes(query)
+              incident.type?.toLowerCase().includes(query) ||
+              `${incident.reportedBy?.firstName || ''} ${incident.reportedBy?.lastName || ''}`.toLowerCase().includes(query)
             )
           })
           
@@ -298,10 +260,10 @@ const IncidentsList = () => {
                     <td className="px-6 py-4">
                       <div>
                         <div className="text-sm font-medium text-gray-900">
-                          {getIncidentTypeLabel(incident.incidentType)}
+                          {incident.typeLabel}
                         </div>
                         <div className="text-sm text-gray-500">
-                          Reported by: {incident.reportedBy.firstName} {incident.reportedBy.lastName}
+                          Reported by: {incident.reportedBy ? `${incident.reportedBy.firstName} ${incident.reportedBy.lastName}` : 'Unknown'}
                         </div>
                       </div>
                     </td>
@@ -322,7 +284,7 @@ const IncidentsList = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900">
-                      {formatDate(incident.incidentDate)}
+                      {formatDate(incident.date)}
                     </td>
                     <td className="px-6 py-4">
                       <button
@@ -374,7 +336,7 @@ const IncidentsList = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Incident Type</label>
-                    <p className="mt-1 text-sm text-gray-900">{getIncidentTypeLabel(selectedIncident.incidentType)}</p>
+                    <p className="mt-1 text-sm text-gray-900">{selectedIncident.typeLabel}</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Status</label>
@@ -398,7 +360,7 @@ const IncidentsList = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Incident Date</label>
-                    <p className="mt-1 text-sm text-gray-900">{formatDate(selectedIncident.incidentDate)}</p>
+                    <p className="mt-1 text-sm text-gray-900">{formatDate(selectedIncident.date)}</p>
                   </div>
                 </div>
 
@@ -417,7 +379,7 @@ const IncidentsList = () => {
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Reported By</label>
                     <p className="mt-1 text-sm text-gray-900">
-                      {selectedIncident.reportedBy.firstName} {selectedIncident.reportedBy.lastName}
+                      {selectedIncident.reportedBy ? `${selectedIncident.reportedBy.firstName} ${selectedIncident.reportedBy.lastName}` : 'Unknown'}
                     </p>
                   </div>
                   <div>

@@ -1,13 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-
-interface User {
-  userType: 'ADMIN' | 'DATA_ENCODER' | 'ENFORCER' | 'PUBLIC'
-  firstName: string
-  lastName: string
-}
+import { useAuth } from './AuthProvider'
 
 interface RoleGuardProps {
   children: React.ReactNode
@@ -16,47 +11,29 @@ interface RoleGuardProps {
   fallback?: React.ReactNode
 }
 
-export default function RoleGuard({ 
-  children, 
-  allowedRoles, 
-  redirectTo = '/auth', 
-  fallback = null 
+export default function RoleGuard({
+  children,
+  allowedRoles,
+  redirectTo = '/auth',
+  fallback = null
 }: RoleGuardProps) {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { user, loading } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
-    const userData = localStorage.getItem('user')
-    const token = localStorage.getItem('token')
-    
-    if (!userData || !token) {
-      // Not logged in
-      router.push('/auth')
+    if (loading) {
       return
     }
 
-    try {
-      const parsedUser = JSON.parse(userData)
-      setUser(parsedUser)
-      
-      // Check if user has permission
-      if (!allowedRoles.includes(parsedUser.userType)) {
-        // Redirect to appropriate dashboard based on role
-        const userDashboard = getRoleBasedDashboard(parsedUser.userType)
-        router.push(userDashboard)
-        return
-      }
-    } catch (error) {
-      // Invalid user data
-      localStorage.removeItem('user')
-      localStorage.removeItem('token')
-      router.push('/auth')
+    if (!user) {
+      router.push(redirectTo)
       return
     }
-    
-    setLoading(false)
-  }, [router, allowedRoles])
+
+    if (!allowedRoles.includes(user.userType)) {
+      router.push(getRoleBasedDashboard(user.userType))
+    }
+  }, [allowedRoles, loading, redirectTo, router, user])
 
   if (loading) {
     return (
@@ -73,7 +50,7 @@ export default function RoleGuard({
     return fallback || (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="text-6xl mb-4">🚫</div>
+          <div className="text-6xl mb-4">ðŸš«</div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
           <p className="text-gray-600 mb-4">You don't have permission to access this page.</p>
           <button
@@ -100,38 +77,24 @@ function getRoleBasedDashboard(userType: string): string {
   }
 }
 
-// Helper hook to get current user
 export function useCurrentUser() {
-  const [user, setUser] = useState<User | null>(null)
-  
-  useEffect(() => {
-    const userData = localStorage.getItem('user')
-    if (userData) {
-      try {
-        setUser(JSON.parse(userData))
-      } catch (error) {
-        setUser(null)
-      }
-    }
-  }, [])
-  
+  const { user } = useAuth()
   return user
 }
 
-// Helper hook to check user permissions
 export function usePermissions() {
   const user = useCurrentUser()
-  
+
   const hasRole = (roles: string[]) => {
     return user ? roles.includes(user.userType) : false
   }
-  
+
   const isAdmin = () => hasRole(['ADMIN'])
   const isEnforcer = () => hasRole(['ENFORCER'])
   const isEncoder = () => hasRole(['DATA_ENCODER'])
   const isPublic = () => hasRole(['PUBLIC'])
   const isAuthority = () => hasRole(['ADMIN', 'DATA_ENCODER', 'ENFORCER'])
-  
+
   return {
     user,
     hasRole,

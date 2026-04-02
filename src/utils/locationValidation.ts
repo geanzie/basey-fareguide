@@ -8,8 +8,9 @@ export interface LocationValidationRequest {
   name: string;
   coordinates: string; // Format: "lat,lng"
   barangay?: string;
-  type: 'BARANGAY' | 'LANDMARK' | 'URBAN' | 'RURAL';
+  type: 'BARANGAY' | 'LANDMARK' | 'SITIO' | 'URBAN' | 'RURAL';
   description?: string;
+  locationId?: string;
 }
 
 export interface LocationValidationResult {
@@ -39,6 +40,11 @@ export interface LocationValidationResult {
   // Recommendations
   recommendations: string[];
 }
+
+export type PersistedLocationValidationStatus =
+  | 'VALIDATED'
+  | 'FAILED'
+  | 'NEEDS_REVIEW';
 
 /**
  * Parse coordinate string into lat/lng numbers
@@ -164,7 +170,7 @@ export async function validateLocation(
     
     if (!withinMunicipality) {
       // For landmarks and tourist destinations, this might be expected
-      if (request.type === 'LANDMARK') {
+      if (request.type === 'LANDMARK' || request.type === 'SITIO') {
         warnings.push('Landmark coordinates are outside mapped barangay boundaries');
         recommendations.push('This is normal for tourist destinations in remote areas');
         recommendations.push('Verify the location is accessible from Basey');
@@ -229,7 +235,7 @@ export async function validateLocation(
         if (!normalizedMunicipality.includes('basey')) {
           // For landmarks like Sohoton, they may technically be in neighboring areas
           // but are considered part of Basey's tourist destinations
-          if (request.type === 'LANDMARK') {
+          if (request.type === 'LANDMARK' || request.type === 'SITIO') {
             warnings.push(`Google Maps shows this is in "${googleMapsResult.municipality}"`);
             recommendations.push('Verify this landmark is accessible from or associated with Basey');
           } else {
@@ -266,9 +272,9 @@ export async function validateLocation(
     warnings.push('Barangay name should be specified for BARANGAY type locations');
   }
   
-  if (request.type === 'LANDMARK' && (!request.description || request.description.trim().length < 10)) {
-    warnings.push('Landmarks should have a detailed description');
-    recommendations.push('Add description of what makes this location a landmark');
+  if ((request.type === 'LANDMARK' || request.type === 'SITIO') && (!request.description || request.description.trim().length < 10)) {
+    warnings.push('Landmarks and sitios should have a detailed description');
+    recommendations.push('Add description of what makes this location identifiable');
   }
   
   // 8. Name validation
@@ -298,6 +304,69 @@ export async function validateLocation(
     googleMapsResult,
     parsedCoordinates: parsedCoords,
     recommendations
+  };
+}
+
+export function getLocationValidationStatus(
+  validation: LocationValidationResult
+): PersistedLocationValidationStatus {
+  if (validation.isValid && validation.googleMapsValid) {
+    return 'VALIDATED';
+  }
+
+  if (validation.errors.length > 0) {
+    return 'FAILED';
+  }
+
+  return 'NEEDS_REVIEW';
+}
+
+export function buildLocationValidationSummary(
+  validation: LocationValidationResult,
+  validatedBy: string,
+  validatedAt = new Date()
+) {
+  const status = getLocationValidationStatus(validation);
+  const isValidated = status === 'VALIDATED';
+
+  return {
+    googlePlaceId: validation.googlePlaceId || null,
+    googleFormattedAddress: validation.googleAddress || null,
+    validationStatus: status,
+    isWithinMunicipality: validation.withinMunicipality,
+    isWithinBarangay: validation.withinBarangay,
+    actualBarangay: validation.detectedBarangay || null,
+    lastValidated: validatedAt,
+    verifiedBy: isValidated ? validatedBy : null,
+    verifiedAt: isValidated ? validatedAt : null
+  };
+}
+
+export function buildLocationValidationLog(
+  validation: LocationValidationResult,
+  validatedBy: string,
+  validationType: string,
+  validatedAt = new Date()
+) {
+  const validatedCoordinates = validation.parsedCoordinates
+    ? `${validation.parsedCoordinates.lat},${validation.parsedCoordinates.lng}`
+    : '';
+
+  return {
+    validatedBy,
+    validationType,
+    isValid: validation.isValid,
+    validationErrors: validation.errors,
+    validationWarnings: validation.warnings,
+    withinMunicipality: validation.withinMunicipality,
+    withinBarangay: validation.withinBarangay,
+    detectedBarangay: validation.detectedBarangay || null,
+    googleMapsValid: validation.googleMapsValid,
+    googlePlaceId: validation.googlePlaceId || null,
+    googleAddress: validation.googleAddress || null,
+    googleConfidence: validation.googleConfidence,
+    validatedCoordinates,
+    validatedAt
   };
 }
 

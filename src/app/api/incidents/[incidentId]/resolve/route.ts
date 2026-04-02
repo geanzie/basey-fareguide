@@ -1,57 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import jwt from 'jsonwebtoken'
 import { cleanupEvidenceFiles } from '@/lib/evidenceCleanup'
-
-async function verifyAuth(request: NextRequest) {
-  try {
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return null
-    }
-
-    const token = authHeader.split(' ')[1]
-    const decoded = jwt.verify(token, getJWTSecret()) as any
-    
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        username: true,
-        userType: true,
-        isActive: true
-      }
-    })
-
-    return user?.isActive ? user : null
-  } catch {
-    return null
-  }
-}
+import { ENFORCER_ONLY, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
 
 export async function PATCH(
   request: NextRequest,
   context: { params: Promise<{ incidentId: string }> }
 ) {
   try {
-    const user = await verifyAuth(request)
-    
-    if (!user) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
-    }
-
-    if (user.userType !== 'ENFORCER') {
-      return NextResponse.json({ message: 'Access denied. Enforcer role required.' }, { status: 403 })
-    }
+    const user = await requireRequestRole(request, [...ENFORCER_ONLY])
 
     const { incidentId } = await context.params
-    const { ticketNumber } = await request.json()
-
-    if (!ticketNumber || !ticketNumber.trim()) {
-      return NextResponse.json({ message: 'Ticket number is required' }, { status: 400 })
-    }
+    const body = await request.json().catch(() => ({}))
+    const remarks = typeof body.remarks === 'string' ? body.remarks.trim() : ''
 
     // Check if incident exists and is being handled by this enforcer
     const incident = await prisma.incident.findUnique({
@@ -74,24 +35,19 @@ export async function PATCH(
       }, { status: 400 })
     }
 
-    // Check if ticket number already exists
-    const existingTicket = await prisma.incident.findUnique({
-      where: { ticketNumber: ticketNumber.trim() }
-    })
-
-    if (existingTicket) {
-      return NextResponse.json({ 
-        message: 'Ticket number already exists. Please use a unique ticket number.' 
+    if (incident.ticketNumber) {
+      return NextResponse.json({
+        message: 'This incident already has a ticket. Use the ticket workflow instead of resolving it again.'
       }, { status: 400 })
     }
 
-    // Update incident to resolved with ticket number
+    // Resolve the incident without issuing a ticket
     const updatedIncident = await prisma.incident.update({
       where: { id: incidentId },
       data: {
         status: 'RESOLVED',
-        ticketNumber: ticketNumber.trim(),
         resolvedAt: new Date(),
+        remarks: remarks || incident.remarks,
         updatedAt: new Date()
       },
       include: {
@@ -137,14 +93,11 @@ export async function PATCH(
 
     return NextResponse.json({
       incident: updatedIncident,
-      message: 'Incident resolved successfully. Evidence files will be cleaned up automatically.',
+      message: 'Incident resolved without issuing a ticket. Evidence cleanup has been initiated.',
       evidenceCleanupInitiated: true
     })
 
   } catch (error) {
-    return NextResponse.json(
-      { message: 'Internal server error' },
-      { status: 500 }
-    )
+    return createAuthErrorResponse(error)
   }
 }

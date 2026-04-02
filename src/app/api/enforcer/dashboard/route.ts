@@ -1,47 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import jwt from 'jsonwebtoken'
-import { getJWTSecret } from '@/lib/auth'
-
-async function verifyAuth(request: NextRequest) {
-  try {
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return null
-    }
-
-    const token = authHeader.substring(7)
-    const decoded = jwt.verify(token, getJWTSecret()) as any
-    
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
-      select: {
-        id: true,
-        username: true,
-        firstName: true,
-        lastName: true,
-        userType: true
-      }
-    })
-
-    return user
-  } catch (error) {
-    return null
-  }
-}
+import { ENFORCER_ONLY, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
 
 // GET /api/enforcer/dashboard
 export async function GET(request: NextRequest) {
   try {
-    const user = await verifyAuth(request)
-    
-    if (!user) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
-    }
-
-    if (user.userType !== 'ENFORCER') {
-      return NextResponse.json({ message: 'Access denied. Enforcer role required.' }, { status: 403 })
-    }
+    const user = await requireRequestRole(request, [...ENFORCER_ONLY])
 
     // Calculate dashboard statistics from real data
     const today = new Date()
@@ -186,9 +150,7 @@ export async function GET(request: NextRequest) {
     })
 
     return NextResponse.json({ stats, recentActivity })
-      } catch (error) {    return NextResponse.json(
-      { message: 'Internal server error' },
-      { status: 500 }
-    )
+  } catch (error) {
+    return createAuthErrorResponse(error)
   }
 }

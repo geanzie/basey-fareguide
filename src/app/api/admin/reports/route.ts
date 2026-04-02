@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { verifyAuth } from '@/lib/auth'
+import { ADMIN_ONLY, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await verifyAuth(request)
-    if (!user || (user.userType !== 'ADMIN' && user.userType !== 'SUPER_ADMIN')) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
-    }
+    await requireRequestRole(request, [...ADMIN_ONLY])
 
     const { searchParams } = new URL(request.url)
     const period = searchParams.get('period') || '30d'
@@ -183,11 +180,9 @@ export async function GET(request: NextRequest) {
       usersByTypeObj[item.userType] = item._count
     })
 
-    // Calculate system uptime (simplified - you'd need proper monitoring)
-    const uptime = '99.7%' // This would come from actual monitoring in production
-
     // Build response
     const reportData = {
+      generatedAt: new Date().toISOString(),
       incidents: {
         total: totalIncidents,
         byStatus: byStatusObj,
@@ -209,11 +204,6 @@ export async function GET(request: NextRequest) {
             { files: data.files, sizeMB: Math.round(data.sizeMB * 100) / 100 }
           ])
         )
-      },
-      system: {
-        responseTime: 245, // This would come from actual monitoring
-        uptime,
-        lastGenerated: new Date().toISOString()
       }
     }
 
@@ -221,7 +211,12 @@ export async function GET(request: NextRequest) {
       success: true,
       data: reportData
     })
-      } catch (error) {    return NextResponse.json(
+  } catch (error) {
+    const authError = createAuthErrorResponse(error)
+    if (authError.status !== 500) {
+      return authError
+    }
+    return NextResponse.json(
       { success: false, error: 'Failed to generate system reports' },
       { status: 500 }
     )

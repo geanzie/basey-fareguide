@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import type { VehicleDto, VehiclesResponseDto } from '@/lib/contracts'
 
 interface IncidentForm {
   incidentType: string
@@ -18,26 +19,6 @@ interface IncidentForm {
 interface GPSPosition {
   latitude: number
   longitude: number
-}
-
-interface Vehicle {
-  id: string
-  plateNumber: string
-  vehicleType: string
-  make: string
-  model: string
-  color: string
-  ownerName: string
-  driverName: string | null
-  driverLicense: string | null
-  isActive: boolean
-  permit: {
-    id: string
-    permitPlateNumber: string
-    status: string
-    issuedDate: string
-    expiryDate: string
-  } | null
 }
 
 const IncidentReporting = () => {
@@ -58,10 +39,10 @@ const IncidentReporting = () => {
   const [success, setSuccess] = useState('')
   const [error, setError] = useState('')
   const [locationLoading, setLocationLoading] = useState(false)
-  const [vehicles, setVehicles] = useState<Vehicle[]>([])
+  const [vehicles, setVehicles] = useState<VehicleDto[]>([])
   const [vehiclesLoading, setVehiclesLoading] = useState(true)
   const [vehicleSearch, setVehicleSearch] = useState('')
-  const [filteredVehicles, setFilteredVehicles] = useState<Vehicle[]>([])
+  const [filteredVehicles, setFilteredVehicles] = useState<VehicleDto[]>([])
 
   const incidentTypes = [
     { value: 'FARE_OVERCHARGE', label: 'Fare Overcharging' },
@@ -123,18 +104,12 @@ const IncidentReporting = () => {
   const fetchVehicles = async () => {
     try {
       setVehiclesLoading(true)
-      const token = localStorage.getItem('token')
-      
-      const response = await fetch('/api/vehicles?isActive=true&limit=200', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
+      const response = await fetch('/api/vehicles?isActive=true&limit=200')
 
       if (response.ok) {
-        const data = await response.json()
+        const data: VehiclesResponseDto = await response.json()
         // Filter vehicles to only include those with active permits
-        const vehiclesWithPermits = (data.vehicles || []).filter((vehicle: Vehicle) => {
+        const vehiclesWithPermits = (data.vehicles || []).filter((vehicle) => {
           return vehicle.permit && 
                  vehicle.permit.status === 'ACTIVE' && 
                  new Date(vehicle.permit.expiryDate) > new Date()
@@ -227,18 +202,17 @@ const IncidentReporting = () => {
         submitData.append(`evidence_${index}`, file)
       })
 
-      const token = localStorage.getItem('token')
-      
       const response = await fetch('/api/incidents/report', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
         body: submitData
       })
 
       if (response.ok) {
-        setSuccess('Incident report submitted successfully! Reference ID will be provided via email.')
+        const data = await response.json()
+        const evidenceSummary = data.evidenceCount
+          ? ` ${data.evidenceCount} evidence file(s) saved.`
+          : ''
+        setSuccess(`Incident report submitted successfully. Reference number: ${data.referenceNumber}.${evidenceSummary}`)
         // Reset form
         setFormData({
           incidentType: '',
@@ -271,7 +245,7 @@ const IncidentReporting = () => {
         </div>
         <h2 className="text-3xl font-bold text-gray-900 mb-2">Report an Incident</h2>
         <p className="text-gray-600">
-          Help maintain fair transportation by reporting violations. Select the vehicle involved from our registered database.
+          Submit one incident report, attach evidence if you have it, and keep the reference number shown after submission.
         </p>
       </div>
 
@@ -290,14 +264,12 @@ const IncidentReporting = () => {
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
         <div className="flex items-center mb-2">
           <span className="text-lg mr-2">💡</span>
-          <h3 className="font-semibold text-blue-800">How to Report</h3>
+          <h3 className="font-semibold text-blue-800">Before you submit</h3>
         </div>
         <div className="space-y-1 text-sm text-blue-700">
-          <p>1. Select the vehicle from the dropdown list (only vehicles with active permits are shown)</p>
-          <p>2. Choose the type of incident you witnessed</p>
-          <p>3. Provide detailed description and exact location</p>
-          <p>4. Upload photos or videos as evidence (if available)</p>
-          <p>5. Submit the report - you'll receive a reference number via email</p>
+          <p>1. Pick the vehicle involved. Only vehicles with active permits are shown.</p>
+          <p>2. Enter the incident details, date, time, and location as clearly as possible.</p>
+          <p>3. Evidence is optional, but any uploaded files are saved with the report.</p>
         </div>
       </div>
 
@@ -399,14 +371,14 @@ const IncidentReporting = () => {
               onClick={getCurrentLocation}
               disabled={locationLoading}
               className="px-4 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
-              title="Get current location"
+              title="Capture current GPS coordinates"
             >
-              {locationLoading ? '📡' : '📍'}
+              {locationLoading ? 'Loading GPS' : 'Use GPS'}
             </button>
           </div>
           {currentLocation && (
             <p className="text-xs text-green-600 mt-1">
-              📍 GPS coordinates captured ({currentLocation.latitude.toFixed(6)}, {currentLocation.longitude.toFixed(6)})
+              GPS coordinates captured ({currentLocation.latitude.toFixed(6)}, {currentLocation.longitude.toFixed(6)})
             </p>
           )}
         </div>
@@ -417,7 +389,7 @@ const IncidentReporting = () => {
             Select Vehicle to Report *
           </label>
           <div className="mb-2 text-xs text-green-600 bg-green-50 border border-green-200 rounded px-2 py-1">
-            ℹ️ Only vehicles with active permits are shown in this list
+            Only vehicles with active permits are shown in this list.
           </div>
           
           {/* Search Input */}
@@ -467,7 +439,7 @@ const IncidentReporting = () => {
           
           {formData.vehicleId && (
             <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <h4 className="font-medium text-blue-900 mb-1">Selected Vehicle Details:</h4>
+              <h4 className="font-medium text-blue-900 mb-1">Selected vehicle</h4>
               <div className="text-sm text-blue-700 space-y-1">
                 <p><strong>Plate Number:</strong> {formData.plateNumber}</p>
                 <p><strong>Type:</strong> {formData.vehicleType.replace('_', ' ')}</p>
@@ -479,7 +451,7 @@ const IncidentReporting = () => {
                 )}
                 {vehicles.find(v => v.id === formData.vehicleId)?.permit && (
                   <p><strong>Permit:</strong> {vehicles.find(v => v.id === formData.vehicleId)?.permit?.permitPlateNumber} 
-                    <span className="text-green-600 ml-1">✓ Active</span>
+                    <span className="text-green-600 ml-1">Active</span>
                   </p>
                 )}
               </div>
@@ -492,7 +464,7 @@ const IncidentReporting = () => {
         {/* Evidence Upload */}
         <div>
           <label htmlFor="evidence" className="block text-sm font-medium text-gray-700 mb-2">
-            Evidence (Photos/Videos)
+            Evidence (Optional)
           </label>
           <input
             type="file"
@@ -500,16 +472,16 @@ const IncidentReporting = () => {
             name="evidence"
             onChange={handleFileChange}
             multiple
-            accept="image/*,video/*"
+            accept="image/*,video/*,audio/*,.pdf"
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
           />
           <p className="text-xs text-gray-500 mt-1">
-            Upload photos or videos as evidence (max 5 files, 10MB each)
+            Upload images, videos, audio, or PDFs as evidence. Images, audio, and PDFs can be up to 10MB each; videos can be up to 50MB.
           </p>
           {formData.evidenceFiles.length > 0 && (
             <div className="mt-2">
               <p className="text-sm text-green-600">
-                {formData.evidenceFiles.length} file(s) selected
+                {formData.evidenceFiles.length} file(s) selected for upload
               </p>
             </div>
           )}
@@ -548,7 +520,7 @@ const IncidentReporting = () => {
       <div className="mt-8 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
         <div className="flex items-center mb-2">
           <span className="text-lg mr-2">📞</span>
-          <h3 className="font-semibold text-yellow-800">Emergency Hotlines</h3>
+          <h3 className="font-semibold text-yellow-800">Emergency hotlines</h3>
         </div>
         <div className="space-y-1 text-sm text-yellow-700">
           <p>Traffic Enforcement: 09985986570</p>

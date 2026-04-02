@@ -1,53 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import jwt from 'jsonwebtoken'
-import { getJWTSecret } from '@/lib/auth'
-
-async function verifyAuth(request: NextRequest) {
-  try {
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return null
-    }
-
-    const token = authHeader.split(' ')[1]
-    const decoded = jwt.verify(token, getJWTSecret()) as any
-    
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        username: true,
-        userType: true,
-        isActive: true
-      }
-    })
-
-    return user?.isActive ? user : null
-  } catch {
-    return null
-  }
-}
+import { ADMIN_OR_ENFORCER, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ evidenceId: string }> }
 ) {
   try {
-    const user = await verifyAuth(request)
-    
-    if (!user) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Only enforcers and admins can review evidence
-    if (!['ENFORCER', 'ADMIN'].includes(user.userType)) {
-      return NextResponse.json({ 
-        message: 'Only enforcers and administrators can review evidence' 
-      }, { status: 403 })
-    }
+    const user = await requireRequestRole(request, [...ADMIN_OR_ENFORCER])
 
     const { evidenceId } = await params
     const { status, remarks } = await request.json()
@@ -113,9 +73,6 @@ export async function PATCH(
     })
 
   } catch (error) {
-    return NextResponse.json(
-      { message: 'Internal server error' },
-      { status: 500 }
-    )
+    return createAuthErrorResponse(error)
   }
 }

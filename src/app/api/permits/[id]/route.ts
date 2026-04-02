@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { PermitStatus } from '@/generated/prisma'
+import { PermitStatus } from '@prisma/client'
+import { ADMIN_OR_ENCODER, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
+import { serializePermit } from '@/lib/serializers'
 
 export async function GET(
   request: NextRequest,
@@ -48,6 +50,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await requireRequestRole(request, [...ADMIN_OR_ENCODER])
     const { id } = await params
     const body = await request.json()
     const { permitPlateNumber, driverFullName, status, remarks, updatedBy } = body
@@ -90,16 +93,23 @@ export async function PUT(
       include: {
         renewalHistory: {
           orderBy: { renewedAt: 'desc' }
+        },
+        vehicle: {
+          select: {
+            id: true,
+            plateNumber: true,
+            make: true,
+            model: true,
+            ownerName: true,
+            vehicleType: true
+          }
         }
       }
     })
 
-    return NextResponse.json(permit)
+    return NextResponse.json(serializePermit(permit))
   } catch (error) {
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return createAuthErrorResponse(error)
   }
 }
 
@@ -108,6 +118,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await requireRequestRole(request, [...ADMIN_OR_ENCODER])
     const { id } = await params
     const existingPermit = await prisma.permit.findUnique({
       where: { id }
@@ -126,9 +137,6 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Permit deleted successfully' })
   } catch (error) {
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return createAuthErrorResponse(error)
   }
 }

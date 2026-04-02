@@ -1,73 +1,62 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
 import RoleGuard from '@/components/RoleGuard'
 import PageWrapper from '@/components/PageWrapper'
 
-// Lazy-load admin modules to reduce initial bundle
 const AdminUserManagement = dynamic(() => import('@/components/AdminUserManagement'), {
-  loading: () => <div className="p-6">Loading users...</div>
+  loading: () => <div className="p-6">Loading users...</div>,
 })
+
 const StorageManagement = dynamic(() => import('@/components/StorageManagement'), {
-  loading: () => <div className="p-6">Loading storage tools...</div>
+  loading: () => <div className="p-6">Loading storage tools...</div>,
 })
+
 const AdminDashboard = dynamic(() => import('@/components/AdminDashboard'), {
-  loading: () => <div className="p-6">Loading admin dashboard...</div>
+  loading: () => <div className="p-6">Loading admin dashboard...</div>,
 })
+
 const AdminLocationManager = dynamic(() => import('@/components/AdminLocationManager'), {
-  loading: () => <div className="p-6">Loading location manager...</div>
+  loading: () => <div className="p-6">Loading location manager...</div>,
 })
+
+type AdminTab = 'dashboard' | 'users' | 'storage' | 'locations'
 
 export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'storage' | 'locations' | 'settings'>('dashboard')
+  const [activeTab, setActiveTab] = useState<AdminTab>('dashboard')
 
-  // Listen for custom events from dashboard quick actions
   useEffect(() => {
-    const handleTabChange = (event: any) => {
-      setActiveTab(event.detail)
+    const handleTabChange = (event: Event) => {
+      const customEvent = event as CustomEvent<AdminTab>
+      if (customEvent.detail) {
+        setActiveTab(customEvent.detail)
+      }
     }
-    
-    window.addEventListener('adminTabChange', handleTabChange)
-    return () => window.removeEventListener('adminTabChange', handleTabChange)
+
+    window.addEventListener('adminTabChange', handleTabChange as EventListener)
+    return () => window.removeEventListener('adminTabChange', handleTabChange as EventListener)
   }, [])
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'dashboard':
-        return <AdminDashboard />
-      case 'users':
-        return <AdminUserManagement />
-      case 'storage':
-        return <StorageManagement />
-      case 'locations':
-        return <AdminLocationManager />
-      case 'settings':
-        return <AdminSettings />
-      default:
-        return <AdminDashboard />
-    }
-  }
+  const tabs: Array<{ key: AdminTab; label: string }> = [
+    { key: 'dashboard', label: 'Dashboard' },
+    { key: 'users', label: 'User Management' },
+    { key: 'storage', label: 'Storage Management' },
+    { key: 'locations', label: 'Location Management' },
+  ]
 
   return (
     <RoleGuard allowedRoles={['ADMIN']}>
-      <PageWrapper 
+      <PageWrapper
         title="Admin Dashboard"
-        subtitle="System administration and management"
+        subtitle="Administration, oversight, storage, and location management"
       >
-        {/* Navigation Tabs */}
         <div className="mb-8">
-          <nav className="flex space-x-8 border-b border-gray-200">
-            {[
-              { key: 'dashboard', label: '📊 Dashboard', icon: '📊' },
-              { key: 'users', label: '👥 User Management', icon: '👥' },
-              { key: 'storage', label: '💾 Storage Management', icon: '💾' },
-              { key: 'locations', label: '📍 Location Management', icon: '📍' },
-              { key: 'settings', label: '⚙️ System Settings', icon: '⚙️' }
-            ].map((tab) => (
+          <nav className="flex flex-wrap gap-6 border-b border-gray-200">
+            {tabs.map((tab) => (
               <button
                 key={tab.key}
-                onClick={() => setActiveTab(tab.key as any)}
+                onClick={() => setActiveTab(tab.key)}
                 className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
                   activeTab === tab.key
                     ? 'border-emerald-500 text-emerald-600'
@@ -80,31 +69,11 @@ export default function AdminPage() {
           </nav>
         </div>
 
-        {/* Content */}
-        {renderContent()}
+        {activeTab === 'users' && <AdminUserManagement />}
+        {activeTab === 'storage' && <StorageManagement />}
+        {activeTab === 'locations' && <AdminLocationManager />}
+        {activeTab === 'dashboard' && <AdminDashboard />}
       </PageWrapper>
     </RoleGuard>
-  )
-}
-
-// Placeholder for Admin Settings component
-function AdminSettings() {
-  return (
-    <div className="bg-white rounded-xl shadow-lg p-8">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">System Settings</h2>
-      <div className="space-y-6">
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <div className="flex items-center">
-            <span className="text-yellow-500 text-xl mr-3">⚠️</span>
-            <div>
-              <p className="text-yellow-800 font-semibold">Settings Configuration Coming Soon</p>
-              <p className="text-yellow-700 text-sm">
-                System settings and configuration options will be available in the next update.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
   )
 }
