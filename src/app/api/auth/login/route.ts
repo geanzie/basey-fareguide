@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { getJWTSecret } from '@/lib/auth'
+import { AUTH_SESSION_JWT_EXPIRES_IN, AUTH_SESSION_MAX_AGE_SECONDS } from '@/lib/authSession'
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS } from '@/lib/rateLimit'
 import { serializeSessionUser } from '@/lib/serializers'
 
@@ -78,7 +79,7 @@ export async function POST(request: NextRequest) {
         userType: user.userType 
       },
       getJWTSecret(),
-      { expiresIn: '24h' } // Reduced from 7d to 24h for security
+      { expiresIn: AUTH_SESSION_JWT_EXPIRES_IN }
     )
 
     // Create response with user data
@@ -92,7 +93,7 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production', // Only send over HTTPS in production
       sameSite: 'strict', // CSRF protection
-      maxAge: 60 * 60 * 24, // 24 hours in seconds
+      maxAge: AUTH_SESSION_MAX_AGE_SECONDS,
       path: '/'
     })
 

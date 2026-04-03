@@ -301,7 +301,7 @@ const IncidentsList = () => {
             </div>
           ) : (
             <div className="text-center py-12">
-              <span className="text-4xl mb-4 block">�</span>
+              <span className="text-4xl mb-4 block">{'\uD83D\uDCEC'}</span>
               <p className="text-gray-500 text-lg">No incidents found</p>
               <p className="text-gray-400 text-sm mt-2">
                 {searchQuery ? 'Try adjusting your search terms' : 'Try adjusting your filters or check back later'}

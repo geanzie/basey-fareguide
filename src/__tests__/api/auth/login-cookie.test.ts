@@ -1,4 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  AUTH_SESSION_JWT_EXPIRES_IN,
+  AUTH_SESSION_MAX_AGE_SECONDS,
+} from "@/lib/authSession";
 
 const prismaMock = vi.hoisted(() => ({
   user: {
@@ -85,5 +89,15 @@ describe("POST /api/auth/login", () => {
     });
     expect(json).not.toHaveProperty("token");
     expect(res.headers.get("set-cookie")).toContain("auth-token=signed-session-token");
+    expect(res.headers.get("set-cookie")).toContain(`Max-Age=${AUTH_SESSION_MAX_AGE_SECONDS}`);
+    expect(jwtMock.sign).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "user-1",
+        username: "public-user",
+        userType: "PUBLIC",
+      }),
+      "test-secret",
+      { expiresIn: AUTH_SESSION_JWT_EXPIRES_IN },
+    );
   });
 });

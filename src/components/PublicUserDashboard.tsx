@@ -4,6 +4,8 @@ import { memo, useMemo } from 'react'
 import Link from 'next/link'
 import useSWR from 'swr'
 
+import FareRateBanner from '@/components/FareRateBanner'
+import TrafficAnnouncementsFeed from '@/components/TrafficAnnouncementsFeed'
 import type {
   FareCalculationDto,
   FareCalculationsResponseDto,
@@ -82,6 +84,16 @@ function PublicUserDashboard() {
           Start with one action, then review the latest saved fares and reported incidents below.
         </p>
       </section>
+
+      <TrafficAnnouncementsFeed
+        title="Traffic Announcements"
+        description="Newest municipal road and transport advisories for riders."
+      />
+
+      <FareRateBanner
+        title="Fare Notice"
+        description="Current public fare rates and the next approved increase or adjustment, when one is scheduled."
+      />
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         <ActionCard

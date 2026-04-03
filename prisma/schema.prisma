@@ -53,6 +53,9 @@ model User {
   verifiedLocations     Location[]            @relation("LocationVerifier")
   createdFareRateVersions FareRateVersion[]   @relation("FareRateVersionCreator")
   canceledFareRateVersions FareRateVersion[]  @relation("FareRateVersionCanceller")
+  createdAnnouncements  Announcement[]        @relation("AnnouncementCreator")
+  updatedAnnouncements  Announcement[]        @relation("AnnouncementUpdater")
+  archivedAnnouncements Announcement[]        @relation("AnnouncementArchiver")
 
   @@index([username])
   @@index([userType])
@@ -82,6 +85,28 @@ model FareRateVersion {
   @@index([canceledAt])
   @@index([effectiveAt, canceledAt])
   @@map("fare_rate_versions")
+}
+
+model Announcement {
+  id             String               @id @default(cuid())
+  title          String
+  body           String
+  category       AnnouncementCategory
+  startsAt       DateTime
+  endsAt         DateTime?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  createdBy      String
+  updatedBy      String
+  archivedAt     DateTime?
+  archivedBy     String?
+  createdByUser  User                 @relation("AnnouncementCreator", fields: [createdBy], references: [id])
+  updatedByUser  User                 @relation("AnnouncementUpdater", fields: [updatedBy], references: [id])
+  archivedByUser User?                @relation("AnnouncementArchiver", fields: [archivedBy], references: [id])
+
+  @@index([archivedAt, startsAt, createdAt])
+  @@index([archivedAt, endsAt])
+  @@map("announcements")
 }
 
 model Vehicle {
@@ -373,6 +398,13 @@ enum UserType {
   DATA_ENCODER
   ENFORCER
   PUBLIC
+}
+
+enum AnnouncementCategory {
+  EMERGENCY_NOTICE
+  ROAD_CLOSURE
+  ROAD_WORK
+  TRAFFIC_ADVISORY
 }
 
 enum VehicleType {

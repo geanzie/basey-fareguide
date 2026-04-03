@@ -3,4 +3,5 @@ export const SWR_KEYS = {
   incidents: "/api/incidents",
   fareCalculations: "/api/fare-calculations",
   fareRates: "/api/fare-rates",
+  announcements: "/api/announcements",
 } as const;

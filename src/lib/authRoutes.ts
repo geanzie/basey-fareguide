@@ -2,6 +2,7 @@ import type { UserRole } from "@/lib/contracts";
 
 export const LOGIN_ROUTE = "/login";
 export const LEGACY_AUTH_ROUTE = "/auth";
+export const POST_LOGOUT_ROUTE = "/";
 export const AUTHENTICATED_ROLES = [
   "ADMIN",
   "DATA_ENCODER",

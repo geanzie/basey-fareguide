@@ -1,18 +1,22 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import useSWR, { useSWRConfig } from 'swr'
 
 import AuthStateShell from './AuthStateShell'
 import UnifiedLayout from './UnifiedLayout'
 import type { SessionUserDto, UserProfileResponseDto } from '@/lib/contracts'
-import { isAuthRoute, LOGIN_ROUTE } from '@/lib/authRoutes'
+import { isAuthRoute, POST_LOGOUT_ROUTE } from '@/lib/authRoutes'
 import { SWR_KEYS } from '@/lib/swrKeys'
 import {
   buildOptimisticUserProfileResponse,
   fetchUserProfileResponse,
 } from '@/lib/userProfile'
+import {
+  AUTH_SESSION_IDLE_TIMEOUT_MS,
+  AUTH_SESSION_REVALIDATION_MS,
+} from '@/lib/authSession'
 
 export type AuthStatus =
   | 'loading'
@@ -48,6 +52,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     fetchUserProfileResponse,
   )
   const [transitionState, setTransitionState] = useState<'idle' | 'logging_out'>('idle')
+  const lastActivityAtRef = useRef(Date.now())
+  const logoutRef = useRef<() => Promise<void>>(async () => {})
 
   const user = data?.user ?? null
   const status: AuthStatus =
@@ -58,10 +64,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         : user
           ? 'authenticated'
           : 'unauthenticated'
+  const isAuthenticated = status === 'authenticated'
   const loading = status === 'loading'
 
   useEffect(() => {
-    if (transitionState === 'logging_out' && isAuthRoute(pathname)) {
+    if (
+      transitionState === 'logging_out' &&
+      (isAuthRoute(pathname) || pathname === POST_LOGOUT_ROUTE)
+    ) {
       setTransitionState('idle')
     }
   }, [pathname, transitionState])
@@ -99,9 +109,134 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       mutateCache(SWR_KEYS.incidents, undefined, { revalidate: false }),
       mutateCache(SWR_KEYS.fareCalculations, undefined, { revalidate: false }),
     ])
-    router.replace(LOGIN_ROUTE)
+    router.replace(POST_LOGOUT_ROUTE)
     router.refresh()
   }
+
+  useEffect(() => {
+    logoutRef.current = logout
+  }, [logout])
+
+  useEffect(() => {
+    if (!isAuthenticated || transitionState === 'logging_out') {
+      return
+    }
+
+    let canceled = false
+
+    const revalidateSession = async () => {
+      try {
+        const nextData = await fetchUserProfileResponse()
+
+        if (!canceled && !nextData?.user) {
+          await logoutRef.current()
+          return
+        }
+
+        if (!canceled) {
+          await mutateCache(SWR_KEYS.userProfile, nextData, {
+            populateCache: true,
+            revalidate: false,
+          })
+        }
+      } catch {
+        // Leave the current session state unchanged on transient fetch errors.
+      }
+    }
+
+    const intervalId = window.setInterval(() => {
+      void revalidateSession()
+    }, AUTH_SESSION_REVALIDATION_MS)
+
+    const handleFocus = () => {
+      void revalidateSession()
+    }
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void revalidateSession()
+      }
+    }
+
+    window.addEventListener('focus', handleFocus)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      canceled = true
+      window.clearInterval(intervalId)
+      window.removeEventListener('focus', handleFocus)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [isAuthenticated, mutateCache, transitionState])
+
+  useEffect(() => {
+    if (!isAuthenticated || transitionState === 'logging_out') {
+      return
+    }
+
+    let timeoutId: number | null = null
+    let idleLogoutStarted = false
+
+    const triggerIdleLogout = () => {
+      if (idleLogoutStarted) {
+        return
+      }
+
+      idleLogoutStarted = true
+      void logoutRef.current()
+    }
+
+    const scheduleIdleTimeout = () => {
+      if (timeoutId != null) {
+        window.clearTimeout(timeoutId)
+      }
+
+      timeoutId = window.setTimeout(() => {
+        triggerIdleLogout()
+      }, AUTH_SESSION_IDLE_TIMEOUT_MS)
+    }
+
+    const recordActivity = () => {
+      lastActivityAtRef.current = Date.now()
+      scheduleIdleTimeout()
+    }
+
+    const checkIdleTimeout = () => {
+      if (Date.now() - lastActivityAtRef.current >= AUTH_SESSION_IDLE_TIMEOUT_MS) {
+        triggerIdleLogout()
+        return
+      }
+
+      scheduleIdleTimeout()
+    }
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkIdleTimeout()
+      }
+    }
+
+    recordActivity()
+
+    const events: Array<keyof WindowEventMap> = ['pointerdown', 'keydown', 'scroll', 'touchstart']
+    events.forEach((eventName) => {
+      window.addEventListener(eventName, recordActivity)
+    })
+    window.addEventListener('focus', checkIdleTimeout)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      if (timeoutId != null) {
+        window.clearTimeout(timeoutId)
+      }
+
+      events.forEach((eventName) => {
+        window.removeEventListener(eventName, recordActivity)
+      })
+      window.removeEventListener('focus', checkIdleTimeout)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [isAuthenticated, transitionState])
 
   return (
     <AuthContext.Provider value={{ user, status, loading, login, logout, refreshUser }}>

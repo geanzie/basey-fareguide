@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { getCurrentPageData, subscribeToPageData } from './PageWrapper'
 import { useAuth } from './AuthProvider'
@@ -24,12 +24,32 @@ interface UnifiedLayoutProps {
   headerContent?: React.ReactNode
 }
 
-export default function UnifiedLayout({ children, user, title, subtitle, headerContent }: UnifiedLayoutProps) {
+const ICONS = {
+  profile: '\uD83D\uDC64',
+  discount: '\uD83C\uDF9F\uFE0F',
+  dashboard: '\uD83D\uDCCA',
+  users: '\uD83D\uDC65',
+  incidents: '\uD83D\uDEA8',
+  reports: '\uD83D\uDCC8',
+  fareRates: '\uD83C\uDFF7\uFE0F',
+  announcements: '\uD83D\uDCE2',
+  permit: '\uD83D\uDCC4',
+  vehicle: '\uD83D\uDE97',
+  calculator: '\uD83E\uDDEE',
+  history: '\uD83D\uDCCB',
+} as const
+
+export default function UnifiedLayout({
+  children,
+  user,
+  title,
+  subtitle,
+  headerContent,
+}: UnifiedLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [pageData, setPageData] = useState(getCurrentPageData)
   const pathname = usePathname()
-  const router = useRouter()
   const { logout, status } = useAuth()
 
   useEffect(() => {
@@ -57,22 +77,21 @@ export default function UnifiedLayout({ children, user, title, subtitle, headerC
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* Sidebar */}
-      <aside className={`
+      <aside
+        className={`
         fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         lg:translate-x-0 lg:relative lg:flex lg:flex-col
-      `}>
+      `}
+      >
         <div className="flex flex-col h-full">
-          {/* Logo/Brand */}
           <div className="flex items-center px-6 py-5 border-b border-gray-200 h-20">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-green-600 rounded-lg flex items-center justify-center">
@@ -85,7 +104,6 @@ export default function UnifiedLayout({ children, user, title, subtitle, headerC
             </div>
           </div>
 
-          {/* Navigation */}
           <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
             {navigationItems.map((item) => (
               <NavigationLink
@@ -99,12 +117,9 @@ export default function UnifiedLayout({ children, user, title, subtitle, headerC
         </div>
       </aside>
 
-      {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Top Header */}
         <header className="bg-white border-b border-gray-200 sticky top-0 z-30 flex-shrink-0 h-20">
           <div className="flex items-center justify-between px-4 py-5 sm:px-6 h-full">
-            {/* Mobile menu button */}
             <button
               onClick={() => setSidebarOpen(true)}
               className="lg:hidden p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
@@ -114,7 +129,6 @@ export default function UnifiedLayout({ children, user, title, subtitle, headerC
               </svg>
             </button>
 
-            {/* Page Title */}
             <div className="flex-1 min-w-0 px-4 lg:px-0">
               {(pageData.title || title) && (
                 <div>
@@ -130,14 +144,12 @@ export default function UnifiedLayout({ children, user, title, subtitle, headerC
               )}
             </div>
 
-            {/* Header Content */}
             {(pageData.headerContent || headerContent) && (
               <div className="flex-shrink-0 mr-4">
                 {pageData.headerContent || headerContent}
               </div>
             )}
 
-            {/* User Menu */}
             <div className="relative">
               <button
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
@@ -145,7 +157,8 @@ export default function UnifiedLayout({ children, user, title, subtitle, headerC
               >
                 <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
                   <span className="text-emerald-600 text-sm font-semibold">
-                    {user.firstName?.[0]}{user.lastName?.[0]}
+                    {user.firstName?.[0]}
+                    {user.lastName?.[0]}
                   </span>
                 </div>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -156,7 +169,9 @@ export default function UnifiedLayout({ children, user, title, subtitle, headerC
               {userMenuOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
                   <div className="px-4 py-2 border-b border-gray-100">
-                    <p className="text-sm font-medium text-gray-900">{user.firstName} {user.lastName}</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {user.firstName} {user.lastName}
+                    </p>
                     <p className="text-xs text-gray-500">@{user.username}</p>
                   </div>
                   <Link
@@ -164,7 +179,7 @@ export default function UnifiedLayout({ children, user, title, subtitle, headerC
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                     onClick={() => setUserMenuOpen(false)}
                   >
-                    👤 Profile Settings
+                    {ICONS.profile} Profile Settings
                   </Link>
                   {user.userType === 'PUBLIC' && (
                     <Link
@@ -172,7 +187,7 @@ export default function UnifiedLayout({ children, user, title, subtitle, headerC
                       className="block px-4 py-2 text-sm text-purple-700 hover:bg-purple-50 transition-colors font-medium"
                       onClick={() => setUserMenuOpen(false)}
                     >
-                      🎟️ Discount Card
+                      {ICONS.discount} Discount Card
                     </Link>
                   )}
                   <button
@@ -188,40 +203,35 @@ export default function UnifiedLayout({ children, user, title, subtitle, headerC
           </div>
         </header>
 
-        {/* Page Content */}
-        <main className="flex-1 overflow-auto">
-          {children}
-        </main>
+        <main className="flex-1 overflow-auto">{children}</main>
       </div>
     </div>
   )
 }
 
-// Navigation Link Component
-function NavigationLink({ 
-  item, 
-  isActive, 
-  onNavigate 
-}: { 
+function NavigationLink({
+  item,
+  isActive,
+  onNavigate,
+}: {
   item: NavigationItem
   isActive: boolean
   onNavigate: () => void
 }) {
-  const displayIcon = item.id === 'fare-rates' ? '🏷️' : item.icon
-
   return (
     <Link
       href={item.href}
       onClick={onNavigate}
       className={`
         flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors
-        ${isActive 
-          ? 'bg-emerald-100 text-emerald-700 border-r-2 border-emerald-500' 
-          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+        ${
+          isActive
+            ? 'bg-emerald-100 text-emerald-700 border-r-2 border-emerald-500'
+            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
         }
       `}
     >
-      <span className="text-lg">{displayIcon}</span>
+      <span className="text-lg">{item.icon}</span>
       <span className="flex-1">{item.label}</span>
       {item.badge && (
         <span className="bg-red-100 text-red-600 text-xs px-2 py-1 rounded-full">
@@ -232,7 +242,6 @@ function NavigationLink({
   )
 }
 
-// Navigation items based on user role
 function getNavigationItems(userType: string): NavigationItem[] {
   const commonItems: NavigationItem[] = [
     // Removed coordinate verification from common items - now admin only
@@ -244,40 +253,46 @@ function getNavigationItems(userType: string): NavigationItem[] {
         {
           id: 'dashboard',
           label: 'Admin Dashboard',
-          icon: '📊',
-          href: '/admin'
+          icon: ICONS.dashboard,
+          href: '/admin',
         },
         {
           id: 'users',
           label: 'User Management',
-          icon: '👥',
-          href: '/admin/users'
+          icon: ICONS.users,
+          href: '/admin/users',
         },
         {
           id: 'discount-cards',
           label: 'Discount Cards',
-          icon: '🎫',
-          href: '/admin/discount-cards'
+          icon: ICONS.discount,
+          href: '/admin/discount-cards',
         },
         {
           id: 'incidents',
           label: 'All Incidents',
-          icon: '🚨',
-          href: '/admin/incidents'
+          icon: ICONS.incidents,
+          href: '/admin/incidents',
         },
         {
           id: 'reports',
           label: 'System Reports',
-          icon: '📈',
-          href: '/admin/reports'
+          icon: ICONS.reports,
+          href: '/admin/reports',
         },
         {
           id: 'fare-rates',
           label: 'Fare Rates',
-          icon: 'ðŸ’µ',
-          href: '/admin/fare-rates'
+          icon: ICONS.fareRates,
+          href: '/admin/fare-rates',
         },
-        ...commonItems
+        {
+          id: 'announcements',
+          label: 'Announcements',
+          icon: ICONS.announcements,
+          href: '/admin/announcements',
+        },
+        ...commonItems,
       ]
 
     case 'DATA_ENCODER':
@@ -285,22 +300,22 @@ function getNavigationItems(userType: string): NavigationItem[] {
         {
           id: 'dashboard',
           label: 'Encoder Dashboard',
-          icon: '📊',
-          href: '/encoder'
+          icon: ICONS.dashboard,
+          href: '/encoder',
         },
         {
           id: 'permits',
           label: 'Permit Management',
-          icon: '📄',
-          href: '/encoder/permits'
+          icon: ICONS.permit,
+          href: '/encoder/permits',
         },
         {
           id: 'vehicles',
           label: 'Vehicle Registry',
-          icon: '🚗',
-          href: '/encoder/vehicles'
+          icon: ICONS.vehicle,
+          href: '/encoder/vehicles',
         },
-        ...commonItems
+        ...commonItems,
       ]
 
     case 'ENFORCER':
@@ -308,9 +323,9 @@ function getNavigationItems(userType: string): NavigationItem[] {
         {
           id: 'dashboard',
           label: 'Enforcement Dashboard',
-          icon: '📊',
-          href: '/enforcer'
-        }
+          icon: ICONS.dashboard,
+          href: '/enforcer',
+        },
       ]
 
     case 'PUBLIC':
@@ -318,39 +333,39 @@ function getNavigationItems(userType: string): NavigationItem[] {
         {
           id: 'dashboard',
           label: 'My Dashboard',
-          icon: '📊',
-          href: '/dashboard'
+          icon: ICONS.dashboard,
+          href: '/dashboard',
         },
         {
           id: 'calculator',
           label: 'Fare Calculator',
-          icon: '🧮',
-          href: '/calculator'
+          icon: ICONS.calculator,
+          href: '/calculator',
         },
         {
           id: 'discount',
           label: 'Discount Card',
-          icon: '🎟️',
-          href: '/profile/discount'
+          icon: ICONS.discount,
+          href: '/profile/discount',
         },
         {
           id: 'report',
           label: 'Report Incident',
-          icon: '🚨',
-          href: '/report'
+          icon: ICONS.incidents,
+          href: '/report',
         },
         {
           id: 'history',
           label: 'My History',
-          icon: '📋',
-          href: '/history'
+          icon: ICONS.history,
+          href: '/history',
         },
         {
           id: 'profile',
           label: 'My Profile',
-          icon: '👤',
-          href: '/profile'
-        }
+          icon: ICONS.profile,
+          href: '/profile',
+        },
       ]
 
     default:

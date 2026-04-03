@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createRoot, type Root } from "react-dom/client";
 import { SWRConfig } from "swr";
 
-import FareRateBanner from "@/components/FareRateBanner";
+import TrafficAnnouncementsFeed from "@/components/TrafficAnnouncementsFeed";
 
 function makeJsonResponse(body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -14,38 +14,15 @@ function makeJsonResponse(body: unknown): Response {
   });
 }
 
-describe("FareRateBanner", () => {
+describe("TrafficAnnouncementsFeed", () => {
   let container: HTMLDivElement;
   let root: Root;
-  let fetchMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
-
-    fetchMock = vi.fn(() =>
-      Promise.resolve(
-        makeJsonResponse({
-          current: {
-            versionId: "fare-live",
-            baseDistanceKm: 3,
-            baseFare: 15,
-            perKmRate: 3,
-            effectiveAt: "2026-04-01T00:00:00.000Z",
-          },
-          upcoming: {
-            versionId: "fare-next",
-            baseDistanceKm: 3,
-            baseFare: 18,
-            perKmRate: 4,
-            effectiveAt: "2026-04-10T00:00:00.000Z",
-          },
-        }),
-      ),
-    );
-    vi.stubGlobal("fetch", fetchMock);
   });
 
   afterEach(async () => {
@@ -57,7 +34,27 @@ describe("FareRateBanner", () => {
     (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
   });
 
-  it("shows the current and upcoming fare rates from the public endpoint", async () => {
+  it("renders active announcements from the public endpoint", async () => {
+    const fetchMock = vi.fn(() =>
+      Promise.resolve(
+        makeJsonResponse({
+          announcements: [
+            {
+              id: "announcement-1",
+              title: "Road closure",
+              body: "Main road is closed today.",
+              category: "ROAD_CLOSURE",
+              categoryLabel: "Road Closure",
+              startsAt: "2026-04-03T00:00:00.000Z",
+              endsAt: "2026-04-03T08:00:00.000Z",
+            },
+          ],
+        }),
+      ),
+    );
+
+    vi.stubGlobal("fetch", fetchMock);
+
     await act(async () => {
       root.render(
         React.createElement(
@@ -69,23 +66,31 @@ describe("FareRateBanner", () => {
               fetcher: (url: string) => fetch(url).then((response) => response.json()),
             },
           },
-          React.createElement(FareRateBanner),
+          React.createElement(TrafficAnnouncementsFeed),
         ),
       );
       await Promise.resolve();
       await Promise.resolve();
     });
 
-    expect(fetchMock).toHaveBeenCalledWith("/api/fare-rates");
-    expect(container.textContent).toContain("Official Fare Rates");
-    expect(container.textContent).toContain("Current fare");
-    expect(container.textContent).toContain("Upcoming fare");
-    expect(container.textContent).toContain("PHP 15.00");
-    expect(container.textContent).toContain("PHP 18.00");
-    expect(container.textContent).toContain("Per additional km");
+    expect(fetchMock).toHaveBeenCalledWith("/api/announcements");
+    expect(container.textContent).toContain("Traffic Announcements");
+    expect(container.textContent).toContain("Road closure");
+    expect(container.textContent).toContain("Road Closure");
   });
 
-  it("emphasizes an upcoming fare hike when rendered as an announcement", async () => {
+  it("renders nothing when there are no active announcements", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() =>
+        Promise.resolve(
+          makeJsonResponse({
+            announcements: [],
+          }),
+        ),
+      ),
+    );
+
     await act(async () => {
       root.render(
         React.createElement(
@@ -97,19 +102,13 @@ describe("FareRateBanner", () => {
               fetcher: (url: string) => fetch(url).then((response) => response.json()),
             },
           },
-          React.createElement(FareRateBanner, {
-            variant: "announcement",
-            title: "Official Fare Rates",
-          }),
+          React.createElement(TrafficAnnouncementsFeed),
         ),
       );
       await Promise.resolve();
       await Promise.resolve();
     });
 
-    expect(container.textContent).toContain("Announcement");
-    expect(container.textContent).toContain("Upcoming fare hike approved");
-    expect(container.textContent).toContain("base fare from PHP 15.00 to PHP 18.00");
-    expect(container.textContent).toContain("additional kilometer rate from PHP 3.00 to PHP 4.00");
+    expect(container.textContent?.trim()).toBe("");
   });
 });

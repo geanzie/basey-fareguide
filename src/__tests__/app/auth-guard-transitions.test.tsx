@@ -23,6 +23,10 @@ vi.mock('next/navigation', () => ({
 
 import { AuthProvider, useAuth } from '@/components/AuthProvider'
 import RoleGuard from '@/components/RoleGuard'
+import {
+  AUTH_SESSION_IDLE_TIMEOUT_MS,
+  AUTH_SESSION_REVALIDATION_MS,
+} from '@/lib/authSession'
 
 function makeJsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -95,6 +99,19 @@ function ProtectedReportsHarness() {
   )
 }
 
+function LogoutStatusHarness() {
+  const { logout, status } = useAuth()
+
+  return (
+    <>
+      <button type="button" onClick={() => void logout()}>
+        Trigger logout
+      </button>
+      <div>Auth status: {status}</div>
+    </>
+  )
+}
+
 async function flushPromises() {
   await Promise.resolve()
   await Promise.resolve()
@@ -108,6 +125,7 @@ describe('auth guard transitions', () => {
   let logoutResponse: Response | Promise<Response>
 
   beforeEach(() => {
+    vi.useFakeTimers()
     ;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
     currentPathname = '/admin/reports'
     replaceMock.mockClear()
@@ -152,6 +170,7 @@ describe('auth guard transitions', () => {
       root.unmount()
     })
 
+    vi.useRealTimers()
     container.remove()
     vi.unstubAllGlobals()
     ;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false
@@ -221,7 +240,7 @@ describe('auth guard transitions', () => {
     })
   })
 
-  it('logs out from a protected page without flashing Access Denied and redirects to /login', async () => {
+  it('logs out from a protected page without flashing Access Denied and redirects to /', async () => {
     const pendingLogout = deferredResponse()
     logoutResponse = pendingLogout.promise
 
@@ -256,7 +275,96 @@ describe('auth guard transitions', () => {
       await flushPromises()
     })
 
-    expect(replaceMock).toHaveBeenCalledWith('/login')
+    expect(replaceMock).toHaveBeenCalledWith('/')
     expect(refreshMock).toHaveBeenCalled()
+  })
+
+  it('clears the signing out state after navigation reaches /', async () => {
+    const pendingLogout = deferredResponse()
+    logoutResponse = pendingLogout.promise
+
+    await act(async () => {
+      root.render(
+        <AuthTestHarness>
+          <LogoutStatusHarness />
+        </AuthTestHarness>,
+      )
+      await flushPromises()
+    })
+
+    expect(container.textContent).toContain('Auth status: authenticated')
+
+    const logoutButton = Array.from(container.querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('Trigger logout'),
+    )
+
+    await act(async () => {
+      logoutButton!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await Promise.resolve()
+    })
+
+    expect(container.textContent).toContain('Auth status: logging_out')
+
+    await act(async () => {
+      pendingLogout.resolve(makeJsonResponse({ success: true }))
+      await flushPromises()
+    })
+
+    await act(async () => {
+      root.render(
+        <AuthTestHarness>
+          <LogoutStatusHarness />
+        </AuthTestHarness>,
+      )
+      await flushPromises()
+    })
+
+    expect(currentPathname).toBe('/')
+    expect(container.textContent).toContain('Auth status: unauthenticated')
+    expect(container.textContent).not.toContain('Auth status: logging_out')
+  })
+
+  it('automatically logs the user out after the idle timeout elapses', async () => {
+    await act(async () => {
+      root.render(
+        <AuthTestHarness>
+          <LogoutStatusHarness />
+        </AuthTestHarness>,
+      )
+      await flushPromises()
+    })
+
+    expect(container.textContent).toContain('Auth status: authenticated')
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(AUTH_SESSION_IDLE_TIMEOUT_MS)
+      await flushPromises()
+    })
+
+    expect(replaceMock).toHaveBeenCalledWith('/')
+    expect(refreshMock).toHaveBeenCalled()
+  })
+
+  it('revalidates the session and logs out after the server starts returning 401', async () => {
+    await act(async () => {
+      root.render(
+        <AuthTestHarness>
+          <ProtectedReportsHarness />
+        </AuthTestHarness>,
+      )
+      await flushPromises()
+    })
+
+    expect(container.textContent).toContain('Protected admin reports')
+
+    profileResponse = makeJsonResponse({ message: 'Unauthorized' }, 401)
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(AUTH_SESSION_REVALIDATION_MS)
+      await flushPromises()
+    })
+
+    expect(replaceMock).toHaveBeenCalledWith('/')
+    expect(container.textContent).toContain('Signing out')
   })
 })

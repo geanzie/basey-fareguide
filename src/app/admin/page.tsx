@@ -52,20 +52,39 @@ export default function AdminPage() {
         title="Admin Dashboard"
         subtitle="Administration, oversight, storage, and location management"
       >
-        <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-sm font-semibold text-amber-900">Fare rate management</h2>
-              <p className="mt-1 text-sm text-amber-800">
-                Base fare and per-kilometer updates are managed on a dedicated admin page.
-              </p>
+        <div className="mb-6 grid gap-4 lg:grid-cols-2">
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-sm font-semibold text-amber-900">Fare rate management</h2>
+                <p className="mt-1 text-sm text-amber-800">
+                  Base fare and per-kilometer updates are managed on a dedicated admin page.
+                </p>
+              </div>
+              <Link
+                href="/admin/fare-rates"
+                className="inline-flex items-center justify-center rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700"
+              >
+                Open Fare Rates
+              </Link>
             </div>
-            <Link
-              href="/admin/fare-rates"
-              className="inline-flex items-center justify-center rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700"
-            >
-              Open Fare Rates
-            </Link>
+          </div>
+
+          <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-sm font-semibold text-blue-900">Traffic announcements</h2>
+                <p className="mt-1 text-sm text-blue-800">
+                  Post and schedule road advisories, closures, and emergency notices for constituents.
+                </p>
+              </div>
+              <Link
+                href="/admin/announcements"
+                className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+              >
+                Open Announcements
+              </Link>
+            </div>
           </div>
         </div>
 
