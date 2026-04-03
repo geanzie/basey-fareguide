@@ -7,12 +7,14 @@ import bundleAnalyzer from '@next/bundle-analyzer'
 const lifecycleEvent = process.env.npm_lifecycle_event;
 const isNextDevCommand =
   lifecycleEvent === 'dev' || process.argv.includes('dev');
-const distDir = isNextDevCommand ? '.next-dev' : '.next-prod';
+const isVercelBuild = process.env.VERCEL === '1';
+const distDir = isNextDevCommand && !isVercelBuild ? '.next-dev' : '.next';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  // Keep dev and production artifacts isolated so `next dev` and
-  // `next build`/`next start` cannot corrupt each other's chunk graph.
+  // Keep local `next dev` isolated from the standard production build output
+  // while preserving Vercel's expectation that production artifacts live in
+  // the default `.next` directory.
   distDir,
   experimental: {
     // Remove any experimental features that might conflict

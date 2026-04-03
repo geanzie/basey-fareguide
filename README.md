@@ -20,14 +20,14 @@ You can start editing the page by modifying `app/route.ts`. The page auto-update
 
 ## Development Performance Note
 
-If local `next dev` feels unusually slow on Windows, move this project out of a OneDrive-synced directory before doing deeper tuning. OneDrive file syncing can add noticeable overhead for `.next-dev`, `.next-prod`, `node_modules`, and Prisma engine files, which makes first-hit route compilation and Prisma client startup feel slower than the deployed app.
+If local `next dev` feels unusually slow on Windows, move this project out of a OneDrive-synced directory before doing deeper tuning. OneDrive file syncing can add noticeable overhead for `.next-dev`, `.next`, `node_modules`, and Prisma engine files, which makes first-hit route compilation and Prisma client startup feel slower than the deployed app.
 
 This project intentionally separates development and production build artifacts:
 
 - `npm run dev` writes to `.next-dev`
-- `npm run build` and `npm start` use `.next-prod`
+- `npm run build`, `npm start`, and Vercel builds use `.next`
 
-That split prevents the `Cannot find module './<chunk>.js'` runtime error that can happen when `next dev` and production output overwrite each other in the same folder. If you still hit a stale-chunk error after changing branches or interrupting builds, stop the app and remove `.next-dev` and `.next-prod` before restarting.
+That split prevents the `Cannot find module './<chunk>.js'` runtime error that can happen when `next dev` and production output overwrite each other in the same folder. If you still hit a stale-chunk error after changing branches or interrupting builds, stop the app and remove `.next-dev` and `.next` before restarting.
 
 ## Learn More
 
