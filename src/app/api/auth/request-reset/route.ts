@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS } from '@/lib/rateLimit'
-import { sendOTPEmail } from '@/lib/email'
+import { getPasswordResetEmailCapability, sendOTPEmail } from '@/lib/email'
 
 // Generate a 6-digit OTP code
 function generateOTP(): string {
@@ -55,6 +55,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const emailCapability = getPasswordResetEmailCapability()
+    if (!emailCapability.available) {
+      console.error('Password reset email is unavailable:', emailCapability.reason)
+      return NextResponse.json(
+        { message: 'Password reset email is temporarily unavailable. Please try again later.' },
+        { status: 503 }
+      )
+    }
+
     // Find user by email
     const user = await prisma.user.findFirst({
       where: { email: email.toLowerCase() }
@@ -89,9 +98,16 @@ export async function POST(request: NextRequest) {
     })
 
     // Send OTP via email
-    const emailSent = await sendOTPEmail(user.email, user.username, otp)
+    const emailResult = await sendOTPEmail(user.email, user.username, otp)
 
-    if (emailSent) {
+    if (emailResult.success) {
+      if (emailResult.mode === 'development_console') {
+        return NextResponse.json({
+          message: 'OTP code generated in development mode. Check the server console for the code.',
+          deliveryMode: 'development_console'
+        })
+      }
+
       // Partially mask email
       const [localPart, domain] = user.email.split('@')
       const maskedEmail = localPart.length > 2 
@@ -100,18 +116,28 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({
         message: 'A 6-digit OTP code has been sent to your email address. The code is valid for 10 minutes.',
-        email: maskedEmail
-      })
-    } else {
-      // Fallback: Log OTP for development/testing
-      console.log(`Password reset requested for user: ${user.username}`)
-      console.log(`OTP code (development only): ${otp}`)
-      
-      return NextResponse.json({
-        message: 'OTP code generated. In development mode, check console logs or check your email.'
+        email: maskedEmail,
+        deliveryMode: 'provider'
       })
     }
-      } catch (error) {    return NextResponse.json(
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordResetOtp: null,
+        passwordResetOtpExpiry: null,
+      },
+    })
+
+    console.error('Failed to send password reset OTP email:', emailResult.reason)
+
+    return NextResponse.json(
+      { message: 'Password reset email is temporarily unavailable. Please try again later.' },
+      { status: 503 }
+    )
+  } catch (error) {
+    console.error('Password reset request error:', error)
+    return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }
     )

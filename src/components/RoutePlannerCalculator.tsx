@@ -1,255 +1,289 @@
 'use client'
 
-import { useState, useRef, useEffect, useMemo } from 'react'
+import { useEffect, useRef, useState, type ComponentType } from 'react'
 import dynamic from 'next/dynamic'
-import { barangayService } from '../lib/barangayService'
-import { BarangayInfo } from '../utils/barangayBoundaries'
-import EnhancedRouteMap from './EnhancedRouteMap'
-import { locationService, Location } from '../lib/locationService'
+
 import { useAuth } from './AuthProvider'
 import type { DiscountCardDto, DiscountCardMeResponseDto } from '@/lib/contracts'
+import {
+  classifyPlannerError,
+  getRouteSourceBadge,
+  pointsEffectivelyEqual,
+  routePairEffectivelyEqual,
+  type PlannerPoint,
+  type PlannerViewState,
+} from '@/lib/planner/routePlanner'
+import type { RoutePlannerMapProps } from './RoutePlannerMap'
 
-const PlannedRouteMap = dynamic(() => import('./PlannedRouteMap'), { ssr: false })
-const PinSelectionMap = dynamic(() => import('./PinSelectionMap'), { ssr: false })
-
-// Route Planner uses ORS road routing first and GPS estimates only as fallback.
-// Saved planner calculations should describe the live route stack truthfully.
-
-interface RouteResult {
-  distance: {
-    meters: number
-    kilometers: number
-    text: string
-  }
-  duration: {
-    seconds: number
-    text: string
-  }
-  polyline?: string
-  fare: {
-    distance: number
-    fare: number
-    originalFare?: number
-    discountApplied?: number
-    discountRate?: number
-    breakdown: {
-      baseFare: number
-      additionalDistance: number
-      additionalFare: number
-    }
-  }
-  source: string
-  accuracy: string
-  inputMode?: 'preset' | 'pin'
-  fallbackReason?: string | null
-  snappedOrigin?: { lat: number; lng: number; wasSnapped: boolean } | null
-  snappedDestination?: { lat: number; lng: number; wasSnapped: boolean } | null
-  discountCard?: DiscountCardDto | null
-  barangayInfo?: {
-    originBarangay: string
-    destinationBarangay: string
-    crossesBoundary: boolean
-    recommendations: string[]
-  }
-}
+const DynamicRoutePlannerMap = dynamic(() => import('./RoutePlannerMap'), { ssr: false }) as ComponentType<RoutePlannerMapProps>
 
 interface RoutePlannerCalculatorProps {
   onError?: (error: string) => void
+  MapComponent?: ComponentType<RoutePlannerMapProps>
 }
 
-const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
-  const [fromLocation, setFromLocation] = useState('')
-  const [toLocation, setToLocation] = useState('')
+interface CalculateRouteResponse {
+  origin: string
+  destination: string
+  distanceKm: number
+  durationMin: number | null
+  fare: number
+  fareBreakdown: {
+    baseFare: number
+    additionalKm: number
+    additionalFare: number
+    discount: number
+  }
+  method: 'ors' | 'gps' | null
+  fallbackReason: string | null
+  polyline: string | null
+}
+
+interface RouteResult {
+  fare: number
+  distanceKm: number
+  durationText: string
+  durationMin: number
+  polyline: string | null
+  method: 'ors' | 'gps' | null
+  sourceBadge: string
+  fallbackReason: string | null
+  originalFare?: number
+  discountApplied?: number
+  discountRate?: number
+  discountCard?: DiscountCardDto | null
+  breakdown: {
+    baseFare: number
+    additionalDistance: number
+    additionalFare: number
+  }
+  originLabel: string
+  destinationLabel: string
+}
+
+function formatCurrency(value: number): string {
+  return `PHP ${value.toFixed(2)}`
+}
+
+function formatPointLabel(point: PlannerPoint | null, fallback: string): string {
+  return point?.label?.trim() || fallback
+}
+
+function buildDurationText(durationMin: number | null): string {
+  if (durationMin == null) return 'N/A'
+  return `${Math.round(durationMin)} min`
+}
+
+function PointSetter({
+  title,
+  letter,
+  currentPoint,
+  isLocating,
+  onUseCurrentLocation,
+}: {
+  title: string
+  letter: 'A' | 'B'
+  currentPoint: PlannerPoint | null
+  isLocating: boolean
+  onUseCurrentLocation: () => void
+}) {
+  return (
+    <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+      <div className="mb-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span
+            className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold ${
+              letter === 'A' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+            }`}
+          >
+            {letter}
+          </span>
+          <div>
+            <p className="text-sm font-semibold text-gray-900">{title}</p>
+            <p className="text-xs text-gray-500">
+              {currentPoint
+                ? `${currentPoint.lat.toFixed(5)}, ${currentPoint.lng.toFixed(5)}`
+                : 'Not set yet'}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <button
+          type="button"
+          onClick={onUseCurrentLocation}
+          disabled={isLocating}
+          className="w-full rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {isLocating ? 'Locating...' : `Use current location for ${letter}`}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+const RoutePlannerCalculator = ({
+  onError,
+  MapComponent = DynamicRoutePlannerMap,
+}: RoutePlannerCalculatorProps) => {
+  const [origin, setOrigin] = useState<PlannerPoint | null>(null)
+  const [destination, setDestination] = useState<PlannerPoint | null>(null)
   const [routeResult, setRouteResult] = useState<RouteResult | null>(null)
+  const [plannerState, setPlannerState] = useState<PlannerViewState>('placing_points')
+  const [routeMessage, setRouteMessage] = useState<string | null>(null)
+  const [controlMessage, setControlMessage] = useState<string | null>(null)
   const [isCalculating, setIsCalculating] = useState(false)
-  const [error, setError] = useState<string>('')
-  const [lastCalculationTime, setLastCalculationTime] = useState<number>(0)
-  const resultsRef = useRef<HTMLDivElement>(null)
-  const [barangayList, setBarangayList] = useState<BarangayInfo[]>([])
-  const [showEnhancedMap, setShowEnhancedMap] = useState(false)
-  const [routeCoordinates, setRouteCoordinates] = useState<{ lat: number; lng: number }[]>([])
-  const [originCoords, setOriginCoords] = useState<{ lat: number; lng: number; name?: string } | null>(null)
-  const [destCoords, setDestCoords] = useState<{ lat: number; lng: number; name?: string } | null>(null)
-  const [savedToDatabase, setSavedToDatabase] = useState(false)
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saved' | 'failed'>('idle')
   const [userDiscountCard, setUserDiscountCard] = useState<DiscountCardDto | null>(null)
-  const [allLocations, setAllLocations] = useState<{
-    barangays: Location[]
-    landmarks: Location[]
-    sitios: Location[]
-  }>({ barangays: [], landmarks: [], sitios: [] })
-  const [calcMode, setCalcMode] = useState<'quick' | 'exact'>('quick')
-  const [pinOrigin, setPinOrigin] = useState<{ lat: number; lng: number } | null>(null)
-  const [pinDestination, setPinDestination] = useState<{ lat: number; lng: number } | null>(null)
+  const [locatingTarget, setLocatingTarget] = useState<'origin' | 'destination' | null>(null)
+  const [fitBoundsToken, setFitBoundsToken] = useState(0)
   const { user } = useAuth()
 
-  // Fetch user's discount card on mount
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
+  const requestSequenceRef = useRef(0)
+  const lastRequestedPairRef = useRef<{
+    origin: PlannerPoint
+    destination: PlannerPoint
+  } | null>(null)
+  const shouldFitNextSuccessRef = useRef(true)
+
+  const hasTwoPoints = Boolean(origin && destination)
+
   useEffect(() => {
     const fetchUserDiscountCard = async () => {
+      if (!user) {
+        setUserDiscountCard(null)
+        return
+      }
+
       try {
-        if (!user) return
-
         const response = await fetch('/api/discount-cards/me')
+        if (!response.ok) {
+          setUserDiscountCard(null)
+          return
+        }
 
-        if (response.ok) {
-          const data: DiscountCardMeResponseDto = await response.json()
-          if (data.hasDiscountCard && data.isValid && data.discountCard) {
-            setUserDiscountCard(data.discountCard)          }
+        const data: DiscountCardMeResponseDto = await response.json()
+        if (data.hasDiscountCard && data.isValid && data.discountCard) {
+          setUserDiscountCard(data.discountCard)
         } else {
           setUserDiscountCard(null)
         }
-      } catch (error) {
-      // Silent fail - discount not critical for calculator to work
+      } catch {
+        setUserDiscountCard(null)
       }
     }
 
     fetchUserDiscountCard()
   }, [user])
 
-  // Initialize barangay data and location data
   useEffect(() => {
-    const initializeData = async () => {
-      try {
-        // Initialize barangay boundaries
-        await barangayService.initialize()
-        const allBarangays = barangayService.getBarangays()
-        setBarangayList(allBarangays)
-
-        // Initialize comprehensive location data
-        await locationService.initialize()
-        const locations = locationService.getGroupedLocations()
-        setAllLocations(locations)
-        
-        const stats = locationService.getStats()
-      } catch (error) {}
+    if (!origin || !destination) {
+      if (!isCalculating) {
+        setPlannerState('placing_points')
+        setRouteMessage(null)
+      }
+      return
     }
-    initializeData()
+
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current)
+    }
+
+    debounceTimerRef.current = setTimeout(() => {
+      void calculateRoute()
+    }, 300)
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current)
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [origin?.lat, origin?.lng, destination?.lat, destination?.lng])
+
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current)
+      }
+
+      abortControllerRef.current?.abort()
+    }
   }, [])
 
-  // Auto-scroll to results when they appear
-  useEffect(() => {
-    if (routeResult && resultsRef.current) {
-      setTimeout(() => {
-        resultsRef.current?.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'start',
-          inline: 'nearest'
-        })
-      }, 300) // Small delay to ensure the animation starts after the component renders
-    }
-  }, [routeResult])
+  const passengerType = userDiscountCard
+    ? userDiscountCard.discountType === 'SENIOR_CITIZEN'
+      ? 'SENIOR'
+      : userDiscountCard.discountType
+    : 'REGULAR'
 
-  // Memoize location arrays to avoid recalculating on every render
-  // Poblacion barangays: MERCADO, LOYO, BAYBAY, PALAYPAY, LAWA-AN, SULOD, BUSCADA
-  const poblacionNames = useMemo(() => 
-    ['Mercado', 'Loyo', 'Baybay', 'Palaypay', 'Lawa-An', 'Sulod', 'Buscada'], 
-    []
-  )
-  
-  const sortedPoblacionBarangays = useMemo(() => 
-    allLocations.barangays
-      .filter(loc => poblacionNames.includes(loc.name))
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map(loc => ({
-        name: loc.name,
-        coords: [loc.coordinates.lat, loc.coordinates.lng] as [number, number],
-        type: 'poblacion' as const
-      })),
-    [allLocations.barangays, poblacionNames]
-  )
-  
-  const sortedRuralBarangays = useMemo(() => 
-    allLocations.barangays
-      .filter(loc => !poblacionNames.includes(loc.name))
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map(loc => ({
-        name: loc.name,
-        coords: [loc.coordinates.lat, loc.coordinates.lng] as [number, number],
-        type: 'barangay' as const
-      })),
-    [allLocations.barangays, poblacionNames]
-  )
-  
-  // Group landmarks by category for better organization
-  const landmarksByCategory = useMemo(() => {
-    const categorized = {
-      education: [] as Array<{ name: string; coords: [number, number]; type: 'landmark' }>,
-      government: [] as Array<{ name: string; coords: [number, number]; type: 'landmark' }>,
-      religious: [] as Array<{ name: string; coords: [number, number]; type: 'landmark' }>,
-      healthcare: [] as Array<{ name: string; coords: [number, number]; type: 'landmark' }>,
-      tourist: [] as Array<{ name: string; coords: [number, number]; type: 'landmark' }>,
-      infrastructure: [] as Array<{ name: string; coords: [number, number]; type: 'landmark' }>,
-      commercial: [] as Array<{ name: string; coords: [number, number]; type: 'landmark' }>,
-      other: [] as Array<{ name: string; coords: [number, number]; type: 'landmark' }>
+  const resetCalculationState = () => {
+    abortControllerRef.current?.abort()
+
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current)
     }
 
-    allLocations.landmarks.forEach(loc => {
-      const item = {
-        name: loc.name,
-        coords: [loc.coordinates.lat, loc.coordinates.lng] as [number, number],
-        type: 'landmark' as const
+    requestSequenceRef.current += 1
+    lastRequestedPairRef.current = null
+    setIsCalculating(false)
+    setRouteResult(null)
+    setRouteMessage(null)
+    setSaveStatus('idle')
+    setPlannerState('placing_points')
+    shouldFitNextSuccessRef.current = true
+  }
+
+  const updateOrigin = (nextOrigin: PlannerPoint | null) => {
+    setControlMessage(null)
+
+    if (!nextOrigin) {
+      setOrigin(null)
+      resetCalculationState()
+      return
+    }
+
+    setOrigin((current) => {
+      if (
+        pointsEffectivelyEqual(current, nextOrigin) &&
+        (current?.label || '') === (nextOrigin.label || '')
+      ) {
+        return current
       }
-      const nameLower = loc.name.toLowerCase()
 
-      // Categorize landmarks
-      if (nameLower.includes('school') || nameLower.includes('elementary') || nameLower.includes('high school') || nameLower.includes('integrated') || nameLower.includes('daycare') || nameLower.includes('learning center')) {
-        categorized.education.push(item)
-      } else if (nameLower.includes('church') || nameLower.includes('chapel') || nameLower.includes('cathedral') || nameLower.includes('shrine')) {
-        categorized.religious.push(item)
-      } else if (nameLower.includes('municipal') || nameLower.includes('town hall') || nameLower.includes('police') || nameLower.includes('fire station') || nameLower.includes('barangay hall')) {
-        categorized.government.push(item)
-      } else if (nameLower.includes('hospital') || nameLower.includes('clinic') || nameLower.includes('health')) {
-        categorized.healthcare.push(item)
-      } else if (nameLower.includes('pharmacy') || nameLower.includes('store') || nameLower.includes('market') || nameLower.includes('terminal') || nameLower.includes('restaurant')) {
-        categorized.commercial.push(item)
-      } else if (nameLower.includes('bridge')) {
-        categorized.infrastructure.push(item)
-      } else if (nameLower.includes('cave') || nameLower.includes('waterfall') || nameLower.includes('beach') || nameLower.includes('resort') || nameLower.includes('park') || nameLower.includes('natural') || nameLower.includes('sohoton')) {
-        categorized.tourist.push(item)
-      } else {
-        categorized.other.push(item)
+      return nextOrigin
+    })
+  }
+
+  const updateDestination = (nextDestination: PlannerPoint | null) => {
+    setControlMessage(null)
+
+    if (!nextDestination) {
+      setDestination(null)
+      resetCalculationState()
+      return
+    }
+
+    setDestination((current) => {
+      if (
+        pointsEffectivelyEqual(current, nextDestination) &&
+        (current?.label || '') === (nextDestination.label || '')
+      ) {
+        return current
       }
+
+      return nextDestination
     })
+  }
 
-    // Sort each category alphabetically
-    Object.keys(categorized).forEach(key => {
-      categorized[key as keyof typeof categorized].sort((a, b) => a.name.localeCompare(b.name))
-    })
-
-    return categorized
-  }, [allLocations.landmarks])
-
-  const sortedLandmarks = useMemo(() => 
-    allLocations.landmarks
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map(loc => ({
-        name: loc.name,
-        coords: [loc.coordinates.lat, loc.coordinates.lng] as [number, number],
-        type: 'landmark' as const
-      })),
-    [allLocations.landmarks]
-  )
-  
-  const sortedSitios = useMemo(() => 
-    allLocations.sitios
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map(loc => ({
-        name: loc.name,
-        coords: [loc.coordinates.lat, loc.coordinates.lng] as [number, number],
-        type: 'sitio' as const
-      })),
-    [allLocations.sitios]
-  )
-
-  // Build comprehensive location list for backward compatibility
-  const barangays = useMemo(() => [
-    ...sortedPoblacionBarangays,
-    ...sortedRuralBarangays,
-    ...sortedLandmarks,
-    ...sortedSitios
-  ], [sortedPoblacionBarangays, sortedRuralBarangays, sortedLandmarks, sortedSitios])
-
-  // Helper function to save fare calculation to database
-  const saveFareCalculation = async (routeData: RouteResult, fromLabel: string, toLabel: string) => {
+  const saveFareCalculation = async (
+    result: RouteResult,
+    fromLabel: string,
+    toLabel: string,
+  ) => {
     try {
       const response = await fetch('/api/fare-calculations', {
         method: 'POST',
@@ -259,895 +293,429 @@ const RoutePlannerCalculator = ({ onError }: RoutePlannerCalculatorProps) => {
         body: JSON.stringify({
           fromLocation: fromLabel,
           toLocation: toLabel,
-          distance: routeData.distance.kilometers,
-          calculatedFare: routeData.fare.fare,
+          distance: result.distanceKm,
+          calculatedFare: result.fare,
           calculationType: 'Road Route Planner',
           routeData: {
-            distance: routeData.distance,
-            duration: routeData.duration,
-            polyline: routeData.polyline,
-            source: routeData.source,
-            accuracy: routeData.accuracy,
-            barangayInfo: routeData.barangayInfo,
-            fareBreakdown: routeData.fare.breakdown
+            distance: {
+              kilometers: result.distanceKm,
+            },
+            duration: {
+              text: result.durationText,
+            },
+            polyline: result.polyline,
+            source: result.sourceBadge,
+            fareBreakdown: result.breakdown,
           },
-          // Include discount information if applicable
-          discountCardId: routeData.discountCard?.id || null,
-          originalFare: routeData.fare.originalFare || null,
-          discountApplied: routeData.fare.discountApplied || null,
-          discountType: routeData.discountCard?.discountType || null
+          discountCardId: result.discountCard?.id || null,
+          originalFare: result.originalFare || null,
+          discountApplied: result.discountApplied || null,
+          discountType: result.discountCard?.discountType || null,
         }),
       })
 
-      const result = await response.json()
-      
-      if (response.ok) {        setSavedToDatabase(true)
-        // Auto-hide the success indicator after 3 seconds
-        setTimeout(() => setSavedToDatabase(false), 3000)
-      } else {        // Don't show error to user since the calculation still worked
-      }
-    } catch (error) {
-      // Don't show error to user since the calculation still worked
+      setSaveStatus(response.ok ? 'saved' : 'failed')
+    } catch {
+      setSaveStatus('failed')
     }
   }
 
-  const handleCalculate = async () => {
-    setError('')
-    
-    // Rate limiting
-    const now = Date.now()
-    if (now - lastCalculationTime < 2000) {
-      setError('Please wait a moment before calculating again')
+  const calculateRoute = async (force = false) => {
+    if (!origin || !destination) return
+
+    const nextPair = {
+      origin,
+      destination,
+    }
+
+    if (!force && routePairEffectivelyEqual(lastRequestedPairRef.current, nextPair)) {
       return
     }
-    
-    // Input validation
-    if (calcMode === 'exact') {
-      if (!pinOrigin || !pinDestination) {
-        setError('Please place both pins on the map')
-        return
-      }
-    } else {
-      if (!fromLocation || !toLocation) {
-        setError('Please select both pickup and destination locations')
-        return
-      }
-      if (fromLocation === toLocation) {
-        setError('Pickup and destination cannot be the same')
-        return
-      }
-    }
 
-    // Determine passengerType from discount card
-    const passengerType = userDiscountCard
-      ? userDiscountCard.discountType === 'SENIOR_CITIZEN' ? 'SENIOR' : userDiscountCard.discountType
-      : 'REGULAR'
+    abortControllerRef.current?.abort()
+
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+    const requestId = requestSequenceRef.current + 1
+    requestSequenceRef.current = requestId
+    lastRequestedPairRef.current = nextPair
 
     setIsCalculating(true)
-    setLastCalculationTime(now)
+    setPlannerState('calculating')
+    setRouteMessage(routeResult ? 'Keeping your last good route visible while recalculating.' : null)
+    setControlMessage(null)
 
     try {
       const response = await fetch('/api/routes/calculate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(
-          calcMode === 'exact'
-            ? {
-                origin: { type: 'pin', lat: pinOrigin!.lat, lng: pinOrigin!.lng },
-                destination: { type: 'pin', lat: pinDestination!.lat, lng: pinDestination!.lng },
-                passengerType,
-              }
-            : {
-                origin: { type: 'preset', name: fromLocation },
-                destination: { type: 'preset', name: toLocation },
-                passengerType,
-              },
-        ),
+        signal: controller.signal,
+        body: JSON.stringify({
+          origin: { type: 'pin', lat: origin.lat, lng: origin.lng },
+          destination: { type: 'pin', lat: destination.lat, lng: destination.lng },
+          passengerType,
+        }),
       })
 
-      const data = await response.json()
+      const data = (await response.json()) as Partial<CalculateRouteResponse> & { error?: string }
+
+      if (requestId !== requestSequenceRef.current) {
+        return
+      }
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to calculate route')
+        const message = data.error || 'Unable to calculate this route right now.'
+        const nextState = classifyPlannerError(message)
+        setPlannerState(nextState)
+        setRouteMessage(
+          nextState === 'out_of_service_area'
+            ? 'Move the pin back into the Basey service area and try again.'
+            : nextState === 'no_route_found'
+              ? 'Move one of the pins closer to a road or try a different pair of points.'
+              : 'Check your connection and try again. Your current pins stayed in place.',
+        )
+        if (onError) onError(message)
+        return
       }
 
-      // Adapt flat API response to the RouteResult shape expected by renders
-      const subtotal = data.fareBreakdown.baseFare + data.fareBreakdown.additionalFare
-      const adaptedResult: RouteResult = {
-        distance: {
-          meters: data.distanceKm * 1000,
-          kilometers: data.distanceKm,
-          text: `${data.distanceKm.toFixed(2)} km`,
-        },
-        duration: {
-          seconds: data.durationMin != null ? Math.round(data.durationMin * 60) : 0,
-          text: data.durationMin != null ? `${Math.round(data.durationMin)} min` : 'N/A',
-        },
-        polyline: data.polyline,
-        fare: {
-          distance: data.distanceKm,
-          fare: data.fare,
-          originalFare: data.fareBreakdown.discount > 0 ? subtotal : undefined,
-          discountApplied: data.fareBreakdown.discount > 0 ? data.fareBreakdown.discount : undefined,
-          discountRate: data.fareBreakdown.discount > 0 ? 0.2 : undefined,
-          breakdown: {
-            baseFare: data.fareBreakdown.baseFare,
-            additionalDistance: data.fareBreakdown.additionalKm,
-            additionalFare: data.fareBreakdown.additionalFare,
-          },
-        },
-        source: data.method === 'ors' ? 'OpenRouteService' : 'GPS Estimate',
-        accuracy: data.method === 'ors' ? 'Road-based routing' : 'GPS estimate',
-        inputMode: (data.inputMode as 'preset' | 'pin') ?? 'preset',
-        fallbackReason: data.fallbackReason ?? null,
-        snappedOrigin: data.snappedOrigin ?? null,
-        snappedDestination: data.snappedDestination ?? null,
+      const subtotal = (data.fareBreakdown?.baseFare || 0) + (data.fareBreakdown?.additionalFare || 0)
+      const nextResult: RouteResult = {
+        fare: data.fare || 0,
+        distanceKm: data.distanceKm || 0,
+        durationMin: data.durationMin || 0,
+        durationText: buildDurationText(data.durationMin ?? null),
+        polyline: data.polyline || null,
+        method: data.method || null,
+        sourceBadge: getRouteSourceBadge(data.method ?? null, data.distanceKm || 0),
+        fallbackReason: data.fallbackReason || null,
+        originalFare: (data.fareBreakdown?.discount || 0) > 0 ? subtotal : undefined,
+        discountApplied: (data.fareBreakdown?.discount || 0) > 0 ? data.fareBreakdown?.discount : undefined,
+        discountRate: (data.fareBreakdown?.discount || 0) > 0 ? 0.2 : undefined,
         discountCard: userDiscountCard,
-        barangayInfo: undefined,
+        breakdown: {
+          baseFare: data.fareBreakdown?.baseFare || 0,
+          additionalDistance: data.fareBreakdown?.additionalKm || 0,
+          additionalFare: data.fareBreakdown?.additionalFare || 0,
+        },
+        originLabel: formatPointLabel(origin, data.origin || 'Pickup pin'),
+        destinationLabel: formatPointLabel(destination, data.destination || 'Drop-off pin'),
       }
 
-      setRouteResult(adaptedResult)
+      setRouteResult(nextResult)
+      setPlannerState(nextResult.method === 'gps' ? 'fallback_estimate' : 'route_ready')
+      setRouteMessage(
+        nextResult.method === 'gps'
+          ? 'Showing a lower-confidence GPS estimate because road routing is unavailable right now.'
+          : null,
+      )
 
-      // Set map marker coords — exact mode prefers snapped road coords over raw pins
-      if (calcMode === 'exact' && pinOrigin && pinDestination) {
-        const displayOrigin = data.snappedOrigin ?? pinOrigin
-        const displayDest = data.snappedDestination ?? pinDestination
-        setOriginCoords({ lat: displayOrigin.lat, lng: displayOrigin.lng, name: 'Pickup Pin' })
-        setDestCoords({ lat: displayDest.lat, lng: displayDest.lng, name: 'Drop-off Pin' })
-      } else {
-        const fromBarangay = barangays.find(b => b.name === fromLocation)
-        const toBarangay = barangays.find(b => b.name === toLocation)
-        if (fromBarangay) setOriginCoords({ lat: fromBarangay.coords[0], lng: fromBarangay.coords[1], name: fromLocation })
-        if (toBarangay) setDestCoords({ lat: toBarangay.coords[0], lng: toBarangay.coords[1], name: toLocation })
+      if (shouldFitNextSuccessRef.current) {
+        setFitBoundsToken((current) => current + 1)
+        shouldFitNextSuccessRef.current = false
       }
-      // GPS has no road path — show markers only
-      setRouteCoordinates([])
 
-      saveFareCalculation(adaptedResult, data.origin as string, data.destination as string).catch(() => {})
+      void saveFareCalculation(nextResult, nextResult.originLabel, nextResult.destinationLabel)
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unable to calculate route. Please try again.'
-      setError(errorMessage)
-      if (onError) onError(errorMessage)
+      if (controller.signal.aborted) {
+        return
+      }
+
+      const message = error instanceof Error ? error.message : 'Unable to calculate this route right now.'
+      if (requestId !== requestSequenceRef.current) {
+        return
+      }
+
+      setPlannerState('network_error')
+      setRouteMessage('Check your connection and try again. Your current pins stayed in place.')
+      if (onError) onError(message)
     } finally {
-      setIsCalculating(false)
+      if (requestId === requestSequenceRef.current) {
+        setIsCalculating(false)
+      }
     }
   }
 
-  const handleReset = () => {
-    setFromLocation('')
-    setToLocation('')
-    setRouteResult(null)
-    setError('')
-    setSavedToDatabase(false)
-    setPinOrigin(null)
-    setPinDestination(null)
+  const useCurrentLocation = (target: 'origin' | 'destination') => {
+    if (!navigator.geolocation) {
+      setControlMessage('Current location is not available in this browser. You can still place pins directly on the map.')
+      return
+    }
+
+    setControlMessage(null)
+    setLocatingTarget(target)
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const point: PlannerPoint = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+          label: 'Current location',
+        }
+
+        if (target === 'origin') {
+          updateOrigin(point)
+        } else {
+          updateDestination(point)
+        }
+
+        setLocatingTarget(null)
+      },
+      () => {
+        setControlMessage('Unable to read your current location. Please allow location access or place the pin manually.')
+        setLocatingTarget(null)
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      },
+    )
   }
 
+  const handleSwap = () => {
+    if (!origin || !destination) return
+
+    setControlMessage(null)
+    setOrigin(destination)
+    setDestination(origin)
+  }
+
+  const handleReset = () => {
+    setControlMessage(null)
+    setOrigin(null)
+    setDestination(null)
+    resetCalculationState()
+  }
+
+  const errorPanelVisible =
+    plannerState === 'network_error' ||
+    plannerState === 'out_of_service_area' ||
+    plannerState === 'no_route_found'
+
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="space-y-8">
-        {/* Header */}
-        <div className="text-center">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-100 rounded-3xl mb-6">
-            <span className="text-3xl">🗺️</span>
-          </div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">
-            Route Planner & Fare Calculator
-          </h2>
-          <p className="text-lg text-gray-600">
-            Plan your trip with road-based routing first and GPS estimates only when routing is unavailable
-          </p>
-          <div className="mt-4 inline-flex items-center px-4 py-2 bg-blue-50 rounded-lg">
-            <span className="text-blue-600 font-medium text-sm">✓ Pre-trip Planning</span>
-            <span className="mx-2 text-gray-300">•</span>
-            <span className="text-blue-600 font-medium text-sm">✓ Road-based routing first</span>
-            <span className="mx-2 text-gray-300">•</span>
-            <span className="text-blue-600 font-medium text-sm">✓ GPS fallback available</span>
-          </div>
-
-          {/* Discount Card Badge */}
-          {userDiscountCard && (
-            <div className="mt-4 inline-flex items-center px-6 py-3 bg-gradient-to-r from-emerald-50 to-green-50 border-2 border-emerald-300 rounded-xl shadow-sm">
-              <span className="text-2xl mr-3">🎫</span>
-              <div className="text-left">
-                <div className="text-sm font-semibold text-emerald-800">
-                  {userDiscountCard.discountType === 'SENIOR_CITIZEN' && 'Senior Citizen Discount Active'}
-                  {userDiscountCard.discountType === 'PWD' && 'PWD Discount Active'}
-                  {userDiscountCard.discountType === 'STUDENT' && 'Student Discount Active'}
-                </div>
-                <div className="text-xs text-emerald-600">
-                  {userDiscountCard.discountPercentage}% discount will be applied to all fares
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Priority Results Section - Appears First After Calculation */}
+    <div className="mx-auto max-w-6xl">
+      <div className="space-y-5 sm:space-y-6">
         {routeResult && (
-          <div ref={resultsRef} className="animate-fade-in">
-            <div className="bg-gradient-to-r from-emerald-50 to-blue-50 border-2 border-emerald-200 rounded-2xl p-6 shadow-xl">
-              {/* Prominent Success Header */}
-              <div className="text-center mb-6">
-                <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-emerald-500 to-blue-500 text-white rounded-3xl mb-4 shadow-lg">
-                  <span className="text-3xl">💰</span>
-                </div>
-                <h2 className="text-3xl font-bold text-gray-800 mb-2">🎉 Route Planned Successfully!</h2>
-                <p className="text-lg text-gray-600 mb-2">{routeResult.accuracy}</p>
-                {routeResult.inputMode === 'pin' && (
-                  <span className="inline-flex items-center px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-medium border border-indigo-200 mb-2">
-                    📍 From exact map pins
-                  </span>
-                )}
-                {routeResult.inputMode === 'pin' && (routeResult.snappedOrigin?.wasSnapped || routeResult.snappedDestination?.wasSnapped) && (
-                  <span className="inline-flex items-center px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-medium border border-amber-200 mb-4">
-                    📍 Adjusted to nearest road
-                  </span>
-                )}
-
-                {/* ORS fallback warning */}
-                {routeResult.fallbackReason && (
-                  <div className="mt-2 mb-2 mx-auto max-w-lg bg-amber-50 border border-amber-300 rounded-lg px-4 py-3 text-left">
-                    <p className="text-sm font-semibold text-amber-800 mb-1">⚠️ Using GPS Estimate (ORS unavailable)</p>
-                    <p className="text-xs text-amber-700 break-all">{routeResult.fallbackReason}</p>
-                    <p className="text-xs text-amber-600 mt-1">Distance is a straight-line estimate × 1.4 road factor. Configure a valid <code className="font-mono">OPENROUTESERVICE_API_KEY</code> in <code className="font-mono">.env.local</code> for road-based routing.</p>
-                  </div>
-                )}
-                <div className="flex flex-col gap-2 items-center">
-                  <div className="inline-flex items-center px-4 py-2 bg-white rounded-full shadow-sm border border-emerald-200">
-                    <span className="text-emerald-600 font-semibold text-sm">
-                      ✓ Route: {calcMode === 'exact' ? 'Pickup Pin → Drop-off Pin' : `${fromLocation} → ${toLocation}`}
-                    </span>
-                  </div>
-                  {savedToDatabase && (
-                    <div className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium border border-blue-200 animate-pulse">
-                      <span className="mr-1">💾</span>
-                      Saved to History
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              {/* Key Metrics - Larger and More Prominent */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                <div className="bg-white rounded-2xl p-8 text-center shadow-lg border border-emerald-100">
-                  <div className="text-4xl font-bold text-emerald-600 mb-3">
-                    ₱{routeResult.fare.fare.toFixed(2)}
-                  </div>
-                  <div className="text-lg font-semibold text-gray-700">
-                    {routeResult.fare.discountApplied && routeResult.fare.discountApplied > 0 ? 'Discounted Fare' : 'Estimated Fare'}
-                  </div>
-                  <div className="text-sm text-gray-500 mt-2">Municipal Ordinance 105</div>
-                  
-                  {/* Show discount details if applicable */}
-                  {routeResult.fare.discountApplied && routeResult.fare.discountApplied > 0 && (
-                    <div className="mt-3 pt-3 border-t border-emerald-100">
-                      <div className="text-sm text-gray-500 line-through">
-                        ₱{routeResult.fare.originalFare?.toFixed(2)}
-                      </div>
-                      <div className="text-xs font-semibold text-emerald-600 mt-1">
-                        Saved ₱{routeResult.fare.discountApplied.toFixed(2)} ({(routeResult.fare.discountRate! * 100).toFixed(0)}% off)
-                      </div>
-                      {routeResult.discountCard && (
-                        <div className="text-xs text-emerald-700 mt-1">
-                          {routeResult.discountCard.discountType === 'SENIOR_CITIZEN' && '👴 Senior Citizen'}
-                          {routeResult.discountCard.discountType === 'PWD' && '♿ PWD'}
-                          {routeResult.discountCard.discountType === 'STUDENT' && '🎓 Student'}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-                <div className="bg-white rounded-2xl p-8 text-center shadow-lg border border-blue-100">
-                  <div className="text-4xl font-bold text-blue-600 mb-3">
-                    {routeResult.distance.kilometers.toFixed(2)} km
-                  </div>
-                  <div className="text-lg font-semibold text-gray-700">Route Distance</div>
-                  <div className="text-sm text-gray-500 mt-2">{routeResult.distance.kilometers.toFixed(2)} km</div>
-                </div>
-                <div className="bg-white rounded-2xl p-8 text-center shadow-lg border border-purple-100">
-                  <div className="text-4xl font-bold text-purple-600 mb-3">
-                    {routeResult.duration.text}
-                  </div>
-                  <div className="text-lg font-semibold text-gray-700">Estimated Time</div>
-                  <div className="text-sm text-gray-500 mt-2">Travel duration</div>
-                </div>
-              </div>
-
-              {/* Quick Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 mb-6">
-                <button
-                  onClick={handleReset}
-                  className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-blue-200 shadow-lg"
-                >
-                  <span className="mr-2">🔄</span>
-                  Plan Another Route
-                </button>
-                <button
-                  onClick={() => window.print()}
-                  className="flex-1 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-emerald-200 shadow-lg"
-                >
-                  <span className="mr-2">🖨️</span>
-                  Print Route Plan
-                </button>
-              </div>
-
-              {/* Detailed Fare Breakdown - Collapsible */}
-              <details className="bg-white rounded-xl shadow-lg border border-gray-200">
-                <summary className="p-4 cursor-pointer hover:bg-gray-50 rounded-xl font-semibold text-gray-700 flex items-center justify-between">
-                  <span className="flex items-center">
-                    <span className="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center text-sm font-bold mr-3">💰</span>
-                    Detailed Fare Breakdown
-                  </span>
-                  <span className="text-sm text-gray-500">Click to expand</span>
-                </summary>
-                <div className="p-4 border-t border-gray-100">
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                      <span className="text-gray-600">Base fare (first 3km):</span>
-                      <span className="font-semibold text-gray-900">₱15.00</span>
-                    </div>
-                    {routeResult.fare.breakdown.additionalDistance > 0 && (
-                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                        <span className="text-gray-600">Additional distance:</span>
-                        <span className="font-semibold text-gray-900">
-                          {routeResult.fare.breakdown.additionalDistance.toFixed(2)} km × ₱3.00 = ₱{routeResult.fare.breakdown.additionalFare.toFixed(2)}
-                        </span>
-                      </div>
-                    )}
-                    {routeResult.fare.originalFare && routeResult.fare.discountApplied && routeResult.fare.discountApplied > 0 && (
-                      <>
-                        <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                          <span className="text-gray-600">Subtotal (before discount):</span>
-                          <span className="font-semibold text-gray-900">₱{routeResult.fare.originalFare.toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between items-center py-2 border-b border-emerald-200 bg-emerald-50">
-                          <span className="text-emerald-700 font-medium">
-                            {routeResult.discountCard?.discountType === 'SENIOR_CITIZEN' && '👴 Senior Citizen Discount'}
-                            {routeResult.discountCard?.discountType === 'PWD' && '♿ PWD Discount'}
-                            {routeResult.discountCard?.discountType === 'STUDENT' && '🎓 Student Discount'}
-                            {' '}({(routeResult.fare.discountRate! * 100).toFixed(0)}%):
-                          </span>
-                          <span className="font-semibold text-emerald-700">-₱{routeResult.fare.discountApplied.toFixed(2)}</span>
-                        </div>
-                      </>
-                    )}
-                    <div className="border-t-2 border-emerald-300 pt-3 mt-3">
-                      <div className="flex justify-between items-center">
-                        <span className="font-bold text-emerald-700 text-lg">
-                          {routeResult.fare.discountApplied && routeResult.fare.discountApplied > 0 ? 'Final Fare (with discount):' : 'Estimated Total Fare:'}
-                        </span>
-                        <span className="text-2xl font-bold text-emerald-600">₱{routeResult.fare.fare.toFixed(2)}</span>
-                      </div>
-                    </div>
-                    <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                      <p className="text-xs text-gray-600 text-center">
-                        Calculated using {routeResult.source} • Based on Municipal Ordinance 105 Series of 2023
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </details>
-            </div>
-          </div>
-        )}
-
-        {/* Calculator and Map Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Calculator Form */}
-          <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-8">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Plan Your Route</h3>
-
-            {/* Mode Toggle */}
-            <div className="flex rounded-lg border border-gray-200 p-1 bg-gray-50 mb-6">
-              <button
-                type="button"
-                onClick={() => setCalcMode('quick')}
-                className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
-                  calcMode === 'quick'
-                    ? 'bg-white text-blue-600 shadow-sm border border-blue-200'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                ⚡ Quick Quote
-              </button>
-              <button
-                type="button"
-                onClick={() => { setCalcMode('exact'); setPinOrigin(null); setPinDestination(null) }}
-                className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
-                  calcMode === 'exact'
-                    ? 'bg-white text-blue-600 shadow-sm border border-blue-200'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                📍 Exact Quote (Map Pin)
-              </button>
-            </div>
-            
-            <div className="space-y-6">
-              {calcMode === 'quick' && (
+          <section className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
               <div>
-                <label htmlFor="from-planner" className="block text-sm font-semibold text-gray-700 mb-3">
-                  <span className="inline-flex items-center">
-                    <span className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-bold mr-2">A</span>
-                    Starting Location
-                  </span>
-                </label>
-                
-                <select
-                  id="from-planner"
-                  value={fromLocation}
-                  onChange={(e) => setFromLocation(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
-                >
-                  <option value="">🔍 Choose starting location...</option>
-                  
-                  {/* Poblacion Barangays - Urban Center */}
-                  <optgroup label="🏛️ Poblacion Barangays - Urban Center">
-                    {sortedPoblacionBarangays.map((barangay) => (
-                      <option key={`from-poblacion-${barangay.name}`} value={barangay.name}>
-                        {barangay.name}
-                      </option>
-                    ))}
-                  </optgroup>
-                  
-                  {/* Rural Barangays */}
-                  <optgroup label="🌾 Rural Barangays">
-                    {sortedRuralBarangays.map((barangay) => (
-                      <option key={`from-rural-${barangay.name}`} value={barangay.name}>
-                        {barangay.name}
-                      </option>
-                    ))}
-                  </optgroup>
-                  
-                  {/* Landmarks - Grouped by Category */}
-                  {landmarksByCategory.education.length > 0 && (
-                    <optgroup label="🏫 Schools & Education">
-                      {landmarksByCategory.education.map((landmark) => (
-                        <option key={`from-edu-${landmark.name}`} value={landmark.name}>
-                          {landmark.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  )}
-
-                  {landmarksByCategory.government.length > 0 && (
-                    <optgroup label="🏛️ Government & Public Services">
-                      {landmarksByCategory.government.map((landmark) => (
-                        <option key={`from-gov-${landmark.name}`} value={landmark.name}>
-                          {landmark.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  )}
-
-                  {landmarksByCategory.religious.length > 0 && (
-                    <optgroup label="⛪ Churches & Religious Sites">
-                      {landmarksByCategory.religious.map((landmark) => (
-                        <option key={`from-rel-${landmark.name}`} value={landmark.name}>
-                          {landmark.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  )}
-
-                  {landmarksByCategory.healthcare.length > 0 && (
-                    <optgroup label="🏥 Healthcare Facilities">
-                      {landmarksByCategory.healthcare.map((landmark) => (
-                        <option key={`from-health-${landmark.name}`} value={landmark.name}>
-                          {landmark.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  )}
-
-                  {landmarksByCategory.tourist.length > 0 && (
-                    <optgroup label="🏞️ Tourist Attractions">
-                      {landmarksByCategory.tourist.map((landmark) => (
-                        <option key={`from-tourist-${landmark.name}`} value={landmark.name}>
-                          {landmark.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  )}
-
-                  {landmarksByCategory.infrastructure.length > 0 && (
-                    <optgroup label="🌉 Infrastructure & Bridges">
-                      {landmarksByCategory.infrastructure.map((landmark) => (
-                        <option key={`from-infra-${landmark.name}`} value={landmark.name}>
-                          {landmark.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  )}
-
-                  {landmarksByCategory.commercial.length > 0 && (
-                    <optgroup label="🛒 Commercial & Services">
-                      {landmarksByCategory.commercial.map((landmark) => (
-                        <option key={`from-comm-${landmark.name}`} value={landmark.name}>
-                          {landmark.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  )}
-
-                  {landmarksByCategory.other.length > 0 && (
-                    <optgroup label="📍 Other Landmarks">
-                      {landmarksByCategory.other.map((landmark) => (
-                        <option key={`from-other-${landmark.name}`} value={landmark.name}>
-                          {landmark.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  )}
-
-                  {/* Sitios - Sorted Alphabetically */}
-                  {sortedSitios.length > 0 && (
-                    <optgroup label="📌 Sitios & Subdivisions">
-                      {sortedSitios.map((sitio) => (
-                        <option key={`from-sitio-${sitio.name}`} value={sitio.name}>
-                          {sitio.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  )}
-                </select>
-              </div>
-              )}
-
-              {calcMode === 'quick' && (
-              <div>
-                <label htmlFor="to-planner" className="block text-sm font-semibold text-gray-700 mb-3">
-                  <span className="inline-flex items-center">
-                    <span className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-bold mr-2">B</span>
-                    Destination
-                  </span>
-                </label>
-                
-                <select
-                  id="to-planner"
-                  value={toLocation}
-                  onChange={(e) => setToLocation(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
-                >
-                  <option value="">🔍 Choose destination...</option>
-                  
-                  {/* Poblacion Barangays - Urban Center */}
-                  <optgroup label="🏛️ Poblacion Barangays - Urban Center">
-                    {sortedPoblacionBarangays.map((barangay) => (
-                      <option key={`to-poblacion-${barangay.name}`} value={barangay.name}>
-                        {barangay.name}
-                      </option>
-                    ))}
-                  </optgroup>
-                  
-                  {/* Rural Barangays */}
-                  <optgroup label="🌾 Rural Barangays">
-                    {sortedRuralBarangays.map((barangay) => (
-                      <option key={`to-rural-${barangay.name}`} value={barangay.name}>
-                        {barangay.name}
-                      </option>
-                    ))}
-                  </optgroup>
-                  
-                  {/* Landmarks - Grouped by Category */}
-                  {landmarksByCategory.education.length > 0 && (
-                    <optgroup label="🏫 Schools & Education">
-                      {landmarksByCategory.education.map((landmark) => (
-                        <option key={`to-edu-${landmark.name}`} value={landmark.name}>
-                          {landmark.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  )}
-
-                  {landmarksByCategory.government.length > 0 && (
-                    <optgroup label="🏛️ Government & Public Services">
-                      {landmarksByCategory.government.map((landmark) => (
-                        <option key={`to-gov-${landmark.name}`} value={landmark.name}>
-                          {landmark.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  )}
-
-                  {landmarksByCategory.religious.length > 0 && (
-                    <optgroup label="⛪ Churches & Religious Sites">
-                      {landmarksByCategory.religious.map((landmark) => (
-                        <option key={`to-rel-${landmark.name}`} value={landmark.name}>
-                          {landmark.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  )}
-
-                  {landmarksByCategory.healthcare.length > 0 && (
-                    <optgroup label="🏥 Healthcare Facilities">
-                      {landmarksByCategory.healthcare.map((landmark) => (
-                        <option key={`to-health-${landmark.name}`} value={landmark.name}>
-                          {landmark.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  )}
-
-                  {landmarksByCategory.tourist.length > 0 && (
-                    <optgroup label="🏞️ Tourist Attractions">
-                      {landmarksByCategory.tourist.map((landmark) => (
-                        <option key={`to-tourist-${landmark.name}`} value={landmark.name}>
-                          {landmark.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  )}
-
-                  {landmarksByCategory.infrastructure.length > 0 && (
-                    <optgroup label="🌉 Infrastructure & Bridges">
-                      {landmarksByCategory.infrastructure.map((landmark) => (
-                        <option key={`to-infra-${landmark.name}`} value={landmark.name}>
-                          {landmark.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  )}
-
-                  {landmarksByCategory.commercial.length > 0 && (
-                    <optgroup label="🛒 Commercial & Services">
-                      {landmarksByCategory.commercial.map((landmark) => (
-                        <option key={`to-comm-${landmark.name}`} value={landmark.name}>
-                          {landmark.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  )}
-
-                  {landmarksByCategory.other.length > 0 && (
-                    <optgroup label="📍 Other Landmarks">
-                      {landmarksByCategory.other.map((landmark) => (
-                        <option key={`to-other-${landmark.name}`} value={landmark.name}>
-                          {landmark.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  )}
-
-                  {/* Sitios - Sorted Alphabetically */}
-                  {sortedSitios.length > 0 && (
-                    <optgroup label="📌 Sitios & Subdivisions">
-                      {sortedSitios.map((sitio) => (
-                        <option key={`to-sitio-${sitio.name}`} value={sitio.name}>
-                          {sitio.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  )}
-                </select>
-              </div>
-              )}
-
-              {calcMode === 'exact' && (
-              <div>
-                <p className="text-sm text-gray-500 mb-3">
-                  Click the map to pin your <strong>pickup (A)</strong> and <strong>drop-off (B)</strong>. Drag pins to adjust.
+                <p className="text-sm font-medium uppercase tracking-[0.2em] text-gray-500">
+                  Estimated fare
                 </p>
-                <PinSelectionMap
-                  onPinChange={(o, d) => { setPinOrigin(o); setPinDestination(d) }}
-                  className="w-full h-72 rounded-lg border border-gray-200"
-                />
-              </div>
-              )}
+                <div className="mt-2 text-4xl font-bold text-gray-900 sm:text-5xl">
+                  {formatCurrency(routeResult.fare)}
+                </div>
 
-              {/* Error Message */}
-              {error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-                  <div className="flex items-start">
-                    <span className="text-red-600 mr-3 text-xl">🚫</span>
-                    <div className="flex-1">
-                      <p className="text-red-800 font-semibold mb-2">Road routing unavailable</p>
-                      <p className="text-red-700 mb-3">{error}</p>
-                      <div className="bg-red-100 rounded-lg p-3 text-sm">
-                        <p className="font-semibold text-red-800 mb-2">Why This Matters:</p>
-                        <ul className="text-red-700 space-y-1 list-disc list-inside">
-                          <li>GPS direct distance: San Antonio to Basiao = ~7.6km</li>
-                          <li>Actual road distance: San Antonio to Basiao = ~21km</li>
-                          <li>Using GPS would undercharge by ₱40+ per trip!</li>
-                        </ul>
-                      </div>
-                      <div className="mt-3 text-xs text-red-600">
-                        <strong>Setup Required:</strong> Configure OPENROUTESERVICE_API_KEY in .env.local file for road-based routing.
-                      </div>
-                    </div>
+                {routeResult.discountApplied && routeResult.originalFare ? (
+                  <div className="mt-3 space-y-1">
+                    <p className="text-sm text-gray-500 line-through">
+                      {formatCurrency(routeResult.originalFare)}
+                    </p>
+                    <p className="text-sm font-medium text-emerald-700">
+                      Saved {formatCurrency(routeResult.discountApplied)}
+                    </p>
                   </div>
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                <button
-                  onClick={handleCalculate}
-                  disabled={
-                    isCalculating ||
-                    (calcMode === 'quick' && (!fromLocation || !toLocation)) ||
-                    (calcMode === 'exact' && (!pinOrigin || !pinDestination))
-                  }
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-blue-200 focus:ring-offset-2 disabled:bg-gray-400 disabled:cursor-not-allowed flex-1 flex items-center justify-center"
-                >
-                  {isCalculating ? (
-                    <>
-                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Planning Route...
-                    </>
-                  ) : (
-                    <>
-                      <span className="mr-2">🗺️</span>
-                      Plan Route & Calculate Fare
-                    </>
-                  )}
-                </button>
-
-                <button
-                  onClick={handleReset}
-                  className="border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium py-3 px-6 rounded-lg transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-gray-200 focus:ring-offset-2"
-                >
-                  <span className="mr-2">🔄</span>
-                  Reset
-                </button>
+                ) : null}
               </div>
-            </div>
-          </div>
 
-          {/* Route Visualization */}
-          <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
-            <div className="mb-4">
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Planned Route Preview</h3>
-              <p className="text-sm text-gray-600">Visual representation of your planned route</p>
-            </div>
-            
-            {(routeResult || (originCoords && destCoords)) ? (
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                {routeResult && (
-                  <div className="bg-blue-50 p-3 border-b border-gray-200">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="font-semibold text-gray-800">Planned Route</h4>
-                        <p className="text-sm text-gray-600">{routeResult.source} routing</p>
-                      </div>
-                      <div className="text-right text-sm text-gray-600">
-                        <div className="font-medium">{routeResult.distance.kilometers.toFixed(2)} km</div>
-                        <div>{routeResult.duration.text}</div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                <PlannedRouteMap
-                  polyline={routeResult?.polyline}
-                  origin={originCoords}
-                  destination={destCoords}
-                  fromName={fromLocation}
-                  toName={toLocation}
-                  className="w-full h-80"
-                />
-                <div className="bg-gray-50 px-3 py-2 border-t border-gray-200 text-xs text-gray-600 text-center">
-                  {routeResult
-                    ? `${routeResult.source} • Road-based routing via OpenStreetMap`
-                    : 'OpenStreetMap • Select locations and calculate to see the route'}
-                </div>
-              </div>
-            ) : (
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <div className="bg-gray-50 px-3 py-2 border-b border-gray-200 text-xs text-gray-600 text-center">
-                  Select locations below to preview the route
-                </div>
-                <PlannedRouteMap
-                  className="w-full h-80"
-                />
-                <div className="bg-gray-50 px-3 py-2 border-t border-gray-200 text-xs text-gray-600 text-center">
-                  OpenStreetMap © OpenStreetMap contributors
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Enhanced Barangay Map Toggle */}
-          {routeResult && (
-            <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold text-gray-900">Enhanced Route Visualization</h3>
-                <button
-                  onClick={() => setShowEnhancedMap(!showEnhancedMap)}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                    showEnhancedMap
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              <div className="flex flex-wrap gap-2 lg:max-w-sm lg:justify-end">
+                <span className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-sm font-medium text-gray-700">
+                  {routeResult.distanceKm.toFixed(2)} km
+                </span>
+                <span className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-sm font-medium text-gray-700">
+                  {routeResult.durationText}
+                </span>
+                <span
+                  className={`rounded-full px-3 py-1 text-sm font-medium ${
+                    routeResult.method === 'gps'
+                      ? 'border border-amber-200 bg-amber-50 text-amber-800'
+                      : 'border border-blue-200 bg-blue-50 text-blue-800'
                   }`}
                 >
-                  {showEnhancedMap ? 'Hide Barangay Boundaries' : 'Show Barangay Boundaries'}
-                </button>
+                  {routeResult.sourceBadge}
+                </span>
               </div>
-              
-              {showEnhancedMap && (
-                <EnhancedRouteMap
-                  origin={originCoords || undefined}
-                  destination={destCoords || undefined}
-                  route={routeCoordinates}
-                  showBarangayBoundaries={true}
-                  className="w-full h-96"
-                />
-              )}
             </div>
-          )}
 
-          {/* Barangay Information */}
-          {routeResult?.barangayInfo && (
-            <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                🗺️ Geographic Route Analysis
-              </h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h4 className="font-semibold text-blue-800 mb-2">Origin Information</h4>
-                  <div className="space-y-2 text-sm">
-                    <div>
-                      <span className="font-medium">Barangay:</span> {routeResult.barangayInfo.originBarangay}
-                    </div>
-                    <div>
-                      <span className="font-medium">Type:</span> {
-                        barangayList.find(b => b.name === routeResult.barangayInfo?.originBarangay)?.isPoblacion
-                          ? '🏛️ Poblacion (Urban)'
-                          : '🌾 Rural Area'
-                      }
-                    </div>
-                  </div>
+            {routeResult.fallbackReason && (
+              <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                Lower-confidence estimate: road routing was unavailable for this request.
+              </p>
+            )}
+
+            {saveStatus === 'saved' && (
+              <p className="mt-3 text-xs text-gray-500">Saved to fare history.</p>
+            )}
+
+            <details className="mt-4 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+              <summary className="cursor-pointer font-medium text-gray-800">
+                How fare was computed
+              </summary>
+              <div className="mt-3 space-y-2 text-sm">
+                <div className="flex items-center justify-between">
+                  <span>Base fare</span>
+                  <span>{formatCurrency(routeResult.breakdown.baseFare)}</span>
                 </div>
-                
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <h4 className="font-semibold text-green-800 mb-2">Destination Information</h4>
-                  <div className="space-y-2 text-sm">
-                    <div>
-                      <span className="font-medium">Barangay:</span> {routeResult.barangayInfo.destinationBarangay}
-                    </div>
-                    <div>
-                      <span className="font-medium">Type:</span> {
-                        barangayList.find(b => b.name === routeResult.barangayInfo?.destinationBarangay)?.isPoblacion
-                          ? '🏛️ Poblacion (Urban)'
-                          : '🌾 Rural Area'
-                      }
-                    </div>
-                  </div>
+                <div className="flex items-center justify-between">
+                  <span>Additional distance</span>
+                  <span>{routeResult.breakdown.additionalDistance.toFixed(2)} km</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Additional fare</span>
+                  <span>{formatCurrency(routeResult.breakdown.additionalFare)}</span>
                 </div>
               </div>
+            </details>
+          </section>
+        )}
 
-              {routeResult.barangayInfo.crossesBoundary && (
-                <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-4">
-                  <h5 className="font-medium text-amber-800 mb-2 flex items-center">
-                    ⚠️ Cross-Barangay Route
-                  </h5>
-                  <p className="text-sm text-amber-700">
-                    This route crosses barangay boundaries. Additional fees may apply according to local transportation policies.
-                  </p>
-                </div>
-              )}
-
-              {routeResult.barangayInfo.recommendations.length > 0 && (
-                <div className="mt-4">
-                  <h5 className="font-medium text-gray-800 mb-2">Route Recommendations</h5>
-                  <div className="space-y-2">
-                    {routeResult.barangayInfo.recommendations.map((rec, index) => (
-                      <div key={index} className="flex items-start text-sm text-gray-600">
-                        <span className="mr-2 text-blue-500">•</span>
-                        <span>{rec}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+        <div className="grid gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
+          <aside className="space-y-4 rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Pin your route</h3>
+              <p className="mt-1 text-sm text-gray-600">
+                Use your current location or click the map to place A and B.
+              </p>
             </div>
-          )}
+
+            <PointSetter
+              title="Pickup"
+              letter="A"
+              currentPoint={origin}
+              isLocating={locatingTarget === 'origin'}
+              onUseCurrentLocation={() => useCurrentLocation('origin')}
+            />
+
+            <PointSetter
+              title="Destination"
+              letter="B"
+              currentPoint={destination}
+              isLocating={locatingTarget === 'destination'}
+              onUseCurrentLocation={() => useCurrentLocation('destination')}
+            />
+
+            {controlMessage && (
+              <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                {controlMessage}
+              </div>
+            )}
+
+            {errorPanelVisible && (
+              <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                <p className="font-medium">
+                  {plannerState === 'out_of_service_area' && 'Pins are outside the service area.'}
+                  {plannerState === 'no_route_found' && 'No route could be calculated from the current pins.'}
+                  {plannerState === 'network_error' && 'The route service is unavailable right now.'}
+                </p>
+                {routeMessage && <p className="mt-1 text-xs text-red-700">{routeMessage}</p>}
+                {hasTwoPoints && (
+                  <button
+                    type="button"
+                    onClick={() => void calculateRoute(true)}
+                    className="mt-3 rounded-xl border border-red-300 bg-white px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50"
+                  >
+                    Try again
+                  </button>
+                )}
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={handleSwap}
+                disabled={!hasTwoPoints}
+                className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Swap A / B
+              </button>
+              <button
+                type="button"
+                onClick={handleReset}
+                disabled={!origin && !destination}
+                className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Reset route
+              </button>
+              <button
+                type="button"
+                onClick={() => updateOrigin(null)}
+                disabled={!origin}
+                className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Clear A
+              </button>
+              <button
+                type="button"
+                onClick={() => updateDestination(null)}
+                disabled={!destination}
+                className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Clear B
+              </button>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
+              OpenRouteService is used first for road-aware planning. If it becomes unavailable, the planner will clearly label any lower-confidence GPS estimate.
+            </div>
+          </aside>
+
+          <section className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
+            <MapComponent
+              origin={origin}
+              destination={destination}
+              polyline={routeResult?.polyline}
+              isCalculating={isCalculating}
+              fitBoundsToken={fitBoundsToken}
+              plannerState={plannerState}
+              plannerMessage={routeMessage}
+              onOriginChange={updateOrigin}
+              onDestinationChange={updateDestination}
+              className="h-[520px] w-full rounded-2xl border border-gray-200"
+            />
+          </section>
         </div>
+
+        <section className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
+          <div className="flex items-start gap-4">
+            <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-100 text-xl text-blue-700">
+              A to B
+            </div>
+            <div className="space-y-2">
+              <div className="space-y-1">
+                <p className="text-sm font-medium uppercase tracking-[0.2em] text-gray-500">
+                  Route Planner
+                </p>
+                <h2 className="text-xl font-bold text-gray-900">Plan one route on one map</h2>
+              </div>
+              <p className="text-sm text-gray-600">
+                Tap the map or use your location to set A and B.
+              </p>
+              <div className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-700 sm:text-sm">
+                <span className="font-medium">Routing:</span>
+                <span className="sm:hidden">ORS first, GPS fallback.</span>
+                <span className="hidden sm:inline">
+                  OpenRouteService first, GPS fallback only when road routing is unavailable.
+                </span>
+              </div>
+              {userDiscountCard && (
+                <div className="inline-flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-left shadow-sm">
+                  <span className="text-xl">Discount</span>
+                  <div>
+                    <p className="text-sm font-semibold text-emerald-800">
+                      {userDiscountCard.discountType === 'SENIOR_CITIZEN' && 'Senior Citizen discount active'}
+                      {userDiscountCard.discountType === 'PWD' && 'PWD discount active'}
+                      {userDiscountCard.discountType === 'STUDENT' && 'Student discount active'}
+                    </p>
+                    <p className="text-xs text-emerald-700">
+                      {userDiscountCard.discountPercentage}% discount will be applied automatically.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   )

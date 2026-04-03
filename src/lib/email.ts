@@ -7,11 +7,6 @@
 
 import { Resend } from 'resend'
 
-// Initialize Resend with API key from environment
-const resend = process.env.RESEND_API_KEY 
-  ? new Resend(process.env.RESEND_API_KEY)
-  : null
-
 export interface EmailOptions {
   to: string
   subject: string
@@ -19,20 +14,149 @@ export interface EmailOptions {
   text?: string
 }
 
+export type EmailDeliveryMode = 'provider' | 'development_console'
+
+export interface EmailCapability {
+  available: boolean
+  mode: EmailDeliveryMode
+  from?: string
+  reason?: string
+}
+
+export interface EmailSendResult {
+  success: boolean
+  mode: EmailDeliveryMode
+  reason?: string
+}
+
+const DEFAULT_DEV_EMAIL_FROM = 'Basey Fare Guide <onboarding@resend.dev>'
+
+function isDevelopmentMode(): boolean {
+  return process.env.NODE_ENV !== 'production'
+}
+
+function getResendClient(): Resend | null {
+  const apiKey = process.env.RESEND_API_KEY?.trim()
+  return apiKey ? new Resend(apiKey) : null
+}
+
+function extractEmailAddress(value: string): string {
+  const trimmed = value.trim()
+  const match = trimmed.match(/<([^>]+)>/)
+  return (match?.[1] ?? trimmed).trim().toLowerCase()
+}
+
+function isValidEmailAddress(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+}
+
+function resolveEmailCapability(): EmailCapability {
+  const resend = getResendClient()
+  const configuredFrom = process.env.EMAIL_FROM?.trim()
+
+  if (!resend) {
+    if (isDevelopmentMode()) {
+      return {
+        available: true,
+        mode: 'development_console',
+        from: DEFAULT_DEV_EMAIL_FROM,
+      }
+    }
+
+    return {
+      available: false,
+      mode: 'provider',
+      reason: 'RESEND_API_KEY is not configured for production email delivery.',
+    }
+  }
+
+  if (!configuredFrom) {
+    if (isDevelopmentMode()) {
+      return {
+        available: true,
+        mode: 'development_console',
+        from: DEFAULT_DEV_EMAIL_FROM,
+      }
+    }
+
+    return {
+      available: false,
+      mode: 'provider',
+      reason: 'EMAIL_FROM is not configured for production email delivery.',
+    }
+  }
+
+  const senderEmail = extractEmailAddress(configuredFrom)
+  if (!isValidEmailAddress(senderEmail)) {
+    return {
+      available: false,
+      mode: 'provider',
+      reason: 'EMAIL_FROM is not a valid sender address.',
+    }
+  }
+
+  if (senderEmail.endsWith('@resend.dev')) {
+    if (isDevelopmentMode()) {
+      return {
+        available: true,
+        mode: 'development_console',
+        from: DEFAULT_DEV_EMAIL_FROM,
+      }
+    }
+
+    return {
+      available: false,
+      mode: 'provider',
+      reason: 'EMAIL_FROM is still using Resend onboarding sender. Configure a verified sender domain for production password reset emails.',
+    }
+  }
+
+  return {
+    available: true,
+    mode: 'provider',
+    from: configuredFrom,
+  }
+}
+
+export function getPasswordResetEmailCapability(): EmailCapability {
+  return resolveEmailCapability()
+}
+
 /**
  * Send an email using Resend
  */
-export async function sendEmail(options: EmailOptions): Promise<boolean> {
-  // Check if email service is configured
-  if (!resend) {
-    console.warn('Email service not configured. Set RESEND_API_KEY environment variable.')
+export async function sendEmail(options: EmailOptions): Promise<EmailSendResult> {
+  const capability = resolveEmailCapability()
+
+  if (!capability.available) {
+    console.warn('Email service unavailable:', capability.reason)
+    return {
+      success: false,
+      mode: capability.mode,
+      reason: capability.reason,
+    }
+  }
+
+  if (capability.mode === 'development_console') {
     console.log(`Would have sent email to ${options.to} with subject: ${options.subject}`)
-    return false
+    return {
+      success: true,
+      mode: 'development_console',
+    }
   }
 
   try {
+    const resend = getResendClient()
+    if (!resend || !capability.from) {
+      return {
+        success: false,
+        mode: 'provider',
+        reason: 'Resend client is unavailable.',
+      }
+    }
+
     const { data, error } = await resend.emails.send({
-      from: process.env.EMAIL_FROM || 'Basey Fare Guide <noreply@baseyfareguide.com>',
+      from: capability.from,
       to: options.to,
       subject: options.subject,
       html: options.html,
@@ -41,14 +165,25 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
 
     if (error) {
       console.error('Failed to send email:', error)
-      return false
+      return {
+        success: false,
+        mode: 'provider',
+        reason: typeof error.message === 'string' ? error.message : 'Email provider rejected the message.',
+      }
     }
 
     console.log('Email sent successfully:', data)
-    return true
+    return {
+      success: true,
+      mode: 'provider',
+    }
   } catch (error) {
     console.error('Email service error:', error)
-    return false
+    return {
+      success: false,
+      mode: 'provider',
+      reason: error instanceof Error ? error.message : 'Email service error.',
+    }
   }
 }
 
@@ -181,12 +316,13 @@ If you didn't make this request, please ignore this email.
 Basey Fare Guide
   `
 
-  return sendEmail({
+  const result = await sendEmail({
     to: email,
     subject: 'Password Reset Request - Basey Fare Guide',
     html,
     text,
   })
+  return result.success
 }
 
 /**
@@ -268,11 +404,12 @@ export async function sendAccountVerificationEmail(
     </html>
   `
 
-  return sendEmail({
+  const result = await sendEmail({
     to: email,
     subject: 'Account Approved - Basey Fare Guide',
     html,
   })
+  return result.success
 }
 
 /**
@@ -306,11 +443,12 @@ export async function sendIncidentNotificationEmail(
     </html>
   `
 
-  return sendEmail({
+  const result = await sendEmail({
     to: email,
     subject: `New Incident Report #${incidentId} - ${incidentType}`,
     html,
   })
+  return result.success
 }
 
 /**
@@ -320,9 +458,18 @@ export async function sendOTPEmail(
   email: string,
   username: string,
   otp: string
-): Promise<boolean> {
-  // If Resend is not configured, log to console (development fallback)
-  if (!resend) {
+): Promise<EmailSendResult> {
+  const capability = getPasswordResetEmailCapability()
+
+  if (!capability.available) {
+    return {
+      success: false,
+      mode: capability.mode,
+      reason: capability.reason,
+    }
+  }
+
+  if (capability.mode === 'development_console') {
     console.log('='.repeat(60))
     console.log('📧 EMAIL NOTIFICATION (Development Mode - No API Key)')
     console.log('='.repeat(60))
@@ -331,7 +478,10 @@ export async function sendOTPEmail(
     console.log(`OTP Code: ${otp}`)
     console.log(`Valid for: 10 minutes`)
     console.log('='.repeat(60))
-    return true
+    return {
+      success: true,
+      mode: 'development_console',
+    }
   }
 
   // Log in development for debugging (but still send email)
