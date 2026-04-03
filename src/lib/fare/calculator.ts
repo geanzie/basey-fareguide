@@ -1,10 +1,9 @@
+import type { FarePolicySnapshotDto } from "@/lib/contracts";
 import type { PassengerType, FareBreakdown } from "../routing/types";
+import { resolveFarePolicySnapshot } from "./policy";
 
 export type { PassengerType, FareBreakdown };
 
-const BASE_FARE = 15;
-const BASE_KM = 3;
-const RATE_PER_KM = 3;
 const DISCOUNT_RATE = 0.8;
 
 const DISCOUNTED_TYPES = new Set<PassengerType>(["STUDENT", "SENIOR", "PWD"]);
@@ -13,19 +12,21 @@ const DISCOUNTED_TYPES = new Set<PassengerType>(["STUDENT", "SENIOR", "PWD"]);
  * Calculate the passenger fare for a given distance.
  *
  * Formula:
- *   additionalFare = Math.ceil(Math.max(distanceKm - BASE_KM, 0)) * RATE_PER_KM
- *   subtotal = BASE_FARE + additionalFare
+ *   additionalFare = Math.ceil(Math.max(distanceKm - baseDistanceKm, 0)) * perKmRate
+ *   subtotal = baseFare + additionalFare
  *   total = STUDENT/SENIOR/PWD: subtotal * 0.8, else subtotal
  *
  * The ceiling ensures whole-km billing for partial kilometres beyond the base.
  */
 export function calculateFare(
   distanceKm: number,
-  passengerType: PassengerType = "REGULAR"
+  passengerType: PassengerType = "REGULAR",
+  farePolicy?: FarePolicySnapshotDto | null,
 ): number {
-  const additionalKm = Math.max(distanceKm - BASE_KM, 0);
-  const additionalFare = Math.ceil(additionalKm) * RATE_PER_KM;
-  const subtotal = BASE_FARE + additionalFare;
+  const resolvedPolicy = resolveFarePolicySnapshot(farePolicy);
+  const additionalKm = Math.max(distanceKm - resolvedPolicy.baseDistanceKm, 0);
+  const additionalFare = Math.ceil(additionalKm) * resolvedPolicy.perKmRate;
+  const subtotal = resolvedPolicy.baseFare + additionalFare;
   const total = DISCOUNTED_TYPES.has(passengerType)
     ? subtotal * DISCOUNT_RATE
     : subtotal;
@@ -37,11 +38,13 @@ export function calculateFare(
  */
 export function getFareBreakdown(
   distanceKm: number,
-  passengerType: PassengerType = "REGULAR"
+  passengerType: PassengerType = "REGULAR",
+  farePolicy?: FarePolicySnapshotDto | null,
 ): FareBreakdown {
-  const additionalKm = Math.max(distanceKm - BASE_KM, 0);
-  const additionalFare = Math.ceil(additionalKm) * RATE_PER_KM;
-  const subtotal = BASE_FARE + additionalFare;
+  const resolvedPolicy = resolveFarePolicySnapshot(farePolicy);
+  const additionalKm = Math.max(distanceKm - resolvedPolicy.baseDistanceKm, 0);
+  const additionalFare = Math.ceil(additionalKm) * resolvedPolicy.perKmRate;
+  const subtotal = resolvedPolicy.baseFare + additionalFare;
   const isDiscounted = DISCOUNTED_TYPES.has(passengerType);
   const discount = isDiscounted ? Math.round(subtotal * 0.2 * 100) / 100 : 0;
   const total = isDiscounted
@@ -49,7 +52,7 @@ export function getFareBreakdown(
     : subtotal;
 
   return {
-    baseFare: BASE_FARE,
+    baseFare: resolvedPolicy.baseFare,
     additionalKm,
     additionalFare,
     discount,

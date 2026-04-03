@@ -2,6 +2,7 @@ export * from "./common";
 export * from "./dashboard";
 export * from "./discounts";
 export * from "./fares";
+export * from "./fareRates";
 export * from "./incidents";
 export * from "./locations";
 export * from "./permits";

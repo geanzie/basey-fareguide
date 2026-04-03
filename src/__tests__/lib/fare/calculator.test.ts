@@ -1,5 +1,14 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
+
 import { calculateFare, getFareBreakdown } from "@/lib/fare/calculator";
+
+const CUSTOM_FARE_POLICY = {
+  versionId: "fare-custom",
+  baseDistanceKm: 3,
+  baseFare: 20,
+  perKmRate: 5,
+  effectiveAt: "2026-04-03T00:00:00.000Z",
+} as const;
 
 describe("calculateFare", () => {
   describe("REGULAR passenger", () => {
@@ -12,22 +21,18 @@ describe("calculateFare", () => {
     });
 
     it("adds one fare increment for 1 km over base", () => {
-      // 4 km: ceil(1) * 3 = 3 → 15 + 3 = 18
       expect(calculateFare(4, "REGULAR")).toBe(18);
     });
 
-    it("rounds up fractional kilometres beyond base (ceiling billing)", () => {
-      // 4.5 km: additionalKm = 1.5, ceil(1.5) = 2, 2 * 3 = 6 → 15 + 6 = 21
+    it("rounds up fractional kilometres beyond base", () => {
       expect(calculateFare(4.5, "REGULAR")).toBe(21);
     });
 
     it("handles exactly 2 km over base", () => {
-      // 5 km: ceil(2) * 3 = 6 → 15 + 6 = 21
       expect(calculateFare(5, "REGULAR")).toBe(21);
     });
 
     it("handles a long 15 km trip", () => {
-      // 15 km: additionalKm = 12, ceil(12) * 3 = 36 → 15 + 36 = 51
       expect(calculateFare(15, "REGULAR")).toBe(51);
     });
 
@@ -36,9 +41,8 @@ describe("calculateFare", () => {
     });
   });
 
-  describe("discounted passengers (STUDENT, SENIOR, PWD)", () => {
+  describe("discounted passengers", () => {
     it("applies 20% discount for STUDENT", () => {
-      // 5 km subtotal = 21, 21 * 0.8 = 16.8
       expect(calculateFare(5, "STUDENT")).toBe(16.8);
     });
 
@@ -50,9 +54,18 @@ describe("calculateFare", () => {
       expect(calculateFare(5, "PWD")).toBe(16.8);
     });
 
-    it("STUDENT base fare is discounted too", () => {
-      // 3 km subtotal = 15, 15 * 0.8 = 12
+    it("discounts the base fare too", () => {
       expect(calculateFare(3, "STUDENT")).toBe(12);
+    });
+  });
+
+  describe("custom fare policies", () => {
+    it("uses the supplied base fare and per-kilometer rate", () => {
+      expect(calculateFare(4.2, "REGULAR", CUSTOM_FARE_POLICY)).toBe(30);
+    });
+
+    it("keeps the existing discount logic on top of the resolved policy", () => {
+      expect(calculateFare(4.2, "SENIOR", CUSTOM_FARE_POLICY)).toBe(24);
     });
   });
 });
@@ -71,14 +84,22 @@ describe("getFareBreakdown", () => {
     const result = getFareBreakdown(5, "STUDENT");
     expect(result.baseFare).toBe(15);
     expect(result.additionalFare).toBe(6);
-    expect(result.discount).toBe(4.2); // 21 * 0.2
+    expect(result.discount).toBe(4.2);
     expect(result.total).toBe(16.8);
   });
 
-  it("additionalKm is zero for short trips", () => {
+  it("returns zero additional distance for short trips", () => {
     const result = getFareBreakdown(2, "REGULAR");
     expect(result.additionalKm).toBe(0);
     expect(result.additionalFare).toBe(0);
     expect(result.total).toBe(15);
+  });
+
+  it("returns the custom policy snapshot values in the breakdown", () => {
+    const result = getFareBreakdown(4.2, "REGULAR", CUSTOM_FARE_POLICY);
+    expect(result.baseFare).toBe(20);
+    expect(result.additionalKm).toBeCloseTo(1.2, 5);
+    expect(result.additionalFare).toBe(10);
+    expect(result.total).toBe(30);
   });
 });

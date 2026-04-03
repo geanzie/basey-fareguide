@@ -2,6 +2,9 @@
 // TODO: consolidate into RoutePlannerCalculator
 
 import { useState, useEffect } from 'react'
+import FareRateBanner from '@/components/FareRateBanner'
+import type { FarePolicySnapshotDto } from '@/lib/contracts'
+import { resolveFarePolicySnapshot } from '@/lib/fare/policy'
 import { barangayService } from '../lib/barangayService'
 import { BarangayInfo } from '../utils/barangayBoundaries'
 
@@ -18,6 +21,7 @@ interface RouteResult {
   fare: {
     distance: number
     fare: number
+    farePolicy: FarePolicySnapshotDto
     breakdown: {
       baseFare: number
       additionalDistance: number
@@ -173,6 +177,7 @@ const SmartFareCalculator = ({
         fare: {
           distance: data.distanceKm,
           fare: data.fare,
+          farePolicy: resolveFarePolicySnapshot(data.farePolicy),
           breakdown: {
             baseFare: data.fareBreakdown.baseFare,
             additionalDistance: data.fareBreakdown.additionalKm,
@@ -202,6 +207,8 @@ const SmartFareCalculator = ({
 
   return (
     <div className="bg-white rounded-xl shadow-lg p-8">
+      <FareRateBanner className="mb-6" />
+
       <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
         Smart Fare Calculator
       </h2>
@@ -407,12 +414,14 @@ const SmartFareCalculator = ({
               <h4 className="font-semibold text-gray-800 mb-3">Fare Breakdown</h4>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span>Base fare (first 3km):</span>
+                  <span>Base fare (first {routeResult.fare.farePolicy.baseDistanceKm} km):</span>
                   <span>₱{routeResult.fare.breakdown.baseFare.toFixed(2)}</span>
                 </div>
                 {routeResult.fare.breakdown.additionalDistance > 0 && (
                   <div className="flex justify-between">
-                    <span>Additional distance ({routeResult.fare.breakdown.additionalDistance.toFixed(1)}km @ ₱3/km):</span>
+                    <span>
+                      Additional distance ({routeResult.fare.breakdown.additionalDistance.toFixed(1)}km @ ₱{routeResult.fare.farePolicy.perKmRate.toFixed(2)}/km):
+                    </span>
                     <span>₱{routeResult.fare.breakdown.additionalFare.toFixed(2)}</span>
                   </div>
                 )}

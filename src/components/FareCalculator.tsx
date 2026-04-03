@@ -2,11 +2,15 @@
 // TODO: consolidate into RoutePlannerCalculator
 
 import { useState, useEffect, useMemo } from 'react'
+import FareRateBanner from '@/components/FareRateBanner'
+import type { FarePolicySnapshotDto } from '@/lib/contracts'
+import { resolveFarePolicySnapshot } from '@/lib/fare/policy'
 import { locationService, Location } from '../lib/locationService'
 
 interface RouteResult {
   distanceKm: number
   fare: number
+  farePolicy: FarePolicySnapshotDto
   fareBreakdown: {
     baseFare: number
     additionalKm: number
@@ -63,7 +67,10 @@ const FareCalculator = () => {
       })
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || 'Failed to calculate route')
-      setRouteResult(data)
+      setRouteResult({
+        ...data,
+        farePolicy: resolveFarePolicySnapshot(data.farePolicy),
+      })
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unable to calculate route. Please try again.')
     } finally {
@@ -80,6 +87,8 @@ const FareCalculator = () => {
 
   return (
     <div className="max-w-4xl mx-auto">
+      <FareRateBanner className="mb-6" />
+
       {/* Enhanced Route Calculator */}
       <div className="space-y-8">
         {/* Calculator Form */}
@@ -223,13 +232,15 @@ const FareCalculator = () => {
               </h4>
               <div className="space-y-3">
                 <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                  <span className="text-gray-600">Base fare (first 3km):</span>
-                  <span className="font-semibold text-gray-900">₱15.00</span>
+                  <span className="text-gray-600">Base fare (first {routeResult.farePolicy.baseDistanceKm} km):</span>
+                  <span className="font-semibold text-gray-900">₱{routeResult.fareBreakdown.baseFare.toFixed(2)}</span>
                 </div>
-                {routeResult.distanceKm > 3 && (
+                {routeResult.distanceKm > routeResult.farePolicy.baseDistanceKm && (
                   <div className="flex justify-between items-center py-2 border-b border-gray-100">
                     <span className="text-gray-600">Additional distance:</span>
-                    <span className="font-semibold text-gray-900">{(routeResult.distanceKm - 3).toFixed(2)} km × ₱3.00 = ₱{routeResult.fareBreakdown.additionalFare.toFixed(2)}</span>
+                    <span className="font-semibold text-gray-900">
+                      {(routeResult.distanceKm - routeResult.farePolicy.baseDistanceKm).toFixed(2)} km × ₱{routeResult.farePolicy.perKmRate.toFixed(2)} = ₱{routeResult.fareBreakdown.additionalFare.toFixed(2)}
+                    </span>
                   </div>
                 )}
                 <div className="border-t-2 border-emerald-300 pt-3 mt-3">

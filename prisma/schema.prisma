@@ -51,6 +51,8 @@ model User {
   discountCard          DiscountCard?
   createdLocations      Location[]            @relation("LocationCreator")
   verifiedLocations     Location[]            @relation("LocationVerifier")
+  createdFareRateVersions FareRateVersion[]   @relation("FareRateVersionCreator")
+  canceledFareRateVersions FareRateVersion[]  @relation("FareRateVersionCanceller")
 
   @@index([username])
   @@index([userType])
@@ -59,6 +61,27 @@ model User {
   @@index([createdAt])
   @@index([userType, isActive])
   @@map("users")
+}
+
+model FareRateVersion {
+  id                 String    @id @default(cuid())
+  baseFare           Decimal   @db.Decimal(10, 2)
+  perKmRate          Decimal   @db.Decimal(10, 2)
+  effectiveAt        DateTime
+  createdAt          DateTime  @default(now())
+  createdBy          String?
+  notes              String
+  canceledAt         DateTime?
+  canceledBy         String?
+  cancellationReason String?
+  createdByUser      User?     @relation("FareRateVersionCreator", fields: [createdBy], references: [id])
+  canceledByUser     User?     @relation("FareRateVersionCanceller", fields: [canceledBy], references: [id])
+
+  @@index([effectiveAt])
+  @@index([createdAt])
+  @@index([canceledAt])
+  @@index([effectiveAt, canceledAt])
+  @@map("fare_rate_versions")
 }
 
 model Vehicle {

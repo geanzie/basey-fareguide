@@ -77,6 +77,14 @@ function makeResponse(body: unknown, status = 200) {
   })
 }
 
+const DEFAULT_FARE_POLICY = {
+  versionId: 'fare-live',
+  baseDistanceKm: 3,
+  baseFare: 15,
+  perKmRate: 3,
+  effectiveAt: '2026-04-01T00:00:00.000Z',
+}
+
 function deferredResponse() {
   let resolve!: (response: Response) => void
   const promise = new Promise<Response>((resolver) => {
@@ -113,6 +121,15 @@ describe('RoutePlannerCalculator', () => {
         }
 
         return next instanceof Response ? Promise.resolve(next) : next
+      }
+
+      if (url.includes('/api/fare-rates')) {
+        return Promise.resolve(
+          makeResponse({
+            current: DEFAULT_FARE_POLICY,
+            upcoming: null,
+          }),
+        )
       }
 
       if (url.includes('/api/fare-calculations')) {

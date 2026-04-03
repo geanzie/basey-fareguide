@@ -1,4 +1,6 @@
 import { Client, TravelMode, UnitSystem, Language } from '@googlemaps/google-maps-services-js';
+import type { FarePolicySnapshotDto } from '@/lib/contracts';
+import { calculateFare, getFareBreakdown } from '@/lib/fare/calculator';
 
 // Initialize Google Maps Services client
 const client = new Client({});
@@ -234,50 +236,26 @@ export function formatDuration(seconds: number): string {
  * @param discountRate - Optional discount rate (0.20 for 20% discount for seniors, PWDs, students)
  * @returns Fare calculation details with optional discount applied
  */
-export function calculateGoogleMapsFare(distanceInKm: number, discountRate?: number) {
-  const baseFare = 15; // Municipal Ordinance 105 Series of 2023
-  const baseDistance = 3; // First 3 kilometers
-  const additionalRate = 3; // ₱3 per additional kilometer
-
-  let originalFare = baseFare;
-  let additionalDistance = 0;
-  let additionalFare = 0;
-
-  if (distanceInKm > baseDistance) {
-    additionalDistance = distanceInKm - baseDistance;
-    additionalFare = Math.ceil(additionalDistance) * additionalRate;
-    originalFare += additionalFare;
-  }
-
-  // Apply discount if provided (Philippine law: 20% for seniors, PWDs, students)
-  let finalFare = originalFare;
-  let discountApplied = 0;
-
-  if (discountRate && discountRate > 0 && discountRate <= 1) {
-    discountApplied = originalFare * discountRate;
-    finalFare = originalFare - discountApplied;
-  }
-
-  // Round to nearest 0.50 for easier change-giving
-  // Examples: 16.20 -> 16.00, 16.30 -> 16.50, 16.80 -> 17.00
-  const roundToNearestHalf = (value: number): number => {
-    return Math.round(value * 2) / 2;
-  };
-
-  const roundedOriginalFare = roundToNearestHalf(originalFare);
-  const roundedFinalFare = roundToNearestHalf(finalFare);
-  const roundedDiscountApplied = roundedOriginalFare - roundedFinalFare;
+export function calculateGoogleMapsFare(
+  distanceInKm: number,
+  discountRate?: number,
+  farePolicy?: FarePolicySnapshotDto | null,
+) {
+  const passengerType = discountRate && discountRate > 0 ? 'STUDENT' : 'REGULAR';
+  const breakdown = getFareBreakdown(distanceInKm, passengerType, farePolicy);
+  const originalFare = calculateFare(distanceInKm, 'REGULAR', farePolicy);
+  const finalFare = calculateFare(distanceInKm, passengerType, farePolicy);
 
   return {
     distance: distanceInKm,
-    fare: roundedFinalFare, // Rounded to nearest ₱0.50
-    originalFare: roundedOriginalFare, // Also rounded for consistency
-    discountApplied: roundedDiscountApplied, // Recalculated based on rounded values
+    fare: finalFare,
+    originalFare,
+    discountApplied: breakdown.discount,
     discountRate: discountRate || 0,
     breakdown: {
-      baseFare,
-      additionalDistance,
-      additionalFare,
+      baseFare: breakdown.baseFare,
+      additionalDistance: breakdown.additionalKm,
+      additionalFare: breakdown.additionalFare,
     },
   };
 }

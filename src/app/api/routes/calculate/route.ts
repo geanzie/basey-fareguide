@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { FarePolicySnapshotDto } from "@/lib/contracts";
 import { calculateRouteWithFallback } from "@/lib/routing";
 import { calculateFare, getFareBreakdown } from "@/lib/fare/calculator";
+import { getResolvedFareRates } from "@/lib/fare/rateService";
 import { resolvePlannerLocationByName } from "@/lib/locations/plannerLocations";
 import { serializePinLabel } from "@/lib/locations/pinSerializer";
 import type { PassengerType, LocationInput } from "@/lib/routing/types";
@@ -203,11 +205,23 @@ export async function POST(request: NextRequest) {
   const inputMode: "preset" | "pin" =
     originInput.type === "pin" || destInput.type === "pin" ? "pin" : "preset";
 
+  let activeFarePolicy: FarePolicySnapshotDto;
+  try {
+    const resolvedFareRates = await getResolvedFareRates();
+    activeFarePolicy = resolvedFareRates.current;
+  } catch (error) {
+    console.error("[/api/routes/calculate] Fare policy resolution failed:", error);
+    return NextResponse.json(
+      { error: "Fare policy is unavailable right now" },
+      { status: 503 },
+    );
+  }
+
   // --- Same-point guard: return minimum fare, not an error ---
   if (isSamePoint(originCoords, destCoords)) {
     console.info("[calculate] Same-point guard triggered → minimum fare", { origin: originLabel, destination: destLabel });
-    const fare = calculateFare(0, passengerType);
-    const fareBreakdown = getFareBreakdown(0, passengerType);
+    const fare = calculateFare(0, passengerType, activeFarePolicy);
+    const fareBreakdown = getFareBreakdown(0, passengerType, activeFarePolicy);
     return NextResponse.json({
       origin: originLabel,
       destination: destLabel,
@@ -216,6 +230,7 @@ export async function POST(request: NextRequest) {
       fare,
       passengerType,
       fareBreakdown,
+      farePolicy: activeFarePolicy,
       method: null,
       fallbackReason: null,
       polyline: null,
@@ -260,8 +275,8 @@ export async function POST(request: NextRequest) {
   }
 
   // --- Fare calculation ---
-  const fare = calculateFare(route.distanceKm, passengerType);
-  const fareBreakdown = getFareBreakdown(route.distanceKm, passengerType);
+  const fare = calculateFare(route.distanceKm, passengerType, activeFarePolicy);
+  const fareBreakdown = getFareBreakdown(route.distanceKm, passengerType, activeFarePolicy);
 
   return NextResponse.json({
     origin: originLabel,
@@ -271,6 +286,7 @@ export async function POST(request: NextRequest) {
     fare,
     passengerType,
     fareBreakdown,
+    farePolicy: activeFarePolicy,
     method: route.method,
     fallbackReason: route.fallbackReason,
     polyline: route.polyline,

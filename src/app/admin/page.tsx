@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
+import Link from 'next/link'
 import RoleGuard from '@/components/RoleGuard'
 import PageWrapper from '@/components/PageWrapper'
 
@@ -51,6 +52,23 @@ export default function AdminPage() {
         title="Admin Dashboard"
         subtitle="Administration, oversight, storage, and location management"
       >
+        <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-sm font-semibold text-amber-900">Fare rate management</h2>
+              <p className="mt-1 text-sm text-amber-800">
+                Base fare and per-kilometer updates are managed on a dedicated admin page.
+              </p>
+            </div>
+            <Link
+              href="/admin/fare-rates"
+              className="inline-flex items-center justify-center rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700"
+            >
+              Open Fare Rates
+            </Link>
+          </div>
+        </div>
+
         <div className="mb-8">
           <nav className="flex flex-wrap gap-6 border-b border-gray-200">
             {tabs.map((tab) => (

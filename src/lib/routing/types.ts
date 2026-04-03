@@ -1,3 +1,5 @@
+import type { FarePolicySnapshotDto } from "@/lib/contracts";
+
 export type PassengerType = "REGULAR" | "STUDENT" | "SENIOR" | "PWD";
 
 /**
@@ -38,4 +40,21 @@ export interface FareBreakdown {
   additionalFare: number;
   discount: number;
   total: number;
+}
+
+export interface CalculatedRouteResponse {
+  origin: string;
+  destination: string;
+  distanceKm: number;
+  durationMin: number | null;
+  fare: number;
+  passengerType: PassengerType;
+  fareBreakdown: FareBreakdown;
+  farePolicy: FarePolicySnapshotDto;
+  method: "ors" | "gps" | null;
+  fallbackReason: string | null;
+  polyline: string | null;
+  snappedOrigin: SnappedPoint | null;
+  snappedDestination: SnappedPoint | null;
+  inputMode: "preset" | "pin";
 }

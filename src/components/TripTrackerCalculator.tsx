@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { calculateFare } from '@/lib/fare/calculator'
-import type { TrackerSegmentResponseDto } from '@/lib/contracts'
+import FareRateBanner from '@/components/FareRateBanner'
+import type { FarePolicySnapshotDto, FareRatesResponseDto, TrackerSegmentResponseDto } from '@/lib/contracts'
+import { DEFAULT_FARE_POLICY, resolveFarePolicySnapshot } from '@/lib/fare/policy'
 import {
   CLIENT_SEGMENT_REQUEST_INTERVAL_MS,
   MAX_CONSECUTIVE_REJECTIONS_FOR_POOR_SIGNAL,
@@ -19,8 +21,6 @@ import type {
   TrackerUiState,
 } from '@/lib/tracker'
 import TripTrackerMap from '@/components/TripTrackerMap'
-
-const BASE_FARE = calculateFare(0, 'REGULAR')
 
 function createTrackerSessionId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -46,6 +46,7 @@ function createEmptyTripState(): TrackerTripState {
     totalDistanceKm: 0,
     durationMin: 0,
     fare: 0,
+    farePolicy: null,
     hasFallbackSegments: false,
     lastSegmentRequestAtMs: null,
     rateLimitedUntilMs: null,
@@ -124,6 +125,17 @@ function buildGpsFallbackSegment(
     snappedFrom: null,
     snappedTo: null,
   }
+}
+
+async function fetchCurrentFarePolicy(): Promise<FarePolicySnapshotDto> {
+  const response = await fetch('/api/fare-rates')
+  const payload = (await response.json()) as Partial<FareRatesResponseDto> & { error?: string }
+
+  if (!response.ok || !payload.current) {
+    throw new Error(payload.error || 'Failed to load current fare policy')
+  }
+
+  return resolveFarePolicySnapshot(payload.current)
 }
 
 function parseStoredTripState(raw: string | null): TrackerTripState | null {
@@ -316,6 +328,7 @@ const TripTrackerCalculator = () => {
   const currentPosition = tripState.currentPosition
   const lastCheckpoint = tripState.confirmedCheckpoints[tripState.confirmedCheckpoints.length - 1] ?? null
   const banner = getStateBanner(tripState.uiState, tripState.hasFallbackSegments)
+  const activeFarePolicy = resolveFarePolicySnapshot(tripState.farePolicy)
   const readyToStart =
     currentPosition != null &&
     currentPosition.accuracyM <= MAX_RAW_SAMPLE_ACCURACY_M &&
@@ -427,6 +440,7 @@ const TripTrackerCalculator = () => {
           : prev.durationMin
       const hasFallbackSegments =
         prev.hasFallbackSegments || response.confidence !== 'road_aware'
+      const farePolicy = resolveFarePolicySnapshot(prev.farePolicy)
 
       return {
         ...prev,
@@ -437,7 +451,7 @@ const TripTrackerCalculator = () => {
         segments: nextSegments,
         totalDistanceKm,
         durationMin,
-        fare: calculateFare(totalDistanceKm, 'REGULAR'),
+        fare: calculateFare(totalDistanceKm, 'REGULAR', farePolicy),
         hasFallbackSegments,
         lastSegmentRequestAtMs: toPoint.timestampMs,
         rateLimitedUntilMs,
@@ -565,7 +579,7 @@ const TripTrackerCalculator = () => {
     }
   }
 
-  function startTrip() {
+  async function startTrip() {
     if (!currentPosition) {
       setTripState((prev) => ({
         ...prev,
@@ -583,6 +597,13 @@ const TripTrackerCalculator = () => {
       return
     }
 
+    let farePolicy = DEFAULT_FARE_POLICY
+    try {
+      farePolicy = await fetchCurrentFarePolicy()
+    } catch {
+      farePolicy = DEFAULT_FARE_POLICY
+    }
+
     setTripState({
       trackerSessionId: createTrackerSessionId(),
       uiState: 'calibrating',
@@ -597,7 +618,8 @@ const TripTrackerCalculator = () => {
       segments: [],
       totalDistanceKm: 0,
       durationMin: 0,
-      fare: BASE_FARE,
+      fare: calculateFare(0, 'REGULAR', farePolicy),
+      farePolicy,
       hasFallbackSegments: false,
       lastSegmentRequestAtMs: null,
       rateLimitedUntilMs: null,
@@ -662,6 +684,8 @@ const TripTrackerCalculator = () => {
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
+      <FareRateBanner />
+
       <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
@@ -865,18 +889,18 @@ const TripTrackerCalculator = () => {
           <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
             <div className="font-semibold text-slate-900">Fare breakdown</div>
             <div className="mt-3 flex items-center justify-between">
-              <span>Base fare (first 3 km)</span>
-              <span>PHP 15.00</span>
+              <span>Base fare (first {activeFarePolicy.baseDistanceKm} km)</span>
+              <span>PHP {activeFarePolicy.baseFare.toFixed(2)}</span>
             </div>
-            {tripState.totalDistanceKm > 3 && (
+            {tripState.totalDistanceKm > activeFarePolicy.baseDistanceKm && (
               <>
                 <div className="mt-2 flex items-center justify-between">
                   <span>Additional distance</span>
-                  <span>{(tripState.totalDistanceKm - 3).toFixed(2)} km</span>
+                  <span>{(tripState.totalDistanceKm - activeFarePolicy.baseDistanceKm).toFixed(2)} km</span>
                 </div>
                 <div className="mt-2 flex items-center justify-between">
                   <span>Additional fare</span>
-                  <span>PHP {(tripState.fare - 15).toFixed(2)}</span>
+                  <span>PHP {(tripState.fare - activeFarePolicy.baseFare).toFixed(2)}</span>
                 </div>
               </>
             )}

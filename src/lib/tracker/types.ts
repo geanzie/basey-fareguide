@@ -1,4 +1,4 @@
-import type { TrackerPointDto } from "@/lib/contracts";
+import type { FarePolicySnapshotDto, TrackerPointDto } from "@/lib/contracts";
 
 export type TrackerUiState =
   | "waiting_permission"
@@ -38,6 +38,7 @@ export interface TrackerTripState {
   totalDistanceKm: number;
   durationMin: number;
   fare: number;
+  farePolicy: FarePolicySnapshotDto | null;
   hasFallbackSegments: boolean;
   lastSegmentRequestAtMs: number | null;
   rateLimitedUntilMs: number | null;

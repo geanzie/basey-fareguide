@@ -4,7 +4,9 @@ import { useEffect, useRef, useState, type ComponentType } from 'react'
 import dynamic from 'next/dynamic'
 
 import { useAuth } from './AuthProvider'
-import type { DiscountCardDto, DiscountCardMeResponseDto } from '@/lib/contracts'
+import FareRateBanner from '@/components/FareRateBanner'
+import type { DiscountCardDto, DiscountCardMeResponseDto, FarePolicySnapshotDto } from '@/lib/contracts'
+import { resolveFarePolicySnapshot } from '@/lib/fare/policy'
 import {
   classifyPlannerError,
   getRouteSourceBadge,
@@ -28,6 +30,7 @@ interface CalculateRouteResponse {
   distanceKm: number
   durationMin: number | null
   fare: number
+  farePolicy: FarePolicySnapshotDto
   fareBreakdown: {
     baseFare: number
     additionalKm: number
@@ -52,6 +55,7 @@ interface RouteResult {
   discountApplied?: number
   discountRate?: number
   discountCard?: DiscountCardDto | null
+  farePolicy: FarePolicySnapshotDto
   breakdown: {
     baseFare: number
     additionalDistance: number
@@ -306,6 +310,7 @@ const RoutePlannerCalculator = ({
             polyline: result.polyline,
             source: result.sourceBadge,
             fareBreakdown: result.breakdown,
+            farePolicy: result.farePolicy,
           },
           discountCardId: result.discountCard?.id || null,
           originalFare: result.originalFare || null,
@@ -379,6 +384,7 @@ const RoutePlannerCalculator = ({
       }
 
       const subtotal = (data.fareBreakdown?.baseFare || 0) + (data.fareBreakdown?.additionalFare || 0)
+      const farePolicy = resolveFarePolicySnapshot(data.farePolicy)
       const nextResult: RouteResult = {
         fare: data.fare || 0,
         distanceKm: data.distanceKm || 0,
@@ -392,6 +398,7 @@ const RoutePlannerCalculator = ({
         discountApplied: (data.fareBreakdown?.discount || 0) > 0 ? data.fareBreakdown?.discount : undefined,
         discountRate: (data.fareBreakdown?.discount || 0) > 0 ? 0.2 : undefined,
         discountCard: userDiscountCard,
+        farePolicy,
         breakdown: {
           baseFare: data.fareBreakdown?.baseFare || 0,
           additionalDistance: data.fareBreakdown?.additionalKm || 0,
@@ -495,6 +502,8 @@ const RoutePlannerCalculator = ({
   return (
     <div className="mx-auto max-w-6xl">
       <div className="space-y-5 sm:space-y-6">
+        <FareRateBanner />
+
         {routeResult && (
           <section className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
@@ -553,7 +562,7 @@ const RoutePlannerCalculator = ({
               </summary>
               <div className="mt-3 space-y-2 text-sm">
                 <div className="flex items-center justify-between">
-                  <span>Base fare</span>
+                  <span>Base fare (first {routeResult.farePolicy.baseDistanceKm} km)</span>
                   <span>{formatCurrency(routeResult.breakdown.baseFare)}</span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -561,7 +570,9 @@ const RoutePlannerCalculator = ({
                   <span>{routeResult.breakdown.additionalDistance.toFixed(2)} km</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span>Additional fare</span>
+                  <span>
+                    Additional fare at {formatCurrency(routeResult.farePolicy.perKmRate)} per km
+                  </span>
                   <span>{formatCurrency(routeResult.breakdown.additionalFare)}</span>
                 </div>
               </div>

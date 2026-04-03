@@ -207,6 +207,8 @@ function NavigationLink({
   isActive: boolean
   onNavigate: () => void
 }) {
+  const displayIcon = item.id === 'fare-rates' ? '🏷️' : item.icon
+
   return (
     <Link
       href={item.href}
@@ -219,7 +221,7 @@ function NavigationLink({
         }
       `}
     >
-      <span className="text-lg">{item.icon}</span>
+      <span className="text-lg">{displayIcon}</span>
       <span className="flex-1">{item.label}</span>
       {item.badge && (
         <span className="bg-red-100 text-red-600 text-xs px-2 py-1 rounded-full">
@@ -268,6 +270,12 @@ function getNavigationItems(userType: string): NavigationItem[] {
           label: 'System Reports',
           icon: '📈',
           href: '/admin/reports'
+        },
+        {
+          id: 'fare-rates',
+          label: 'Fare Rates',
+          icon: 'ðŸ’µ',
+          href: '/admin/fare-rates'
         },
         ...commonItems
       ]

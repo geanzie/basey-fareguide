@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useAuth } from '@/components/AuthProvider'
+import FareRateBanner from '@/components/FareRateBanner'
 
 export default function HomePage() {
   const { user, loading } = useAuth()
@@ -137,24 +138,10 @@ export default function HomePage() {
 
             {/* Compact Legal Information */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Fare Structure */}
-              <div className="bg-emerald-50 rounded-xl p-6 border border-emerald-200">
-                <div className="flex items-center mb-4">
-                  <span className="text-2xl mr-3">📋</span>
-                  <h3 className="text-lg font-bold text-emerald-700">Official Fare Structure</h3>
-                </div>
-                
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium text-gray-800">Base Fare (3km)</span>
-                    <span className="text-xl font-bold text-emerald-600">₱15</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium text-gray-800">Per additional km</span>
-                    <span className="text-xl font-bold text-emerald-600">₱3</span>
-                  </div>
-                </div>
-              </div>
+              <FareRateBanner
+                title="Official Fare Structure"
+                description="Current Basey fare rates and the next approved update, when one is scheduled."
+              />
               
               {/* Violation Penalties */}
               <div className="bg-red-50 rounded-xl p-6 border border-red-200">

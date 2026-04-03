@@ -1,9 +1,14 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import type { FarePolicySnapshotDto } from "@/lib/contracts";
 import type { RouteResult } from "@/lib/routing/types";
 
-// Mock the routing module so we don't make real HTTP requests.
 vi.mock("@/lib/routing", () => ({
   calculateRouteWithFallback: vi.fn(),
+}));
+
+vi.mock("@/lib/fare/rateService", () => ({
+  getResolvedFareRates: vi.fn(),
 }));
 
 vi.mock("@/lib/locations/plannerLocations", () => ({
@@ -25,9 +30,19 @@ vi.mock("@/lib/locations/plannerLocations", () => ({
 }));
 
 import { POST } from "@/app/api/routes/calculate/route";
+import { getResolvedFareRates } from "@/lib/fare/rateService";
 import { calculateRouteWithFallback } from "@/lib/routing";
 
 const mockRouting = vi.mocked(calculateRouteWithFallback);
+const mockFareRates = vi.mocked(getResolvedFareRates);
+
+const ACTIVE_FARE_POLICY: FarePolicySnapshotDto = {
+  versionId: "fare-live",
+  baseDistanceKm: 3,
+  baseFare: 15,
+  perKmRate: 3,
+  effectiveAt: "2026-04-01T00:00:00.000Z",
+};
 
 const ORS_RESULT: RouteResult = {
   distanceKm: 14.8,
@@ -47,14 +62,17 @@ function makeRequest(body: unknown): Request {
   });
 }
 
-/** Shorthand for a preset LocationInput */
 const P = (name: string) => ({ type: "preset" as const, name });
 
 beforeEach(() => {
   mockRouting.mockResolvedValue(ORS_RESULT);
+  mockFareRates.mockResolvedValue({
+    current: ACTIVE_FARE_POLICY,
+    upcoming: null,
+  });
 });
 
-describe("POST /api/routes/calculate — input validation", () => {
+describe("POST /api/routes/calculate - input validation", () => {
   it("returns 400 when origin is missing", async () => {
     const res = await POST(makeRequest({ destination: P("Anglit") }) as never);
     expect(res.status).toBe(400);
@@ -71,19 +89,19 @@ describe("POST /api/routes/calculate — input validation", () => {
 
   it("returns 200 with minimum fare when origin and destination are the same point", async () => {
     const res = await POST(
-      makeRequest({ origin: P("Amandayehan"), destination: P("Amandayehan") }) as never
+      makeRequest({ origin: P("Amandayehan"), destination: P("Amandayehan") }) as never,
     );
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.distanceKm).toBe(0);
-    expect(json.fare).toBe(15); // minimum fare = base ₱15
+    expect(json.fare).toBe(15);
+    expect(json.farePolicy).toEqual(ACTIVE_FARE_POLICY);
   });
 
   it("returns 200 with minimum fare for same location regardless of case", async () => {
     const res = await POST(
-      makeRequest({ origin: P("Amandayehan"), destination: P("amandayehan") }) as never
+      makeRequest({ origin: P("Amandayehan"), destination: P("amandayehan") }) as never,
     );
-    // case-insensitive resolve → same coords → minimum fare
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.distanceKm).toBe(0);
@@ -91,7 +109,7 @@ describe("POST /api/routes/calculate — input validation", () => {
 
   it("returns 400 when origin type is invalid", async () => {
     const res = await POST(
-      makeRequest({ origin: { type: "unknown", name: "Anglit" }, destination: P("Anglit") }) as never
+      makeRequest({ origin: { type: "unknown", name: "Anglit" }, destination: P("Anglit") }) as never,
     );
     expect(res.status).toBe(400);
     const json = await res.json();
@@ -100,7 +118,7 @@ describe("POST /api/routes/calculate — input validation", () => {
 
   it("returns 400 when origin is an unknown location", async () => {
     const res = await POST(
-      makeRequest({ origin: P("NoSuchPlace"), destination: P("Anglit") }) as never
+      makeRequest({ origin: P("NoSuchPlace"), destination: P("Anglit") }) as never,
     );
     expect(res.status).toBe(400);
     const json = await res.json();
@@ -109,7 +127,7 @@ describe("POST /api/routes/calculate — input validation", () => {
 
   it("returns 400 when destination is an unknown location", async () => {
     const res = await POST(
-      makeRequest({ origin: P("Amandayehan"), destination: P("NoSuchPlace") }) as never
+      makeRequest({ origin: P("Amandayehan"), destination: P("NoSuchPlace") }) as never,
     );
     expect(res.status).toBe(400);
     const json = await res.json();
@@ -122,7 +140,7 @@ describe("POST /api/routes/calculate — input validation", () => {
         origin: P("Amandayehan"),
         destination: P("Anglit"),
         passengerType: "CHILD",
-      }) as never
+      }) as never,
     );
     expect(res.status).toBe(400);
     const json = await res.json();
@@ -135,7 +153,7 @@ describe("POST /api/routes/calculate — input validation", () => {
         method: "POST",
         headers: { "Content-Type": "text/plain" },
         body: "not json",
-      }) as never
+      }) as never,
     );
     expect(res.status).toBe(400);
   });
@@ -143,9 +161,9 @@ describe("POST /api/routes/calculate — input validation", () => {
   it("returns 400 when pin is outside the Philippines", async () => {
     const res = await POST(
       makeRequest({
-        origin: { type: "pin", lat: 35.0, lng: 139.0 }, // Japan
+        origin: { type: "pin", lat: 35.0, lng: 139.0 },
         destination: P("Anglit"),
-      }) as never
+      }) as never,
     );
     expect(res.status).toBe(400);
     const json = await res.json();
@@ -155,9 +173,9 @@ describe("POST /api/routes/calculate — input validation", () => {
   it("returns 400 when pin is outside the Basey service area", async () => {
     const res = await POST(
       makeRequest({
-        origin: { type: "pin", lat: 14.5, lng: 121.0 }, // Manila area, in PH but outside Basey
+        origin: { type: "pin", lat: 14.5, lng: 121.0 },
         destination: P("Anglit"),
-      }) as never
+      }) as never,
     );
     expect(res.status).toBe(400);
     const json = await res.json();
@@ -165,10 +183,10 @@ describe("POST /api/routes/calculate — input validation", () => {
   });
 });
 
-describe("POST /api/routes/calculate — successful responses", () => {
+describe("POST /api/routes/calculate - successful responses", () => {
   it("returns 200 with correct shape for a valid request", async () => {
     const res = await POST(
-      makeRequest({ origin: P("Amandayehan"), destination: P("Anglit") }) as never
+      makeRequest({ origin: P("Amandayehan"), destination: P("Anglit") }) as never,
     );
     expect(res.status).toBe(200);
 
@@ -181,13 +199,14 @@ describe("POST /api/routes/calculate — successful responses", () => {
     expect(json.method).toBe("ors");
     expect(json.inputMode).toBe("preset");
     expect(json).toHaveProperty("fareBreakdown");
+    expect(json).toHaveProperty("farePolicy");
     expect(json).toHaveProperty("polyline");
     expect(json).toHaveProperty("fallbackReason");
   });
 
   it("defaults passengerType to REGULAR when omitted", async () => {
     const res = await POST(
-      makeRequest({ origin: P("Amandayehan"), destination: P("Anglit") }) as never
+      makeRequest({ origin: P("Amandayehan"), destination: P("Anglit") }) as never,
     );
     const json = await res.json();
     expect(json.passengerType).toBe("REGULAR");
@@ -199,39 +218,77 @@ describe("POST /api/routes/calculate — successful responses", () => {
         origin: P("Amandayehan"),
         destination: P("Anglit"),
         passengerType: "student",
-      }) as never
+      }) as never,
     );
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.passengerType).toBe("STUDENT");
   });
 
+  it("uses the resolved fare policy instead of legacy hardcoded amounts", async () => {
+    mockFareRates.mockResolvedValueOnce({
+      current: {
+        versionId: "fare-custom",
+        baseDistanceKm: 3,
+        baseFare: 20,
+        perKmRate: 5,
+        effectiveAt: "2026-04-03T00:00:00.000Z",
+      },
+      upcoming: null,
+    });
+
+    const res = await POST(
+      makeRequest({ origin: P("Amandayehan"), destination: P("Anglit") }) as never,
+    );
+
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.fare).toBe(80);
+    expect(json.farePolicy).toMatchObject({
+      versionId: "fare-custom",
+      baseFare: 20,
+      perKmRate: 5,
+    });
+  });
+
   it("applies discount correctly for SENIOR passenger", async () => {
     const regularRes = await POST(
-      makeRequest({ origin: P("Amandayehan"), destination: P("Anglit") }) as never
+      makeRequest({ origin: P("Amandayehan"), destination: P("Anglit") }) as never,
     );
     const seniorRes = await POST(
       makeRequest({
         origin: P("Amandayehan"),
         destination: P("Anglit"),
         passengerType: "SENIOR",
-      }) as never
+      }) as never,
     );
 
     const regularFare = (await regularRes.json()).fare;
-    const seniorFare  = (await seniorRes.json()).fare;
+    const seniorFare = (await seniorRes.json()).fare;
     expect(seniorFare).toBeLessThan(regularFare);
     expect(seniorFare).toBeCloseTo(regularFare * 0.8, 2);
   });
+
+  it("returns 503 when fare policy resolution fails", async () => {
+    mockFareRates.mockRejectedValueOnce(new Error("db unavailable"));
+
+    const res = await POST(
+      makeRequest({ origin: P("Amandayehan"), destination: P("Anglit") }) as never,
+    );
+
+    expect(res.status).toBe(503);
+    const json = await res.json();
+    expect(json.error).toMatch(/fare policy/i);
+  });
 });
 
-describe("POST /api/routes/calculate — pin mode", () => {
+describe("POST /api/routes/calculate - pin mode", () => {
   it("returns 200 with inputMode 'pin' when origin is a pin", async () => {
     const res = await POST(
       makeRequest({
         origin: { type: "pin", lat: 11.278823, lng: 125.001194 },
         destination: P("Anglit"),
-      }) as never
+      }) as never,
     );
     expect(res.status).toBe(200);
     const json = await res.json();
@@ -244,7 +301,7 @@ describe("POST /api/routes/calculate — pin mode", () => {
       makeRequest({
         origin: P("Amandayehan"),
         destination: { type: "pin", lat: 11.278823, lng: 125.001194 },
-      }) as never
+      }) as never,
     );
     expect(res.status).toBe(200);
     const json = await res.json();
@@ -257,7 +314,7 @@ describe("POST /api/routes/calculate — pin mode", () => {
       makeRequest({
         origin: { type: "pin", lat: 11.278823, lng: 125.001194 },
         destination: { type: "pin", lat: 11.278823, lng: 125.001194 },
-      }) as never
+      }) as never,
     );
     expect(res.status).toBe(200);
     const json = await res.json();
@@ -271,7 +328,7 @@ describe("POST /api/routes/calculate — pin mode", () => {
       makeRequest({
         origin: { type: "pin", lat: "not-a-number", lng: 125.001 },
         destination: P("Anglit"),
-      }) as never
+      }) as never,
     );
     expect(res.status).toBe(400);
     const json = await res.json();

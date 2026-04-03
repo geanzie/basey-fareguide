@@ -46,6 +46,21 @@ async function main() {
   const creatorUserId = await resolveSeedCreatorUserId();
   const now = new Date();
 
+  const existingFareRateVersion = await prisma.fareRateVersion.findFirst({
+    select: { id: true },
+  });
+
+  if (!existingFareRateVersion) {
+    await prisma.fareRateVersion.create({
+      data: {
+        baseFare: 15,
+        perKmRate: 3,
+        effectiveAt: now,
+        notes: "Baseline fare rates migrated from legacy hardcoded constants.",
+      },
+    });
+  }
+
   const result = await backfillPlannerLocations(prisma, {
     dataset,
     creatorUserId,

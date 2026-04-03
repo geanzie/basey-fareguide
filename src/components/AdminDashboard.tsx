@@ -175,7 +175,7 @@ export default function AdminDashboard() {
 
       <div className="bg-white rounded-xl shadow-lg p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           <button
             onClick={() => window.location.reload()}
             className="flex items-center justify-center px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -202,6 +202,13 @@ export default function AdminDashboard() {
           >
             Manage Users
           </button>
+
+          <a
+            href="/admin/fare-rates"
+            className="flex items-center justify-center px-4 py-3 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
+          >
+            Manage Fare Rates
+          </a>
         </div>
       </div>
     </div>
