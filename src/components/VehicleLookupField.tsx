@@ -210,7 +210,7 @@ export default function VehicleLookupField({
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       {isOpen && hasSearched && query.trim().length >= DEFAULT_MIN_QUERY_LENGTH && !error && (
-        <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
+        <div className="app-surface-overlay rounded-lg">
           {filteredOptions.length === 0 ? (
             <div className="px-4 py-3 text-sm text-gray-500">{noResultsText}</div>
           ) : (
@@ -220,7 +220,7 @@ export default function VehicleLookupField({
                   <button
                     type="button"
                     onClick={() => handleSelect(vehicle)}
-                    className="w-full px-4 py-3 text-left hover:bg-gray-50"
+                    className="w-full px-4 py-3 text-left hover:bg-slate-50/80"
                   >
                     <div className="min-w-0">
                       <p className="font-medium text-gray-900">

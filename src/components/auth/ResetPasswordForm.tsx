@@ -1,7 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+
+import LoadingSpinner from '@/components/LoadingSpinner'
+import {
+  DASHBOARD_ICONS,
+  DASHBOARD_ICON_POLICY,
+  DashboardIconSlot,
+  getDashboardIconChipClasses,
+} from '@/components/dashboardIcons'
 
 const ResetPasswordForm = () => {
   const [email, setEmail] = useState('')
@@ -16,7 +24,6 @@ const ResetPasswordForm = () => {
   const [userInfo, setUserInfo] = useState<any>(null)
   const router = useRouter()
 
-  // Load email from session storage if available
   useEffect(() => {
     const savedEmail = sessionStorage.getItem('resetEmail')
     if (savedEmail) {
@@ -48,15 +55,11 @@ const ResetPasswordForm = () => {
         setOtpValid(false)
         setError(data.message || 'Invalid or expired OTP code')
       }
-    } catch (err) {
+    } catch {
       setError('Network error. Please try again.')
     } finally {
       setVerifying(false)
     }
-  }
-
-  const handleVerifyOtp = () => {
-    verifyOtp(otp, email)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -88,7 +91,6 @@ const ResetPasswordForm = () => {
 
       if (response.ok) {
         setSuccess(true)
-        // Clear session storage
         sessionStorage.removeItem('resetEmail')
         setTimeout(() => {
           router.push('/auth')
@@ -96,7 +98,7 @@ const ResetPasswordForm = () => {
       } else {
         setError(data.message || 'Failed to reset password')
       }
-    } catch (err) {
+    } catch {
       setError('Network error. Please try again.')
     } finally {
       setLoading(false)
@@ -104,27 +106,29 @@ const ResetPasswordForm = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <div className="flex justify-center">
-            <span className="text-4xl">🔑</span>
-          </div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Reset Your Password
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Enter the OTP code sent to your email
-          </p>
-        </div>
-        
-        {success ? (
+    <div className="app-page-bg min-h-screen px-4 py-12 sm:px-6 lg:px-8">
+      <div className="flex min-h-[calc(100vh-6rem)] items-center justify-center">
+        <div className="w-full max-w-md">
+          <div className="app-surface-card-strong space-y-8 rounded-3xl p-8 sm:p-10">
+            <div>
+              <div className="flex justify-center">
+                <div className={`${getDashboardIconChipClasses('blue')} h-16 w-16 rounded-2xl`}>
+                  <DashboardIconSlot icon={DASHBOARD_ICONS.key} size={DASHBOARD_ICON_POLICY.sizes.hero} />
+                </div>
+              </div>
+              <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+                Reset Your Password
+              </h2>
+              <p className="mt-2 text-center text-sm text-gray-600">
+                Enter the OTP code sent to your email
+              </p>
+            </div>
+
+            {success ? (
           <div className="bg-green-50 border border-green-200 rounded-lg p-6">
             <div className="flex">
               <div className="flex-shrink-0">
-                <svg className="h-6 w-6 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
+                <DashboardIconSlot icon={DASHBOARD_ICONS.check} size={DASHBOARD_ICON_POLICY.sizes.card} className="text-green-500" />
               </div>
               <div className="ml-3">
                 <h3 className="text-sm font-medium text-green-800">
@@ -136,22 +140,23 @@ const ResetPasswordForm = () => {
               </div>
             </div>
           </div>
-        ) : (
+            ) : (
           <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-            {error && (
+            {error ? (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
                 {error}
               </div>
-            )}
+            ) : null}
 
-            {otpValid && userInfo && (
+            {otpValid && userInfo ? (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-sm text-blue-800">
-                  ✅ OTP Verified! Resetting password for: <strong>{userInfo.firstName} {userInfo.lastName}</strong>
+                <p className="text-sm text-blue-800 inline-flex items-center gap-2">
+                  <DashboardIconSlot icon={DASHBOARD_ICONS.check} size={DASHBOARD_ICON_POLICY.sizes.button} />
+                  <span>OTP Verified! Resetting password for: <strong>{userInfo.firstName} {userInfo.lastName}</strong></span>
                 </p>
               </div>
-            )}
-            
+            ) : null}
+
             <div className="space-y-4">
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">
@@ -188,11 +193,18 @@ const ResetPasswordForm = () => {
                   />
                   <button
                     type="button"
-                    onClick={handleVerifyOtp}
+                    onClick={() => verifyOtp(otp, email)}
                     disabled={verifying || otp.length !== 6}
-                    className="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                    className="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap inline-flex items-center"
                   >
-                    {verifying ? 'Verifying...' : 'Verify'}
+                    {verifying ? (
+                      <>
+                        <LoadingSpinner size={16} className="mr-2 text-white" />
+                        Verifying...
+                      </>
+                    ) : (
+                      'Verify'
+                    )}
                   </button>
                 </div>
                 <p className="mt-1 text-xs text-gray-500">
@@ -245,10 +257,7 @@ const ResetPasswordForm = () => {
               >
                 {loading ? (
                   <span className="flex items-center">
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
+                    <LoadingSpinner size={20} className="mr-3 text-white" />
                     Resetting...
                   </span>
                 ) : (
@@ -265,7 +274,9 @@ const ResetPasswordForm = () => {
               </button>
             </div>
           </form>
-        )}
+            )}
+          </div>
+        </div>
       </div>
     </div>
   )

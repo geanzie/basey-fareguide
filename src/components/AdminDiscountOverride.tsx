@@ -1,6 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import LoadingSpinner from '@/components/LoadingSpinner'
+import {
+  DASHBOARD_ICONS,
+  DASHBOARD_ICON_POLICY,
+  DashboardIconSlot,
+  getDashboardIconChipClasses,
+} from '@/components/dashboardIcons'
 
 interface User {
   id: string
@@ -183,10 +190,12 @@ export default function AdminDiscountOverride({ onSuccess, onCancel }: AdminDisc
   const selectedUser = eligibleUsers.find(u => u.id === selectedUserId)
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6">
+    <div className="app-surface-card rounded-2xl p-6">
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <span className="text-3xl">👤➕</span>
+          <div className={getDashboardIconChipClasses('blue')}>
+            <DashboardIconSlot icon={DASHBOARD_ICONS.discount} size={DASHBOARD_ICON_POLICY.sizes.hero} />
+          </div>
           Admin Discount Card Override
         </h2>
         <p className="text-sm text-gray-600 mt-1">
@@ -197,33 +206,33 @@ export default function AdminDiscountOverride({ onSuccess, onCancel }: AdminDisc
       {/* Alert Messages */}
       {error && (
         <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-          <span className="text-2xl">⚠️</span>
+          <DashboardIconSlot icon={DASHBOARD_ICONS.reports} size={DASHBOARD_ICON_POLICY.sizes.hero} className="text-red-600" />
           <div className="flex-1">
             <h3 className="text-sm font-semibold text-red-800">Error</h3>
             <p className="text-sm text-red-700">{error}</p>
           </div>
           <button onClick={() => setError(null)} className="ml-auto text-red-600 hover:text-red-800 text-xl">
-            ✕
+            <DashboardIconSlot icon={DASHBOARD_ICONS.close} size={DASHBOARD_ICON_POLICY.sizes.button} />
           </button>
         </div>
       )}
 
       {success && (
         <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
-          <span className="text-2xl">✓</span>
+          <DashboardIconSlot icon={DASHBOARD_ICONS.check} size={DASHBOARD_ICON_POLICY.sizes.hero} className="text-green-600" />
           <div className="flex-1">
             <h3 className="text-sm font-semibold text-green-800">Success</h3>
             <p className="text-sm text-green-700">{success}</p>
           </div>
           <button onClick={() => setSuccess(null)} className="ml-auto text-green-600 hover:text-green-800 text-xl">
-            ✕
+            <DashboardIconSlot icon={DASHBOARD_ICONS.close} size={DASHBOARD_ICON_POLICY.sizes.button} />
           </button>
         </div>
       )}
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <LoadingSpinner size={32} />
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -235,7 +244,11 @@ export default function AdminDiscountOverride({ onSuccess, onCancel }: AdminDisc
             
             {/* Search */}
             <div className="relative mb-3">
-              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl">🔍</span>
+              <DashboardIconSlot
+                icon={DASHBOARD_ICONS.inspect}
+                size={DASHBOARD_ICON_POLICY.sizes.button}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              />
               <input
                 type="text"
                 placeholder="Search by name, username, or barangay..."
@@ -274,7 +287,10 @@ export default function AdminDiscountOverride({ onSuccess, onCancel }: AdminDisc
                       <div className="text-sm text-gray-600">@{user.username}</div>
                       {user.barangayResidence && (
                         <div className="text-xs text-gray-500 mt-1">
-                          📍 {user.barangayResidence}
+                          <span className="inline-flex items-center gap-1">
+                            <DashboardIconSlot icon={DASHBOARD_ICONS.map} size={14} />
+                            <span>{user.barangayResidence}</span>
+                          </span>
                         </div>
                       )}
                     </div>
@@ -375,7 +391,11 @@ export default function AdminDiscountOverride({ onSuccess, onCancel }: AdminDisc
                 Valid From <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">📅</span>
+                <DashboardIconSlot
+                  icon={DASHBOARD_ICONS.approval}
+                  size={DASHBOARD_ICON_POLICY.sizes.button}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                />
                 <input
                   type="date"
                   value={validFrom}
@@ -391,7 +411,11 @@ export default function AdminDiscountOverride({ onSuccess, onCancel }: AdminDisc
                 Valid Until <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">📅</span>
+                <DashboardIconSlot
+                  icon={DASHBOARD_ICONS.approval}
+                  size={DASHBOARD_ICON_POLICY.sizes.button}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                />
                 <input
                   type="date"
                   value={validUntil}
@@ -455,12 +479,12 @@ export default function AdminDiscountOverride({ onSuccess, onCancel }: AdminDisc
             >
               {creating ? (
                 <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  <LoadingSpinner size={20} />
                   Creating...
                 </>
               ) : (
                 <>
-                  <span className="text-xl">✓</span>
+                  <DashboardIconSlot icon={DASHBOARD_ICONS.check} size={DASHBOARD_ICON_POLICY.sizes.button} className="text-white" />
                   Create Discount Card
                 </>
               )}

@@ -132,7 +132,7 @@ export default function AdminReportsPage() {
 
         {reportData ? (
           <>
-            <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <div className="app-surface-card rounded-2xl p-6 mb-6">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">Operations Report</h3>
@@ -164,7 +164,7 @@ export default function AdminReportsPage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="app-surface-card rounded-2xl p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Incident Analytics</h3>
 
                 <section className="space-y-2 mb-6">
@@ -188,7 +188,7 @@ export default function AdminReportsPage() {
                 </section>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="app-surface-card rounded-2xl p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">User Analytics</h3>
                 <p className="text-sm text-gray-600 mb-6">
                   {reportData.users.total} total users, {reportData.users.active} active in the selected period.
@@ -205,7 +205,7 @@ export default function AdminReportsPage() {
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="app-surface-card rounded-2xl p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Storage Analytics</h3>
                 <p className="text-sm text-gray-600 mb-6">
                   {reportData.storage.totalFiles} stored file{reportData.storage.totalFiles === 1 ? '' : 's'} using{' '}
@@ -226,7 +226,7 @@ export default function AdminReportsPage() {
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="app-surface-card rounded-2xl p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Monthly Incident Trends</h3>
 
                 <div className="space-y-3">

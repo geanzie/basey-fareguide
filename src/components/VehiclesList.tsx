@@ -5,6 +5,11 @@ import { useAuth } from '@/components/AuthProvider'
 import { VehicleType } from '@prisma/client'
 import ResponsiveTable, { StatusBadge, ActionButton } from './ResponsiveTable'
 import type { VehicleDto, VehiclesResponseDto } from '@/lib/contracts'
+import {
+  DASHBOARD_ICONS,
+  DASHBOARD_ICON_POLICY,
+  DashboardIconSlot,
+} from '@/components/dashboardIcons'
 
 export default function VehiclesList() {
   const { user } = useAuth()
@@ -282,7 +287,7 @@ export default function VehiclesList() {
   return (
     <div className="space-y-6 max-w-full">
       {/* Filters and Search */}
-      <div className="bg-white p-4 sm:p-6 rounded-lg shadow-sm border">
+      <div className="app-surface-card rounded-2xl p-4 sm:p-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {/* Search */}
           <div>
@@ -384,7 +389,7 @@ export default function VehiclesList() {
       </div>
 
       {/* Vehicles Table */}
-      <div className="bg-white rounded-lg shadow-sm border">
+      <div className="app-surface-card rounded-2xl">
         <ResponsiveTable
           columns={columns}
           data={vehicles || []}
@@ -404,7 +409,7 @@ export default function VehiclesList() {
               <button
                 onClick={() => setPagination(prev => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
                 disabled={pagination.page === 1}
-                className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="app-surface-inner px-3 py-1 text-sm border border-gray-300/80 rounded-md hover:bg-white/80 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Previous
               </button>
@@ -414,7 +419,7 @@ export default function VehiclesList() {
               <button
                 onClick={() => setPagination(prev => ({ ...prev, page: Math.min(pagination.totalPages, prev.page + 1) }))}
                 disabled={pagination.page === pagination.totalPages}
-                className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="app-surface-inner px-3 py-1 text-sm border border-gray-300/80 rounded-md hover:bg-white/80 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Next
               </button>
@@ -425,8 +430,8 @@ export default function VehiclesList() {
 
       {/* Vehicle Details Modal */}
       {showDetails && selectedVehicle && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 p-4 backdrop-blur-sm">
+          <div className="app-surface-overlay max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-3xl">
             <div className="p-6">
               <div className="flex justify-between items-start mb-6">
                 <h3 className="text-lg font-semibold text-gray-900">
@@ -436,9 +441,7 @@ export default function VehiclesList() {
                   onClick={() => setShowDetails(false)}
                   className="text-gray-400 hover:text-gray-600 transition-colors"
                 >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  <DashboardIconSlot icon={DASHBOARD_ICONS.close} size={DASHBOARD_ICON_POLICY.sizes.card} />
                 </button>
               </div>
 
@@ -592,7 +595,7 @@ export default function VehiclesList() {
               <div className="mt-6 flex justify-end">
                 <button
                   onClick={() => setShowDetails(false)}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                  className="app-surface-inner px-4 py-2 rounded-lg text-gray-700 transition-colors hover:bg-white/80"
                 >
                   Close
                 </button>

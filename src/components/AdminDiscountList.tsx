@@ -2,6 +2,12 @@
 
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/components/AuthProvider'
+import {
+  DASHBOARD_ICONS,
+  DASHBOARD_ICON_POLICY,
+  DashboardIconSlot,
+} from '@/components/dashboardIcons'
+import LoadingSpinner from '@/components/LoadingSpinner'
 
 interface DiscountCard {
   id: string
@@ -190,7 +196,7 @@ export default function AdminDiscountList({ onRefresh }: DiscountListProps) {
   if (loading && discountCards.length === 0) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <LoadingSpinner className="text-blue-600" size={36} />
       </div>
     )
   }
@@ -198,7 +204,7 @@ export default function AdminDiscountList({ onRefresh }: DiscountListProps) {
   return (
     <div className="space-y-6">
       {/* Header with Stats */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
+      <div className="app-surface-card rounded-2xl p-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-4">Discount Cards List</h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-blue-50 rounded-lg p-4">
@@ -227,7 +233,7 @@ export default function AdminDiscountList({ onRefresh }: DiscountListProps) {
       </div>
 
       {/* Search and Filters */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
+      <div className="app-surface-card rounded-2xl p-6">
         <form onSubmit={handleSearch} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-3">
@@ -269,12 +275,12 @@ export default function AdminDiscountList({ onRefresh }: DiscountListProps) {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="">All Statuses</option>
-                <option value="PENDING">⏳ Pending</option>
-                <option value="UNDER_REVIEW">👁️ Under Review</option>
-                <option value="APPROVED">✓ Approved</option>
-                <option value="REJECTED">✗ Rejected</option>
-                <option value="SUSPENDED">⚠️ Suspended</option>
-                <option value="EXPIRED">⌛ Expired</option>
+                <option value="PENDING">Pending</option>
+                <option value="UNDER_REVIEW">Under Review</option>
+                <option value="APPROVED">Approved</option>
+                <option value="REJECTED">Rejected</option>
+                <option value="SUSPENDED">Suspended</option>
+                <option value="EXPIRED">Expired</option>
               </select>
             </div>
 
@@ -342,7 +348,7 @@ export default function AdminDiscountList({ onRefresh }: DiscountListProps) {
       )}
 
       {/* Discount Cards Table */}
-      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+      <div className="app-surface-card rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -514,9 +520,7 @@ export default function AdminDiscountList({ onRefresh }: DiscountListProps) {
                   onClick={() => setShowDetailsModal(false)}
                   className="text-gray-400 hover:text-gray-600"
                 >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  <DashboardIconSlot icon={DASHBOARD_ICONS.close} size={DASHBOARD_ICON_POLICY.sizes.card} />
                 </button>
               </div>
 
@@ -792,3 +796,4 @@ export default function AdminDiscountList({ onRefresh }: DiscountListProps) {
     </div>
   )
 }
+

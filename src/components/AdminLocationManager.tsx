@@ -248,7 +248,7 @@ export default function AdminLocationManager() {
 
       {/* Add/Edit Form */}
       {showForm && (
-        <div className="bg-white rounded-xl shadow-lg p-6">
+        <div className="app-surface-card rounded-3xl p-6">
           <h3 className="text-xl font-semibold mb-4">
             {editingLocation ? 'Edit Location' : 'Add New Location'}
           </h3>
@@ -305,7 +305,7 @@ export default function AdminLocationManager() {
                 )}
                 {formData.coordinates && coordinateCheck.valid && (
                   <p className="text-green-600 text-sm mt-1">
-                    ✓ Valid format: {coordinateCheck.lat}, {coordinateCheck.lng}
+                    Valid format: {coordinateCheck.lat}, {coordinateCheck.lng}
                   </p>
                 )}
               </div>
@@ -362,7 +362,7 @@ export default function AdminLocationManager() {
               {validationResult && (
                 <div className={`p-4 rounded-lg ${validationResult.isValid ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
                   <h4 className="font-semibold mb-2">
-                    {validationResult.isValid ? '✓ Validation Passed' : '✗ Validation Issues'}
+                    {validationResult.isValid ? 'Validation Passed' : 'Validation Issues'}
                   </h4>
 
                   {validationResult.errors.length > 0 && (
@@ -388,9 +388,9 @@ export default function AdminLocationManager() {
                   )}
 
                   <div className="grid grid-cols-2 gap-2 mt-2 text-sm">
-                    <div>Within Municipality: {validationResult.withinMunicipality ? '✓ Yes' : '✗ No'}</div>
-                    <div>Within Barangay: {validationResult.withinBarangay ? '✓ Yes' : '✗ No'}</div>
-                    <div>Google Maps: {validationResult.googleMapsValid ? '✓ Valid' : '✗ Invalid'}</div>
+                    <div>Within Municipality: {validationResult.withinMunicipality ? 'Yes' : 'No'}</div>
+                    <div>Within Barangay: {validationResult.withinBarangay ? 'Yes' : 'No'}</div>
+                    <div>Google Maps: {validationResult.googleMapsValid ? 'Valid' : 'Invalid'}</div>
                     <div>Confidence: {validationResult.googleConfidence}</div>
                   </div>
 
@@ -436,7 +436,7 @@ export default function AdminLocationManager() {
       )}
 
       {/* Search and Filter */}
-      <div className="bg-white rounded-xl shadow-lg p-4">
+      <div className="app-surface-card rounded-2xl p-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <input
             type="text"
@@ -468,7 +468,7 @@ export default function AdminLocationManager() {
       </div>
 
       {/* Locations Table */}
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+      <div className="app-surface-card rounded-2xl overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
@@ -542,3 +542,8 @@ export default function AdminLocationManager() {
     </div>
   )
 }
+
+
+
+
+

@@ -1,6 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
+
+import LoadingSpinner from '@/components/LoadingSpinner'
+import {
+  DASHBOARD_ICONS,
+  DASHBOARD_ICON_POLICY,
+  DashboardIconSlot,
+} from '@/components/dashboardIcons'
 
 interface StorageStats {
   storage: {
@@ -41,19 +48,20 @@ export default function StorageManagement() {
   const [loading, setLoading] = useState(true)
   const [cleaning, setCleaning] = useState(false)
   const [daysOld, setDaysOld] = useState(30)
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   const fetchStats = async () => {
     try {
       const response = await fetch('/api/admin/storage')
-      
+
       if (response.ok) {
         const data = await response.json()
         setStats(data)
       } else {
         throw new Error('Failed to fetch storage stats')
       }
-    } catch (error) {      setMessage({ type: 'error', text: 'Failed to load storage statistics' })
+    } catch {
+      setMessage({ type: 'error', text: 'Failed to load storage statistics' })
     } finally {
       setLoading(false)
     }
@@ -64,18 +72,19 @@ export default function StorageManagement() {
       const response = await fetch('/api/admin/storage', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ daysOld, dryRun: true })
+        body: JSON.stringify({ daysOld, dryRun: true }),
       })
-      
+
       if (response.ok) {
         const data = await response.json()
         setCleanupPreview(data)
       } else {
         throw new Error('Failed to preview cleanup')
       }
-    } catch (error) {      setMessage({ type: 'error', text: 'Failed to preview cleanup' })
+    } catch {
+      setMessage({ type: 'error', text: 'Failed to preview cleanup' })
     }
   }
 
@@ -89,20 +98,21 @@ export default function StorageManagement() {
       const response = await fetch('/api/admin/storage', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ daysOld, dryRun: false })
+        body: JSON.stringify({ daysOld, dryRun: false }),
       })
-      
+
       if (response.ok) {
         const data = await response.json()
         setMessage({ type: 'success', text: data.message })
         setCleanupPreview(null)
-        await fetchStats() // Refresh stats
+        await fetchStats()
       } else {
         throw new Error('Cleanup failed')
       }
-    } catch (error) {      setMessage({ type: 'error', text: 'Cleanup operation failed' })
+    } catch {
+      setMessage({ type: 'error', text: 'Cleanup operation failed' })
     } finally {
       setCleaning(false)
     }
@@ -114,7 +124,7 @@ export default function StorageManagement() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-lg p-8">
+      <div className="app-surface-card rounded-3xl p-8">
         <div className="animate-pulse">
           <div className="h-6 bg-gray-200 rounded mb-4"></div>
           <div className="space-y-3">
@@ -128,23 +138,21 @@ export default function StorageManagement() {
 
   return (
     <div className="space-y-6">
-      {/* Storage Statistics */}
-      <div className="bg-white rounded-xl shadow-lg p-8">
+      <div className="app-surface-card rounded-3xl p-8">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Evidence Storage Management</h2>
-        
-        {message && (
+
+        {message ? (
           <div className={`mb-4 p-4 rounded-lg ${
-            message.type === 'success' 
-              ? 'bg-green-50 border border-green-200 text-green-700' 
+            message.type === 'success'
+              ? 'bg-green-50 border border-green-200 text-green-700'
               : 'bg-red-50 border border-red-200 text-red-700'
           }`}>
             {message.text}
           </div>
-        )}
+        ) : null}
 
-        {stats && (
+        {stats ? (
           <>
-            {/* Overview Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
               <div className="text-center p-6 bg-blue-50 rounded-xl">
                 <div className="text-3xl font-bold text-blue-600 mb-2">
@@ -166,11 +174,10 @@ export default function StorageManagement() {
               </div>
             </div>
 
-            {/* Recommendations */}
-            {stats.recommendations.cleanupNeeded && (
+            {stats.recommendations.cleanupNeeded ? (
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
                 <div className="flex items-center">
-                  <span className="text-yellow-500 text-xl mr-3">⚠️</span>
+                  <DashboardIconSlot icon={DASHBOARD_ICONS.reports} size={DASHBOARD_ICON_POLICY.sizes.alert} className="text-yellow-500 mr-3" />
                   <div>
                     <p className="text-yellow-800 font-semibold">Storage Cleanup Recommended</p>
                     <p className="text-yellow-700 text-sm">
@@ -179,19 +186,18 @@ export default function StorageManagement() {
                   </div>
                 </div>
               </div>
-            )}
+            ) : null}
 
-            {/* File Type Breakdown */}
             <div className="mb-8">
               <h3 className="text-lg font-semibold text-gray-800 mb-4">Storage by File Type</h3>
               <div className="space-y-3">
                 {stats.storage.byType.map((type) => (
-                  <div key={type.fileType} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                  <div key={type.fileType} className="app-surface-inner flex items-center justify-between rounded-lg p-3">
                     <span className="font-medium text-gray-700">{type.fileType}</span>
                     <div className="text-right">
                       <div className="text-sm text-gray-600">{type._count.id} files</div>
                       <div className="text-sm text-gray-500">
-                        {Math.round((type._sum.fileSize || 0) / (1024 * 1024) * 100) / 100} MB
+                        {Math.round(((type._sum.fileSize || 0) / (1024 * 1024)) * 100) / 100} MB
                       </div>
                     </div>
                   </div>
@@ -199,15 +205,14 @@ export default function StorageManagement() {
               </div>
             </div>
 
-            {/* Cleanup Section */}
             <div className="border-t pt-8">
               <h3 className="text-lg font-semibold text-gray-800 mb-4">Evidence Cleanup</h3>
-              
-              <div className="bg-gray-50 rounded-lg p-6">
+
+              <div className="app-surface-inner rounded-lg p-6">
                 <p className="text-gray-600 mb-4">
                   Clean up evidence files from incidents that have been resolved for more than a specified number of days.
                 </p>
-                
+
                 <div className="flex items-center space-x-4 mb-4">
                   <label className="text-sm font-medium text-gray-700">
                     Delete files older than:
@@ -229,21 +234,27 @@ export default function StorageManagement() {
                   >
                     Preview Cleanup
                   </button>
-                  
-                  {cleanupPreview && (
+
+                  {cleanupPreview ? (
                     <button
                       onClick={performCleanup}
                       disabled={cleaning}
-                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-red-400 text-sm font-medium"
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-red-400 text-sm font-medium inline-flex items-center"
                     >
-                      {cleaning ? 'Cleaning...' : 'Perform Cleanup'}
+                      {cleaning ? (
+                        <>
+                          <LoadingSpinner size={16} className="mr-2 text-white" />
+                          Cleaning...
+                        </>
+                      ) : (
+                        'Perform Cleanup'
+                      )}
                     </button>
-                  )}
+                  ) : null}
                 </div>
 
-                {/* Cleanup Preview */}
-                {cleanupPreview && (
-                  <div className="mt-4 p-4 bg-white rounded-lg border">
+                {cleanupPreview ? (
+                  <div className="app-surface-overlay mt-4 rounded-lg p-4">
                     <h4 className="font-semibold text-gray-800 mb-3">Cleanup Preview</h4>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                       <div>
@@ -266,11 +277,11 @@ export default function StorageManagement() {
                       </div>
                     </div>
                   </div>
-                )}
+                ) : null}
               </div>
             </div>
           </>
-        )}
+        ) : null}
       </div>
     </div>
   )

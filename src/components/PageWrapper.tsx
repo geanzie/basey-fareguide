@@ -2,6 +2,15 @@
 
 import { ReactNode, useEffect } from 'react'
 
+import {
+  DASHBOARD_ICONS,
+  DASHBOARD_ICON_POLICY,
+  DashboardIconSlot,
+  getDashboardIconChipClasses,
+  type DashboardIcon,
+  type DashboardIconTone,
+} from '@/components/dashboardIcons'
+
 interface PageWrapperProps {
   children: ReactNode
   title?: string
@@ -10,7 +19,6 @@ interface PageWrapperProps {
   className?: string
 }
 
-// Global state to communicate with UnifiedLayout
 let currentPageData: { title?: string; subtitle?: string; headerContent?: ReactNode } = {}
 const pageDataListeners: Array<() => void> = []
 
@@ -29,20 +37,20 @@ export function subscribeToPageData(callback: () => void) {
 }
 
 function notifyPageDataChange() {
-  pageDataListeners.forEach(callback => callback())
+  pageDataListeners.forEach((callback) => callback())
 }
 
-export default function PageWrapper({ 
-  children, 
-  title, 
-  subtitle, 
-  headerContent, 
-  className = '' 
+export default function PageWrapper({
+  children,
+  title,
+  subtitle,
+  headerContent,
+  className = '',
 }: PageWrapperProps) {
   useEffect(() => {
     currentPageData = { title, subtitle, headerContent }
     notifyPageDataChange()
-    
+
     return () => {
       currentPageData = {}
       notifyPageDataChange()
@@ -50,21 +58,17 @@ export default function PageWrapper({
   }, [title, subtitle, headerContent])
 
   return (
-    <div className={`${className}`}>
-      {/* Page Content - Title and headerContent are now handled by UnifiedLayout */}
-      <div className="px-4 py-6 sm:px-6 lg:px-8">
-        {children}
-      </div>
+    <div className={`app-page-bg ${className}`.trim()}>
+      <div className="px-4 py-6 sm:px-6 lg:px-8">{children}</div>
     </div>
   )
 }
 
-// Utility components for consistent layouts
-export function PageSection({ 
-  title, 
-  children, 
+export function PageSection({
+  title,
+  children,
   className = '',
-  headerContent
+  headerContent,
 }: {
   title?: string
   children: ReactNode
@@ -72,32 +76,26 @@ export function PageSection({
   headerContent?: ReactNode
 }) {
   return (
-    <div className={`bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden ${className}`}>
+    <div className={`app-surface-card overflow-hidden rounded-2xl ${className}`.trim()}>
       {(title || headerContent) && (
-        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+        <div className="app-surface-inner border-b border-slate-200/70 px-6 py-4">
           <div className="flex items-center justify-between">
-            {title && (
-              <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
-            )}
-            {headerContent && (
-              <div>{headerContent}</div>
-            )}
+            {title ? <h2 className="text-lg font-semibold text-gray-900">{title}</h2> : null}
+            {headerContent ? <div>{headerContent}</div> : null}
           </div>
         </div>
       )}
-      <div className="p-6">
-        {children}
-      </div>
+      <div className="p-6">{children}</div>
     </div>
   )
 }
 
-export function StatsGrid({ 
-  children, 
-  className = '' 
-}: { 
+export function StatsGrid({
+  children,
+  className = '',
+}: {
   children: ReactNode
-  className?: string 
+  className?: string
 }) {
   return (
     <div className={`grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 ${className}`}>
@@ -106,52 +104,67 @@ export function StatsGrid({
   )
 }
 
-export function StatCard({ 
-  title, 
-  value, 
-  icon, 
-  trend, 
+export function StatCard({
+  title,
+  value,
+  icon,
+  trend,
   trendDirection,
-  color = 'emerald'
+  color = 'emerald',
 }: {
   title: string
   value: string | number
-  icon: string
+  icon: DashboardIcon
   trend?: string
   trendDirection?: 'up' | 'down' | 'neutral'
   color?: 'emerald' | 'blue' | 'orange' | 'red' | 'purple'
 }) {
   const colorClasses = {
-    emerald: 'bg-emerald-50 border-emerald-200 text-emerald-700',
-    blue: 'bg-blue-50 border-blue-200 text-blue-700',
-    orange: 'bg-orange-50 border-orange-200 text-orange-700',
-    red: 'bg-red-50 border-red-200 text-red-700',
-    purple: 'bg-purple-50 border-purple-200 text-purple-700'
+    emerald: 'border-emerald-200/80',
+    blue: 'border-blue-200/80',
+    orange: 'border-orange-200/80',
+    red: 'border-red-200/80',
+    purple: 'border-purple-200/80',
+  }
+  const colorTones: Record<typeof color, DashboardIconTone> = {
+    emerald: 'emerald',
+    blue: 'blue',
+    orange: 'amber',
+    red: 'red',
+    purple: 'purple',
   }
 
   const trendColors = {
     up: 'text-green-600',
     down: 'text-red-600',
-    neutral: 'text-gray-500'
+    neutral: 'text-gray-500',
+  }
+
+  const trendTransforms = {
+    up: '-rotate-45',
+    down: 'rotate-45',
+    neutral: 'rotate-0',
   }
 
   return (
-    <div className={`rounded-lg border p-6 ${colorClasses[color]}`}>
+    <div className={`app-surface-card-strong rounded-2xl p-6 ${colorClasses[color]}`}>
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium opacity-75">{title}</p>
-          <p className="text-3xl font-bold mt-2">{value}</p>
-          {trend && trendDirection && (
-            <p className={`text-sm mt-1 ${trendColors[trendDirection]}`}>
-              {trendDirection === 'up' && '↗️'}
-              {trendDirection === 'down' && '↘️'}
-              {trendDirection === 'neutral' && '→'}
-              {trend}
+          <p className="text-sm font-medium text-slate-600">{title}</p>
+          <p className="mt-2 text-3xl font-bold text-slate-900">{value}</p>
+          {trend && trendDirection ? (
+            <p className={`inline-flex items-center gap-1 text-sm mt-1 ${trendColors[trendDirection]}`}>
+              <DashboardIconSlot
+                icon={DASHBOARD_ICONS.arrowRight}
+                size={DASHBOARD_ICON_POLICY.sizes.button}
+                className={trendTransforms[trendDirection]}
+              />
+              <span>{trend}</span>
             </p>
-          )}
+          ) : null}
         </div>
-        <div className="text-3xl opacity-75">
-          {icon}
+        <div className={getDashboardIconChipClasses(colorTones[color])}>
+          <DashboardIconSlot icon={icon} size={DASHBOARD_ICON_POLICY.sizes.card} />
         </div>
       </div>
     </div>
@@ -164,7 +177,7 @@ export function ActionButton({
   variant = 'primary',
   size = 'md',
   disabled = false,
-  className = ''
+  className = '',
 }: {
   children: ReactNode
   onClick?: () => void
@@ -174,22 +187,22 @@ export function ActionButton({
   className?: string
 }) {
   const baseClasses = 'inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2'
-  
+
   const variantClasses = {
     primary: 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm focus:ring-emerald-500',
-    secondary: 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 shadow-sm focus:ring-emerald-500',
+    secondary: 'app-surface-inner hover:bg-white/80 text-gray-700 border border-gray-300/80 shadow-sm focus:ring-emerald-500',
     danger: 'bg-red-600 hover:bg-red-700 text-white shadow-sm focus:ring-red-500',
-    success: 'bg-green-600 hover:bg-green-700 text-white shadow-sm focus:ring-green-500'
+    success: 'bg-green-600 hover:bg-green-700 text-white shadow-sm focus:ring-green-500',
   }
-  
+
   const sizeClasses = {
     sm: 'px-3 py-1.5 text-sm',
     md: 'px-4 py-2 text-sm',
-    lg: 'px-6 py-3 text-base'
+    lg: 'px-6 py-3 text-base',
   }
-  
+
   const disabledClasses = disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
-  
+
   return (
     <button
       onClick={onClick}

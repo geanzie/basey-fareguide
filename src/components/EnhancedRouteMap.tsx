@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import LoadingSpinner from '@/components/LoadingSpinner'
 import { barangayService } from '../lib/barangayService'
 import { BarangayInfo } from '../utils/barangayBoundaries'
 
@@ -118,7 +119,7 @@ export default function EnhancedRouteMap({
                   <h4 class="font-bold text-sm">${barangay.name}</h4>
                   <p class="text-xs text-gray-600">Code: ${barangay.code}</p>
                   <p class="text-xs ${barangay.isPoblacion ? 'text-blue-600' : 'text-green-600'}">
-                    ${barangay.isPoblacion ? '🏛️ Poblacion' : '🌾 Rural'}
+                    ${barangay.isPoblacion ? 'Poblacion' : 'Rural'}
                   </p>
                 </div>
               `,
@@ -216,7 +217,7 @@ export default function EnhancedRouteMap({
     return (
       <div className={`${className} bg-gray-100 rounded-lg flex items-center justify-center`}>
         <div className="text-center p-6">
-          <div className="text-2xl mb-2">🗺️</div>
+          <div className="text-lg font-semibold mb-2">Map</div>
           <div className="text-gray-600 font-medium">Map Unavailable</div>
           <div className="text-sm text-gray-500 mt-1">{mapError}</div>
         </div>
@@ -232,7 +233,7 @@ export default function EnhancedRouteMap({
         {!isLoaded && (
           <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+              <LoadingSpinner className="justify-center text-blue-600 mb-2" size={24} />
               <div className="text-sm text-gray-600">Loading enhanced map...</div>
             </div>
           </div>
@@ -280,7 +281,7 @@ export default function EnhancedRouteMap({
             <div>
               <div className="font-medium text-gray-700">Type:</div>
               <div className={selectedBarangay.isPoblacion ? 'text-blue-700' : 'text-green-700'}>
-                {selectedBarangay.isPoblacion ? '🏛️ Poblacion' : '🌾 Rural'}
+                {selectedBarangay.isPoblacion ? 'Poblacion' : 'Rural'}
               </div>
             </div>
             <div>

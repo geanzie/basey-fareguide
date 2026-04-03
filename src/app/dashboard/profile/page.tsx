@@ -17,7 +17,7 @@ export default function ProfilePage() {
           </p>
         </div>
         
-        <div className="bg-white rounded-lg shadow-sm border">
+        <div className="app-surface-card rounded-2xl">
           {user && <UserProfile />}
         </div>
       </div>

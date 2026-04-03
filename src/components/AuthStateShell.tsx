@@ -1,5 +1,7 @@
 'use client'
 
+import LoadingSpinner from '@/components/LoadingSpinner'
+
 interface AuthStateShellProps {
   title: string
   message: string
@@ -13,12 +15,12 @@ export default function AuthStateShell({
 }: AuthStateShellProps) {
   return (
     <div
-      className={`flex items-center justify-center px-4 ${
+      className={`app-page-bg flex items-center justify-center px-4 ${
         fullHeight ? 'min-h-screen' : 'min-h-[50vh]'
       }`}
     >
-      <div className="text-center">
-        <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-emerald-600" />
+      <div className="app-surface-card-strong rounded-3xl px-8 py-10 text-center">
+        <LoadingSpinner className="justify-center text-emerald-600 mb-4" size={32} />
         <h1 className="text-xl font-semibold text-gray-900">{title}</h1>
         <p className="mt-2 text-sm text-gray-600">{message}</p>
       </div>

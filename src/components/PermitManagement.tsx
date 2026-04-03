@@ -253,7 +253,7 @@ export default function PermitManagement() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white p-4 rounded-lg shadow-sm border">
+      <div className="app-surface-card rounded-2xl p-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -311,7 +311,7 @@ export default function PermitManagement() {
       {/* Add/Edit Form Modal */}
       {(showAddForm || editingPermit) && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+          <div className="app-surface-overlay mx-4 w-full max-w-md rounded-2xl p-6">
             <h3 className="text-lg font-semibold mb-4">
               {editingPermit ? 'Edit Permit' : 'Add New Permit'}
             </h3>
@@ -406,7 +406,7 @@ export default function PermitManagement() {
       )}
 
       {/* Permits Table */}
-      <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+      <div className="app-surface-card rounded-2xl overflow-hidden">
         <ResponsiveTable
           columns={[
             {

@@ -1,6 +1,13 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
+import { useState } from 'react'
+
+import {
+  DASHBOARD_ICONS,
+  DASHBOARD_ICON_POLICY,
+  DashboardIconSlot,
+  type DashboardIcon,
+} from '@/components/dashboardIcons'
 
 interface User {
   id: string
@@ -11,53 +18,48 @@ interface User {
 }
 
 interface HeaderNavigationProps {
-  user: User;
-  logout: () => void;
+  user: User
+  logout: () => void
+}
+
+interface HeaderLink {
+  href: string
+  label: string
+  icon: DashboardIcon
 }
 
 const HeaderNavigation: React.FC<HeaderNavigationProps> = ({ user, logout }) => {
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
 
-  const getNavigationLinks = () => {
+  const getNavigationLinks = (): HeaderLink[] => {
     switch (user.userType) {
-      // case 'ENFORCER':
-      //   return [
-      //     { href: '/dashboard', label: 'Dashboard', icon: '📊' },
-      //     { href: '/incidents', label: 'Incidents', icon: '🚨' },
-      //     { href: '/report', label: 'Report Incident', icon: '📝' },
-      //   ];
       case 'PUBLIC':
         return [
-          { href: '/dashboard', label: 'Dashboard', icon: '📊' },
-          { href: '/calculator', label: 'Fare Calculator', icon: '🧮' },
-          { href: '/report', label: 'Report Incident', icon: '📝' },
-        ];
+          { href: '/dashboard', label: 'Dashboard', icon: DASHBOARD_ICONS.dashboard },
+          { href: '/calculator', label: 'Fare Calculator', icon: DASHBOARD_ICONS.calculator },
+          { href: '/report', label: 'Report Incident', icon: DASHBOARD_ICONS.incidents },
+        ]
       default:
-        return [];
+        return []
     }
-  };
+  }
 
-  const navigationLinks = getNavigationLinks();
+  const navigationLinks = getNavigationLinks()
 
   if (navigationLinks.length === 0) {
-    // For ADMIN and DATA_ENCODER, just show user menu
     return (
       <div className="relative">
         <button
           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
           className="flex items-center space-x-2 text-gray-700 hover:text-emerald-600 transition-colors focus:outline-none"
         >
-          <span className="text-lg">👤</span>
+          <DashboardIconSlot icon={DASHBOARD_ICONS.user} size={DASHBOARD_ICON_POLICY.sizes.button} />
           <span className="hidden sm:inline font-medium">{user.firstName || user.email}</span>
-          <svg
-            className="w-4 h-4 transition-transform duration-200"
-            style={{ transform: isDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
+          <DashboardIconSlot
+            icon={DASHBOARD_ICONS.chevronDown}
+            size={16}
+            className={`transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}
+          />
         </button>
 
         {isDropdownOpen && (
@@ -69,39 +71,38 @@ const HeaderNavigation: React.FC<HeaderNavigationProps> = ({ user, logout }) => 
             </div>
             <button
               onClick={logout}
-              className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+              className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors inline-flex items-center gap-2"
             >
-              🚪 Logout
+              <DashboardIconSlot icon={DASHBOARD_ICONS.logout} size={DASHBOARD_ICON_POLICY.sizes.button} />
+              <span>Logout</span>
             </button>
           </div>
         )}
       </div>
-    );
+    )
   }
 
   return (
     <div className="flex items-center space-x-6">
-      {/* Navigation Links for desktop screens */}
       <div className="hidden lg:flex items-center space-x-4">
         {navigationLinks.map((link) => (
           <a
             key={link.href}
             href={link.href}
-            className="flex items-center space-x-1 text-gray-600 hover:text-emerald-600 transition-colors px-3 py-2 rounded-md hover:bg-emerald-50"
+            className="flex items-center space-x-2 text-gray-600 hover:text-emerald-600 transition-colors px-3 py-2 rounded-md hover:bg-emerald-50"
           >
-            <span>{link.icon}</span>
+            <DashboardIconSlot icon={link.icon} size={DASHBOARD_ICON_POLICY.sizes.button} />
             <span>{link.label}</span>
           </a>
         ))}
       </div>
 
-      {/* Mobile Navigation Dropdown */}
       <div className="lg:hidden relative">
         <button
           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
           className="flex items-center space-x-2 text-gray-700 hover:text-emerald-600 transition-colors focus:outline-none"
         >
-          <span className="text-lg">☰</span>
+          <DashboardIconSlot icon={DASHBOARD_ICONS.menu} size={20} />
           <span className="hidden sm:inline">Menu</span>
         </button>
 
@@ -119,7 +120,7 @@ const HeaderNavigation: React.FC<HeaderNavigationProps> = ({ user, logout }) => 
                 className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
                 onClick={() => setIsDropdownOpen(false)}
               >
-                <span>{link.icon}</span>
+                <DashboardIconSlot icon={link.icon} size={DASHBOARD_ICON_POLICY.sizes.button} />
                 <span>{link.label}</span>
               </a>
             ))}
@@ -128,7 +129,7 @@ const HeaderNavigation: React.FC<HeaderNavigationProps> = ({ user, logout }) => 
                 onClick={logout}
                 className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center space-x-3"
               >
-                <span>🚪</span>
+                <DashboardIconSlot icon={DASHBOARD_ICONS.logout} size={DASHBOARD_ICON_POLICY.sizes.button} />
                 <span>Logout</span>
               </button>
             </div>
@@ -136,23 +137,18 @@ const HeaderNavigation: React.FC<HeaderNavigationProps> = ({ user, logout }) => 
         )}
       </div>
 
-      {/* User Menu for Desktop */}
       <div className="hidden lg:block relative">
         <button
           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
           className="flex items-center space-x-2 text-gray-700 hover:text-emerald-600 transition-colors focus:outline-none"
         >
-          <span className="text-lg">👤</span>
+          <DashboardIconSlot icon={DASHBOARD_ICONS.user} size={DASHBOARD_ICON_POLICY.sizes.button} />
           <span className="hidden sm:inline font-medium">{user.firstName || user.email}</span>
-          <svg
-            className="w-4 h-4 transition-transform duration-200"
-            style={{ transform: isDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
+          <DashboardIconSlot
+            icon={DASHBOARD_ICONS.chevronDown}
+            size={16}
+            className={`transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}
+          />
         </button>
 
         {isDropdownOpen && (
@@ -166,21 +162,21 @@ const HeaderNavigation: React.FC<HeaderNavigationProps> = ({ user, logout }) => 
               href="/dashboard/profile"
               className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
             >
-              <span>👤</span>
+              <DashboardIconSlot icon={DASHBOARD_ICONS.user} size={DASHBOARD_ICON_POLICY.sizes.button} />
               <span>Profile</span>
             </a>
             <button
               onClick={logout}
               className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center space-x-3"
             >
-              <span>🚪</span>
+              <DashboardIconSlot icon={DASHBOARD_ICONS.logout} size={DASHBOARD_ICON_POLICY.sizes.button} />
               <span>Logout</span>
             </button>
           </div>
         )}
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default HeaderNavigation;
+export default HeaderNavigation

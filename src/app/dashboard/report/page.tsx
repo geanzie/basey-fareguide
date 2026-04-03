@@ -14,7 +14,7 @@ export default function ReportPage() {
           </p>
         </div>
         
-        <div className="bg-white rounded-lg shadow-sm border">
+        <div className="app-surface-card rounded-2xl">
           <IncidentReporting />
         </div>
       </div>

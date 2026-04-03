@@ -1,6 +1,14 @@
 'use client'
 
 import { useState } from 'react'
+
+import {
+  DASHBOARD_ICONS,
+  DASHBOARD_ICON_POLICY,
+  DashboardIconSlot,
+  getDashboardIconChipClasses,
+} from '@/components/dashboardIcons'
+import LoadingSpinner from '@/components/LoadingSpinner'
 import type { VehicleLookupDto } from '@/lib/contracts'
 
 import VehicleLookupField from './VehicleLookupField'
@@ -34,7 +42,7 @@ const IncidentReporting = () => {
     vehicleType: '',
     incidentDate: new Date().toISOString().split('T')[0],
     incidentTime: new Date().toTimeString().slice(0, 5),
-    evidenceFiles: []
+    evidenceFiles: [],
   })
   const [currentLocation, setCurrentLocation] = useState<GPSPosition | null>(null)
   const [loading, setLoading] = useState(false)
@@ -49,7 +57,7 @@ const IncidentReporting = () => {
     { value: 'RECKLESS_DRIVING', label: 'Reckless Driving' },
     { value: 'VEHICLE_VIOLATION', label: 'Vehicle Violation' },
     { value: 'ROUTE_VIOLATION', label: 'Route Violation' },
-    { value: 'OTHER', label: 'Other Violation' }
+    { value: 'OTHER', label: 'Other Violation' },
   ]
 
   const barangays = [
@@ -61,23 +69,23 @@ const IncidentReporting = () => {
     'Baybay (Poblacion)', 'Buscada (Poblacion)', 'Lawa-an (Poblacion)', 'Loyo (Poblacion)',
     'Mercado (Poblacion)', 'Palaypay (Poblacion)', 'Sulod (Poblacion)',
     'Roxas', 'Salvacion', 'San Antonio', 'San Fernando', 'Sawa', 'Serum', 'Sugca',
-    'Sugponon', 'Tinaogan', 'Tingib', 'Villa Aurora', 'Binongtu-an', 'Bulao'
+    'Sugponon', 'Tinaogan', 'Tingib', 'Villa Aurora', 'Binongtu-an', 'Bulao',
   ]
 
   const handleVehicleSelect = (vehicle: VehicleLookupDto) => {
     setSelectedVehicle(vehicle)
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       vehicleId: vehicle.id,
       plateNumber: vehicle.plateNumber,
       vehicleType: vehicle.vehicleType,
-      driverLicense: vehicle.driverLicense || ''
+      driverLicense: vehicle.driverLicense || '',
     }))
   }
 
   const clearSelectedVehicle = () => {
     setSelectedVehicle(null)
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       vehicleId: '',
       plateNumber: '',
@@ -97,33 +105,34 @@ const IncidentReporting = () => {
       (position) => {
         setCurrentLocation({
           latitude: position.coords.latitude,
-          longitude: position.coords.longitude
+          longitude: position.coords.longitude,
         })
         setLocationLoading(false)
       },
-      (error) => {        setLocationLoading(false)
+      () => {
+        setLocationLoading(false)
       },
       {
         enableHighAccuracy: true,
         timeout: 10000,
-        maximumAge: 300000
-      }
+        maximumAge: 300000,
+      },
     )
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }))
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      evidenceFiles: files
+      evidenceFiles: files,
     }))
   }
 
@@ -139,29 +148,25 @@ const IncidentReporting = () => {
         return
       }
 
-      // Create form data for file upload
       const submitData = new FormData()
-      
-      // Add text fields
-      Object.keys(formData).forEach(key => {
+
+      Object.keys(formData).forEach((key) => {
         if (key !== 'evidenceFiles') {
           submitData.append(key, formData[key as keyof IncidentForm] as string)
         }
       })
 
-      // Add location coordinates if available
       if (currentLocation) {
         submitData.append('coordinates', JSON.stringify(currentLocation))
       }
 
-      // Add files
       formData.evidenceFiles.forEach((file, index) => {
         submitData.append(`evidence_${index}`, file)
       })
 
       const response = await fetch('/api/incidents/report', {
         method: 'POST',
-        body: submitData
+        body: submitData,
       })
 
       if (response.ok) {
@@ -170,7 +175,6 @@ const IncidentReporting = () => {
           ? ` ${data.evidenceCount} evidence file(s) saved.`
           : ''
         setSuccess(`Incident report submitted successfully. Reference number: ${data.referenceNumber}.${evidenceSummary}`)
-        // Reset form
         setFormData({
           incidentType: '',
           description: '',
@@ -181,14 +185,14 @@ const IncidentReporting = () => {
           vehicleType: '',
           incidentDate: new Date().toISOString().split('T')[0],
           incidentTime: new Date().toTimeString().slice(0, 5),
-          evidenceFiles: []
+          evidenceFiles: [],
         })
         setSelectedVehicle(null)
       } else {
         const errorData = await response.json()
         setError(errorData.message || 'Failed to submit report')
       }
-    } catch (err) {
+    } catch {
       setError('Network error. Please try again.')
     } finally {
       setLoading(false)
@@ -196,10 +200,10 @@ const IncidentReporting = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-8">
+    <div className="app-surface-card mx-auto max-w-4xl rounded-3xl p-8">
       <div className="text-center mb-8">
-        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <span className="text-2xl">⚠️</span>
+        <div className={`${getDashboardIconChipClasses('red')} mx-auto mb-4 h-16 w-16 rounded-full`}>
+          <DashboardIconSlot icon={DASHBOARD_ICONS.incidents} size={DASHBOARD_ICON_POLICY.sizes.hero} />
         </div>
         <h2 className="text-3xl font-bold text-gray-900 mb-2">Report an Incident</h2>
         <p className="text-gray-600">
@@ -207,21 +211,23 @@ const IncidentReporting = () => {
         </p>
       </div>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-          {error}
+      {error ? (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 flex items-center gap-2">
+          <DashboardIconSlot icon={DASHBOARD_ICONS.reports} size={DASHBOARD_ICON_POLICY.sizes.alert} className="text-red-600" />
+          <span>{error}</span>
         </div>
-      )}
+      ) : null}
 
-      {success && (
-        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-6">
-          {success}
+      {success ? (
+        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-6 flex items-center gap-2">
+          <DashboardIconSlot icon={DASHBOARD_ICONS.check} size={DASHBOARD_ICON_POLICY.sizes.alert} className="text-green-600" />
+          <span>{success}</span>
         </div>
-      )}
+      ) : null}
 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-        <div className="flex items-center mb-2">
-          <span className="text-lg mr-2">💡</span>
+        <div className="flex items-center mb-2 gap-2">
+          <DashboardIconSlot icon={DASHBOARD_ICONS.info} size={DASHBOARD_ICON_POLICY.sizes.section} className="text-blue-700" />
           <h3 className="font-semibold text-blue-800">Before you submit</h3>
         </div>
         <div className="space-y-1 text-sm text-blue-700">
@@ -232,7 +238,6 @@ const IncidentReporting = () => {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Incident Type */}
         <div>
           <label htmlFor="incidentType" className="block text-sm font-medium text-gray-700 mb-2">
             Incident Type *
@@ -246,7 +251,7 @@ const IncidentReporting = () => {
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
           >
             <option value="">Select incident type</option>
-            {incidentTypes.map(type => (
+            {incidentTypes.map((type) => (
               <option key={type.value} value={type.value}>
                 {type.label}
               </option>
@@ -254,7 +259,6 @@ const IncidentReporting = () => {
           </select>
         </div>
 
-        {/* Description */}
         <div>
           <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
             Incident Description *
@@ -271,7 +275,6 @@ const IncidentReporting = () => {
           />
         </div>
 
-        {/* Date and Time */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label htmlFor="incidentDate" className="block text-sm font-medium text-gray-700 mb-2">
@@ -303,7 +306,6 @@ const IncidentReporting = () => {
           </div>
         </div>
 
-        {/* Location */}
         <div>
           <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
             Location *
@@ -318,7 +320,7 @@ const IncidentReporting = () => {
               className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
             >
               <option value="">Select barangay</option>
-              {barangays.map(barangay => (
+              {barangays.map((barangay) => (
                 <option key={barangay} value={barangay}>
                   {barangay}
                 </option>
@@ -328,20 +330,29 @@ const IncidentReporting = () => {
               type="button"
               onClick={getCurrentLocation}
               disabled={locationLoading}
-              className="px-4 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
+              className="px-4 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 inline-flex items-center gap-2"
               title="Capture current GPS coordinates"
             >
-              {locationLoading ? 'Loading GPS' : 'Use GPS'}
+              {locationLoading ? (
+                <>
+                  <LoadingSpinner size={16} className="text-white" />
+                  <span>Loading GPS</span>
+                </>
+              ) : (
+                <>
+                  <DashboardIconSlot icon={DASHBOARD_ICONS.map} size={DASHBOARD_ICON_POLICY.sizes.button} />
+                  <span>Use GPS</span>
+                </>
+              )}
             </button>
           </div>
-          {currentLocation && (
+          {currentLocation ? (
             <p className="text-xs text-green-600 mt-1">
               GPS coordinates captured ({currentLocation.latitude.toFixed(6)}, {currentLocation.longitude.toFixed(6)})
             </p>
-          )}
+          ) : null}
         </div>
 
-        {/* Vehicle Selection */}
         <div>
           <label htmlFor="vehicleId" className="block text-sm font-medium text-gray-700 mb-2">
             Select Vehicle to Report *
@@ -361,29 +372,24 @@ const IncidentReporting = () => {
             noResultsText="No active permitted vehicles matched your search."
           />
 
-          {formData.vehicleId && selectedVehicle && (
+          {formData.vehicleId && selectedVehicle ? (
             <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <h4 className="font-medium text-blue-900 mb-1">Selected vehicle</h4>
               <div className="text-sm text-blue-700 space-y-1">
                 <p><strong>Plate Number:</strong> {formData.plateNumber}</p>
                 <p><strong>Type:</strong> {formData.vehicleType.replace('_', ' ')}</p>
                 <p><strong>Owner:</strong> {selectedVehicle.ownerName}</p>
-                {formData.driverLicense && (
+                {formData.driverLicense ? (
                   <p><strong>Driver License:</strong> {formData.driverLicense}</p>
-                )}
-                {selectedVehicle.permitPlateNumber && (
-                  <p><strong>Permit:</strong> {selectedVehicle.permitPlateNumber} 
-                    <span className="text-green-600 ml-1">Active</span>
-                  </p>
-                )}
+                ) : null}
+                {selectedVehicle.permitPlateNumber ? (
+                  <p><strong>Permit:</strong> {selectedVehicle.permitPlateNumber} <span className="text-green-600 ml-1">Active</span></p>
+                ) : null}
               </div>
             </div>
-          )}
+          ) : null}
         </div>
 
-
-
-        {/* Evidence Upload */}
         <div>
           <label htmlFor="evidence" className="block text-sm font-medium text-gray-700 mb-2">
             Evidence (Optional)
@@ -400,16 +406,14 @@ const IncidentReporting = () => {
           <p className="text-xs text-gray-500 mt-1">
             Upload images, videos, audio, or PDFs as evidence. Images, audio, and PDFs can be up to 10MB each; videos can be up to 50MB.
           </p>
-          {formData.evidenceFiles.length > 0 && (
-            <div className="mt-2">
-              <p className="text-sm text-green-600">
-                {formData.evidenceFiles.length} file(s) selected for upload
-              </p>
+          {formData.evidenceFiles.length > 0 ? (
+            <div className="mt-2 text-sm text-green-600 inline-flex items-center gap-2">
+              <DashboardIconSlot icon={DASHBOARD_ICONS.check} size={DASHBOARD_ICON_POLICY.sizes.button} />
+              <span>{formData.evidenceFiles.length} file(s) selected for upload</span>
             </div>
-          )}
+          ) : null}
         </div>
 
-        {/* Submit Button */}
         <div className="flex justify-end space-x-4">
           <button
             type="button"
@@ -421,27 +425,26 @@ const IncidentReporting = () => {
           <button
             type="submit"
             disabled={loading}
-            className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center"
+            className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 inline-flex items-center"
           >
             {loading ? (
               <>
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
+                <LoadingSpinner size={20} className="mr-3 text-white" />
                 Submitting...
               </>
             ) : (
-              'Submit Report'
+              <>
+                <DashboardIconSlot icon={DASHBOARD_ICONS.incidents} size={DASHBOARD_ICON_POLICY.sizes.button} className="mr-2" />
+                Submit Report
+              </>
             )}
           </button>
         </div>
       </form>
 
-      {/* Emergency Contact */}
       <div className="mt-8 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-        <div className="flex items-center mb-2">
-          <span className="text-lg mr-2">📞</span>
+        <div className="flex items-center mb-2 gap-2">
+          <DashboardIconSlot icon={DASHBOARD_ICONS.phone} size={DASHBOARD_ICON_POLICY.sizes.section} className="text-yellow-700" />
           <h3 className="font-semibold text-yellow-800">Emergency hotlines</h3>
         </div>
         <div className="space-y-1 text-sm text-yellow-700">

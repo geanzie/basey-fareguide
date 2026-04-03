@@ -79,7 +79,7 @@ export default function FareRateBanner({
 
   if (isLoading && !data) {
     return (
-      <div className={`rounded-2xl border border-slate-200 bg-white p-4 shadow-sm ${className}`}>
+      <div className={`app-surface-card rounded-2xl p-4 ${className}`.trim()}>
         <p className="text-sm text-slate-500">Loading official fare rates...</p>
       </div>
     )
@@ -92,7 +92,7 @@ export default function FareRateBanner({
   const announcement = getAnnouncementContent(data)
 
   return (
-    <section className={`rounded-2xl border border-slate-200 bg-white p-5 shadow-sm ${className}`}>
+    <section className={`app-surface-card rounded-2xl p-5 ${className}`.trim()}>
       {variant === 'announcement' && (
         <div className={`mb-5 rounded-2xl border px-5 py-4 ${announcement.toneClasses}`}>
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -115,7 +115,7 @@ export default function FareRateBanner({
           <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
           <p className="mt-1 text-sm text-slate-600">{description}</p>
         </div>
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <div className="app-surface-inner rounded-xl border border-emerald-200 px-4 py-3 text-sm text-emerald-800">
           Active as of {formatManilaDateTimeLabel(data.current.effectiveAt)}
         </div>
       </div>

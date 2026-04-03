@@ -7,7 +7,7 @@ export default function CalculatorPage() {
   return (
     <DashboardLayout>
       <div className="max-w-4xl mx-auto">
-        <div className="bg-white rounded-lg shadow-sm border">
+        <div className="app-surface-card rounded-2xl">
           <RoutePlannerCalculator />
         </div>
       </div>

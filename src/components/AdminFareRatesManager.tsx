@@ -130,7 +130,7 @@ export default function AdminFareRatesManager() {
 
   if (loading && !data) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="app-surface-card rounded-2xl p-6">
         <p className="text-sm text-slate-500">Loading fare rate management...</p>
       </div>
     )
@@ -199,7 +199,7 @@ export default function AdminFareRatesManager() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="app-surface-card rounded-2xl p-6">
         <div className="mb-5">
           <h2 className="text-xl font-semibold text-slate-900">Publish or Schedule a Fare Change</h2>
           <p className="mt-1 text-sm text-slate-600">
@@ -338,7 +338,7 @@ export default function AdminFareRatesManager() {
         </section>
       )}
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="app-surface-card rounded-2xl p-6">
         <div className="mb-5">
           <h2 className="text-xl font-semibold text-slate-900">Fare Rate History</h2>
           <p className="mt-1 text-sm text-slate-600">

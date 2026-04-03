@@ -198,9 +198,9 @@ export default function PinSelectionMap({
       <div className="mb-2 px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2
         bg-blue-50 border border-blue-200 text-blue-800">
         <span className="text-base" aria-hidden="true">
-          {!pins.origin && !pins.destination && '1️⃣'}
-          {pins.origin && !pins.destination && '2️⃣'}
-          {pins.origin && pins.destination && '✅'}
+          {!pins.origin && !pins.destination && '1'}
+          {pins.origin && !pins.destination && '2'}
+          {pins.origin && pins.destination && 'Ready'}
         </span>
         <span>
           {!pins.origin && !pins.destination && 'Click on the map to place your pickup point (A)'}

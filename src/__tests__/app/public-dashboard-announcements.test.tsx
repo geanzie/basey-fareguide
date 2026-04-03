@@ -107,5 +107,20 @@ describe("public dashboard announcements", () => {
     expect(container.textContent).toContain("Traffic Announcements");
     expect(container.textContent).toContain("Weekend reroute");
     expect(container.textContent).toContain("Fare Notice");
+    expect(container.textContent).toContain("Recent Fare Calculations");
+    expect(container.textContent).toContain("Recent Incident Reports");
+
+    const actionLabels = [
+      "Calculate Fare",
+      "Report Incident",
+      "View History",
+      "Manage Discount Card",
+    ];
+    const actionLinks = Array.from(container.querySelectorAll("a")).filter((anchor) =>
+      actionLabels.some((label) => anchor.textContent?.includes(label)),
+    );
+
+    expect(actionLinks).toHaveLength(4);
+    expect(actionLinks.every((anchor) => (anchor.textContent || "").trim().length > 0)).toBe(true);
   });
 });

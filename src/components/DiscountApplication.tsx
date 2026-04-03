@@ -13,6 +13,13 @@ import type {
 } from '@/lib/contracts'
 import { SWR_KEYS } from '@/lib/swrKeys'
 import { fetchUserProfileResponse } from '@/lib/userProfile'
+import LoadingSpinner from '@/components/LoadingSpinner'
+import {
+  DASHBOARD_ICONS,
+  DASHBOARD_ICON_POLICY,
+  DashboardIconSlot,
+  getDashboardIconChipClasses,
+} from '@/components/dashboardIcons'
 
 interface DiscountApplicationProps {
   user: Pick<
@@ -262,7 +269,7 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
     return (
       <div className="flex items-center justify-center min-h-64">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <LoadingSpinner className="justify-center text-blue-600 mb-4" size={36} />
           <p className="text-gray-600">Loading...</p>
         </div>
       </div>
@@ -275,7 +282,7 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
     
     return (
       <div className="max-w-3xl mx-auto">
-        <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
+        <div className="app-surface-card rounded-2xl p-6 mb-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
             Your Discount Application
           </h2>
@@ -317,7 +324,10 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
                 </div>
                 
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <p className="text-green-800 font-medium">✓ Your discount card is active!</p>
+                  <p className="text-green-800 font-medium inline-flex items-center gap-2">
+                    <DashboardIconSlot icon={DASHBOARD_ICONS.check} size={DASHBOARD_ICON_POLICY.sizes.button} />
+                    <span>Your discount card is active!</span>
+                  </p>
                   <p className="text-green-700 text-sm mt-1">
                     You can now enjoy 20% discount on fare calculations.
                   </p>
@@ -355,7 +365,10 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
 
             {app.verificationStatus === 'UNDER_REVIEW' && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-blue-800 font-medium">👁️ Under Review</p>
+                <p className="text-blue-800 font-medium inline-flex items-center gap-2">
+                  <DashboardIconSlot icon={DASHBOARD_ICONS.view} size={DASHBOARD_ICON_POLICY.sizes.button} />
+                  <span>Under Review</span>
+                </p>
                 <p className="text-blue-700 text-sm mt-1">
                   An admin is currently reviewing your application.
                 </p>
@@ -379,16 +392,18 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
   // Show application form
   return (
     <div className="max-w-3xl mx-auto">
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm border p-6">
+      <form onSubmit={handleSubmit} className="app-surface-card rounded-2xl p-6">
         {error && (
-          <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-            {error}
+          <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
+            <DashboardIconSlot icon={DASHBOARD_ICONS.reports} size={DASHBOARD_ICON_POLICY.sizes.alert} className="text-red-600" />
+            <span>{error}</span>
           </div>
         )}
 
         {success && (
-          <div className="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
-            {success}
+          <div className="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg flex items-center gap-2">
+            <DashboardIconSlot icon={DASHBOARD_ICONS.check} size={DASHBOARD_ICON_POLICY.sizes.alert} className="text-green-600" />
+            <span>{success}</span>
           </div>
         )}
 
@@ -407,7 +422,9 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
                   : 'border-gray-200 hover:border-gray-300'
               }`}
             >
-              <div className="text-2xl mb-2">👴</div>
+              <div className="mb-2 inline-flex h-10 w-10 items-center justify-center rounded-xl border border-amber-200 bg-amber-100 text-amber-700">
+                <DashboardIconSlot icon={DASHBOARD_ICONS.user} size={DASHBOARD_ICON_POLICY.sizes.card} />
+              </div>
               <div className="font-medium text-gray-900">Senior Citizen</div>
               <div className="text-xs text-gray-500 mt-1">60 years and above</div>
             </button>
@@ -421,7 +438,9 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
                   : 'border-gray-200 hover:border-gray-300'
               }`}
             >
-              <div className="text-2xl mb-2">♿</div>
+              <div className="mb-2 inline-flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-100 text-emerald-700">
+                <DashboardIconSlot icon={DASHBOARD_ICONS.safe} size={DASHBOARD_ICON_POLICY.sizes.card} />
+              </div>
               <div className="font-medium text-gray-900">PWD</div>
               <div className="text-xs text-gray-500 mt-1">Person with Disability</div>
             </button>
@@ -435,7 +454,9 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
                   : 'border-gray-200 hover:border-gray-300'
               }`}
             >
-              <div className="text-2xl mb-2">🎓</div>
+              <div className="mb-2 inline-flex h-10 w-10 items-center justify-center rounded-xl border border-blue-200 bg-blue-100 text-blue-700">
+                <DashboardIconSlot icon={DASHBOARD_ICONS.fileText} size={DASHBOARD_ICON_POLICY.sizes.card} />
+              </div>
               <div className="font-medium text-gray-900">Student</div>
               <div className="text-xs text-gray-500 mt-1">With valid school ID</div>
             </button>
@@ -582,10 +603,7 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
             {/* ID Validation Status */}
             {validatingID && (
               <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700 flex items-center">
-                <svg className="animate-spin h-5 w-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
+                <LoadingSpinner size={20} className="mr-3 text-blue-700" />
                 Validating ID image...
               </div>
             )}
@@ -598,7 +616,10 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
               }`}>
                 <div className="flex items-start">
                   <span className="text-2xl mr-3">
-                    {idValidationResult.isValid ? '✅' : '⚠️'}
+                    <DashboardIconSlot
+                      icon={idValidationResult.isValid ? DASHBOARD_ICONS.check : DASHBOARD_ICONS.reports}
+                      size={DASHBOARD_ICON_POLICY.sizes.card}
+                    />
                   </span>
                   <div className="flex-1">
                     <p className="font-semibold mb-2">
@@ -616,7 +637,7 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
                     </ul>
                     {!idValidationResult.isValid && (
                       <p className="mt-2 text-xs">
-                        💡 Tip: Ensure your ID is well-lit, in focus, and all text is readable.
+                        Tip: Ensure your ID is well-lit, in focus, and all text is readable.
                       </p>
                     )}
                   </div>
@@ -780,7 +801,7 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
           <button
             type="button"
             onClick={() => router.push('/profile')}
-            className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium transition-colors"
+            className="app-surface-inner px-6 py-3 rounded-lg font-medium text-gray-700 transition-colors hover:bg-white/80"
           >
             Cancel
           </button>
@@ -789,3 +810,8 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
     </div>
   )
 }
+
+
+
+
+

@@ -175,7 +175,7 @@ const InteractiveGoogleMap = ({ origin, destination, onRouteCalculated }: MapPro
       <div className="h-96 bg-red-50 border border-red-200 rounded-lg flex items-center justify-center">
         <div className="text-center p-6">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-2xl text-red-600">⚠️</span>
+            <span className="text-lg font-semibold text-red-600">Alert</span>
           </div>
           <h3 className="text-lg font-semibold text-red-800 mb-2">Map Error</h3>
           <p className="text-red-600">{error}</p>
@@ -195,7 +195,7 @@ const InteractiveGoogleMap = ({ origin, destination, onRouteCalculated }: MapPro
           <div className="absolute inset-0 bg-gray-50 flex items-center justify-center rounded-lg">
             <div className="text-center">
               <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
-                <span className="text-2xl">🗺️</span>
+                <span className="text-lg font-semibold">Map</span>
               </div>
               <p className="text-gray-600 font-medium">Loading Google Maps...</p>
               <div className="mt-2">

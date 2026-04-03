@@ -2,6 +2,13 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import LoadingSpinner from '@/components/LoadingSpinner'
+import {
+  DASHBOARD_ICONS,
+  DASHBOARD_ICON_POLICY,
+  DashboardIconSlot,
+  getDashboardIconChipClasses,
+} from '@/components/dashboardIcons'
 
 interface RegisterFormProps {
   onSwitchToLogin: () => void
@@ -122,21 +129,24 @@ const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <div className="flex justify-center">
-            <span className="text-4xl">📝</span>
+    <div className="app-page-bg min-h-screen px-4 py-12 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-md">
+        <div className="app-surface-card-strong space-y-8 rounded-3xl p-8 sm:p-10">
+          <div>
+            <div className="flex justify-center">
+              <div className={getDashboardIconChipClasses('emerald')}>
+                <DashboardIconSlot icon={DASHBOARD_ICONS.user} size={DASHBOARD_ICON_POLICY.sizes.hero} />
+              </div>
+            </div>
+            <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+              Register for Basey Fare Guide
+            </h2>
+            <p className="mt-2 text-center text-sm text-gray-600">
+              Join the official transportation management system
+            </p>
           </div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Register for Basey Fare Guide
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Join the official transportation management system
-          </p>
-        </div>
         
-        <form className="mt-8 space-y-4" onSubmit={handleSubmit} suppressHydrationWarning>
+          <form className="mt-8 space-y-4" onSubmit={handleSubmit} suppressHydrationWarning>
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
               {error}
@@ -250,7 +260,10 @@ const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
 
           {/* Identity Verification Section */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-            <h3 className="font-medium text-blue-800 mb-2">📋 Additional Information (Optional)</h3>
+            <h3 className="inline-flex items-center gap-2 font-medium text-blue-800 mb-2">
+              <DashboardIconSlot icon={DASHBOARD_ICONS.fileText} size={DASHBOARD_ICON_POLICY.sizes.button} />
+              <span>Additional Information (Optional)</span>
+            </h3>
             <p className="text-sm text-blue-700">
               Provide additional information to enhance your profile. All fields in this section are optional.
             </p>
@@ -450,10 +463,7 @@ const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
             >
               {loading ? (
                 <span className="flex items-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
+                  <LoadingSpinner size={20} className="mr-3" />
                   Registering...
                 </span>
               ) : (
@@ -471,7 +481,8 @@ const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
               Already have an account? Sign in here
             </button>
           </div>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
   )

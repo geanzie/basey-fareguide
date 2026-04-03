@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import LoadingSpinner from '@/components/LoadingSpinner'
 import { flexibleFetch } from '@/lib/api'
 import type { FareCalculationsResponseDto, IncidentsResponseDto } from '@/lib/contracts'
 
@@ -177,7 +178,7 @@ export default function UserHistory() {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
-          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-b-2 border-emerald-600" />
+          <LoadingSpinner className="justify-center text-emerald-600" size={28} />
           <p className="mt-3 text-gray-600">Loading your history...</p>
         </div>
       </div>
@@ -195,7 +196,7 @@ export default function UserHistory() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-2xl border border-gray-200 bg-white p-6">
+      <section className="app-surface-card rounded-2xl p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <h2 className="text-2xl font-bold text-slate-900">History</h2>
@@ -242,7 +243,7 @@ export default function UserHistory() {
         ) : null}
       </section>
 
-      <section className="rounded-2xl border border-gray-200 bg-white">
+      <section className="app-surface-card rounded-2xl">
         <div className="border-b border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-slate-900">Activity timeline</h3>
           <p className="mt-1 text-sm text-slate-600">Newest items appear first.</p>
@@ -250,7 +251,7 @@ export default function UserHistory() {
 
         <div className="p-6">
           {filteredHistory.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-8 text-center">
+            <div className="app-surface-inner rounded-xl border border-dashed border-gray-300 p-8 text-center">
               <h4 className="text-base font-semibold text-slate-900">
                 {searchQuery ? 'No matching activity found' : 'No saved activity yet'}
               </h4>
@@ -292,7 +293,7 @@ export default function UserHistory() {
           ) : (
             <div className="space-y-4">
               {filteredHistory.map((item) => (
-                <div key={item.id} className="rounded-xl border border-gray-200 p-4">
+                <div key={item.id} className="app-surface-inner rounded-xl p-4">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
@@ -339,7 +340,7 @@ export default function UserHistory() {
               <button
                 onClick={() => setCurrentPage((previous) => Math.max(1, previous - 1))}
                 disabled={currentPage <= 1}
-                className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className="app-surface-inner rounded-lg border border-gray-300/80 px-3 py-2 text-sm text-gray-700 hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Previous
               </button>
@@ -349,7 +350,7 @@ export default function UserHistory() {
               <button
                 onClick={() => setCurrentPage((previous) => Math.min(pagination.totalPages, previous + 1))}
                 disabled={currentPage >= pagination.totalPages}
-                className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className="app-surface-inner rounded-lg border border-gray-300/80 px-3 py-2 text-sm text-gray-700 hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Next
               </button>
@@ -374,7 +375,7 @@ function FilterChip({
     <button
       onClick={onClick}
       className={`rounded-full px-4 py-2 text-sm font-medium ${
-        active ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+        active ? 'bg-emerald-600 text-white' : 'app-surface-inner text-gray-700 hover:bg-white/80'
       }`}
     >
       {label}

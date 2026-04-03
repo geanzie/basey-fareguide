@@ -112,5 +112,6 @@ describe("public home page announcements", () => {
     expect(container.textContent).toContain("Traffic Announcements");
     expect(container.textContent).toContain("Road closure");
     expect(container.textContent).toContain("Official Fare Announcement");
+    expect(container.querySelector(".app-page-bg")).not.toBeNull();
   });
 });

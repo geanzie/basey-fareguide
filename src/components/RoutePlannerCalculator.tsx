@@ -92,7 +92,7 @@ function PointSetter({
   onUseCurrentLocation: () => void
 }) {
   return (
-    <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+    <div className="app-surface-inner rounded-2xl p-4">
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span
@@ -505,7 +505,7 @@ const RoutePlannerCalculator = ({
         <FareRateBanner />
 
         {routeResult && (
-          <section className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
+          <section className="app-surface-card-strong rounded-3xl p-5 sm:p-6">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
               <div>
                 <p className="text-sm font-medium uppercase tracking-[0.2em] text-gray-500">
@@ -528,10 +528,10 @@ const RoutePlannerCalculator = ({
               </div>
 
               <div className="flex flex-wrap gap-2 lg:max-w-sm lg:justify-end">
-                <span className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-sm font-medium text-gray-700">
+                <span className="app-surface-inner rounded-full px-3 py-1 text-sm font-medium text-gray-700">
                   {routeResult.distanceKm.toFixed(2)} km
                 </span>
-                <span className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-sm font-medium text-gray-700">
+                <span className="app-surface-inner rounded-full px-3 py-1 text-sm font-medium text-gray-700">
                   {routeResult.durationText}
                 </span>
                 <span
@@ -556,7 +556,7 @@ const RoutePlannerCalculator = ({
               <p className="mt-3 text-xs text-gray-500">Saved to fare history.</p>
             )}
 
-            <details className="mt-4 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+            <details className="app-surface-inner mt-4 rounded-2xl px-4 py-3 text-sm text-gray-700">
               <summary className="cursor-pointer font-medium text-gray-800">
                 How fare was computed
               </summary>
@@ -581,7 +581,7 @@ const RoutePlannerCalculator = ({
         )}
 
         <div className="grid gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
-          <aside className="space-y-4 rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
+          <aside className="app-surface-card rounded-3xl p-5">
             <div>
               <h3 className="text-lg font-semibold text-gray-900">Pin your route</h3>
               <p className="mt-1 text-sm text-gray-600">
@@ -636,7 +636,7 @@ const RoutePlannerCalculator = ({
                 type="button"
                 onClick={handleSwap}
                 disabled={!hasTwoPoints}
-                className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className="app-surface-inner rounded-xl px-3 py-2 text-sm font-medium text-gray-700 hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Swap A / B
               </button>
@@ -644,7 +644,7 @@ const RoutePlannerCalculator = ({
                 type="button"
                 onClick={handleReset}
                 disabled={!origin && !destination}
-                className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className="app-surface-inner rounded-xl px-3 py-2 text-sm font-medium text-gray-700 hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Reset route
               </button>
@@ -652,7 +652,7 @@ const RoutePlannerCalculator = ({
                 type="button"
                 onClick={() => updateOrigin(null)}
                 disabled={!origin}
-                className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className="app-surface-inner rounded-xl px-3 py-2 text-sm font-medium text-gray-700 hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Clear A
               </button>
@@ -660,7 +660,7 @@ const RoutePlannerCalculator = ({
                 type="button"
                 onClick={() => updateDestination(null)}
                 disabled={!destination}
-                className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className="app-surface-inner rounded-xl px-3 py-2 text-sm font-medium text-gray-700 hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Clear B
               </button>
@@ -671,7 +671,7 @@ const RoutePlannerCalculator = ({
             </div>
           </aside>
 
-          <section className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
+          <section className="app-surface-card rounded-3xl p-5">
             <MapComponent
               origin={origin}
               destination={destination}
@@ -687,7 +687,7 @@ const RoutePlannerCalculator = ({
           </section>
         </div>
 
-        <section className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
+        <section className="app-surface-card rounded-3xl p-5">
           <div className="flex items-start gap-4">
             <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-100 text-xl text-blue-700">
               A to B

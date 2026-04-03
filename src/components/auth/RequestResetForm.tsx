@@ -3,6 +3,14 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
+import LoadingSpinner from '@/components/LoadingSpinner'
+import {
+  DASHBOARD_ICONS,
+  DASHBOARD_ICON_POLICY,
+  DashboardIconSlot,
+  getDashboardIconChipClasses,
+} from '@/components/dashboardIcons'
+
 interface RequestResetFormProps {
   onSuccess?: () => void
   onCancel?: () => void
@@ -70,32 +78,30 @@ const RequestResetForm = ({ onSuccess, onCancel }: RequestResetFormProps) => {
     `A 6-digit verification code has been sent to ${maskedEmail || 'your email'}.`
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <div className="flex justify-center">
-            <span className="text-4xl">Reset</span>
-          </div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Reset Password
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Enter your email address to receive an OTP code
-          </p>
-        </div>
+    <div className="app-page-bg min-h-screen px-4 py-12 sm:px-6 lg:px-8">
+      <div className="flex min-h-[calc(100vh-6rem)] items-center justify-center">
+        <div className="w-full max-w-md">
+          <div className="app-surface-card-strong space-y-8 rounded-3xl p-8 sm:p-10">
+            <div>
+              <div className="flex justify-center">
+                <div className={`${getDashboardIconChipClasses('blue')} h-16 w-16 rounded-2xl`}>
+                  <DashboardIconSlot icon={DASHBOARD_ICONS.key} size={DASHBOARD_ICON_POLICY.sizes.hero} />
+                </div>
+              </div>
+              <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+                Reset Password
+              </h2>
+              <p className="mt-2 text-center text-sm text-gray-600">
+                Enter your email address to receive an OTP code
+              </p>
+            </div>
 
-        {success ? (
+            {success ? (
           <div className="space-y-4">
             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
               <div className="flex">
                 <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
+                  <DashboardIconSlot icon={DASHBOARD_ICONS.check} size={DASHBOARD_ICON_POLICY.sizes.card} className="text-green-500" />
                 </div>
                 <div className="ml-3">
                   <h3 className="text-sm font-medium text-green-800">{successTitle}</h3>
@@ -110,13 +116,7 @@ const RequestResetForm = ({ onSuccess, onCancel }: RequestResetFormProps) => {
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <div className="flex">
                 <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path
-                      fillRule="evenodd"
-                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
+                  <DashboardIconSlot icon={DASHBOARD_ICONS.info} size={DASHBOARD_ICON_POLICY.sizes.card} className="text-blue-500" />
                 </div>
                 <div className="ml-3 flex-1">
                   <h3 className="text-sm font-medium text-blue-800">Next Steps</h3>
@@ -144,13 +144,13 @@ const RequestResetForm = ({ onSuccess, onCancel }: RequestResetFormProps) => {
               </button>
             </div>
           </div>
-        ) : (
+            ) : (
           <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-            {error && (
+            {error ? (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
                 {error}
               </div>
-            )}
+            ) : null}
 
             <div>
               <label htmlFor="email" className="sr-only">
@@ -180,15 +180,7 @@ const RequestResetForm = ({ onSuccess, onCancel }: RequestResetFormProps) => {
               >
                 {loading ? (
                   <span className="flex items-center">
-                    <svg
-                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
+                    <LoadingSpinner size={20} className="mr-3 text-white" />
                     Sending OTP...
                   </span>
                 ) : (
@@ -205,7 +197,9 @@ const RequestResetForm = ({ onSuccess, onCancel }: RequestResetFormProps) => {
               </button>
             </div>
           </form>
-        )}
+            )}
+          </div>
+        </div>
       </div>
     </div>
   )

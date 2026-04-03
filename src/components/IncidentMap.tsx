@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { GoogleMap, useJsApiLoader, Marker, InfoWindow, HeatmapLayer } from '@react-google-maps/api'
+import LoadingSpinner from '@/components/LoadingSpinner'
 
 interface IncidentLocation {
   id: string
@@ -141,7 +142,7 @@ const IncidentMap: React.FC<IncidentMapProps> = ({ incidents, onIncidentSelect }
     return (
       <div className="flex items-center justify-center h-96 bg-gray-100 rounded-lg">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <LoadingSpinner className="justify-center text-blue-600 mb-4" size={36} />
           <p className="text-gray-600">Loading Map...</p>
         </div>
       </div>
@@ -197,7 +198,7 @@ const IncidentMap: React.FC<IncidentMapProps> = ({ incidents, onIncidentSelect }
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
             >
-              🔥 Heatmap
+              Heatmap
             </button>
           </div>
         </div>

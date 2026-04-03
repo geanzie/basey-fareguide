@@ -6,6 +6,11 @@ import RoleGuard from '@/components/RoleGuard'
 import PageWrapper from '@/components/PageWrapper'
 import AdminDiscountOverride from '@/components/AdminDiscountOverride'
 import AdminDiscountList from '@/components/AdminDiscountList'
+import {
+  DASHBOARD_ICONS,
+  DASHBOARD_ICON_POLICY,
+  DashboardIconSlot,
+} from '@/components/dashboardIcons'
 
 type TabType = 'list' | 'create'
 
@@ -34,9 +39,10 @@ export default function AdminDiscountCardsPage() {
           <div className="mb-6">
             <button
               onClick={() => router.push('/admin')}
-              className="text-blue-600 hover:text-blue-800 flex items-center gap-2 mb-4"
+              className="text-blue-600 hover:text-blue-800 inline-flex items-center gap-2 mb-4"
             >
-              <span>←</span> Back to Admin Dashboard
+              <DashboardIconSlot icon={DASHBOARD_ICONS.back} size={DASHBOARD_ICON_POLICY.sizes.button} />
+              <span>Back to Admin Dashboard</span>
             </button>
           </div>
 
@@ -52,9 +58,7 @@ export default function AdminDiscountCardsPage() {
                 }`}
               >
                 <div className="flex items-center gap-2">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                  </svg>
+                  <DashboardIconSlot icon={DASHBOARD_ICONS.list} size={DASHBOARD_ICON_POLICY.sizes.button} />
                   Discount Cards List
                 </div>
               </button>
@@ -67,9 +71,7 @@ export default function AdminDiscountCardsPage() {
                 }`}
               >
                 <div className="flex items-center gap-2">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
+                  <DashboardIconSlot icon={DASHBOARD_ICONS.plus} size={DASHBOARD_ICON_POLICY.sizes.button} />
                   Create Discount Card
                 </div>
               </button>

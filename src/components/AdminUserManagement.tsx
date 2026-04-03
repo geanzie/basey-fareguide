@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import LoadingSpinner from '@/components/LoadingSpinner'
 import ResponsiveTable, { ActionButton, StatusBadge } from './ResponsiveTable'
 import AdminPasswordReset from './AdminPasswordReset'
 
@@ -384,7 +385,7 @@ export default function AdminUserManagement() {
     if (loading) {
       return (
         <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto" />
+          <LoadingSpinner className="justify-center text-blue-600" size={24} />
           <p className="mt-2 text-gray-600">Loading pending users...</p>
         </div>
       )
@@ -401,7 +402,7 @@ export default function AdminUserManagement() {
     return (
       <div className="space-y-4">
         {pendingUsers.map((user) => (
-          <div key={user.id} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+          <div key={user.id} className="app-surface-inner rounded-lg p-4">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div className="flex-1">
                 <h3 className="font-medium text-gray-900">
@@ -456,7 +457,7 @@ export default function AdminUserManagement() {
   function renderUsersTab() {
     return (
       <div className="space-y-6">
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+        <div className="app-surface-inner rounded-lg p-4">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">Search Users</label>
@@ -604,7 +605,7 @@ export default function AdminUserManagement() {
           data={filteredUsers}
           loading={loading}
           emptyMessage="No users found"
-          className="bg-white rounded-lg shadow"
+          className="app-surface-card rounded-2xl"
         />
       </div>
     )
@@ -612,7 +613,7 @@ export default function AdminUserManagement() {
 
   return (
     <div className="max-w-7xl mx-auto p-6">
-      <div className="bg-white rounded-lg shadow-md">
+      <div className="app-surface-card rounded-2xl">
         <div className="border-b border-gray-200 px-6 py-4">
           <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
           <p className="text-gray-600 mt-1">Manage official accounts and verify public users</p>

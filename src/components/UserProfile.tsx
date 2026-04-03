@@ -90,7 +90,7 @@ export default function UserProfile() {
 
   if (isLoading && !user) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="app-surface-card rounded-2xl p-6">
         <div className="animate-pulse">
           <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
           <div className="space-y-3">
@@ -104,15 +104,15 @@ export default function UserProfile() {
 
   if (!user) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="app-surface-card rounded-2xl p-6">
         <p className="text-red-600">{error || 'User not found'}</p>
       </div>
     )
   }
 
   return (
-    <div className="bg-white rounded-lg shadow">
-      <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+    <div className="app-surface-card rounded-2xl">
+      <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
         <h2 className="text-xl font-semibold text-gray-900">My Profile</h2>
         {!isEditing ? (
           <button
@@ -146,7 +146,7 @@ export default function UserProfile() {
                   barangayResidence: user.barangayResidence || ''
                 })
               }}
-              className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors"
+              className="app-surface-inner rounded-lg px-4 py-2 text-gray-700 transition-colors hover:bg-white/80"
             >
               Cancel
             </button>
@@ -325,7 +325,7 @@ export default function UserProfile() {
             </div>
 
             {/* Account Status */}
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+            <div className="app-surface-inner mt-6 rounded-lg p-4">
               <h4 className="text-sm font-medium text-gray-900 mb-2">Account Status</h4>
               <div className="space-y-1">
                 <p className="text-sm text-gray-600">

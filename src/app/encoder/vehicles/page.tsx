@@ -1,23 +1,30 @@
 'use client'
 
+import Link from 'next/link'
+
+import PageWrapper, { ActionButton } from '@/components/PageWrapper'
 import RoleGuard from '@/components/RoleGuard'
 import VehiclesList from '@/components/VehiclesList'
-import PageWrapper, { ActionButton } from '@/components/PageWrapper'
-import Link from 'next/link'
+import {
+  DASHBOARD_ICONS,
+  DASHBOARD_ICON_POLICY,
+  DashboardIconSlot,
+} from '@/components/dashboardIcons'
 
 export default function VehiclesListPage() {
   return (
     <RoleGuard allowedRoles={['DATA_ENCODER']}>
-      <PageWrapper 
+      <PageWrapper
         title="Vehicle Registry"
         subtitle="Browse and manage all registered vehicles"
-        headerContent={
+        headerContent={(
           <Link href="/encoder/vehicles/new">
             <ActionButton variant="primary">
-              ➕ Register Vehicle
+              <DashboardIconSlot icon={DASHBOARD_ICONS.plus} size={DASHBOARD_ICON_POLICY.sizes.button} className="mr-2" />
+              Register Vehicle
             </ActionButton>
           </Link>
-        }
+        )}
       >
         <VehiclesList />
       </PageWrapper>

@@ -3,6 +3,14 @@
 import { useState, useEffect } from 'react'
 import { PermitStatus, VehicleType } from '@prisma/client'
 import type { PermitDto, PermitsResponseDto } from '@/lib/contracts'
+import {
+  DASHBOARD_ICONS,
+  DASHBOARD_ICON_POLICY,
+  DashboardIconSlot,
+  getDashboardIconChipClasses,
+  type DashboardIcon,
+  type DashboardIconTone,
+} from '@/components/dashboardIcons'
 
 interface PermitStats {
   total: number
@@ -24,41 +32,39 @@ export default function PermitStatistics() {
     revoked: 0,
     tricycles: 0,
     habalHabal: 0,
-    expiringSoon: 0
+    expiringSoon: 0,
   })
   const [loading, setLoading] = useState(true)
 
   const fetchStats = async () => {
     try {
       setLoading(true)
-      
-      // Fetch all permits to calculate statistics
       const response = await fetch('/api/permits?limit=1000')
       if (response.ok) {
         const data: PermitsResponseDto = await response.json()
         const permits: PermitDto[] = data.permits
-        
+
         const today = new Date()
         const thirtyDaysFromNow = new Date()
         thirtyDaysFromNow.setDate(today.getDate() + 30)
-        
-        const newStats = {
+
+        setStats({
           total: permits.length,
-          active: permits.filter((p: any) => p.status === PermitStatus.ACTIVE).length,
-          expired: permits.filter((p: any) => p.status === PermitStatus.EXPIRED).length,
-          suspended: permits.filter((p: any) => p.status === PermitStatus.SUSPENDED).length,
-          revoked: permits.filter((p: any) => p.status === PermitStatus.REVOKED).length,
-          tricycles: permits.filter((p: any) => p.vehicleType === VehicleType.TRICYCLE).length,
-          habalHabal: permits.filter((p: any) => p.vehicleType === VehicleType.HABAL_HABAL).length,
-          expiringSoon: permits.filter((p: any) => {
+          active: permits.filter((p: PermitDto) => p.status === PermitStatus.ACTIVE).length,
+          expired: permits.filter((p: PermitDto) => p.status === PermitStatus.EXPIRED).length,
+          suspended: permits.filter((p: PermitDto) => p.status === PermitStatus.SUSPENDED).length,
+          revoked: permits.filter((p: PermitDto) => p.status === PermitStatus.REVOKED).length,
+          tricycles: permits.filter((p: PermitDto) => p.vehicleType === VehicleType.TRICYCLE).length,
+          habalHabal: permits.filter((p: PermitDto) => p.vehicleType === VehicleType.HABAL_HABAL).length,
+          expiringSoon: permits.filter((p: PermitDto) => {
             const expiryDate = new Date(p.expiryDate)
             return expiryDate <= thirtyDaysFromNow && expiryDate > today
-          }).length
-        }
-        
-        setStats(newStats)
+          }).length,
+        })
       }
-    } catch (error) {} finally {
+    } catch (_error) {
+      // Preserve current fallback behavior.
+    } finally {
       setLoading(false)
     }
   }
@@ -67,8 +73,20 @@ export default function PermitStatistics() {
     fetchStats()
   }, [])
 
-  const StatCard = ({ title, value, color, icon }: { title: string, value: number, color: string, icon: string }) => (
-    <div className="bg-white rounded-lg shadow-sm border p-6">
+  const StatCard = ({
+    title,
+    value,
+    color,
+    icon,
+    tone,
+  }: {
+    title: string
+    value: number
+    color: string
+    icon: DashboardIcon
+    tone: DashboardIconTone
+  }) => (
+    <div className="app-surface-card rounded-2xl p-6">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-medium text-gray-600">{title}</p>
@@ -76,7 +94,9 @@ export default function PermitStatistics() {
             {loading ? '...' : value.toLocaleString()}
           </p>
         </div>
-        <div className="text-3xl">{icon}</div>
+        <div className={getDashboardIconChipClasses(tone)}>
+          <DashboardIconSlot icon={icon} size={DASHBOARD_ICON_POLICY.sizes.hero} />
+        </div>
       </div>
     </div>
   )
@@ -85,58 +105,18 @@ export default function PermitStatistics() {
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Permit Statistics</h3>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard
-            title="Total Permits"
-            value={stats.total}
-            color="text-gray-900"
-            icon="📋"
-          />
-          
-          <StatCard
-            title="Active Permits"
-            value={stats.active}
-            color="text-green-600"
-            icon="✅"
-          />
-          
-          <StatCard
-            title="Expired Permits"
-            value={stats.expired}
-            color="text-red-600"
-            icon="⚠️"
-          />
-          
-          <StatCard
-            title="Expiring Soon"
-            value={stats.expiringSoon}
-            color="text-yellow-600"
-            icon="⏰"
-          />
+          <StatCard title="Total Permits" value={stats.total} color="text-gray-900" icon={DASHBOARD_ICONS.list} tone="slate" />
+          <StatCard title="Active Permits" value={stats.active} color="text-green-600" icon={DASHBOARD_ICONS.check} tone="emerald" />
+          <StatCard title="Expired Permits" value={stats.expired} color="text-red-600" icon={DASHBOARD_ICONS.reports} tone="red" />
+          <StatCard title="Expiring Soon" value={stats.expiringSoon} color="text-yellow-600" icon={DASHBOARD_ICONS.approval} tone="amber" />
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-          <StatCard
-            title="Tricycles"
-            value={stats.tricycles}
-            color="text-blue-600"
-            icon="🛺"
-          />
-          
-          <StatCard
-            title="Habal-habal"
-            value={stats.habalHabal}
-            color="text-purple-600"
-            icon="🏍️"
-          />
-          
-          <StatCard
-            title="Suspended/Revoked"
-            value={stats.suspended + stats.revoked}
-            color="text-orange-600"
-            icon="🚫"
-          />
+          <StatCard title="Tricycles" value={stats.tricycles} color="text-blue-600" icon={DASHBOARD_ICONS.vehicle} tone="blue" />
+          <StatCard title="Habal-habal" value={stats.habalHabal} color="text-purple-600" icon={DASHBOARD_ICONS.vehicle} tone="purple" />
+          <StatCard title="Suspended/Revoked" value={stats.suspended + stats.revoked} color="text-orange-600" icon={DASHBOARD_ICONS.danger} tone="amber" />
         </div>
       </div>
     </div>

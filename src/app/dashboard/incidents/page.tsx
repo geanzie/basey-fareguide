@@ -14,7 +14,7 @@ export default function IncidentsPage() {
           </p>
         </div>
         
-        <div className="bg-white rounded-lg shadow-sm border">
+        <div className="app-surface-card rounded-2xl">
           <IncidentsList />
         </div>
       </div>

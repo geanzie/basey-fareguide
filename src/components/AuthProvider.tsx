@@ -250,12 +250,12 @@ export function AuthAwareLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
 
   if (isAuthRoute(pathname)) {
-    return <main className="flex-1">{children}</main>
+    return <main className="app-page-bg flex-1">{children}</main>
   }
 
   if (status === 'logging_out') {
     return (
-      <main className="flex-1">
+      <main className="app-page-bg flex-1">
         <AuthStateShell
           title="Signing out"
           message="Please wait while we close your session."
@@ -265,7 +265,7 @@ export function AuthAwareLayout({ children }: { children: React.ReactNode }) {
   }
 
   if (status === 'loading' || !user) {
-    return <main className="flex-1">{children}</main>
+    return <main className="app-page-bg flex-1">{children}</main>
   }
 
   return (

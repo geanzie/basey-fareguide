@@ -29,7 +29,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#16a34a" />
         <link rel="icon" href="/favicon.ico" />
       </head>
-      <body className={`${inter.className} antialiased overflow-x-hidden`} suppressHydrationWarning>
+      <body className={`${inter.className} app-page-bg antialiased overflow-x-hidden`} suppressHydrationWarning>
         <SWRProvider>
           <AuthProvider>
           <div className="min-h-screen flex flex-col max-w-full">

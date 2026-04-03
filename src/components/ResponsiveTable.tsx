@@ -1,6 +1,8 @@
 'use client'
 
 import { ReactNode, memo } from 'react'
+import LoadingSpinner from '@/components/LoadingSpinner'
+import { DASHBOARD_ICONS, DashboardIconSlot } from '@/components/dashboardIcons'
 
 interface TableColumn {
   key: string
@@ -32,10 +34,7 @@ function ResponsiveTable({
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
-          <svg className="animate-spin -ml-1 mr-3 h-8 w-8 text-emerald-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
+          <LoadingSpinner className="justify-center text-emerald-600" size={28} />
           <p className="text-gray-600 mt-2">Loading...</p>
         </div>
       </div>
@@ -45,9 +44,9 @@ function ResponsiveTable({
   if (!data || data.length === 0) {
     return (
       <div className="text-center py-12">
-        <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
+        <div className="mx-auto mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+          <DashboardIconSlot icon={DASHBOARD_ICONS.file} size={28} />
+        </div>
         <p className="text-gray-500 text-lg">{emptyMessage}</p>
       </div>
     )
@@ -59,7 +58,7 @@ function ResponsiveTable({
       <div className="hidden md:block">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="app-surface-inner">
               <tr>
                 {columns.map((column) => (
                   <th
@@ -71,9 +70,9 @@ function ResponsiveTable({
                 ))}
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-200 bg-white/90">
               {data.map((row, rowIndex) => (
-                <tr key={rowIndex} className="hover:bg-gray-50 transition-colors">
+                <tr key={rowIndex} className="transition-colors hover:bg-slate-50/80">
                   {columns.map((column) => (
                     <td key={column.key} className={`px-6 py-4 whitespace-nowrap text-sm ${column.className || ''}`}>
                       {column.render ? column.render(row[column.key], row) : row[column.key]}
@@ -89,7 +88,7 @@ function ResponsiveTable({
       {/* Mobile Stacked Card Layout */}
       <div className="md:hidden space-y-4">
         {data.map((row, rowIndex) => (
-          <div key={rowIndex} className={`bg-white border border-gray-200 rounded-lg shadow-sm p-4 ${mobileCardClassName}`}>
+          <div key={rowIndex} className={`app-surface-inner rounded-lg p-4 ${mobileCardClassName}`.trim()}>
             {columns.map((column) => {
               const value = column.render ? column.render(row[column.key], row) : row[column.key]
               
@@ -168,7 +167,7 @@ export function ActionButton({
       case 'danger':
         return 'bg-red-600 hover:bg-red-700 text-white'
       case 'secondary':
-        return 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+        return 'app-surface-inner hover:bg-white/80 text-gray-700 border border-gray-300/80'
       default:
         return 'bg-emerald-600 hover:bg-emerald-700 text-white'
     }

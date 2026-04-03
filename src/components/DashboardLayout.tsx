@@ -7,12 +7,19 @@ import Link from 'next/link'
 import type { SessionUserDto } from '@/lib/contracts'
 
 import { useAuth } from '@/components/AuthProvider'
+import BrandMark from '@/components/BrandMark'
+import {
+  DASHBOARD_ICONS,
+  DASHBOARD_ICON_POLICY,
+  DashboardIconSlot,
+  type DashboardIcon,
+} from '@/components/dashboardIcons'
 import RoleGuard from '@/components/RoleGuard'
 
 interface NavigationItem {
   key: string
   label: string
-  icon: string
+  icon: DashboardIcon
   path: string
 }
 
@@ -44,25 +51,25 @@ function DashboardLayoutBody({
     {
       key: 'dashboard',
       label: 'My Dashboard',
-      icon: 'Dashboard',
+      icon: DASHBOARD_ICONS.dashboard,
       path: '/dashboard',
     },
     {
       key: 'calculator',
       label: 'Fare Calculator',
-      icon: 'Calculator',
+      icon: DASHBOARD_ICONS.calculator,
       path: '/dashboard/calculator',
     },
     {
       key: 'profile',
       label: 'My Profile',
-      icon: 'Profile',
+      icon: DASHBOARD_ICONS.user,
       path: '/dashboard/profile',
     },
     {
       key: 'report',
       label: 'Report Incident',
-      icon: 'Report',
+      icon: DASHBOARD_ICONS.incidents,
       path: '/dashboard/report',
     },
   ]
@@ -72,9 +79,10 @@ function DashboardLayoutBody({
       <div className="lg:hidden bg-white shadow-sm border-b px-4 py-3">
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="flex items-center text-gray-600 hover:text-emerald-600"
+          className="flex items-center gap-2 text-gray-600 hover:text-emerald-600"
         >
-          <span className="mr-2 text-xl">Menu</span>
+          <DashboardIconSlot icon={DASHBOARD_ICONS.menu} size={DASHBOARD_ICON_POLICY.sizes.button} />
+          <span className="text-sm font-medium">Menu</span>
         </button>
       </div>
 
@@ -89,7 +97,7 @@ function DashboardLayoutBody({
         >
           <div className="p-6 border-b border-gray-200">
             <div className="flex items-center space-x-3">
-              <span className="text-2xl">BF</span>
+              <BrandMark />
               <div>
                 <h2 className="text-lg font-bold text-gray-900">Basey Fare Guide</h2>
                 <p className="text-sm text-gray-500">Dashboard</p>
@@ -113,7 +121,7 @@ function DashboardLayoutBody({
                     }
                   `}
                 >
-                  <span className="text-sm font-medium">{item.icon}</span>
+                  <DashboardIconSlot icon={item.icon} size={DASHBOARD_ICON_POLICY.sizes.button} />
                   <span className="font-medium">{item.label}</span>
                 </Link>
               )

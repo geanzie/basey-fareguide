@@ -1,30 +1,36 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import RoutePlannerCalculator from './RoutePlannerCalculator'
+import { useEffect, useState } from 'react'
+
+import {
+  DASHBOARD_ICONS,
+  DASHBOARD_ICON_POLICY,
+  DashboardIconSlot,
+} from '@/components/dashboardIcons'
+
 import { barangayService } from '../lib/barangayService'
+import RoutePlannerCalculator from './RoutePlannerCalculator'
 
 export default function UnifiedFareCalculator() {
   const [barangayStats, setBarangayStats] = useState<{
-    totalBarangays: number;
-    poblacionCount: number;
-    ruralCount: number;
+    totalBarangays: number
+    poblacionCount: number
+    ruralCount: number
   } | null>(null)
 
   useEffect(() => {
-    // Initialize barangay service and get stats
     const initializeBarangayData = async () => {
       try {
         await barangayService.initialize()
         const allBarangays = barangayService.getBarangays()
         const poblacionBarangays = barangayService.getBarangays({ poblacionOnly: true })
-        
+
         setBarangayStats({
           totalBarangays: allBarangays.length,
           poblacionCount: poblacionBarangays.length,
-          ruralCount: allBarangays.length - poblacionBarangays.length
+          ruralCount: allBarangays.length - poblacionBarangays.length,
         })
-      } catch (error) {}
+      } catch {}
     }
 
     initializeBarangayData()
@@ -32,11 +38,10 @@ export default function UnifiedFareCalculator() {
 
   return (
     <div className="space-y-6">
-      {/* Barangay Coverage Stats */}
-      {barangayStats && (
+      {barangayStats ? (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <div className="flex items-center space-x-2 mb-2">
-            <span className="text-lg">🗺️</span>
+            <DashboardIconSlot icon={DASHBOARD_ICONS.map} size={DASHBOARD_ICON_POLICY.sizes.section} className="text-blue-600" />
             <h4 className="font-medium text-gray-800">Geographic Coverage</h4>
           </div>
           <div className="grid grid-cols-3 gap-4 text-sm">
@@ -54,9 +59,8 @@ export default function UnifiedFareCalculator() {
             </div>
           </div>
         </div>
-      )}
+      ) : null}
 
-      {/* Calculator */}
       <RoutePlannerCalculator />
     </div>
   )

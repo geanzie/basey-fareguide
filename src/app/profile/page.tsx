@@ -13,7 +13,7 @@ export default function ProfilePage() {
         subtitle="Manage your account information and preferences"
       >
         <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-lg shadow-sm border">
+          <div className="app-surface-card rounded-2xl">
             <UserProfile />
           </div>
         </div>

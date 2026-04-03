@@ -5,6 +5,11 @@ import { useAuth } from '@/components/AuthProvider'
 import RoleGuard from '@/components/RoleGuard'
 import PageWrapper from '@/components/PageWrapper'
 import type { IncidentListItemDto, IncidentsResponseDto } from '@/lib/contracts'
+import {
+  DASHBOARD_ICONS,
+  DASHBOARD_ICON_POLICY,
+  DashboardIconSlot,
+} from '@/components/dashboardIcons'
 
 export default function AdminIncidentsPage() {
   const { status, user } = useAuth()
@@ -112,7 +117,7 @@ export default function AdminIncidentsPage() {
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
             <div className="flex items-center">
-              <span className="text-red-500 text-xl mr-3">❌</span>
+              <DashboardIconSlot icon={DASHBOARD_ICONS.close} size={DASHBOARD_ICON_POLICY.sizes.hero} className="mr-3 text-red-500" />
               <p className="text-red-700">{error}</p>
             </div>
           </div>
@@ -120,7 +125,7 @@ export default function AdminIncidentsPage() {
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-          <div className="bg-white rounded-lg shadow p-4">
+          <div className="app-surface-card rounded-2xl p-4">
             <div className="text-2xl font-bold text-gray-900">{incidentCounts.all}</div>
             <div className="text-sm text-gray-600">Total Incidents</div>
           </div>
@@ -143,13 +148,11 @@ export default function AdminIncidentsPage() {
         </div>
 
         {/* Search and Filter Controls */}
-        <div className="bg-white rounded-lg shadow p-4 mb-6 space-y-4">
+        <div className="app-surface-card rounded-2xl p-4 mb-6 space-y-4">
           {/* Search Bar */}
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
+              <DashboardIconSlot icon={DASHBOARD_ICONS.inspect} size={DASHBOARD_ICON_POLICY.sizes.button} className="text-gray-400" />
             </div>
             <input
               type="text"
@@ -163,9 +166,7 @@ export default function AdminIncidentsPage() {
                 onClick={() => setSearchQuery('')}
                 className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
               >
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <DashboardIconSlot icon={DASHBOARD_ICONS.searchX} size={DASHBOARD_ICON_POLICY.sizes.button} />
               </button>
             )}
           </div>
@@ -208,7 +209,7 @@ export default function AdminIncidentsPage() {
                     onClick={() => setStatusFilter('all')}
                     className="ml-1 hover:text-emerald-900"
                   >
-                    ×
+                    <DashboardIconSlot icon={DASHBOARD_ICONS.close} size={14} />
                   </button>
                 </span>
               )}
@@ -219,7 +220,7 @@ export default function AdminIncidentsPage() {
                     onClick={() => setSearchQuery('')}
                     className="ml-1 hover:text-blue-900"
                   >
-                    ×
+                    <DashboardIconSlot icon={DASHBOARD_ICONS.close} size={14} />
                   </button>
                 </span>
               )}
@@ -237,7 +238,7 @@ export default function AdminIncidentsPage() {
         </div>
 
         {/* Incidents Table */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="app-surface-card rounded-2xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -307,7 +308,9 @@ export default function AdminIncidentsPage() {
           
           {filteredIncidents.length === 0 && (
             <div className="text-center py-12">
-              <div className="text-6xl mb-4">🔍</div>
+              <div className="mb-4 flex justify-center">
+                <DashboardIconSlot icon={DASHBOARD_ICONS.inspect} size={40} className="text-gray-300" />
+              </div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">No incidents found</h3>
               <p className="text-gray-600">
                 {statusFilter === 'all' 
