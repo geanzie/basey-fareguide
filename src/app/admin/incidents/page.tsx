@@ -1,22 +1,33 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useAuth } from '@/components/AuthProvider'
 import RoleGuard from '@/components/RoleGuard'
 import PageWrapper from '@/components/PageWrapper'
 import type { IncidentListItemDto, IncidentsResponseDto } from '@/lib/contracts'
 
 export default function AdminIncidentsPage() {
+  const { status, user } = useAuth()
   const [incidents, setIncidents] = useState<IncidentListItemDto[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState<string>('')
+  const canLoadIncidents = status === 'authenticated' && user?.userType === 'ADMIN'
 
   useEffect(() => {
-    fetchIncidents()
-  }, [])
+    if (!canLoadIncidents) {
+      return
+    }
+
+    void fetchIncidents()
+  }, [canLoadIncidents])
 
   const fetchIncidents = async () => {
+    if (!canLoadIncidents) {
+      return
+    }
+
     try {
       setLoading(true)
       const response = await fetch('/api/incidents')

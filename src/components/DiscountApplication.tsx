@@ -1,14 +1,18 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import useSWR from 'swr'
+
 import { validateDiscountApplication, validatePhoto } from '@/lib/discountValidation'
 import type {
   DiscountCardApplicationResponseDto,
   DiscountType,
   UserProfileDto,
-  UserProfileResponseDto,
 } from '@/lib/contracts'
+import { SWR_KEYS } from '@/lib/swrKeys'
+import { fetchUserProfileResponse } from '@/lib/userProfile'
 
 interface DiscountApplicationProps {
   user: Pick<
@@ -19,6 +23,10 @@ interface DiscountApplicationProps {
 
 export default function DiscountApplication({ user: initialUser }: DiscountApplicationProps) {
   const router = useRouter()
+  const { data: profileResponse } = useSWR(
+    SWR_KEYS.userProfile,
+    fetchUserProfileResponse,
+  )
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -27,6 +35,7 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
   
   // Store fresh user data
   const [user, setUser] = useState<DiscountApplicationProps['user']>(initialUser)
+  const profileUser = profileResponse?.user
 
   // Form state
   const [discountType, setDiscountType] = useState<DiscountType>('SENIOR_CITIZEN')
@@ -57,29 +66,20 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
   const [pwdIdExpiry, setPwdIdExpiry] = useState('')
 
   useEffect(() => {
-    fetchFreshUserData()
     checkExistingApplication()
   }, [])
-  
-  // Fetch fresh user data from API
-  const fetchFreshUserData = async () => {
-    try {
-      const response = await fetch('/api/user/profile')
 
-      if (response.ok) {
-        const data: UserProfileResponseDto = await response.json()
-        const freshUser = data.user
-        setUser(freshUser)
-        
-        // Update form fields with fresh data
-        setFullName(`${freshUser.firstName} ${freshUser.lastName}`)
-        // Format date properly for HTML date input (YYYY-MM-DD)
-        setDateOfBirth(freshUser.dateOfBirth ? freshUser.dateOfBirth.split('T')[0] : '')
-        setIdNumber(freshUser.governmentId || '')
-        setIdType(freshUser.idType || '')
-      }
-    } catch (err) {}
-  }
+  useEffect(() => {
+    if (!profileUser) {
+      return
+    }
+
+    setUser(profileUser)
+    setFullName(`${profileUser.firstName} ${profileUser.lastName}`)
+    setDateOfBirth(profileUser.dateOfBirth ? profileUser.dateOfBirth.split('T')[0] : '')
+    setIdNumber(profileUser.governmentId || '')
+    setIdType(profileUser.idType || '')
+  }, [profileUser])
 
   const checkExistingApplication = async () => {
     try {
@@ -364,12 +364,12 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
           </div>
 
           <div className="mt-6 pt-6 border-t">
-            <button
-              onClick={() => router.push('/calculator')}
-              className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            <Link
+              href="/calculator"
+              className="block w-full rounded-lg bg-blue-600 px-4 py-2 text-center text-white hover:bg-blue-700"
             >
               Go to Fare Calculator
-            </button>
+            </Link>
           </div>
         </div>
       </div>
@@ -463,7 +463,7 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
                 title="This information is from your profile and cannot be changed here"
               />
               <p className="text-xs text-gray-500 mt-1">
-                Update in your <a href="/profile" className="text-blue-600 hover:underline">profile settings</a> if incorrect
+                Update in your <Link href="/profile" className="text-blue-600 hover:underline">profile settings</Link> if incorrect
               </p>
             </div>
 
@@ -480,7 +480,7 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
                 title="This information is from your profile and cannot be changed here"
               />
               <p className="text-xs text-gray-500 mt-1">
-                Update in your <a href="/profile" className="text-blue-600 hover:underline">profile settings</a> if incorrect
+                Update in your <Link href="/profile" className="text-blue-600 hover:underline">profile settings</Link> if incorrect
               </p>
             </div>
           </div>
@@ -517,7 +517,7 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
               />
               {user.governmentId && (
                 <p className="text-xs text-gray-500 mt-1">
-                  Update in your <a href="/profile" className="text-blue-600 hover:underline">profile settings</a> if incorrect
+                  Update in your <Link href="/profile" className="text-blue-600 hover:underline">profile settings</Link> if incorrect
                 </p>
               )}
             </div>
@@ -542,7 +542,7 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
               />
               {user.idType && (
                 <p className="text-xs text-gray-500 mt-1">
-                  Update in your <a href="/profile" className="text-blue-600 hover:underline">profile settings</a> if incorrect
+                  Update in your <Link href="/profile" className="text-blue-600 hover:underline">profile settings</Link> if incorrect
                 </p>
               )}
             </div>

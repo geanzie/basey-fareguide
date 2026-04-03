@@ -49,8 +49,9 @@ const SNAP_REPORT_THRESHOLD_M = 11;
 
 export class OrsProvider implements RoutingProvider {
   private readonly apiKey: string;
+  private readonly timeoutMs: number;
 
-  constructor() {
+  constructor(timeoutMs = 3500) {
     const key = process.env.OPENROUTESERVICE_API_KEY;
     if (!key) {
       throw new Error(
@@ -58,6 +59,7 @@ export class OrsProvider implements RoutingProvider {
       );
     }
     this.apiKey = key;
+    this.timeoutMs = timeoutMs;
   }
 
   async calculate(origin: Coordinates, destination: Coordinates): Promise<RouteResult> {
@@ -69,14 +71,30 @@ export class OrsProvider implements RoutingProvider {
       ],
     };
 
-    const response = await fetch(ORS_ENDPOINT, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: this.apiKey,
-      },
-      body: JSON.stringify(body),
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), this.timeoutMs);
+
+    let response: Response;
+
+    try {
+      response = await fetch(ORS_ENDPOINT, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: this.apiKey,
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        throw new Error(`ORS request timed out after ${this.timeoutMs}ms`);
+      }
+
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     if (!response.ok) {
       const text = await response.text();

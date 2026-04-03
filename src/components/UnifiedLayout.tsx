@@ -30,7 +30,7 @@ export default function UnifiedLayout({ children, user, title, subtitle, headerC
   const [pageData, setPageData] = useState(getCurrentPageData)
   const pathname = usePathname()
   const router = useRouter()
-  const { logout } = useAuth()
+  const { logout, status } = useAuth()
 
   useEffect(() => {
     const unsubscribe = subscribeToPageData(() => {
@@ -40,6 +40,10 @@ export default function UnifiedLayout({ children, user, title, subtitle, headerC
   }, [])
 
   const handleLogout = async () => {
+    if (status === 'logging_out') {
+      return
+    }
+
     setUserMenuOpen(false)
     await logout()
   }
@@ -173,9 +177,10 @@ export default function UnifiedLayout({ children, user, title, subtitle, headerC
                   )}
                   <button
                     onClick={handleLogout}
-                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                    disabled={status === 'logging_out'}
+                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors disabled:opacity-60"
                   >
-                    🚪 Logout
+                    {status === 'logging_out' ? 'Signing out...' : 'Logout'}
                   </button>
                 </div>
               )}

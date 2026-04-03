@@ -1,20 +1,19 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useAuth } from './AuthProvider'
+import useSWR, { useSWRConfig } from 'swr'
+
 import type { UserProfileDto, UserProfileResponseDto } from '@/lib/contracts'
+import { SWR_KEYS } from '@/lib/swrKeys'
+import { fetchUserProfileResponse } from '@/lib/userProfile'
 
-interface UserProfileProps {
-  user?: {
-    userType: string
-  }
-}
-
-export default function UserProfile({ user: currentUser }: UserProfileProps) {
-  const { refreshUser } = useAuth()
-  const [user, setUser] = useState<UserProfileDto | null>(null)
+export default function UserProfile() {
+  const { mutate: mutateCache } = useSWRConfig()
+  const { data, isLoading } = useSWR<UserProfileResponseDto | null>(
+    SWR_KEYS.userProfile,
+    fetchUserProfileResponse,
+  )
   const [isEditing, setIsEditing] = useState(false)
-  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [formData, setFormData] = useState({
@@ -29,35 +28,25 @@ export default function UserProfile({ user: currentUser }: UserProfileProps) {
   })
 
   useEffect(() => {
-    fetchUserProfile()
-  }, [])
+    const user = data?.user
 
-  const fetchUserProfile = async () => {
-    try {
-      const response = await fetch('/api/user/profile')
-
-      if (response.ok) {
-        const data: UserProfileResponseDto = await response.json()
-        setUser(data.user)
-        setFormData({
-          firstName: data.user.firstName || '',
-          lastName: data.user.lastName || '',
-          email: data.user.email || '',
-          phoneNumber: data.user.phoneNumber || '',
-          dateOfBirth: data.user.dateOfBirth ? data.user.dateOfBirth.split('T')[0] : '',
-          governmentId: data.user.governmentId || '',
-          idType: data.user.idType || '',
-          barangayResidence: data.user.barangayResidence || ''
-        })
-      } else {
-        setError('Failed to fetch profile')
-      }
-    } catch (err) {
-      setError('An error occurred while fetching profile')
-    } finally {
-      setLoading(false)
+    if (!user) {
+      return
     }
-  }
+
+    setFormData({
+      firstName: user.firstName || '',
+      lastName: user.lastName || '',
+      email: user.email || '',
+      phoneNumber: user.phoneNumber || '',
+      dateOfBirth: user.dateOfBirth ? user.dateOfBirth.split('T')[0] : '',
+      governmentId: user.governmentId || '',
+      idType: user.idType || '',
+      barangayResidence: user.barangayResidence || ''
+    })
+  }, [data])
+
+  const user: UserProfileDto | null = data?.user ?? null
 
   const handleSaveProfile = async () => {
     setSaving(true)
@@ -75,11 +64,12 @@ export default function UserProfile({ user: currentUser }: UserProfileProps) {
       const data = await response.json()
 
       if (response.ok) {
-        setUser(data.user)
+        await mutateCache(
+          SWR_KEYS.userProfile,
+          { user: data.user },
+          { populateCache: true, revalidate: false },
+        )
         setIsEditing(false)
-        // Refresh user data in AuthProvider to update globally
-        await refreshUser()
-        // Show success message (you can add a toast notification here)
       } else {
         setError(data.message || 'Failed to update profile')
       }
@@ -98,7 +88,7 @@ export default function UserProfile({ user: currentUser }: UserProfileProps) {
     }))
   }
 
-  if (loading) {
+  if (isLoading && !user) {
     return (
       <div className="bg-white rounded-lg shadow p-6">
         <div className="animate-pulse">

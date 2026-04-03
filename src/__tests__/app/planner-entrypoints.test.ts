@@ -7,14 +7,24 @@ function repoPath(...parts: string[]) {
 }
 
 describe('Planner-only calculator entrypoints', () => {
-  it('renders the public calculator as planner-only without the old selection surface', () => {
+  it('renders the public calculator through a lazy wrapper and route loading skeleton', () => {
     const calculatorPage = readFileSync(repoPath('src', 'app', 'calculator', 'page.tsx'), 'utf8')
+    const calculatorLoading = readFileSync(repoPath('src', 'app', 'calculator', 'loading.tsx'), 'utf8')
 
-    expect(calculatorPage).toContain('RoutePlannerCalculator')
+    expect(calculatorPage).toContain('LazyRoutePlannerCalculator')
+    expect(calculatorLoading).toContain('CalculatorPageSkeleton')
     expect(calculatorPage).not.toContain('TripTrackerCalculator')
     expect(calculatorPage).not.toContain('Choose the right calculator for your needs')
     expect(calculatorPage).not.toContain('Start Tracking')
     expect(calculatorPage).not.toContain('Back to Calculator Selection')
+  })
+
+  it('renders the public report route through a lazy wrapper and route loading skeleton', () => {
+    const reportPage = readFileSync(repoPath('src', 'app', 'report', 'page.tsx'), 'utf8')
+    const reportLoading = readFileSync(repoPath('src', 'app', 'report', 'loading.tsx'), 'utf8')
+
+    expect(reportPage).toContain('LazyIncidentReporting')
+    expect(reportLoading).toContain('ReportPageSkeleton')
   })
 
   it('keeps the dashboard calculator aligned with the planner-only copy', () => {

@@ -1,7 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import type { VehicleDto, VehiclesResponseDto } from '@/lib/contracts'
+import { useState } from 'react'
+import type { VehicleLookupDto } from '@/lib/contracts'
+
+import VehicleLookupField from './VehicleLookupField'
 
 interface IncidentForm {
   incidentType: string
@@ -39,10 +41,7 @@ const IncidentReporting = () => {
   const [success, setSuccess] = useState('')
   const [error, setError] = useState('')
   const [locationLoading, setLocationLoading] = useState(false)
-  const [vehicles, setVehicles] = useState<VehicleDto[]>([])
-  const [vehiclesLoading, setVehiclesLoading] = useState(true)
-  const [vehicleSearch, setVehicleSearch] = useState('')
-  const [filteredVehicles, setFilteredVehicles] = useState<VehicleDto[]>([])
+  const [selectedVehicle, setSelectedVehicle] = useState<VehicleLookupDto | null>(null)
 
   const incidentTypes = [
     { value: 'FARE_OVERCHARGE', label: 'Fare Overcharging' },
@@ -51,15 +50,6 @@ const IncidentReporting = () => {
     { value: 'VEHICLE_VIOLATION', label: 'Vehicle Violation' },
     { value: 'ROUTE_VIOLATION', label: 'Route Violation' },
     { value: 'OTHER', label: 'Other Violation' }
-  ]
-
-  const vehicleTypes = [
-    { value: 'JEEPNEY', label: 'Jeepney' },
-    { value: 'TRICYCLE', label: 'Tricycle' },
-    { value: 'HABAL_HABAL', label: 'Habal-habal' },
-    { value: 'MULTICAB', label: 'Multicab' },
-    { value: 'BUS', label: 'Bus' },
-    { value: 'VAN', label: 'Van' }
   ]
 
   const barangays = [
@@ -74,51 +64,26 @@ const IncidentReporting = () => {
     'Sugponon', 'Tinaogan', 'Tingib', 'Villa Aurora', 'Binongtu-an', 'Bulao'
   ]
 
-  useEffect(() => {
-    // Get current location on component mount
-    getCurrentLocation()
-    // Fetch available vehicles
-    fetchVehicles()
-  }, [])
+  const handleVehicleSelect = (vehicle: VehicleLookupDto) => {
+    setSelectedVehicle(vehicle)
+    setFormData(prev => ({
+      ...prev,
+      vehicleId: vehicle.id,
+      plateNumber: vehicle.plateNumber,
+      vehicleType: vehicle.vehicleType,
+      driverLicense: vehicle.driverLicense || ''
+    }))
+  }
 
-  useEffect(() => {
-    // Filter vehicles based on search term
-    if (vehicleSearch.trim() === '') {
-      setFilteredVehicles(vehicles)
-    } else {
-      const searchTerm = vehicleSearch.toLowerCase()
-      const filtered = vehicles.filter(vehicle => 
-        vehicle.plateNumber.toLowerCase().includes(searchTerm) ||
-        vehicle.vehicleType.toLowerCase().includes(searchTerm) ||
-        vehicle.make.toLowerCase().includes(searchTerm) ||
-        vehicle.model.toLowerCase().includes(searchTerm) ||
-        vehicle.color.toLowerCase().includes(searchTerm) ||
-        vehicle.ownerName.toLowerCase().includes(searchTerm) ||
-        (vehicle.driverName && vehicle.driverName.toLowerCase().includes(searchTerm)) ||
-        (vehicle.permit?.permitPlateNumber && vehicle.permit.permitPlateNumber.toLowerCase().includes(searchTerm))
-      )
-      setFilteredVehicles(filtered)
-    }
-  }, [vehicles, vehicleSearch])
-
-  const fetchVehicles = async () => {
-    try {
-      setVehiclesLoading(true)
-      const response = await fetch('/api/vehicles?isActive=true&limit=200')
-
-      if (response.ok) {
-        const data: VehiclesResponseDto = await response.json()
-        // Filter vehicles to only include those with active permits
-        const vehiclesWithPermits = (data.vehicles || []).filter((vehicle) => {
-          return vehicle.permit && 
-                 vehicle.permit.status === 'ACTIVE' && 
-                 new Date(vehicle.permit.expiryDate) > new Date()
-        })
-        setVehicles(vehiclesWithPermits)
-      } else {      }
-    } catch (err) {} finally {
-      setVehiclesLoading(false)
-    }
+  const clearSelectedVehicle = () => {
+    setSelectedVehicle(null)
+    setFormData(prev => ({
+      ...prev,
+      vehicleId: '',
+      plateNumber: '',
+      vehicleType: '',
+      driverLicense: '',
+    }))
   }
 
   const getCurrentLocation = () => {
@@ -162,19 +127,6 @@ const IncidentReporting = () => {
     }))
   }
 
-  const handleVehicleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const vehicleId = e.target.value
-    const selectedVehicle = vehicles.find(v => v.id === vehicleId)
-    
-    setFormData(prev => ({
-      ...prev,
-      vehicleId,
-      plateNumber: selectedVehicle?.plateNumber || '',
-      vehicleType: selectedVehicle?.vehicleType || '',
-      driverLicense: selectedVehicle?.driverLicense || ''
-    }))
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -182,6 +134,11 @@ const IncidentReporting = () => {
     setSuccess('')
 
     try {
+      if (!formData.vehicleId) {
+        setError('Please select a vehicle to report before submitting.')
+        return
+      }
+
       // Create form data for file upload
       const submitData = new FormData()
       
@@ -226,6 +183,7 @@ const IncidentReporting = () => {
           incidentTime: new Date().toTimeString().slice(0, 5),
           evidenceFiles: []
         })
+        setSelectedVehicle(null)
       } else {
         const errorData = await response.json()
         setError(errorData.message || 'Failed to submit report')
@@ -389,68 +347,32 @@ const IncidentReporting = () => {
             Select Vehicle to Report *
           </label>
           <div className="mb-2 text-xs text-green-600 bg-green-50 border border-green-200 rounded px-2 py-1">
-            Only vehicles with active permits are shown in this list.
-          </div>
-          
-          {/* Search Input */}
-          <div className="mb-3">
-            <input
-              type="text"
-              placeholder="Search by plate/permit number, vehicle type, make, model, color, owner, or driver name..."
-              value={vehicleSearch}
-              onChange={(e) => setVehicleSearch(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-              disabled={vehiclesLoading}
-            />
-            {vehicleSearch && (
-              <p className="text-xs text-gray-600 mt-1">
-                Found {filteredVehicles.length} vehicle(s) matching "{vehicleSearch}"
-              </p>
-            )}
+            Search by permit plate, vehicle plate, owner, or driver. Only vehicles with active permits are shown.
           </div>
 
-          <select
-            id="vehicleId"
-            name="vehicleId"
-            value={formData.vehicleId}
-            onChange={handleVehicleChange}
-            required
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-            disabled={vehiclesLoading}
-          >
-            <option value="">
-              {vehiclesLoading ? 'Loading vehicles...' : 'Choose a vehicle to report'}
-            </option>
-            {filteredVehicles.map(vehicle => (
-              <option key={vehicle.id} value={vehicle.id}>
-                {vehicle.permit?.permitPlateNumber || vehicle.plateNumber} - {vehicle.vehicleType.replace('_', ' ')} 
-                ({vehicle.make} {vehicle.model}, {vehicle.color})
-                {vehicle.driverName && ` - Driver: ${vehicle.driverName}`}
-                {vehicle.permit && ` - Permit: ${vehicle.permit.permitPlateNumber}`}
-              </option>
-            ))}
-          </select>
-          
-          {filteredVehicles.length === 0 && vehicleSearch && !vehiclesLoading && (
-            <p className="text-sm text-red-600 mt-1">
-              No vehicles found matching your search. Try different keywords.
-            </p>
-          )}
-          
-          {formData.vehicleId && (
+          <VehicleLookupField
+            label="Vehicle Search"
+            placeholder="Type at least 2 characters to search matching vehicles"
+            helperText="The list stays empty until you search so this page can load immediately."
+            selectedVehicle={selectedVehicle}
+            onSelect={handleVehicleSelect}
+            onClearSelection={clearSelectedVehicle}
+            requireActivePermit
+            noResultsText="No active permitted vehicles matched your search."
+          />
+
+          {formData.vehicleId && selectedVehicle && (
             <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <h4 className="font-medium text-blue-900 mb-1">Selected vehicle</h4>
               <div className="text-sm text-blue-700 space-y-1">
                 <p><strong>Plate Number:</strong> {formData.plateNumber}</p>
                 <p><strong>Type:</strong> {formData.vehicleType.replace('_', ' ')}</p>
-                {vehicles.find(v => v.id === formData.vehicleId)?.ownerName && (
-                  <p><strong>Owner:</strong> {vehicles.find(v => v.id === formData.vehicleId)?.ownerName}</p>
-                )}
+                <p><strong>Owner:</strong> {selectedVehicle.ownerName}</p>
                 {formData.driverLicense && (
                   <p><strong>Driver License:</strong> {formData.driverLicense}</p>
                 )}
-                {vehicles.find(v => v.id === formData.vehicleId)?.permit && (
-                  <p><strong>Permit:</strong> {vehicles.find(v => v.id === formData.vehicleId)?.permit?.permitPlateNumber} 
+                {selectedVehicle.permitPlateNumber && (
+                  <p><strong>Permit:</strong> {selectedVehicle.permitPlateNumber} 
                     <span className="text-green-600 ml-1">Active</span>
                   </p>
                 )}

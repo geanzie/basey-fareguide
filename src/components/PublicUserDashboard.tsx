@@ -1,14 +1,16 @@
 'use client'
 
-import { memo, useEffect, useMemo, useState } from 'react'
+import { memo, useMemo } from 'react'
 import Link from 'next/link'
-import { flexibleFetch } from '@/lib/api'
+import useSWR from 'swr'
+
 import type {
   FareCalculationDto,
   FareCalculationsResponseDto,
   IncidentListItemDto,
   IncidentsResponseDto,
 } from '@/lib/contracts'
+import { SWR_KEYS } from '@/lib/swrKeys'
 
 function formatCurrency(amount: number) {
   return `PHP ${amount.toFixed(2)}`
@@ -35,32 +37,14 @@ function getIncidentStatusClasses(status: string) {
 }
 
 function PublicUserDashboard() {
-  const [reportedIncidents, setReportedIncidents] = useState<IncidentListItemDto[]>([])
-  const [recentRoutes, setRecentRoutes] = useState<FareCalculationDto[]>([])
-  const [loading, setLoading] = useState(true)
+  const { data: incidentsResponse, isLoading: incidentsLoading } =
+    useSWR<IncidentsResponseDto>(SWR_KEYS.incidents)
+  const { data: fareCalculationsResponse, isLoading: fareCalculationsLoading } =
+    useSWR<FareCalculationsResponseDto>(SWR_KEYS.fareCalculations)
 
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const [incidentsResult, fareCalculationsResult] = await Promise.all([
-          flexibleFetch<IncidentsResponseDto>('/api/incidents'),
-          flexibleFetch<FareCalculationsResponseDto>('/api/fare-calculations'),
-        ])
-
-        if (incidentsResult.success && incidentsResult.data) {
-          setReportedIncidents(incidentsResult.data.incidents || [])
-        }
-
-        if (fareCalculationsResult.success && fareCalculationsResult.data) {
-          setRecentRoutes(fareCalculationsResult.data.calculations || [])
-        }
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    void fetchUserData()
-  }, [])
+  const reportedIncidents: IncidentListItemDto[] = incidentsResponse?.incidents || []
+  const recentRoutes: FareCalculationDto[] = fareCalculationsResponse?.calculations || []
+  const loading = incidentsLoading || fareCalculationsLoading
 
   const summary = useMemo(() => {
     const totalFare = recentRoutes.reduce((total, route) => total + route.fare, 0)

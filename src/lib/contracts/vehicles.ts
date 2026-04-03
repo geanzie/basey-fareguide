@@ -30,7 +30,24 @@ export interface VehicleDto {
   permit: VehiclePermitSummaryDto | null;
 }
 
+export interface VehicleLookupDto {
+  id: string;
+  plateNumber: string;
+  permitPlateNumber: string | null;
+  vehicleType: VehicleType | string;
+  make: string;
+  model: string;
+  color: string;
+  ownerName: string;
+  driverName: string | null;
+  driverLicense: string | null;
+}
+
 export interface VehiclesResponseDto {
   vehicles: VehicleDto[];
   pagination: PaginationDto;
+}
+
+export interface VehicleLookupResponseDto {
+  vehicles: VehicleLookupDto[];
 }

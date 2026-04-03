@@ -25,11 +25,11 @@ describe('Phase 8 UX simplification', () => {
   })
 
   it('keeps calculator, incident reporting, and admin reports copy aligned with the simplified flow', () => {
-    const calculatorPage = readFileSync(repoPath('src', 'app', 'dashboard', 'calculator', 'page.tsx'), 'utf8')
+    const calculatorComponent = readFileSync(repoPath('src', 'components', 'RoutePlannerCalculator.tsx'), 'utf8')
     const incidentReporting = readFileSync(repoPath('src', 'components', 'IncidentReporting.tsx'), 'utf8')
     const adminReports = readFileSync(repoPath('src', 'app', 'admin', 'reports', 'page.tsx'), 'utf8')
 
-    expect(calculatorPage).toContain('OpenRouteService first, GPS fallback only')
+    expect(calculatorComponent).toContain('OpenRouteService first, GPS fallback only')
     expect(incidentReporting).toContain('Before you submit')
     expect(incidentReporting).toContain('Evidence (Optional)')
     expect(adminReports).not.toContain('SummaryCard')

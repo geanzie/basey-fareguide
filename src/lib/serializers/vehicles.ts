@@ -1,4 +1,4 @@
-import type { VehicleDto } from "@/lib/contracts";
+import type { VehicleDto, VehicleLookupDto } from "@/lib/contracts";
 
 function toIsoString(value: Date | string | null | undefined): string | null {
   if (!value) {
@@ -62,5 +62,33 @@ export function serializeVehicle(record: {
           expiryDate: toIsoString(record.permit.expiryDate) ?? new Date(0).toISOString(),
         }
       : null,
+  };
+}
+
+export function serializeVehicleLookup(record: {
+  id: string;
+  plateNumber: string;
+  vehicleType: string;
+  make: string;
+  model: string;
+  color: string;
+  ownerName: string;
+  driverName?: string | null;
+  driverLicense?: string | null;
+  permit?: {
+    permitPlateNumber: string;
+  } | null;
+}): VehicleLookupDto {
+  return {
+    id: record.id,
+    plateNumber: record.plateNumber,
+    permitPlateNumber: record.permit?.permitPlateNumber ?? null,
+    vehicleType: record.vehicleType,
+    make: record.make,
+    model: record.model,
+    color: record.color,
+    ownerName: record.ownerName,
+    driverName: record.driverName ?? null,
+    driverLicense: record.driverLicense ?? null,
   };
 }

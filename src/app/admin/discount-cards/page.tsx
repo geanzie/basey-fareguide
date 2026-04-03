@@ -1,33 +1,18 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import RoleGuard from '@/components/RoleGuard'
 import PageWrapper from '@/components/PageWrapper'
 import AdminDiscountOverride from '@/components/AdminDiscountOverride'
 import AdminDiscountList from '@/components/AdminDiscountList'
-import { useAuth } from '@/components/AuthProvider'
 
 type TabType = 'list' | 'create'
 
 export default function AdminDiscountCardsPage() {
   const router = useRouter()
-  const { user, loading } = useAuth()
   const [activeTab, setActiveTab] = useState<TabType>('list')
   const [refreshKey, setRefreshKey] = useState(0)
-
-  useEffect(() => {
-    // Check authentication and admin role
-    if (!loading && !user) {
-      router.push('/auth/login')
-      return
-    }
-
-    if (!loading && user && user.userType !== 'ADMIN') {
-      router.push('/dashboard')
-      return
-    }
-  }, [user, loading, router])
 
   const handleSuccess = (discountCard: any) => {
     // Show success notification    // Switch to list tab and refresh the list
@@ -37,14 +22,6 @@ export default function AdminDiscountCardsPage() {
 
   const handleCancel = () => {
     setActiveTab('list')
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    )
   }
 
   return (

@@ -4,8 +4,16 @@ import type { NextConfig } from "next";
 // @ts-ignore
 import bundleAnalyzer from '@next/bundle-analyzer'
 
+const lifecycleEvent = process.env.npm_lifecycle_event;
+const isNextDevCommand =
+  lifecycleEvent === 'dev' || process.argv.includes('dev');
+const distDir = isNextDevCommand ? '.next-dev' : '.next-prod';
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // Keep dev and production artifacts isolated so `next dev` and
+  // `next build`/`next start` cannot corrupt each other's chunk graph.
+  distDir,
   experimental: {
     // Remove any experimental features that might conflict
   },

@@ -18,7 +18,7 @@ export default function ProfilePage() {
         </div>
         
         <div className="bg-white rounded-lg shadow-sm border">
-          {user && <UserProfile user={user} />}
+          {user && <UserProfile />}
         </div>
       </div>
     </DashboardLayout>

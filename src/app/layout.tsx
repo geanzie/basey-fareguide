@@ -30,8 +30,8 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.ico" />
       </head>
       <body className={`${inter.className} antialiased overflow-x-hidden`} suppressHydrationWarning>
-        <AuthProvider>
-          <SWRProvider>
+        <SWRProvider>
+          <AuthProvider>
           <div className="min-h-screen flex flex-col max-w-full">
 
             {/* Main Content with Conditional Sidebar */}
@@ -48,8 +48,8 @@ export default function RootLayout({
               </div>
             </footer>
           </div>
-          </SWRProvider>
-        </AuthProvider>
+          </AuthProvider>
+        </SWRProvider>
       </body>
     </html>
   )

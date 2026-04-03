@@ -5,22 +5,21 @@ import { useSearchParams } from 'next/navigation'
 import { useAuth } from '@/components/AuthProvider'
 import { VehicleType, PermitStatus } from '@prisma/client'
 import ResponsiveTable, { StatusBadge, ActionButton } from './ResponsiveTable'
+import VehicleLookupField from './VehicleLookupField'
 import type {
   PermitDto,
   PermitsResponseDto,
-  VehicleDto,
-  VehiclesResponseDto,
+  VehicleLookupDto,
 } from '@/lib/contracts'
 
 export default function PermitManagement() {
   const { user } = useAuth()
   const searchParams = useSearchParams()
   const [permits, setPermits] = useState<PermitDto[]>([])
-  const [vehicles, setVehicles] = useState<VehicleDto[]>([])
   const [loading, setLoading] = useState(true)
-  const [vehiclesLoading, setVehiclesLoading] = useState(false)
   const [showAddForm, setShowAddForm] = useState(false)
   const [editingPermit, setEditingPermit] = useState<PermitDto | null>(null)
+  const [selectedVehicle, setSelectedVehicle] = useState<VehicleLookupDto | null>(null)
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -64,26 +63,9 @@ export default function PermitManagement() {
     }
   }
 
-  const fetchVehicles = async () => {
-    try {
-      setVehiclesLoading(true)
-      const response = await fetch('/api/vehicles?isActive=true&limit=1000')
-      if (response.ok) {
-        const data: VehiclesResponseDto = await response.json()
-        setVehicles(data.vehicles || [])
-      }
-    } catch (error) {} finally {
-      setVehiclesLoading(false)
-    }
-  }
-
   useEffect(() => {
     fetchPermits()
   }, [pagination.page, filters])
-
-  useEffect(() => {
-    fetchVehicles()
-  }, [])
 
   // Check for modal parameter to auto-open add permit form
   useEffect(() => {
@@ -103,6 +85,7 @@ export default function PermitManagement() {
       permitPlateNumber: '',
       remarks: ''
     })
+    setSelectedVehicle(null)
     setShowAddForm(false)
     setEditingPermit(null)
   }
@@ -116,20 +99,18 @@ export default function PermitManagement() {
         return
       }
 
-      let selectedVehicle = null
+      let assignedVehicle: VehicleLookupDto | PermitDto['vehicle'] | null = null
       if (editingPermit) {
-        // For editing, use the vehicle from the permit or find by ID
-        selectedVehicle = editingPermit.vehicle || vehicles.find(v => v.id === formData.vehicleId)
+        assignedVehicle = editingPermit.vehicle
       } else {
-        // For new permits, require vehicle selection
-        selectedVehicle = vehicles.find(v => v.id === formData.vehicleId)
-        if (!selectedVehicle) {
+        assignedVehicle = selectedVehicle
+        if (!assignedVehicle) {
           alert('Please select a vehicle')
           return
         }
       }
 
-      if (!selectedVehicle) {
+      if (!assignedVehicle) {
         alert('Vehicle information not available')
         return
       }
@@ -139,10 +120,10 @@ export default function PermitManagement() {
         permitPlateNumber: formData.permitPlateNumber,
         driverFullName: editingPermit 
           ? editingPermit.driverFullName 
-          : (selectedVehicle as any).driverName || 'Unknown Driver',
+          : selectedVehicle?.driverName || 'Unknown Driver',
         vehicleType: editingPermit 
           ? editingPermit.vehicleType 
-          : (selectedVehicle as any).vehicleType,
+          : selectedVehicle!.vehicleType,
         remarks: formData.remarks,
         encodedBy: user?.id,
         ...(editingPermit && { updatedBy: user?.id })
@@ -231,6 +212,28 @@ export default function PermitManagement() {
     const thirtyDaysFromNow = new Date()
     thirtyDaysFromNow.setDate(today.getDate() + 30)
     return expiry <= thirtyDaysFromNow && expiry > today
+  }
+
+  const activePermitVehicleIds = new Set(
+    permits
+      .filter((permit) => permit.status === PermitStatus.ACTIVE && permit.vehicle?.id)
+      .map((permit) => permit.vehicle!.id),
+  )
+
+  const handleVehicleLookupSelect = (vehicle: VehicleLookupDto) => {
+    setSelectedVehicle(vehicle)
+    setFormData((prev) => ({
+      ...prev,
+      vehicleId: vehicle.id,
+    }))
+  }
+
+  const clearSelectedVehicle = () => {
+    setSelectedVehicle(null)
+    setFormData((prev) => ({
+      ...prev,
+      vehicleId: '',
+    }))
   }
 
   return (
@@ -322,50 +325,34 @@ export default function PermitManagement() {
                     Vehicle assignment cannot be changed when editing a permit.
                   </p>
                 )}
-                {vehiclesLoading ? (
-                  <div className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-500">
-                    Loading vehicles...
+                {editingPermit ? (
+                  <div className="rounded-md border border-gray-300 bg-gray-50 px-3 py-3 text-sm text-gray-700">
+                    <div><strong>Plate:</strong> {editingPermit.vehicle?.plateNumber || 'Unknown vehicle'}</div>
+                    <div><strong>Type:</strong> {editingPermit.vehicle?.vehicleType?.replace('_', '-') || editingPermit.vehicleType.replace('_', '-')}</div>
+                    <div><strong>Owner:</strong> {editingPermit.vehicle?.ownerName || 'Unknown owner'}</div>
+                    <div><strong>Driver:</strong> {editingPermit.driverFullName}</div>
                   </div>
                 ) : (
-                  <select
-                    required={!editingPermit}
-                    disabled={!!editingPermit}
-                    className={`w-full border border-gray-300 rounded-md px-3 py-2 ${editingPermit ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                    value={formData.vehicleId}
-                    onChange={(e) => setFormData({ ...formData, vehicleId: e.target.value })}
-                  >
-                    <option value="">Select a vehicle...</option>
-                    {vehicles
-                      .filter(vehicle => {
-                        if (editingPermit) {
-                          // When editing, show all vehicles but highlight the current one
-                          return vehicle.isActive
-                        } else {
-                          // When creating new, only show vehicles without active permits
-                          return vehicle.isActive && !permits.some(permit => permit.vehicle?.id === vehicle.id && permit.status === 'ACTIVE')
-                        }
-                      })
-                      .map((vehicle) => (
-                        <option key={vehicle.id} value={vehicle.id}>
-                          {vehicle.plateNumber} - {vehicle.vehicleType.replace('_', '-')} ({vehicle.driverName || 'No Driver'})
-                          {editingPermit && formData.vehicleId === vehicle.id ? ' (Current)' : ''}
-                        </option>
-                      ))}
-                  </select>
+                  <VehicleLookupField
+                    label="Vehicle Search"
+                    placeholder="Type at least 2 characters to search active vehicles"
+                    helperText="Search only when you need a match. Vehicles with active permits stay hidden from new permit assignment."
+                    selectedVehicle={selectedVehicle}
+                    onSelect={handleVehicleLookupSelect}
+                    onClearSelection={clearSelectedVehicle}
+                    requireActivePermit={false}
+                    resultFilter={(vehicle) => !activePermitVehicleIds.has(vehicle.id)}
+                    noResultsText="No eligible vehicles matched your search."
+                  />
                 )}
-                {formData.vehicleId && (
+                {!editingPermit && formData.vehicleId && selectedVehicle && (
                   <div className="mt-2 p-3 bg-gray-50 rounded-md text-sm">
-                    {(() => {
-                      const selectedVehicle = vehicles.find(v => v.id === formData.vehicleId)
-                      return selectedVehicle ? (
-                        <div>
-                          <div><strong>Plate:</strong> {selectedVehicle.plateNumber}</div>
-                          <div><strong>Type:</strong> {selectedVehicle.vehicleType.replace('_', '-')}</div>
-                          <div><strong>Driver:</strong> {selectedVehicle.driverName || 'Unknown'}</div>
-                          <div><strong>Owner:</strong> {selectedVehicle.ownerName}</div>
-                        </div>
-                      ) : null
-                    })()}
+                    <div>
+                      <div><strong>Plate:</strong> {selectedVehicle.plateNumber}</div>
+                      <div><strong>Type:</strong> {selectedVehicle.vehicleType.replace('_', '-')}</div>
+                      <div><strong>Driver:</strong> {selectedVehicle.driverName || 'Unknown'}</div>
+                      <div><strong>Owner:</strong> {selectedVehicle.ownerName}</div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -497,10 +484,9 @@ export default function PermitManagement() {
                   <ActionButton
                     onClick={() => {
                       setEditingPermit(permit)
-                      // Find the vehicle that matches this permit
-                      const matchingVehicle = vehicles.find(v => v.id === permit.vehicle?.id)
+                      setSelectedVehicle(null)
                       setFormData({
-                        vehicleId: matchingVehicle?.id || '',
+                        vehicleId: permit.vehicle?.id || '',
                         permitPlateNumber: permit.permitPlateNumber || '',
                         remarks: permit.remarks || ''
                       })

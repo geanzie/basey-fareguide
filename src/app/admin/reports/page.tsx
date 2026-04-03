@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useAuth } from '@/components/AuthProvider'
 import RoleGuard from '@/components/RoleGuard'
 import PageWrapper from '@/components/PageWrapper'
 
@@ -26,16 +27,26 @@ interface ReportData {
 }
 
 export default function AdminReportsPage() {
+  const { status, user } = useAuth()
   const [reportData, setReportData] = useState<ReportData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedPeriod, setSelectedPeriod] = useState<'7d' | '30d' | '90d' | '1y'>('30d')
+  const canLoadReports = status === 'authenticated' && user?.userType === 'ADMIN'
 
   useEffect(() => {
-    fetchReportData()
-  }, [selectedPeriod])
+    if (!canLoadReports) {
+      return
+    }
+
+    void fetchReportData()
+  }, [canLoadReports, selectedPeriod])
 
   const fetchReportData = async () => {
+    if (!canLoadReports) {
+      return
+    }
+
     try {
       setLoading(true)
       const response = await fetch(`/api/admin/reports?period=${selectedPeriod}`)
