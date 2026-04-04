@@ -18,5 +18,5 @@ f:I[4431,[],"ViewportBoundary"]
 a:"$0:f:0:1:2:children:2:children:2:children:1:props:children:0:props:params"
 10:[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]
 c:null
-e:{"metadata":[["$","title","0",{"children":"Basey Fare Guide - Municipal Ordinance 105 Series of 2023"}],["$","meta","1",{"name":"description","content":"Official fare standardization system for Basey Municipality, Samar. Enhanced distance calculation for fair transportation pricing."}],["$","meta","2",{"name":"author","content":"Basey Municipality"}],["$","meta","3",{"name":"keywords","content":"Basey, Samar, fare guide, transportation, Municipal Ordinance 105, jeepney, tricycle, habal-habal"}]],"error":null,"digest":"$undefined"}
+e:{"metadata":[["$","title","0",{"children":"Basey Fare Check - Municipal Ordinance 105 Series of 2023"}],["$","meta","1",{"name":"description","content":"Official fare standardization system for Basey Municipality, Samar. Enhanced distance calculation for fair transportation pricing."}],["$","meta","2",{"name":"author","content":"Basey Municipality"}],["$","meta","3",{"name":"keywords","content":"Basey, Samar, fare guide, transportation, Municipal Ordinance 105, jeepney, tricycle, habal-habal"}]],"error":null,"digest":"$undefined"}
 13:"$e:metadata"

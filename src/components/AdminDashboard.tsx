@@ -155,7 +155,7 @@ export default function AdminDashboard() {
           <div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Administration Overview</h2>
             <p className="text-gray-600">
-              Monitor live user, incident, and storage activity for the active Basey Fare Guide system.
+              Monitor live user, incident, and storage activity for the active Basey Fare Check system.
             </p>
           </div>
         </div>

@@ -118,7 +118,7 @@ export default function Navigation() {
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center gap-3">
             <BrandMark size="sm" />
-            <span className="text-xl font-bold text-gray-800">Basey Fare Guide</span>
+            <span className="text-xl font-bold text-gray-800">Basey Fare Check</span>
           </div>
 
           <div className="hidden md:flex space-x-6">

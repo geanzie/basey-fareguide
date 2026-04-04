@@ -36,7 +36,7 @@ npm run dev
 
 ## 📨 What You'll Receive
 
-**Email Subject:** "Password Reset OTP - Basey Fare Guide"
+**Email Subject:** "Password Reset OTP - Basey Fare Check"
 
 **Email Content:**
 ```
@@ -44,7 +44,7 @@ npm run dev
 
 Hello user,
 
-You requested to reset your password for your Basey Fare Guide account.
+You requested to reset your password for your Basey Fare Check account.
 
 ━━━━━━━━━━━━━━━━
    747969        (Your 6-digit code)
@@ -54,7 +54,7 @@ This code is valid for 10 minutes.
 
 ⚠️ Security Notice:
 • Never share this code with anyone
-• Basey Fare Guide staff will never ask for this code
+• Basey Fare Check staff will never ask for this code
 ```
 
 ## 🔧 Terminal Output (New)
@@ -98,7 +98,7 @@ Value: (Resend will provide)
 
 ### 3. Update .env.local
 ```bash
-EMAIL_FROM=Basey Fare Guide <noreply@baseyfareguide.com>
+EMAIL_FROM=Basey Fare Check <noreply@baseyfareguide.com>
 ```
 
 ## ⚠️ Important Notes

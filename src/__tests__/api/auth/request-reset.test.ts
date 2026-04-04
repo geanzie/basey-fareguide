@@ -54,7 +54,7 @@ beforeEach(() => {
   emailMock.getPasswordResetEmailCapability.mockReturnValue({
     available: true,
     mode: 'provider',
-    from: 'Basey Fare Guide <noreply@example.com>',
+    from: 'Basey Fare Check <noreply@example.com>',
   })
 })
 

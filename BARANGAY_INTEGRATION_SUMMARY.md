@@ -1,7 +1,7 @@
 # Barangay Boundary Integration - Implementation Summary
 
 ## Overview
-Successfully integrated comprehensive barangay boundary data from the `Barangay.shp.geojson` file into the Basey Fare Guide application to enhance fare calculation and routing accuracy.
+Successfully integrated comprehensive barangay boundary data from the `Barangay.shp.geojson` file into the Basey Fare Check application to enhance fare calculation and routing accuracy.
 
 ## Key Files Created/Enhanced
 
@@ -164,4 +164,4 @@ const analysis = barangayService.analyzeGeographicHotspots(incidents)
 5. **Mobile Optimization**: GPS-based automatic location detection
 6. **API Extensions**: Expose barangay services for third-party integrations
 
-This comprehensive integration transforms the Basey Fare Guide from a basic calculator into a sophisticated, geography-aware transportation planning tool that provides accurate, fair, and contextually relevant fare calculations based on official administrative boundaries.
+This comprehensive integration transforms the Basey Fare Check from a basic calculator into a sophisticated, geography-aware transportation planning tool that provides accurate, fair, and contextually relevant fare calculations based on official administrative boundaries.

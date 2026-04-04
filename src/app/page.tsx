@@ -32,7 +32,7 @@ export default function HomePage() {
             </div>
 
             <h1 className="mb-4 text-3xl font-bold leading-tight lg:text-5xl">
-              Basey Fare Guide
+              Basey Fare Check
             </h1>
 
             <p className="mb-8 text-lg opacity-90 lg:text-xl">

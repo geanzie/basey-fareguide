@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 
 /**
- * Google Maps API Setup Helper for Basey Fare Guide
+ * Google Maps API Setup Helper for Basey Fare Check
  * 
  * This script helps set up the Google Maps API for accurate fare calculation.
  * Without proper API setup, fare calculations would be unfair to drivers.
  */
 
-console.log('\n🗺️  Basey Fare Guide - Google Maps API Setup');
+console.log('\n🗺️  Basey Fare Check - Google Maps API Setup');
 console.log('===========================================\n');
 
 console.log('⚠️  CRITICAL: Why Google Maps API is Required');

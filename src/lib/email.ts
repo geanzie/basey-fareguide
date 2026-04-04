@@ -29,7 +29,7 @@ export interface EmailSendResult {
   reason?: string
 }
 
-const DEFAULT_DEV_EMAIL_FROM = 'Basey Fare Guide <onboarding@resend.dev>'
+const DEFAULT_DEV_EMAIL_FROM = 'Basey Fare Check <onboarding@resend.dev>'
 
 function isDevelopmentMode(): boolean {
   return process.env.NODE_ENV !== 'production'
@@ -269,7 +269,7 @@ export async function sendPasswordResetEmail(
         <div class="content">
           <p>Hello <strong>${username}</strong>,</p>
           
-          <p>We received a request to reset your password for your Basey Fare Guide account. If you didn't make this request, please ignore this email.</p>
+          <p>We received a request to reset your password for your Basey Fare Check account. If you didn't make this request, please ignore this email.</p>
           
           <p>To reset your password, click the button below:</p>
           
@@ -286,7 +286,7 @@ export async function sendPasswordResetEmail(
           <div class="token">${resetToken}</div>
           
           <div class="footer">
-            <p>This is an automated email from Basey Fare Guide. Please do not reply to this email.</p>
+            <p>This is an automated email from Basey Fare Check. Please do not reply to this email.</p>
             <p>If you did not request a password reset, please contact support immediately.</p>
           </div>
         </div>
@@ -300,7 +300,7 @@ Password Reset Request
 
 Hello ${username},
 
-We received a request to reset your password for your Basey Fare Guide account.
+We received a request to reset your password for your Basey Fare Check account.
 
 To reset your password, visit this link:
 ${resetUrl}
@@ -313,12 +313,12 @@ This link will expire in 1 hour.
 If you didn't make this request, please ignore this email.
 
 ---
-Basey Fare Guide
+Basey Fare Check
   `
 
   const result = await sendEmail({
     to: email,
-    subject: 'Password Reset Request - Basey Fare Guide',
+    subject: 'Password Reset Request - Basey Fare Check',
     html,
     text,
   })
@@ -387,7 +387,7 @@ export async function sendAccountVerificationEmail(
         <div class="content">
           <p>Hello <strong>${firstName}</strong>,</p>
           
-          <p>Good news! Your Basey Fare Guide account has been approved by an administrator.</p>
+          <p>Good news! Your Basey Fare Check account has been approved by an administrator.</p>
           
           <p><strong>Username:</strong> ${username}</p>
           
@@ -397,7 +397,7 @@ export async function sendAccountVerificationEmail(
             <a href="${loginUrl}" class="button">Log In Now</a>
           </center>
           
-          <p>Thank you for registering with Basey Fare Guide!</p>
+          <p>Thank you for registering with Basey Fare Check!</p>
         </div>
       </div>
     </body>
@@ -406,7 +406,7 @@ export async function sendAccountVerificationEmail(
 
   const result = await sendEmail({
     to: email,
-    subject: 'Account Approved - Basey Fare Guide',
+    subject: 'Account Approved - Basey Fare Check',
     html,
   })
   return result.success
@@ -564,7 +564,7 @@ export async function sendOTPEmail(
         <div class="content">
           <p>Hello <strong>${username}</strong>,</p>
           
-          <p>You requested to reset your password for your Basey Fare Guide account. Use the following One-Time Password (OTP) to complete your password reset:</p>
+          <p>You requested to reset your password for your Basey Fare Check account. Use the following One-Time Password (OTP) to complete your password reset:</p>
           
           <div class="otp-code">
             ${otp}
@@ -578,7 +578,7 @@ export async function sendOTPEmail(
             <strong>⚠️ Security Notice:</strong>
             <ul style="margin: 5px 0;">
               <li>Never share this code with anyone</li>
-              <li>Basey Fare Guide staff will never ask for this code</li>
+              <li>Basey Fare Check staff will never ask for this code</li>
               <li>If you didn't request this, please ignore this email</li>
             </ul>
           </div>
@@ -588,7 +588,7 @@ export async function sendOTPEmail(
           <p>Need help? Contact our support team.</p>
         </div>
         <div class="footer">
-          <p>This is an automated message from Basey Fare Guide</p>
+          <p>This is an automated message from Basey Fare Check</p>
           <p>Please do not reply to this email</p>
         </div>
       </div>
@@ -601,7 +601,7 @@ Password Reset OTP
 
 Hello ${username},
 
-You requested to reset your password for your Basey Fare Guide account.
+You requested to reset your password for your Basey Fare Check account.
 
 Your OTP Code: ${otp}
 
@@ -609,18 +609,18 @@ This code is valid for 10 minutes.
 
 SECURITY NOTICE:
 - Never share this code with anyone
-- Basey Fare Guide staff will never ask for this code
+- Basey Fare Check staff will never ask for this code
 - If you didn't request this, please ignore this email
 
 If you didn't request a password reset, you can safely ignore this email.
 
 ---
-Basey Fare Guide
+Basey Fare Check
   `
 
   return sendEmail({
     to: email,
-    subject: 'Password Reset OTP - Basey Fare Guide',
+    subject: 'Password Reset OTP - Basey Fare Check',
     html,
     text,
   })

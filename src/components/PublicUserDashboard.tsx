@@ -106,7 +106,7 @@ function PublicUserDashboard() {
             />
           </div>
           <div className="min-w-0">
-            <h2 className="text-2xl font-bold text-slate-900">Your activity in Basey Fare Guide</h2>
+            <h2 className="text-2xl font-bold text-slate-900">Your activity in Basey Fare Check</h2>
             <p className="mt-2 max-w-2xl text-sm text-slate-600">
               Start with one action, then review your latest fares and reports.
             </p>

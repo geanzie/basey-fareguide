@@ -78,7 +78,7 @@ When ready to send actual emails:
 2. **Add to .env.local:**
    ```bash
    RESEND_API_KEY=re_your_api_key_here
-   EMAIL_FROM=Basey Fare Guide <noreply@yourdomain.com>
+   EMAIL_FROM=Basey Fare Check <noreply@yourdomain.com>
    ```
 
 3. **Restart dev server** - Emails will now be sent for real!

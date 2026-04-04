@@ -69,7 +69,7 @@ export default function AdminReportsPage() {
     if (!reportData) return
 
     const csvContent = [
-      'Basey Fare Guide Operations Report',
+      'Basey Fare Check Operations Report',
       `Generated: ${new Date(reportData.generatedAt).toLocaleString()}`,
       '',
       'INCIDENT STATISTICS',

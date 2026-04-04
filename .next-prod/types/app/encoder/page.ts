@@ -1,4 +1,4 @@
-// File: C:\Users\OCENA\OneDrive\Documents\Python Projects late 2024\Basey Fare Guide\frontend\src\app\encoder\page.tsx
+// File: C:\Users\OCENA\OneDrive\Documents\Python Projects late 2024\Basey Fare Check\frontend\src\app\encoder\page.tsx
 import * as entry from '../../../../src/app/encoder/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

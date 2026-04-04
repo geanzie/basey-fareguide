@@ -1,5 +1,5 @@
 """
-Location Verification Script for Basey Fare Guide
+Location Verification Script for Basey Fare Check
 Verifies coordinates, checks for duplicates, and validates location data
 """
 
@@ -174,7 +174,7 @@ def show_statistics(data):
 
 def main():
     print("=" * 60)
-    print("BASEY FARE GUIDE - LOCATION VERIFICATION")
+    print("Basey Fare Check - LOCATION VERIFICATION")
     print("=" * 60)
     print()
     

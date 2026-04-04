@@ -99,7 +99,7 @@ function DashboardLayoutBody({
             <div className="flex items-center space-x-3">
               <BrandMark />
               <div>
-                <h2 className="text-lg font-bold text-gray-900">Basey Fare Guide</h2>
+                <h2 className="text-lg font-bold text-gray-900">Basey Fare Check</h2>
                 <p className="text-sm text-gray-500">Dashboard</p>
               </div>
             </div>

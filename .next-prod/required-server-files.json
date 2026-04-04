@@ -97,7 +97,7 @@
         "transform": "lodash/{{member}}"
       }
     },
-    "outputFileTracingRoot": "C:\\Users\\OCENA\\OneDrive\\Documents\\Python Projects late 2024\\Basey Fare Guide\\frontend",
+    "outputFileTracingRoot": "C:\\Users\\OCENA\\OneDrive\\Documents\\Python Projects late 2024\\Basey Fare Check\\frontend",
     "experimental": {
       "useSkewCookie": false,
       "cacheLife": {
@@ -287,10 +287,10 @@
     "bundlePagesRouterDependencies": false,
     "configFileName": "next.config.ts",
     "turbopack": {
-      "root": "C:\\Users\\OCENA\\OneDrive\\Documents\\Python Projects late 2024\\Basey Fare Guide\\frontend"
+      "root": "C:\\Users\\OCENA\\OneDrive\\Documents\\Python Projects late 2024\\Basey Fare Check\\frontend"
     }
   },
-  "appDir": "C:\\Users\\OCENA\\OneDrive\\Documents\\Python Projects late 2024\\Basey Fare Guide\\frontend",
+  "appDir": "C:\\Users\\OCENA\\OneDrive\\Documents\\Python Projects late 2024\\Basey Fare Check\\frontend",
   "relativeAppDir": "",
   "files": [
     ".next-prod\\routes-manifest.json",

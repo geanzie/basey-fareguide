@@ -161,7 +161,7 @@ export default function FeaturesPage() {
           <div className="flex justify-between items-center h-16">
             <Link href="/" className="flex items-center gap-3">
               <BrandMark size="sm" />
-              <span className="text-xl font-bold text-gray-800">Basey Fare Guide</span>
+              <span className="text-xl font-bold text-gray-800">Basey Fare Check</span>
             </Link>
 
             <div className="flex space-x-4">
@@ -190,7 +190,7 @@ export default function FeaturesPage() {
             Complete Transportation Management
           </h1>
           <p className="text-xl text-emerald-100 mb-8 max-w-3xl mx-auto">
-            Explore all features of the Basey Fare Guide system, from accurate fare calculation
+            Explore all features of the Basey Fare Check system, from accurate fare calculation
             to comprehensive incident management and user administration.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">

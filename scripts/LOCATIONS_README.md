@@ -136,4 +136,4 @@ After running this script, you can:
 
 ## License
 
-Part of the Basey Fare Guide project.
+Part of the Basey Fare Check project.

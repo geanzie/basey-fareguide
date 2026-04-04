@@ -1,4 +1,4 @@
-// File: C:\Users\OCENA\OneDrive\Documents\Python Projects late 2024\Basey Fare Guide\frontend\src\app\api\admin\locations\validate\route.ts
+// File: C:\Users\OCENA\OneDrive\Documents\Python Projects late 2024\Basey Fare Check\frontend\src\app\api\admin\locations\validate\route.ts
 import * as entry from '../../../../../../../src/app/api/admin/locations/validate/route.js'
 import type { NextRequest } from 'next/server.js'
 

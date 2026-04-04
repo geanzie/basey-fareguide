@@ -145,7 +145,7 @@ Existing users without email addresses should:
 To enable actual email sending:
 1. Get Resend API key: https://resend.com
 2. Add to `.env.local`: `RESEND_API_KEY=re_xxxxx`
-3. Configure sender: `EMAIL_FROM=Basey Fare Guide <noreply@domain.com>`
+3. Configure sender: `EMAIL_FROM=Basey Fare Check <noreply@domain.com>`
 4. Restart application
 5. Test email delivery
 
