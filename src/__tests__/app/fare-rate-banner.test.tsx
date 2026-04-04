@@ -77,7 +77,7 @@ describe("FareRateBanner", () => {
     });
 
     expect(fetchMock).toHaveBeenCalledWith("/api/fare-rates");
-    expect(container.textContent).toContain("Official Fare Rates");
+    expect(container.textContent).toContain("Fare Rates");
     expect(container.textContent).toContain("Current fare");
     expect(container.textContent).toContain("Upcoming fare");
     expect(container.textContent).toContain("PHP 15.00");
@@ -99,7 +99,7 @@ describe("FareRateBanner", () => {
           },
           React.createElement(FareRateBanner, {
             variant: "announcement",
-            title: "Official Fare Rates",
+            title: "Fare Rates",
           }),
         ),
       );

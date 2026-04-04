@@ -70,7 +70,7 @@ function getAnnouncementContent(data: FareRatesResponseDto) {
 }
 
 export default function FareRateBanner({
-  title = 'Official Fare Rates',
+  title = 'Fare Rates',
   description = 'Current municipal fare rules and the next approved update.',
   className = '',
   variant = 'default',

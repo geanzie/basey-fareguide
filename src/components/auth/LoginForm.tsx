@@ -84,7 +84,7 @@ const LoginForm = ({ onSwitchToRegister }: LoginFormProps) => {
                 Sign in to Basey Fare Check
               </h2>
               <p className="mt-2 text-center text-sm text-gray-600">
-                Official transportation fare management system
+                Transportation fare reference system
               </p>
             </div>
 

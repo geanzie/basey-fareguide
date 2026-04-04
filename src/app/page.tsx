@@ -27,7 +27,7 @@ export default function HomePage() {
               <BrandMark />
               <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white/90 backdrop-blur-sm">
                 <DashboardIconSlot icon={DASHBOARD_ICONS.fare} size={DASHBOARD_ICON_POLICY.sizes.button} />
-                <span>Official municipal transport guide</span>
+                <span>Transport Service Guide</span>
               </div>
             </div>
 
@@ -36,7 +36,7 @@ export default function HomePage() {
             </h1>
 
             <p className="mb-8 text-lg opacity-90 lg:text-xl">
-              Official transportation fare calculator for Basey Municipality, Samar
+              Fare and distance guide for commuters in Basey, Samar
             </p>
 
             <div className="mx-auto mb-8 flex max-w-2xl flex-wrap items-center justify-center gap-3 text-sm text-white/90">
@@ -69,7 +69,7 @@ export default function HomePage() {
                   className="flex items-center justify-center rounded-lg border border-white border-opacity-30 bg-white bg-opacity-20 px-6 py-3 font-semibold backdrop-blur-sm transition-all hover:bg-opacity-30"
                 >
                   <DashboardIconSlot icon={DASHBOARD_ICONS.user} size={DASHBOARD_ICON_POLICY.sizes.button} className="mr-2" />
-                  Login to Access Fare Calculator
+                  Login to Check Fares
                 </Link>
               )}
             </div>
@@ -87,7 +87,7 @@ export default function HomePage() {
                   <p>Public Announcements</p>
                 </div>
                 <h2 className="mt-2 text-2xl font-bold text-slate-900">
-                  Official municipal updates for Basey riders
+                  Municipal updates for Basey riders
                 </h2>
                 <p className="mt-2 max-w-3xl text-sm text-slate-600">
                   Traffic advisories, fare updates, and ordinance-backed warnings are posted here so commuters
@@ -103,7 +103,7 @@ export default function HomePage() {
 
               <FareRateBanner
                 variant="announcement"
-                title="Official Fare Announcement"
+                title="Fare Announcement"
                 description="Current fare rules and the next approved change for Basey municipal transport."
               />
 

@@ -88,8 +88,8 @@ export default function UnifiedLayout({
             <div className="flex items-center space-x-3">
               <BrandMark />
               <div className="min-w-0">
-                <h1 className="text-lg font-semibold text-gray-900 truncate">Basey Fare</h1>
-                <p className="text-xs text-gray-500">Municipality System</p>
+                <h1 className="text-lg font-semibold text-gray-900 truncate">Basey Fare Check</h1>
+                <p className="text-xs text-gray-500">Fare Referrence System</p>
               </div>
             </div>
           </div>
