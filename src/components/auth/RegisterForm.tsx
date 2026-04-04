@@ -142,7 +142,7 @@ const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
               Register for Basey Fare Check
             </h2>
             <p className="mt-2 text-center text-sm text-gray-600">
-              Join the official transportation management system
+              Join the Transportation Fare Reference System
             </p>
           </div>
         

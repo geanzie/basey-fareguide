@@ -291,7 +291,7 @@ export default function FeaturesPage() {
         <div className="max-w-4xl mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold mb-4">Ready to Get Started?</h2>
           <p className="text-gray-300 mb-8 text-lg">
-            Join the official transportation management system for Basey Municipality.
+            Join the Transportation Fare Reference System for Basey Municipality.
             Calculate fares, report incidents, and help maintain fair transportation services.
           </p>
 
