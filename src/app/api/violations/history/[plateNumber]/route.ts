@@ -64,9 +64,11 @@ export async function GET(
     const totalPenalties = violations.reduce((sum, violation) => {
       return sum + (violation.penaltyAmount ? Number(violation.penaltyAmount) : 0)
     }, 0)
-    const paidTickets = violations.filter(v => v.status === 'RESOLVED' && v.ticketNumber).length
-    const unpaidTickets = violations.filter(v => v.status === 'PENDING' && v.ticketNumber).length
+    const ticketedViolations = violations.filter(v => Boolean(v.ticketNumber) && v.status !== 'DISMISSED').length
+    const resolvedTicketedViolations = violations.filter(v => v.status === 'RESOLVED' && v.ticketNumber).length
+    const activeTicketedViolations = violations.filter(v => v.ticketNumber && v.status !== 'RESOLVED' && v.status !== 'DISMISSED').length
     const openIncidents = violations.filter(v => !v.ticketNumber && ['PENDING', 'INVESTIGATING'].includes(v.status)).length
+    const dismissedIncidents = violations.filter(v => v.status === 'DISMISSED').length
 
     // Get vehicle information if available
     const vehicle = await prisma.vehicle.findUnique({
@@ -96,9 +98,13 @@ export async function GET(
       summary: {
         totalViolations,
         totalPenalties,
-        paidTickets,
-        unpaidTickets,
-        openIncidents
+        paidTickets: resolvedTicketedViolations,
+        unpaidTickets: activeTicketedViolations,
+        ticketedViolations,
+        resolvedTicketedViolations,
+        activeTicketedViolations,
+        openIncidents,
+        dismissedIncidents
       }
     })
 

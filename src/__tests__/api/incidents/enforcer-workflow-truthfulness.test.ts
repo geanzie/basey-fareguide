@@ -12,6 +12,7 @@ const authMock = vi.hoisted(() => ({
 const prismaMock = vi.hoisted(() => ({
   incident: {
     findUnique: vi.fn(),
+    count: vi.fn(),
     update: vi.fn(),
   },
 }))
@@ -35,6 +36,7 @@ vi.mock('@/lib/evidenceCleanup', () => ({
 }))
 
 import { PATCH as takeIncident } from '@/app/api/incidents/[incidentId]/take/route'
+import { GET as getTicketPenaltyPreview } from '@/app/api/incidents/[incidentId]/issue-ticket/route'
 import { PATCH as issueTicket } from '@/app/api/incidents/[incidentId]/issue-ticket/route'
 import { PATCH as resolveIncident } from '@/app/api/incidents/[incidentId]/resolve/route'
 
@@ -48,10 +50,15 @@ function makeJsonRequest(url: string, body: unknown = {}): Request {
   })
 }
 
+function makeRequest(url: string, method: 'GET' | 'PATCH' = 'GET'): Request {
+  return new Request(url, { method })
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
   authMock.requireRequestRole.mockResolvedValue({ id: 'enforcer-1', userType: 'ENFORCER' })
   cleanupMock.cleanupEvidenceFiles.mockResolvedValue(undefined)
+  prismaMock.incident.count.mockResolvedValue(0)
 })
 
 describe('enforcer workflow truthfulness', () => {
@@ -90,6 +97,10 @@ describe('enforcer workflow truthfulness', () => {
         status: 'INVESTIGATING',
         handledById: 'enforcer-1',
         ticketNumber: null,
+        plateNumber: 'ABC-123',
+        incidentDate: new Date('2026-04-01T10:00:00.000Z'),
+        createdAt: new Date('2026-04-01T10:05:00.000Z'),
+        remarks: null,
       })
       .mockResolvedValueOnce(null)
     prismaMock.incident.update.mockResolvedValueOnce({
@@ -101,7 +112,6 @@ describe('enforcer workflow truthfulness', () => {
     const response = await issueTicket(
       makeJsonRequest('http://localhost/api/incidents/incident-1/issue-ticket', {
         ticketNumber: 'T-100',
-        penaltyAmount: 500,
         remarks: 'Confirmed overcharge',
       }) as never,
       { params: Promise.resolve({ incidentId: 'incident-1' }) },
@@ -112,8 +122,111 @@ describe('enforcer workflow truthfulness', () => {
     expect(json.message).toBe(
       'Ticket T-100 issued successfully. Incident marked as resolved and evidence cleanup initiated.',
     )
+    expect(json.penalty).toEqual(
+      expect.objectContaining({
+        offenseNumber: 1,
+        offenseTier: 'FIRST',
+        offenseTierLabel: '1st offense',
+        penaltyAmount: 500,
+        priorTicketCount: 0,
+        ruleVersion: '2026-04-municipal-v1',
+      }),
+    )
+    expect(prismaMock.incident.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          plateNumber: 'ABC-123',
+          penaltyAmount: 500,
+          offenseNumberAtIssuance: 1,
+          offenseTierAtIssuance: 'FIRST',
+          penaltyRuleVersion: '2026-04-municipal-v1',
+        }),
+      }),
+    )
     expect(json.evidenceCleanupInitiated).toBe(true)
     expect(cleanupMock.cleanupEvidenceFiles).toHaveBeenCalledWith('incident-1')
+  })
+
+  it('returns a computed penalty preview for the assigned investigating incident', async () => {
+    prismaMock.incident.findUnique.mockResolvedValueOnce({
+      id: 'incident-1',
+      status: 'INVESTIGATING',
+      handledById: 'enforcer-1',
+      ticketNumber: null,
+      plateNumber: 'ABC-123',
+      incidentDate: new Date('2026-04-03T08:00:00.000Z'),
+      createdAt: new Date('2026-04-03T08:05:00.000Z'),
+    })
+    prismaMock.incident.count.mockResolvedValueOnce(1)
+
+    const response = await getTicketPenaltyPreview(
+      makeRequest('http://localhost/api/incidents/incident-1/issue-ticket') as never,
+      { params: Promise.resolve({ incidentId: 'incident-1' }) },
+    )
+    const json = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(json.plateNumber).toBe('ABC-123')
+    expect(json.penalty).toEqual({
+      offenseNumber: 2,
+      offenseTier: 'SECOND',
+      offenseTierLabel: '2nd offense',
+      penaltyAmount: 1000,
+      priorTicketCount: 1,
+      ruleVersion: '2026-04-municipal-v1',
+    })
+  })
+
+  it('caps the computed penalty at the third-and-above tier', async () => {
+    prismaMock.incident.findUnique.mockResolvedValueOnce({
+      id: 'incident-1',
+      status: 'INVESTIGATING',
+      handledById: 'enforcer-1',
+      ticketNumber: null,
+      plateNumber: 'ABC-123',
+      incidentDate: new Date('2026-04-03T08:00:00.000Z'),
+      createdAt: new Date('2026-04-03T08:05:00.000Z'),
+    })
+    prismaMock.incident.count.mockResolvedValueOnce(4)
+
+    const response = await getTicketPenaltyPreview(
+      makeRequest('http://localhost/api/incidents/incident-1/issue-ticket') as never,
+      { params: Promise.resolve({ incidentId: 'incident-1' }) },
+    )
+    const json = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(json.penalty).toEqual(
+      expect.objectContaining({
+        offenseNumber: 5,
+        offenseTier: 'THIRD_PLUS',
+        penaltyAmount: 1500,
+      }),
+    )
+  })
+
+  it('blocks ticket issuance when the incident has no usable plate number', async () => {
+    prismaMock.incident.findUnique.mockResolvedValueOnce({
+      id: 'incident-1',
+      status: 'INVESTIGATING',
+      handledById: 'enforcer-1',
+      ticketNumber: null,
+      plateNumber: null,
+      incidentDate: new Date('2026-04-03T08:00:00.000Z'),
+      createdAt: new Date('2026-04-03T08:05:00.000Z'),
+    })
+
+    const response = await issueTicket(
+      makeJsonRequest('http://localhost/api/incidents/incident-1/issue-ticket', {
+        ticketNumber: 'T-200',
+      }) as never,
+      { params: Promise.resolve({ incidentId: 'incident-1' }) },
+    )
+    const json = await response.json()
+
+    expect(response.status).toBe(400)
+    expect(json.message).toMatch(/plate number is required/i)
+    expect(prismaMock.incident.update).not.toHaveBeenCalled()
   })
 
   it('blocks the resolve-without-ticket path once a ticket already exists', async () => {

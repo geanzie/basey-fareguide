@@ -30,6 +30,7 @@ vi.mock("@/lib/locations/plannerLocations", () => ({
 }));
 
 import { POST } from "@/app/api/routes/calculate/route";
+import { resolvePinLabel } from "@/lib/locations/pinLabelResolver";
 import { getResolvedFareRates } from "@/lib/fare/rateService";
 import { calculateRouteWithFallback } from "@/lib/routing";
 
@@ -284,6 +285,7 @@ describe("POST /api/routes/calculate - successful responses", () => {
 
 describe("POST /api/routes/calculate - pin mode", () => {
   it("returns 200 with inputMode 'pin' when origin is a pin", async () => {
+    const resolved = resolvePinLabel(11.278823, 125.001194);
     const res = await POST(
       makeRequest({
         origin: { type: "pin", lat: 11.278823, lng: 125.001194 },
@@ -293,10 +295,12 @@ describe("POST /api/routes/calculate - pin mode", () => {
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.inputMode).toBe("pin");
-    expect(json.origin).toBe("pin:11.278823,125.001194");
+    expect(json.origin).toBe(resolved.displayLabel);
+    expect(json.originResolved).toEqual(resolved);
   });
 
   it("returns 200 with inputMode 'pin' when destination is a pin", async () => {
+    const resolved = resolvePinLabel(11.278823, 125.001194);
     const res = await POST(
       makeRequest({
         origin: P("Amandayehan"),
@@ -306,7 +310,8 @@ describe("POST /api/routes/calculate - pin mode", () => {
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.inputMode).toBe("pin");
-    expect(json.destination).toBe("pin:11.278823,125.001194");
+    expect(json.destination).toBe(resolved.displayLabel);
+    expect(json.destinationResolved).toEqual(resolved);
   });
 
   it("returns 200 with minimum fare when two pin points are the same", async () => {

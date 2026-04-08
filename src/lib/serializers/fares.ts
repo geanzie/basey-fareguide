@@ -1,4 +1,6 @@
 import type { FareCalculationDto } from "@/lib/contracts";
+import { formatPinCoordinateLabel } from "@/lib/locations/pinLabelResolver";
+import { parsePinLabel } from "@/lib/locations/pinSerializer";
 
 function toIsoString(value: Date | string | null | undefined): string {
   if (!value) {
@@ -30,6 +32,16 @@ function parseRouteData(value: string | null | undefined): unknown | null {
   }
 }
 
+function formatFareLocationLabel(value: string): string {
+  const parsedPin = parsePinLabel(value);
+
+  if (!parsedPin) {
+    return value;
+  }
+
+  return formatPinCoordinateLabel(parsedPin.lat, parsedPin.lng);
+}
+
 export function serializeFareCalculation(record: {
   id: string;
   fromLocation: string;
@@ -51,8 +63,8 @@ export function serializeFareCalculation(record: {
 }): FareCalculationDto {
   return {
     id: record.id,
-    from: record.fromLocation,
-    to: record.toLocation,
+    from: formatFareLocationLabel(record.fromLocation),
+    to: formatFareLocationLabel(record.toLocation),
     distanceKm: toNullableNumber(record.distance) ?? 0,
     fare: toNullableNumber(record.calculatedFare) ?? 0,
     actualFare: toNullableNumber(record.actualFare),

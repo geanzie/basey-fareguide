@@ -12,6 +12,7 @@ import {
 } from '@/components/dashboardIcons'
 import FareRateBanner from '@/components/FareRateBanner'
 import TrafficAnnouncementsFeed from '@/components/TrafficAnnouncementsFeed'
+import { PUBLIC_PENALTY_SCHEDULE } from '@/lib/incidents/penaltyRules'
 
 export default function HomePage() {
   const { user } = useAuth()
@@ -127,18 +128,14 @@ export default function HomePage() {
                 </div>
 
                 <div className="mt-5 grid gap-3 md:grid-cols-3">
-                  <div className="app-surface-inner rounded-xl border border-red-200 p-4">
-                    <div className="text-xs font-semibold uppercase tracking-wide text-red-600">1st Offense</div>
-                    <div className="mt-2 text-2xl font-bold text-red-700">PHP 500</div>
-                  </div>
-                  <div className="app-surface-inner rounded-xl border border-red-200 p-4">
-                    <div className="text-xs font-semibold uppercase tracking-wide text-red-600">2nd Offense</div>
-                    <div className="mt-2 text-2xl font-bold text-red-700">PHP 1,000</div>
-                  </div>
-                  <div className="app-surface-inner rounded-xl border border-red-200 p-4">
-                    <div className="text-xs font-semibold uppercase tracking-wide text-red-600">3rd Offense</div>
-                    <div className="mt-2 text-2xl font-bold text-red-700">PHP 1,500</div>
-                  </div>
+                  {PUBLIC_PENALTY_SCHEDULE.map((penaltyTier) => (
+                    <div key={penaltyTier.offenseTier} className="app-surface-inner rounded-xl border border-red-200 p-4">
+                      <div className="text-xs font-semibold uppercase tracking-wide text-red-600">{penaltyTier.label}</div>
+                      <div className="mt-2 text-2xl font-bold text-red-700">
+                        PHP {penaltyTier.penaltyAmount.toLocaleString()}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>

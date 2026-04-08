@@ -3,6 +3,7 @@ import type { FarePolicySnapshotDto } from "@/lib/contracts";
 import { calculateRouteWithFallback } from "@/lib/routing";
 import { calculateFare, getFareBreakdown } from "@/lib/fare/calculator";
 import { getResolvedFareRates } from "@/lib/fare/rateService";
+import { resolvePinLabel, type ResolvedPinLabel } from "@/lib/locations/pinLabelResolver";
 import { resolvePlannerLocationByName } from "@/lib/locations/plannerLocations";
 import { serializePinLabel } from "@/lib/locations/pinSerializer";
 import type { PassengerType, LocationInput } from "@/lib/routing/types";
@@ -136,6 +137,7 @@ export async function POST(request: NextRequest) {
   // --- Resolve origin to coordinates ---
   let originCoords: { lat: number; lng: number };
   let originLabel: string;
+  let originResolved: ResolvedPinLabel | null = null;
 
   if (originInput.type === "preset") {
     const resolved = await resolvePlannerLocationByName(originInput.name);
@@ -164,12 +166,14 @@ export async function POST(request: NextRequest) {
       );
     }
     originCoords = { lat, lng };
-    originLabel = serializePinLabel(lat, lng);
+    originResolved = resolvePinLabel(lat, lng);
+    originLabel = originResolved.displayLabel;
   }
 
   // --- Resolve destination to coordinates ---
   let destCoords: { lat: number; lng: number };
   let destLabel: string;
+  let destinationResolved: ResolvedPinLabel | null = null;
 
   if (destInput.type === "preset") {
     const resolved = await resolvePlannerLocationByName(destInput.name);
@@ -198,7 +202,8 @@ export async function POST(request: NextRequest) {
       );
     }
     destCoords = { lat, lng };
-    destLabel = serializePinLabel(lat, lng);
+    destinationResolved = resolvePinLabel(lat, lng);
+    destLabel = destinationResolved.displayLabel;
   }
 
   // --- inputMode: pin if either side is a pin, otherwise preset ---
@@ -225,6 +230,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       origin: originLabel,
       destination: destLabel,
+      originResolved,
+      destinationResolved,
       distanceKm: 0,
       durationMin: 0,
       fare,
@@ -281,6 +288,8 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({
     origin: originLabel,
     destination: destLabel,
+    originResolved,
+    destinationResolved,
     distanceKm: route.distanceKm,
     durationMin: route.durationMin,
     fare,

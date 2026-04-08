@@ -102,6 +102,23 @@ describe("normalized serializers", () => {
     expect("calculatedFare" in fare).toBe(false);
   });
 
+  it("formats legacy pin labels into the shared coordinate fallback text", () => {
+    const fare = serializeFareCalculation({
+      id: "calc-pin",
+      fromLocation: "pin:11.278823,125.001194",
+      toLocation: "pin:11.304796,125.108990",
+      distance: { toString: () => "12.4" },
+      calculatedFare: { toString: () => "45" },
+      calculationType: "Road Route Planner",
+      createdAt: new Date("2026-04-02T00:00:00.000Z"),
+      routeData: null,
+      vehicle: null,
+    });
+
+    expect(fare.from).toBe("11.278823, 125.001194");
+    expect(fare.to).toBe("11.304796, 125.108990");
+  });
+
   it("serializes vehicles and permits with ISO date fields", () => {
     const vehicle = serializeVehicle({
       id: "veh-1",

@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import 'leaflet/dist/leaflet.css'
 
+import { resolvePinLabel } from '@/lib/locations/pinLabelResolver'
 import type { PlannerPoint, PlannerViewState } from '@/lib/planner/routePlanner'
 
 function decodePolyline(encoded: string): [number, number][] {
@@ -40,6 +41,14 @@ function decodePolyline(encoded: string): [number, number][] {
 
 const BASEY_CENTER: [number, number] = [11.2754, 125.0689]
 const DEFAULT_ZOOM = 13
+
+function createResolvedPlannerPoint(lat: number, lng: number): PlannerPoint {
+  return {
+    lat,
+    lng,
+    label: resolvePinLabel(lat, lng).displayLabel,
+  }
+}
 
 export interface RoutePlannerMapProps {
   origin: PlannerPoint | null
@@ -112,18 +121,15 @@ export default function RoutePlannerMap({
       map.setView(BASEY_CENTER, DEFAULT_ZOOM)
 
       map.on('click', (event: import('leaflet').LeafletMouseEvent) => {
-        const point: PlannerPoint = {
-          lat: event.latlng.lat,
-          lng: event.latlng.lng,
-        }
+        const point = createResolvedPlannerPoint(event.latlng.lat, event.latlng.lng)
 
         if (!latestOriginRef.current) {
-          onOriginChangeRef.current({ ...point, label: 'Pickup pin' })
+          onOriginChangeRef.current(point)
           return
         }
 
         if (!latestDestinationRef.current) {
-          onDestinationChangeRef.current({ ...point, label: 'Drop-off pin' })
+          onDestinationChangeRef.current(point)
         }
       })
     }
@@ -167,11 +173,7 @@ export default function RoutePlannerMap({
           originMarkerRef.current.on('dragend', () => {
             const latLng = originMarkerRef.current?.getLatLng()
             if (!latLng) return
-            onOriginChangeRef.current({
-              lat: latLng.lat,
-              lng: latLng.lng,
-              label: latestOriginRef.current?.label ?? 'Pickup pin',
-            })
+            onOriginChangeRef.current(createResolvedPlannerPoint(latLng.lat, latLng.lng))
           })
         }
 
@@ -194,11 +196,7 @@ export default function RoutePlannerMap({
           destinationMarkerRef.current.on('dragend', () => {
             const latLng = destinationMarkerRef.current?.getLatLng()
             if (!latLng) return
-            onDestinationChangeRef.current({
-              lat: latLng.lat,
-              lng: latLng.lng,
-              label: latestDestinationRef.current?.label ?? 'Drop-off pin',
-            })
+            onDestinationChangeRef.current(createResolvedPlannerPoint(latLng.lat, latLng.lng))
           })
         }
 

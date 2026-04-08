@@ -153,6 +153,9 @@ model Incident {
   plateNumber   String?
   status        IncidentStatus @default(PENDING)
   penaltyAmount Decimal?
+  offenseNumberAtIssuance Int?
+  offenseTierAtIssuance OffenseTier?
+  penaltyRuleVersion String?
   remarks       String?
   ticketNumber  String?        @unique
   incidentDate  DateTime
@@ -430,6 +433,12 @@ enum IncidentStatus {
   INVESTIGATING
   RESOLVED
   DISMISSED
+}
+
+enum OffenseTier {
+  FIRST
+  SECOND
+  THIRD_PLUS
 }
 
 enum LocationType {

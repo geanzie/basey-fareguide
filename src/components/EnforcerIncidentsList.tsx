@@ -17,8 +17,16 @@ import {
 
 interface TicketFormState {
   ticketNumber: string
-  penaltyAmount: string
   remarks: string
+}
+
+interface TicketPenaltyPreview {
+  penaltyAmount: number
+  offenseNumber: number
+  offenseTier: 'FIRST' | 'SECOND' | 'THIRD_PLUS'
+  offenseTierLabel: string
+  priorTicketCount: number
+  ruleVersion: string
 }
 
 function ActionLabel({
@@ -52,9 +60,10 @@ export default function EnforcerIncidentsList() {
   const [showEvidenceManager, setShowEvidenceManager] = useState(false)
   const [ticketIncident, setTicketIncident] = useState<IncidentListItemDto | null>(null)
   const [showTicketModal, setShowTicketModal] = useState(false)
+  const [ticketPenaltyPreview, setTicketPenaltyPreview] = useState<TicketPenaltyPreview | null>(null)
+  const [isTicketPenaltyLoading, setIsTicketPenaltyLoading] = useState(false)
   const [ticketData, setTicketData] = useState<TicketFormState>({
     ticketNumber: '',
-    penaltyAmount: '',
     remarks: '',
   })
 
@@ -94,22 +103,42 @@ export default function EnforcerIncidentsList() {
     [incidents],
   )
 
-  const openTicketModal = (incident: IncidentListItemDto) => {
+  const openTicketModal = async (incident: IncidentListItemDto) => {
     setTicketIncident(incident)
     setTicketData({
       ticketNumber: '',
-      penaltyAmount: incident.penaltyAmount != null ? String(incident.penaltyAmount) : '500',
       remarks: '',
     })
+    setTicketPenaltyPreview(null)
+    setIsTicketPenaltyLoading(true)
     setShowTicketModal(true)
+
+    try {
+      const response = await fetch(`/api/incidents/${incident.id}/issue-ticket`)
+      const payload = await response.json()
+
+      if (!response.ok) {
+        closeTicketModal()
+        alert(payload.message || 'Failed to load ticket penalty details.')
+        return
+      }
+
+      setTicketPenaltyPreview(payload.penalty ?? null)
+    } catch (_error) {
+      closeTicketModal()
+      alert('Error loading ticket penalty details. Please try again.')
+    } finally {
+      setIsTicketPenaltyLoading(false)
+    }
   }
 
   const closeTicketModal = () => {
     setShowTicketModal(false)
     setTicketIncident(null)
+    setTicketPenaltyPreview(null)
+    setIsTicketPenaltyLoading(false)
     setTicketData({
       ticketNumber: '',
-      penaltyAmount: '',
       remarks: '',
     })
   }
@@ -127,7 +156,7 @@ export default function EnforcerIncidentsList() {
       }
 
       await mutate()
-      openTicketModal({ ...incident, status: 'INVESTIGATING' })
+      await openTicketModal({ ...incident, status: 'INVESTIGATING' })
     } catch (_error) {
       alert('Error taking incident. Please try again.')
     }
@@ -172,8 +201,13 @@ export default function EnforcerIncidentsList() {
   const handleTicketSubmit = async (event: FormEvent) => {
     event.preventDefault()
 
-    if (!ticketIncident || !ticketData.ticketNumber || !ticketData.penaltyAmount) {
-      alert('Please complete the ticket number and penalty amount.')
+    if (!ticketIncident || !ticketData.ticketNumber) {
+      alert('Please complete the ticket number.')
+      return
+    }
+
+    if (!ticketPenaltyPreview) {
+      alert('Penalty details are still loading. Please try again.')
       return
     }
 
@@ -185,7 +219,6 @@ export default function EnforcerIncidentsList() {
         },
         body: JSON.stringify({
           ticketNumber: ticketData.ticketNumber,
-          penaltyAmount: Number(ticketData.penaltyAmount),
           remarks: ticketData.remarks,
         }),
       })
@@ -529,7 +562,9 @@ export default function EnforcerIncidentsList() {
                       {incident.status === 'INVESTIGATING' && !incident.ticketNumber ? (
                         <>
                           <ActionButton
-                            onClick={() => openTicketModal(incident)}
+                            onClick={() => {
+                              void openTicketModal(incident)
+                            }}
                             variant="primary"
                             size="xs"
                             className="bg-red-600 hover:bg-red-700 text-white font-semibold"
@@ -668,7 +703,7 @@ export default function EnforcerIncidentsList() {
                       <button
                         onClick={() => {
                           closeIncidentDetails()
-                          openTicketModal(selectedIncident)
+                          void openTicketModal(selectedIncident)
                         }}
                         className="inline-flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors font-semibold"
                       >
@@ -759,18 +794,40 @@ export default function EnforcerIncidentsList() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Penalty Amount *
+                    Enforced Penalty
                   </label>
-                  <input
-                    type="number"
-                    value={ticketData.penaltyAmount}
-                    onChange={(e) => setTicketData((prev) => ({ ...prev, penaltyAmount: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                    placeholder="Enter penalty amount"
-                    min="0"
-                    step="0.01"
-                    required
-                  />
+                  {isTicketPenaltyLoading ? (
+                    <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-4 py-3 text-sm text-gray-600">
+                      Loading penalty details...
+                    </div>
+                  ) : ticketPenaltyPreview ? (
+                    <div className="grid gap-3 rounded-lg border border-red-200 bg-red-50 p-4 md:grid-cols-3">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-red-600">Offense</p>
+                        <p className="mt-1 text-sm font-semibold text-red-900">#{ticketPenaltyPreview.offenseNumber}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-red-600">Tier</p>
+                        <p className="mt-1 text-sm font-semibold text-red-900">{ticketPenaltyPreview.offenseTierLabel}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-red-600">Amount</p>
+                        <p className="mt-1 text-sm font-semibold text-red-900">
+                          PHP {ticketPenaltyPreview.penaltyAmount.toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="md:col-span-3">
+                        <p className="text-xs text-red-700">
+                          Based on {ticketPenaltyPreview.priorTicketCount} prior ticketed violation
+                          {ticketPenaltyPreview.priorTicketCount === 1 ? '' : 's'} for this plate number.
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-4 py-3 text-sm text-gray-600">
+                      Penalty details unavailable.
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -796,6 +853,7 @@ export default function EnforcerIncidentsList() {
                   </button>
                   <button
                     type="submit"
+                    disabled={isTicketPenaltyLoading || !ticketPenaltyPreview}
                     className="w-full rounded-lg bg-emerald-600 px-4 py-2 text-white hover:bg-emerald-700 sm:w-auto"
                   >
                     Issue Ticket

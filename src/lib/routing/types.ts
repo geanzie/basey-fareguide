@@ -1,4 +1,5 @@
 import type { FarePolicySnapshotDto } from "@/lib/contracts";
+import type { ResolvedPinLabel } from "@/lib/locations/pinLabelResolver";
 
 export type PassengerType = "REGULAR" | "STUDENT" | "SENIOR" | "PWD";
 
@@ -45,6 +46,8 @@ export interface FareBreakdown {
 export interface CalculatedRouteResponse {
   origin: string;
   destination: string;
+  originResolved: ResolvedPinLabel | null;
+  destinationResolved: ResolvedPinLabel | null;
   distanceKm: number;
   durationMin: number | null;
   fare: number;

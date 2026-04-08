@@ -10,6 +10,7 @@ import {
   DashboardIconSlot,
 } from '@/components/dashboardIcons'
 import {
+  getAuthenticatedMobilePrimaryActionCount,
   MOBILE_PROFILE_LAUNCHER,
   getAuthenticatedNavigationConfig,
   isAuthenticatedNavigationItemActive,
@@ -76,12 +77,16 @@ export function AuthenticatedMobileBottomNavigation({
   onOpenProfileSheet: () => void
 }) {
   const navigation = getAuthenticatedNavigationConfig(user.userType)
+  const mobilePrimaryActionCount = getAuthenticatedMobilePrimaryActionCount(user.userType)
   const profileSheetActive =
     profileSheetOpen || isAuthenticatedProfileSheetActive(pathname, user.userType)
 
   return (
     <nav className="app-mobile-bottom-nav lg:hidden" aria-label="Primary mobile navigation">
-      <div className="grid grid-cols-5 gap-1 px-2 py-2">
+      <div
+        className="grid gap-1 px-2 py-2"
+        style={{ gridTemplateColumns: `repeat(${mobilePrimaryActionCount}, minmax(0, 1fr))` }}
+      >
         {navigation.tabs.map((item) => {
           const active = isAuthenticatedNavigationItemActive(pathname, item)
 

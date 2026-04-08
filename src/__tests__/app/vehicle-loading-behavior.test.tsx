@@ -4,6 +4,10 @@ import React, { act } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
 
+const pinLabelResolverMock = vi.hoisted(() => ({
+  resolvePinLabel: vi.fn(),
+}))
+
 vi.mock('@/components/AuthProvider', () => ({
   useAuth: () => ({
     user: {
@@ -17,6 +21,10 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => ({
     get: () => null,
   }),
+}))
+
+vi.mock('@/lib/locations/pinLabelResolver', () => ({
+  resolvePinLabel: pinLabelResolverMock.resolvePinLabel,
 }))
 
 vi.mock('@/components/ResponsiveTable', () => ({
@@ -119,6 +127,13 @@ describe('vehicle loading behavior', () => {
         getCurrentPosition: geolocationMock,
       },
     })
+
+    pinLabelResolverMock.resolvePinLabel.mockReturnValue({
+      displayLabel: 'Amandayehan',
+      barangayName: 'Amandayehan',
+      rawCoordinates: '11.278823, 125.001194',
+      isFallback: false,
+    })
   })
 
   afterEach(async () => {
@@ -140,6 +155,74 @@ describe('vehicle loading behavior', () => {
 
     expect(fetchMock).not.toHaveBeenCalled()
     expect(geolocationMock).not.toHaveBeenCalled()
+  })
+
+  it('auto-fills the location field when GPS resolves a barangay', async () => {
+    geolocationMock.mockImplementationOnce((onSuccess: PositionCallback) => {
+      onSuccess({
+        coords: {
+          latitude: 11.278823,
+          longitude: 125.001194,
+        },
+      } as GeolocationPosition)
+    })
+
+    await act(async () => {
+      root.render(React.createElement(IncidentReporting))
+      await Promise.resolve()
+    })
+
+    const gpsButton = Array.from(container.querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('Use GPS'),
+    )
+    const locationSelect = container.querySelector('#location') as HTMLSelectElement | null
+
+    expect(gpsButton).toBeTruthy()
+    expect(locationSelect?.value).toBe('')
+
+    await act(async () => {
+      gpsButton!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await Promise.resolve()
+    })
+
+    expect(pinLabelResolverMock.resolvePinLabel).toHaveBeenCalledWith(11.278823, 125.001194)
+    expect(locationSelect?.value).toBe('Amandayehan')
+    expect(container.textContent).toContain('GPS pinned to Amandayehan')
+  })
+
+  it('keeps coordinate fallback as a valid selected location when GPS has no barangay match', async () => {
+    pinLabelResolverMock.resolvePinLabel.mockReturnValueOnce({
+      displayLabel: '11.500000, 125.500000',
+      barangayName: null,
+      rawCoordinates: '11.500000, 125.500000',
+      isFallback: true,
+    })
+    geolocationMock.mockImplementationOnce((onSuccess: PositionCallback) => {
+      onSuccess({
+        coords: {
+          latitude: 11.5,
+          longitude: 125.5,
+        },
+      } as GeolocationPosition)
+    })
+
+    await act(async () => {
+      root.render(React.createElement(IncidentReporting))
+      await Promise.resolve()
+    })
+
+    const gpsButton = Array.from(container.querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('Use GPS'),
+    )
+    const locationSelect = container.querySelector('#location') as HTMLSelectElement | null
+
+    await act(async () => {
+      gpsButton!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await Promise.resolve()
+    })
+
+    expect(locationSelect?.value).toBe('11.500000, 125.500000')
+    expect(Array.from(locationSelect?.options ?? []).some((option) => option.value === '11.500000, 125.500000')).toBe(true)
   })
 
   it('starts vehicle lookup only after debounce with 2+ characters and fills the selection details', async () => {

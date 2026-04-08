@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   getAuthenticatedNavigationConfig,
+  getAuthenticatedMobilePrimaryActionCount,
   getAuthenticatedNavigationTitle,
   isAuthenticatedNavigationItemActive,
   isAuthenticatedProfileSheetActive,
@@ -13,6 +14,13 @@ describe('authenticated navigation registry', () => {
     expect(getAuthenticatedNavigationConfig('ADMIN').tabs).toHaveLength(4)
     expect(getAuthenticatedNavigationConfig('DATA_ENCODER').tabs).toHaveLength(3)
     expect(getAuthenticatedNavigationConfig('ENFORCER').tabs).toHaveLength(2)
+  })
+
+  it('derives mobile primary actions from the active role navigation', () => {
+    expect(getAuthenticatedMobilePrimaryActionCount('PUBLIC')).toBe(5)
+    expect(getAuthenticatedMobilePrimaryActionCount('ADMIN')).toBe(5)
+    expect(getAuthenticatedMobilePrimaryActionCount('DATA_ENCODER')).toBe(4)
+    expect(getAuthenticatedMobilePrimaryActionCount('ENFORCER')).toBe(3)
   })
 
   it('matches legacy public calculator and report aliases to the new tabs', () => {

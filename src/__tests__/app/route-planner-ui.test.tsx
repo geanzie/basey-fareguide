@@ -99,6 +99,7 @@ describe('RoutePlannerCalculator', () => {
   let fetchMock: ReturnType<typeof vi.fn>
   let routeQueue: Array<Promise<Response> | Response>
   let routeBodies: Array<unknown>
+  let savedCalculationBodies: Array<unknown>
 
   beforeEach(() => {
     vi.useFakeTimers()
@@ -109,6 +110,7 @@ describe('RoutePlannerCalculator', () => {
     root = createRoot(container)
     routeQueue = []
     routeBodies = []
+    savedCalculationBodies = []
 
     fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
@@ -133,6 +135,7 @@ describe('RoutePlannerCalculator', () => {
       }
 
       if (url.includes('/api/fare-calculations')) {
+        savedCalculationBodies.push(JSON.parse(String(init?.body ?? '{}')))
         return Promise.resolve(makeResponse({ success: true }))
       }
 
@@ -244,6 +247,26 @@ describe('RoutePlannerCalculator', () => {
     expect(routeBodies[0]).toMatchObject({
       origin: { type: 'pin', lat: 11.2754, lng: 125.0689 },
       destination: { type: 'pin', lat: 11.2854, lng: 125.0789 },
+    })
+    expect(savedCalculationBodies).toHaveLength(1)
+    expect(savedCalculationBodies[0]).toMatchObject({
+      fromLocation: 'Mercado',
+      toLocation: 'Amandayehan Wharf',
+      routeData: {
+        planner: {
+          inputMode: 'pin',
+          origin: {
+            lat: 11.2754,
+            lng: 125.0689,
+            serializedPin: 'pin:11.275400,125.068900',
+          },
+          destination: {
+            lat: 11.2854,
+            lng: 125.0789,
+            serializedPin: 'pin:11.285400,125.078900',
+          },
+        },
+      },
     })
     expect(container.textContent).toContain('PHP 24.00')
     expect(container.textContent).toContain('polyline:encoded-ors')

@@ -68,12 +68,41 @@ import EnforcerIncidentsList from '@/components/EnforcerIncidentsList'
 describe('EnforcerIncidentsList', () => {
   let container: HTMLDivElement
   let root: Root
+  let fetchMock: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
     ;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
     container = document.createElement('div')
     document.body.appendChild(container)
     root = createRoot(container)
+    fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
+
+      if (url.includes('/api/incidents/incident-2/issue-ticket')) {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              penalty: {
+                offenseNumber: 1,
+                offenseTier: 'FIRST',
+                offenseTierLabel: '1st offense',
+                penaltyAmount: 500,
+                priorTicketCount: 0,
+                ruleVersion: '2026-04-municipal-v1',
+              },
+            }),
+            {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' },
+            },
+          ),
+        )
+      }
+
+      return Promise.reject(new Error(`Unexpected fetch: ${url}`))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    vi.stubGlobal('alert', vi.fn())
 
     vi.mocked(useSWR).mockReturnValue({
       data: {
@@ -130,6 +159,7 @@ describe('EnforcerIncidentsList', () => {
     })
     container.remove()
     vi.clearAllMocks()
+    vi.unstubAllGlobals()
     ;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false
   })
 
@@ -139,7 +169,7 @@ describe('EnforcerIncidentsList', () => {
       await Promise.resolve()
     })
 
-    expect(container.textContent).toContain('Enforcer Incident Queue')
+    expect(container.textContent).toContain('Queue overview')
     expect(container.textContent).toContain('Search incidents')
     expect(container.textContent).toContain('View Details')
     expect(container.textContent).toContain('Evidence')
@@ -151,5 +181,35 @@ describe('EnforcerIncidentsList', () => {
 
     expect(controls.length).toBeGreaterThan(0)
     expect(controls.every((button) => (button.textContent || '').trim().length > 0)).toBe(true)
+  })
+
+  it('renders the enforced penalty preview as read-only in the ticket modal', async () => {
+    await act(async () => {
+      root.render(React.createElement(EnforcerIncidentsList))
+      await Promise.resolve()
+    })
+
+    const issueTicketButton = Array.from(container.querySelectorAll('button')).find(
+      (button) => (button.textContent || '').trim() === 'Issue Ticket',
+    )
+
+    expect(issueTicketButton).toBeTruthy()
+
+    await act(async () => {
+      issueTicketButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await Promise.resolve()
+    })
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/incidents/incident-2/issue-ticket')
+    expect(container.textContent).toContain('Enforced Penalty')
+    expect(container.textContent).toContain('1st offense')
+    expect(container.textContent).toContain('PHP 500')
+
+    const penaltyInput = Array.from(container.querySelectorAll('input')).find((input) => {
+      const placeholder = input.getAttribute('placeholder') || ''
+      return placeholder.includes('penalty amount')
+    })
+
+    expect(penaltyInput).toBeUndefined()
   })
 })

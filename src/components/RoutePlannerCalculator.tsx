@@ -7,6 +7,8 @@ import { useAuth } from './AuthProvider'
 import FareRateBanner from '@/components/FareRateBanner'
 import type { DiscountCardDto, DiscountCardMeResponseDto, FarePolicySnapshotDto } from '@/lib/contracts'
 import { resolveFarePolicySnapshot } from '@/lib/fare/policy'
+import { resolvePinLabel, type ResolvedPinLabel } from '@/lib/locations/pinLabelResolver'
+import { serializePinLabel } from '@/lib/locations/pinSerializer'
 import {
   classifyPlannerError,
   getRouteSourceBadge,
@@ -27,6 +29,8 @@ interface RoutePlannerCalculatorProps {
 interface CalculateRouteResponse {
   origin: string
   destination: string
+  originResolved: ResolvedPinLabel | null
+  destinationResolved: ResolvedPinLabel | null
   distanceKm: number
   durationMin: number | null
   fare: number
@@ -71,6 +75,15 @@ function formatCurrency(value: number): string {
 
 function formatPointLabel(point: PlannerPoint | null, fallback: string): string {
   return point?.label?.trim() || fallback
+}
+
+function buildPlannerPinMetadata(point: PlannerPoint) {
+  return {
+    lat: point.lat,
+    lng: point.lng,
+    serializedPin: serializePinLabel(point.lat, point.lng),
+    resolved: resolvePinLabel(point.lat, point.lng),
+  }
 }
 
 function buildDurationText(durationMin: number | null): string {
@@ -285,10 +298,14 @@ const RoutePlannerCalculator = ({
 
   const saveFareCalculation = async (
     result: RouteResult,
+    originPoint: PlannerPoint,
+    destinationPoint: PlannerPoint,
     fromLabel: string,
     toLabel: string,
   ) => {
     try {
+      const originPin = buildPlannerPinMetadata(originPoint)
+      const destinationPin = buildPlannerPinMetadata(destinationPoint)
       const response = await fetch('/api/fare-calculations', {
         method: 'POST',
         headers: {
@@ -311,6 +328,11 @@ const RoutePlannerCalculator = ({
             source: result.sourceBadge,
             fareBreakdown: result.breakdown,
             farePolicy: result.farePolicy,
+            planner: {
+              inputMode: 'pin',
+              origin: originPin,
+              destination: destinationPin,
+            },
           },
           discountCardId: result.discountCard?.id || null,
           originalFare: result.originalFare || null,
@@ -421,7 +443,7 @@ const RoutePlannerCalculator = ({
         shouldFitNextSuccessRef.current = false
       }
 
-      void saveFareCalculation(nextResult, nextResult.originLabel, nextResult.destinationLabel)
+      void saveFareCalculation(nextResult, origin, destination, nextResult.originLabel, nextResult.destinationLabel)
     } catch (error) {
       if (controller.signal.aborted) {
         return

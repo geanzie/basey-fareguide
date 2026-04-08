@@ -10,6 +10,7 @@ import {
 } from '@/components/dashboardIcons'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import type { VehicleLookupDto } from '@/lib/contracts'
+import { resolvePinLabel } from '@/lib/locations/pinLabelResolver'
 
 import VehicleLookupField from './VehicleLookupField'
 
@@ -71,6 +72,7 @@ const IncidentReporting = () => {
     'Roxas', 'Salvacion', 'San Antonio', 'San Fernando', 'Sawa', 'Serum', 'Sugca',
     'Sugponon', 'Tinaogan', 'Tingib', 'Villa Aurora', 'Binongtu-an', 'Bulao',
   ]
+  const hasCustomLocationOption = Boolean(formData.location) && !barangays.includes(formData.location)
 
   const handleVehicleSelect = (vehicle: VehicleLookupDto) => {
     setSelectedVehicle(vehicle)
@@ -101,15 +103,24 @@ const IncidentReporting = () => {
     }
 
     setLocationLoading(true)
+    setError('')
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setCurrentLocation({
+        const gpsPosition = {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
-        })
+        }
+        const resolvedLocation = resolvePinLabel(gpsPosition.latitude, gpsPosition.longitude)
+
+        setCurrentLocation(gpsPosition)
+        setFormData((prev) => ({
+          ...prev,
+          location: resolvedLocation.displayLabel,
+        }))
         setLocationLoading(false)
       },
       () => {
+        setError('Unable to get your GPS location. Please select the location manually.')
         setLocationLoading(false)
       },
       {
@@ -187,6 +198,7 @@ const IncidentReporting = () => {
           incidentTime: new Date().toTimeString().slice(0, 5),
           evidenceFiles: [],
         })
+        setCurrentLocation(null)
         setSelectedVehicle(null)
       } else {
         const errorData = await response.json()
@@ -320,6 +332,9 @@ const IncidentReporting = () => {
               className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
             >
               <option value="">Select barangay</option>
+              {hasCustomLocationOption ? (
+                <option value={formData.location}>{formData.location}</option>
+              ) : null}
               {barangays.map((barangay) => (
                 <option key={barangay} value={barangay}>
                   {barangay}
@@ -348,7 +363,7 @@ const IncidentReporting = () => {
           </div>
           {currentLocation ? (
             <p className="text-xs text-green-600 mt-1">
-              GPS coordinates captured ({currentLocation.latitude.toFixed(6)}, {currentLocation.longitude.toFixed(6)})
+              GPS pinned to {formData.location || 'your current location'} ({currentLocation.latitude.toFixed(6)}, {currentLocation.longitude.toFixed(6)})
             </p>
           ) : null}
         </div>

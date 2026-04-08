@@ -265,6 +265,10 @@ export function getAuthenticatedNavigationConfig(userRole: UserRole): Authentica
   return authenticatedNavigationRegistry[userRole]
 }
 
+export function getAuthenticatedMobilePrimaryActionCount(userRole: UserRole): number {
+  return getAuthenticatedNavigationConfig(userRole).tabs.length + 1
+}
+
 export function isAuthenticatedNavigationItemActive(
   pathname: string,
   item: AuthenticatedNavigationItem,

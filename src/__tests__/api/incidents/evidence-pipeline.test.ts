@@ -21,6 +21,10 @@ const evidenceStorageMock = vi.hoisted(() => ({
   uploadEvidenceFiles: vi.fn(),
 }));
 
+const pinLabelResolverMock = vi.hoisted(() => ({
+  resolvePinLabel: vi.fn(),
+}));
+
 vi.mock("@/lib/prisma", () => ({
   prisma: prismaMock,
 }));
@@ -39,21 +43,33 @@ vi.mock("@/lib/evidenceStorage", () => ({
   uploadEvidenceFiles: evidenceStorageMock.uploadEvidenceFiles,
 }));
 
+vi.mock("@/lib/locations/pinLabelResolver", () => ({
+  resolvePinLabel: pinLabelResolverMock.resolvePinLabel,
+}));
+
 import { POST as reportIncident } from "@/app/api/incidents/report/route";
 import { POST as uploadIncidentEvidence } from "@/app/api/incidents/[incidentId]/evidence/route";
 
-function makeIncidentReportRequest(file?: File) {
+function makeIncidentReportRequest(options: {
+  file?: File;
+  location?: string;
+  coordinates?: string;
+} = {}) {
   const formData = new FormData();
   formData.set("incidentType", "FARE_OVERCHARGE");
   formData.set("description", "Driver charged more than the approved fare.");
-  formData.set("location", "Amandayehan");
+  formData.set("location", options.location ?? "Amandayehan");
   formData.set("incidentDate", "2026-04-02");
   formData.set("incidentTime", "09:00");
   formData.set("vehicleId", "veh-1");
   formData.set("plateNumber", "ABC123");
 
-  if (file) {
-    formData.append("evidence_0", file);
+  if (options.coordinates) {
+    formData.set("coordinates", options.coordinates);
+  }
+
+  if (options.file) {
+    formData.append("evidence_0", options.file);
   }
 
   return new NextRequest("http://localhost/api/incidents/report", {
@@ -80,6 +96,14 @@ beforeEach(() => {
     id: "public-1",
     userType: "PUBLIC",
   });
+  evidenceStorageMock.extractEvidenceFiles.mockReturnValue([]);
+  evidenceStorageMock.uploadEvidenceFiles.mockResolvedValue([]);
+  pinLabelResolverMock.resolvePinLabel.mockReturnValue({
+    displayLabel: "Amandayehan",
+    barangayName: "Amandayehan",
+    rawCoordinates: "11.278823, 125.001194",
+    isFallback: false,
+  });
 });
 
 describe("incident evidence pipeline", () => {
@@ -99,7 +123,7 @@ describe("incident evidence pipeline", () => {
       { id: "ev-1", fileName: "photo.jpg" },
     ]);
 
-    const res = await reportIncident(makeIncidentReportRequest(file));
+    const res = await reportIncident(makeIncidentReportRequest({ file }));
     const json = await res.json();
 
     expect(res.status).toBe(200);
@@ -130,7 +154,7 @@ describe("incident evidence pipeline", () => {
       new Error("Invalid file type. Only images, videos, PDFs, and audio files are allowed."),
     );
 
-    const res = await reportIncident(makeIncidentReportRequest(file));
+    const res = await reportIncident(makeIncidentReportRequest({ file }));
     const json = await res.json();
 
     expect(res.status).toBe(400);
@@ -138,6 +162,36 @@ describe("incident evidence pipeline", () => {
     expect(prismaMock.incident.delete).toHaveBeenCalledWith({
       where: { id: "inc-rollback" },
     });
+  });
+
+  it("derives the incident location from GPS coordinates when the location field is blank", async () => {
+    prismaMock.incident.create.mockResolvedValueOnce({
+      id: "inc-gps",
+      location: "Amandayehan",
+      reportedBy: {
+        firstName: "Public",
+        lastName: "Reporter",
+        username: "public-1",
+      },
+    });
+
+    const res = await reportIncident(
+      makeIncidentReportRequest({
+        location: "",
+        coordinates: JSON.stringify({ latitude: 11.278823, longitude: 125.001194 }),
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    expect(pinLabelResolverMock.resolvePinLabel).toHaveBeenCalledWith(11.278823, 125.001194);
+    expect(prismaMock.incident.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          location: "Amandayehan",
+          coordinates: JSON.stringify({ latitude: 11.278823, longitude: 125.001194 }),
+        }),
+      }),
+    );
   });
 
   it("uses the same shared evidence upload pipeline for follow-up incident uploads", async () => {
