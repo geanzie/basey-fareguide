@@ -6,7 +6,10 @@ export interface OffensePenaltyDecision {
   offenseNumber: number
   offenseTier: OffenseTier
   penaltyAmount: number
+  currentPenaltyAmount: number
+  carriedForwardPenaltyAmount: number
   priorTicketCount: number
+  priorUnpaidTicketCount: number
   ruleVersion: string
 }
 
@@ -79,14 +82,31 @@ export function getOffenseTierLabel(offenseTier: OffenseTier): string {
   }
 }
 
-export function buildOffensePenaltyDecision(priorTicketCount: number): OffensePenaltyDecision {
+function normalizePenaltyAmount(amount: number): number {
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return 0
+  }
+
+  return amount
+}
+
+export function buildOffensePenaltyDecision(
+  priorTicketCount: number,
+  carriedForwardPenaltyAmount: number = 0,
+  priorUnpaidTicketCount: number = 0,
+): OffensePenaltyDecision {
   const offenseNumber = priorTicketCount + 1
+  const currentPenaltyAmount = getPenaltyAmountForOffense(offenseNumber)
+  const normalizedCarriedForwardPenaltyAmount = normalizePenaltyAmount(carriedForwardPenaltyAmount)
 
   return {
     offenseNumber,
     offenseTier: getOffenseTier(offenseNumber),
-    penaltyAmount: getPenaltyAmountForOffense(offenseNumber),
+    penaltyAmount: currentPenaltyAmount + normalizedCarriedForwardPenaltyAmount,
+    currentPenaltyAmount,
+    carriedForwardPenaltyAmount: normalizedCarriedForwardPenaltyAmount,
     priorTicketCount,
+    priorUnpaidTicketCount,
     ruleVersion: PENALTY_RULE_VERSION,
   }
 }

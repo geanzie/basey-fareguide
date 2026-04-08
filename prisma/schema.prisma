@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
@@ -156,6 +157,9 @@ model Incident {
   offenseNumberAtIssuance Int?
   offenseTierAtIssuance OffenseTier?
   penaltyRuleVersion String?
+  paymentStatus TicketPaymentStatus @default(NOT_APPLICABLE)
+  paidAt        DateTime?
+  officialReceiptNumber String? @unique
   remarks       String?
   ticketNumber  String?        @unique
   incidentDate  DateTime
@@ -174,6 +178,7 @@ model Incident {
   @@index([plateNumber])
   @@index([incidentDate])
   @@index([createdAt])
+  @@index([paymentStatus])
   @@index([status, incidentType])
   @@index([status, createdAt])
   @@map("incidents")
@@ -439,6 +444,12 @@ enum OffenseTier {
   FIRST
   SECOND
   THIRD_PLUS
+}
+
+enum TicketPaymentStatus {
+  NOT_APPLICABLE
+  UNPAID
+  PAID
 }
 
 enum LocationType {

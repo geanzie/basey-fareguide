@@ -87,7 +87,10 @@ describe('EnforcerIncidentsList', () => {
                 offenseTier: 'FIRST',
                 offenseTierLabel: '1st offense',
                 penaltyAmount: 500,
+                currentPenaltyAmount: 500,
+                carriedForwardPenaltyAmount: 0,
                 priorTicketCount: 0,
+                priorUnpaidTicketCount: 0,
                 ruleVersion: '2026-04-municipal-v1',
               },
             }),
@@ -120,6 +123,8 @@ describe('EnforcerIncidentsList', () => {
             plateNumber: 'ABC-123',
             driverLicense: 'D-12345',
             ticketNumber: null,
+            paymentStatus: null,
+            paidAt: null,
             penaltyAmount: null,
             reportedBy: {
               firstName: 'Juan',
@@ -139,6 +144,8 @@ describe('EnforcerIncidentsList', () => {
             plateNumber: 'XYZ-789',
             driverLicense: 'D-67890',
             ticketNumber: null,
+            paymentStatus: null,
+            paidAt: null,
             penaltyAmount: 500,
             reportedBy: {
               firstName: 'Maria',
@@ -203,6 +210,8 @@ describe('EnforcerIncidentsList', () => {
     expect(fetchMock).toHaveBeenCalledWith('/api/incidents/incident-2/issue-ticket')
     expect(container.textContent).toContain('Enforced Penalty')
     expect(container.textContent).toContain('1st offense')
+    expect(container.textContent).toContain('Current Ticket')
+    expect(container.textContent).toContain('Amount Due')
     expect(container.textContent).toContain('PHP 500')
 
     const penaltyInput = Array.from(container.querySelectorAll('input')).find((input) => {

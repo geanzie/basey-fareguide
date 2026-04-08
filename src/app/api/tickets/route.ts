@@ -2,6 +2,27 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { ENFORCER_ONLY, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
 
+function normalizeTicketPaymentState(paymentStatus: unknown, requiresPayment: unknown) {
+  if (paymentStatus === 'PAID') {
+    return {
+      paymentStatus: 'PAID' as const,
+      paidAt: new Date(),
+    }
+  }
+
+  if (requiresPayment === false) {
+    return {
+      paymentStatus: 'NOT_APPLICABLE' as const,
+      paidAt: null,
+    }
+  }
+
+  return {
+    paymentStatus: 'UNPAID' as const,
+    paidAt: null,
+  }
+}
+
 function generateTicketNumber(): string {
   const prefix = 'TKT'
   const timestamp = Date.now().toString().slice(-6)
@@ -41,6 +62,7 @@ export async function POST(request: NextRequest) {
 
     // Generate unique ticket number
     const ticketNumber = generateTicketNumber()
+    const normalizedPaymentState = normalizeTicketPaymentState(paymentStatus, requiresPayment)
 
     // Find or create vehicle if plateNumber is provided
     let vehicleId = null
@@ -85,10 +107,12 @@ export async function POST(request: NextRequest) {
         driverLicense,
         plateNumber,
         status: paymentStatus === 'PAID' ? 'RESOLVED' : 'PENDING',
+        paymentStatus: normalizedPaymentState.paymentStatus,
         penaltyAmount: parseFloat(finalPenaltyAmount.toString()),
         ticketNumber,
         incidentDate: incidentDate ? new Date(incidentDate) : new Date(),
-        resolvedAt: paymentStatus === 'PAID' ? new Date() : null
+        resolvedAt: paymentStatus === 'PAID' ? new Date() : null,
+        paidAt: normalizedPaymentState.paidAt
       },
       include: {
         reportedBy: {

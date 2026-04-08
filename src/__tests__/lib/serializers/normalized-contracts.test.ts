@@ -44,6 +44,9 @@ describe("normalized serializers", () => {
       incidentDate: new Date("2026-04-02T09:00:00.000Z"),
       status: "INVESTIGATING",
       ticketNumber: null,
+      paymentStatus: null,
+      paidAt: null,
+      officialReceiptNumber: null,
       penaltyAmount: "500",
       remarks: null,
       createdAt: new Date("2026-04-02T09:05:00.000Z"),
@@ -63,6 +66,9 @@ describe("normalized serializers", () => {
       status: "INVESTIGATING",
       statusLabel: "Investigating",
       date: "2026-04-02T09:00:00.000Z",
+      paymentStatus: null,
+      paidAt: null,
+      officialReceiptNumber: null,
       evidenceCount: 2,
     });
     expect("incidentType" in incident).toBe(false);

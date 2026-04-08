@@ -22,10 +22,13 @@ interface TicketFormState {
 
 interface TicketPenaltyPreview {
   penaltyAmount: number
+  currentPenaltyAmount: number
+  carriedForwardPenaltyAmount: number
   offenseNumber: number
   offenseTier: 'FIRST' | 'SECOND' | 'THIRD_PLUS'
   offenseTierLabel: string
   priorTicketCount: number
+  priorUnpaidTicketCount: number
   ruleVersion: string
 }
 
@@ -510,7 +513,10 @@ export default function EnforcerIncidentsList() {
                         className={getStatusColor(incident.status)}
                       />
                       {incident.ticketNumber ? (
-                        <div className="text-xs text-gray-600 mt-1">Ticket: {incident.ticketNumber}</div>
+                        <div className="text-xs text-gray-600 mt-1">
+                          Ticket: {incident.ticketNumber}
+                          {incident.paymentStatus ? ` • ${incident.paymentStatus.replace('_', ' ')}` : ''}
+                        </div>
                       ) : null}
                     </div>
                   ),
@@ -628,6 +634,12 @@ export default function EnforcerIncidentsList() {
                       <p><span className="font-medium">Date:</span> {formatDate(selectedIncident.date)}</p>
                       {selectedIncident.ticketNumber ? (
                         <p><span className="font-medium">Ticket Number:</span> {selectedIncident.ticketNumber}</p>
+                      ) : null}
+                      {selectedIncident.ticketNumber ? (
+                        <p><span className="font-medium">Payment Status:</span> {(selectedIncident.paymentStatus || 'NOT_APPLICABLE').replace('_', ' ')}</p>
+                      ) : null}
+                      {selectedIncident.paidAt ? (
+                        <p><span className="font-medium">Paid At:</span> {formatDate(selectedIncident.paidAt)}</p>
                       ) : null}
                     </div>
                   </div>
@@ -801,7 +813,7 @@ export default function EnforcerIncidentsList() {
                       Loading penalty details...
                     </div>
                   ) : ticketPenaltyPreview ? (
-                    <div className="grid gap-3 rounded-lg border border-red-200 bg-red-50 p-4 md:grid-cols-3">
+                    <div className="grid gap-3 rounded-lg border border-red-200 bg-red-50 p-4 md:grid-cols-4">
                       <div>
                         <p className="text-xs font-semibold uppercase tracking-wide text-red-600">Offense</p>
                         <p className="mt-1 text-sm font-semibold text-red-900">#{ticketPenaltyPreview.offenseNumber}</p>
@@ -811,7 +823,13 @@ export default function EnforcerIncidentsList() {
                         <p className="mt-1 text-sm font-semibold text-red-900">{ticketPenaltyPreview.offenseTierLabel}</p>
                       </div>
                       <div>
-                        <p className="text-xs font-semibold uppercase tracking-wide text-red-600">Amount</p>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-red-600">Current Ticket</p>
+                        <p className="mt-1 text-sm font-semibold text-red-900">
+                          PHP {ticketPenaltyPreview.currentPenaltyAmount.toLocaleString()}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-red-600">Amount Due</p>
                         <p className="mt-1 text-sm font-semibold text-red-900">
                           PHP {ticketPenaltyPreview.penaltyAmount.toLocaleString()}
                         </p>
@@ -822,6 +840,13 @@ export default function EnforcerIncidentsList() {
                           {ticketPenaltyPreview.priorTicketCount === 1 ? '' : 's'} for this plate number.
                         </p>
                       </div>
+                      {ticketPenaltyPreview.carriedForwardPenaltyAmount > 0 ? (
+                        <div className="md:col-span-4">
+                          <p className="text-xs text-red-700">
+                            Includes PHP {ticketPenaltyPreview.carriedForwardPenaltyAmount.toLocaleString()} carried forward from {ticketPenaltyPreview.priorUnpaidTicketCount} earlier unpaid ticket{ticketPenaltyPreview.priorUnpaidTicketCount === 1 ? '' : 's'}.
+                          </p>
+                        </div>
+                      ) : null}
                     </div>
                   ) : (
                     <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-4 py-3 text-sm text-gray-600">

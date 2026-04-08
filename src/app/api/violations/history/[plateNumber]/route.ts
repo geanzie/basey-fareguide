@@ -64,9 +64,16 @@ export async function GET(
     const totalPenalties = violations.reduce((sum, violation) => {
       return sum + (violation.penaltyAmount ? Number(violation.penaltyAmount) : 0)
     }, 0)
+    const outstandingPenalties = violations.reduce((sum, violation) => {
+      if (!violation.ticketNumber || violation.paymentStatus !== 'UNPAID') {
+        return sum
+      }
+
+      return sum + (violation.penaltyAmount ? Number(violation.penaltyAmount) : 0)
+    }, 0)
     const ticketedViolations = violations.filter(v => Boolean(v.ticketNumber) && v.status !== 'DISMISSED').length
-    const resolvedTicketedViolations = violations.filter(v => v.status === 'RESOLVED' && v.ticketNumber).length
-    const activeTicketedViolations = violations.filter(v => v.ticketNumber && v.status !== 'RESOLVED' && v.status !== 'DISMISSED').length
+    const resolvedTicketedViolations = violations.filter(v => v.ticketNumber && v.paymentStatus === 'PAID').length
+    const activeTicketedViolations = violations.filter(v => v.ticketNumber && v.paymentStatus === 'UNPAID').length
     const openIncidents = violations.filter(v => !v.ticketNumber && ['PENDING', 'INVESTIGATING'].includes(v.status)).length
     const dismissedIncidents = violations.filter(v => v.status === 'DISMISSED').length
 
@@ -98,6 +105,7 @@ export async function GET(
       summary: {
         totalViolations,
         totalPenalties,
+        outstandingPenalties,
         paidTickets: resolvedTicketedViolations,
         unpaidTickets: activeTicketedViolations,
         ticketedViolations,

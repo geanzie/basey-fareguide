@@ -147,6 +147,14 @@ const authenticatedNavigationRegistry: Record<UserRole, AuthenticatedNavigationC
         matchers: [prefix('/admin/users')],
       },
       {
+        id: 'ticket-payments',
+        label: 'Ticket Payments',
+        shortLabel: 'Payments',
+        icon: DASHBOARD_ICONS.ticket,
+        href: '/admin/ticket-payments',
+        matchers: [prefix('/admin/ticket-payments')],
+      },
+      {
         id: 'fare-rates',
         label: 'Fare Rates',
         shortLabel: 'Fares',
@@ -189,6 +197,14 @@ const authenticatedNavigationRegistry: Record<UserRole, AuthenticatedNavigationC
         icon: DASHBOARD_ICONS.vehicle,
         href: '/encoder/vehicles',
         matchers: [prefix('/encoder/vehicles')],
+      },
+      {
+        id: 'ticket-payments',
+        label: 'Ticket Payments',
+        shortLabel: 'Payments',
+        icon: DASHBOARD_ICONS.ticket,
+        href: '/encoder/ticket-payments',
+        matchers: [prefix('/encoder/ticket-payments')],
       },
     ],
     secondaryActions: [

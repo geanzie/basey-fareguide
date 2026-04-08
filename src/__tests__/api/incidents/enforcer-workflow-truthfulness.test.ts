@@ -13,6 +13,7 @@ const prismaMock = vi.hoisted(() => ({
   incident: {
     findUnique: vi.fn(),
     count: vi.fn(),
+    aggregate: vi.fn(),
     update: vi.fn(),
   },
 }))
@@ -22,6 +23,7 @@ const cleanupMock = vi.hoisted(() => ({
 }))
 
 vi.mock('@/lib/auth', () => ({
+  ADMIN_OR_ENCODER: ['ADMIN', 'DATA_ENCODER'],
   ENFORCER_ONLY: ['ENFORCER'],
   requireRequestRole: authMock.requireRequestRole,
   createAuthErrorResponse: authMock.createAuthErrorResponse,
@@ -38,6 +40,7 @@ vi.mock('@/lib/evidenceCleanup', () => ({
 import { PATCH as takeIncident } from '@/app/api/incidents/[incidentId]/take/route'
 import { GET as getTicketPenaltyPreview } from '@/app/api/incidents/[incidentId]/issue-ticket/route'
 import { PATCH as issueTicket } from '@/app/api/incidents/[incidentId]/issue-ticket/route'
+import { PATCH as markTicketPaid } from '@/app/api/incidents/[incidentId]/payment/route'
 import { PATCH as resolveIncident } from '@/app/api/incidents/[incidentId]/resolve/route'
 
 function makeJsonRequest(url: string, body: unknown = {}): Request {
@@ -59,6 +62,10 @@ beforeEach(() => {
   authMock.requireRequestRole.mockResolvedValue({ id: 'enforcer-1', userType: 'ENFORCER' })
   cleanupMock.cleanupEvidenceFiles.mockResolvedValue(undefined)
   prismaMock.incident.count.mockResolvedValue(0)
+  prismaMock.incident.aggregate.mockResolvedValue({
+    _count: { id: 0 },
+    _sum: { penaltyAmount: null },
+  })
 })
 
 describe('enforcer workflow truthfulness', () => {
@@ -128,7 +135,10 @@ describe('enforcer workflow truthfulness', () => {
         offenseTier: 'FIRST',
         offenseTierLabel: '1st offense',
         penaltyAmount: 500,
+        currentPenaltyAmount: 500,
+        carriedForwardPenaltyAmount: 0,
         priorTicketCount: 0,
+        priorUnpaidTicketCount: 0,
         ruleVersion: '2026-04-municipal-v1',
       }),
     )
@@ -158,6 +168,10 @@ describe('enforcer workflow truthfulness', () => {
       createdAt: new Date('2026-04-03T08:05:00.000Z'),
     })
     prismaMock.incident.count.mockResolvedValueOnce(1)
+    prismaMock.incident.aggregate.mockResolvedValueOnce({
+      _count: { id: 1 },
+      _sum: { penaltyAmount: 500 },
+    })
 
     const response = await getTicketPenaltyPreview(
       makeRequest('http://localhost/api/incidents/incident-1/issue-ticket') as never,
@@ -171,8 +185,11 @@ describe('enforcer workflow truthfulness', () => {
       offenseNumber: 2,
       offenseTier: 'SECOND',
       offenseTierLabel: '2nd offense',
-      penaltyAmount: 1000,
+      penaltyAmount: 1500,
+      currentPenaltyAmount: 1000,
+      carriedForwardPenaltyAmount: 500,
       priorTicketCount: 1,
+      priorUnpaidTicketCount: 1,
       ruleVersion: '2026-04-municipal-v1',
     })
   })
@@ -188,6 +205,10 @@ describe('enforcer workflow truthfulness', () => {
       createdAt: new Date('2026-04-03T08:05:00.000Z'),
     })
     prismaMock.incident.count.mockResolvedValueOnce(4)
+    prismaMock.incident.aggregate.mockResolvedValueOnce({
+      _count: { id: 4 },
+      _sum: { penaltyAmount: 4500 },
+    })
 
     const response = await getTicketPenaltyPreview(
       makeRequest('http://localhost/api/incidents/incident-1/issue-ticket') as never,
@@ -200,7 +221,46 @@ describe('enforcer workflow truthfulness', () => {
       expect.objectContaining({
         offenseNumber: 5,
         offenseTier: 'THIRD_PLUS',
-        penaltyAmount: 1500,
+        penaltyAmount: 6000,
+        currentPenaltyAmount: 1500,
+        carriedForwardPenaltyAmount: 4500,
+        priorUnpaidTicketCount: 4,
+      }),
+    )
+  })
+
+  it('lets the encoder office mark a ticket as paid without changing its resolution state', async () => {
+    authMock.requireRequestRole.mockResolvedValueOnce({ id: 'encoder-1', userType: 'DATA_ENCODER' })
+    prismaMock.incident.findUnique.mockResolvedValueOnce({
+      id: 'incident-1',
+      ticketNumber: 'T-101',
+      handledById: 'enforcer-1',
+      paymentStatus: 'UNPAID',
+      remarks: null,
+    })
+    prismaMock.incident.update.mockResolvedValueOnce({
+      id: 'incident-1',
+      ticketNumber: 'T-101',
+      paymentStatus: 'PAID',
+      status: 'RESOLVED',
+    })
+
+    const response = await markTicketPaid(
+      makeJsonRequest('http://localhost/api/incidents/incident-1/payment', {
+        officialReceiptNumber: 'OR-1001',
+      }) as never,
+      { params: Promise.resolve({ incidentId: 'incident-1' }) },
+    )
+    const json = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(json.message).toBe('Ticket T-101 marked as paid.')
+    expect(prismaMock.incident.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          paymentStatus: 'PAID',
+          officialReceiptNumber: 'OR-1001',
+        }),
       }),
     )
   })

@@ -68,35 +68,58 @@ async function resolveTicketIssuanceContext(
     }
   }
 
-  const priorTicketCount = await prisma.incident.count({
-    where: {
-      id: { not: incident.id },
-      plateNumber: {
-        equals: normalizedPlateNumber,
-        mode: 'insensitive',
-      },
-      ticketNumber: { not: null },
-      status: { not: 'DISMISSED' },
-      OR: [
-        {
-          incidentDate: {
-            lt: incident.incidentDate,
-          },
-        },
-        {
-          incidentDate: incident.incidentDate,
-          createdAt: {
-            lt: incident.createdAt,
-          },
-        },
-      ],
+  const priorTicketWhere = {
+    id: { not: incident.id },
+    plateNumber: {
+      equals: normalizedPlateNumber,
+      mode: 'insensitive' as const,
     },
-  })
+    ticketNumber: { not: null },
+    status: { not: 'DISMISSED' as const },
+    OR: [
+      {
+        incidentDate: {
+          lt: incident.incidentDate,
+        },
+      },
+      {
+        incidentDate: incident.incidentDate,
+        createdAt: {
+          lt: incident.createdAt,
+        },
+      },
+    ],
+  }
+
+  const [priorTicketCount, unpaidPriorTicketSummary] = await Promise.all([
+    prisma.incident.count({
+      where: priorTicketWhere,
+    }),
+    prisma.incident.aggregate({
+      where: {
+        ...priorTicketWhere,
+        paymentStatus: 'UNPAID',
+      },
+      _count: {
+        id: true,
+      },
+      _sum: {
+        penaltyAmount: true,
+      },
+    }),
+  ])
+
+  const carriedForwardPenaltyAmount = Number(unpaidPriorTicketSummary._sum.penaltyAmount ?? 0)
+  const priorUnpaidTicketCount = unpaidPriorTicketSummary._count.id
 
   return {
     incident,
     normalizedPlateNumber,
-    penaltyDecision: buildOffensePenaltyDecision(priorTicketCount),
+    penaltyDecision: buildOffensePenaltyDecision(
+      priorTicketCount,
+      carriedForwardPenaltyAmount,
+      priorUnpaidTicketCount,
+    ),
   }
 }
 
@@ -170,10 +193,12 @@ export async function PATCH(
       data: {
         plateNumber: normalizedPlateNumber,
         ticketNumber,
-        penaltyAmount: penaltyDecision.penaltyAmount,
+        penaltyAmount: penaltyDecision.currentPenaltyAmount,
         offenseNumberAtIssuance: penaltyDecision.offenseNumber,
         offenseTierAtIssuance: penaltyDecision.offenseTier,
         penaltyRuleVersion: penaltyDecision.ruleVersion,
+        paymentStatus: 'UNPAID',
+        paidAt: null,
         remarks: remarks || incident.remarks,
         status: 'RESOLVED',
         resolvedAt: new Date(),

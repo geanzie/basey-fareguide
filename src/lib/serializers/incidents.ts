@@ -2,6 +2,7 @@ import type {
   DashboardActivityItemDto,
   IncidentListItemDto,
   IncidentPersonDto,
+  TicketPaymentStatus,
 } from "@/lib/contracts";
 
 const INCIDENT_TYPE_LABELS: Record<string, string> = {
@@ -44,6 +45,16 @@ function toNullableNumber(value: number | string | null | undefined): number | n
   return Number.isFinite(numberValue) ? numberValue : null;
 }
 
+function toNullableTicketPaymentStatus(
+  value: string | null | undefined,
+): TicketPaymentStatus | null {
+  if (value === "NOT_APPLICABLE" || value === "UNPAID" || value === "PAID") {
+    return value;
+  }
+
+  return null;
+}
+
 export function formatIncidentTypeLabel(type: string): string {
   return INCIDENT_TYPE_LABELS[type] ?? type;
 }
@@ -80,6 +91,9 @@ export function serializeIncident(record: {
   incidentDate: Date | string;
   status: string;
   ticketNumber?: string | null;
+  paymentStatus?: string | null;
+  paidAt?: Date | string | null;
+  officialReceiptNumber?: string | null;
   penaltyAmount?: number | string | null;
   remarks?: string | null;
   createdAt: Date | string;
@@ -109,6 +123,9 @@ export function serializeIncident(record: {
     status: record.status,
     statusLabel: formatIncidentStatusLabel(record.status),
     ticketNumber: toNullableString(record.ticketNumber),
+    paymentStatus: toNullableTicketPaymentStatus(record.paymentStatus),
+    paidAt: record.paidAt ? toIsoString(record.paidAt) : null,
+    officialReceiptNumber: toNullableString(record.officialReceiptNumber),
     penaltyAmount: toNullableNumber(record.penaltyAmount),
     remarks: toNullableString(record.remarks),
     createdAt: toIsoString(record.createdAt),

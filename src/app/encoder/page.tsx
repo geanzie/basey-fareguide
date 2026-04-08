@@ -30,7 +30,7 @@ function EncoderContent() {
         {/* Quick Actions */}
         <div className="app-surface-card rounded-2xl p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <Link
               href="/encoder/permits"
               className="bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg p-4 transition-colors group"
@@ -73,6 +73,21 @@ function EncoderContent() {
                 </div>
                 <h3 className="font-semibold text-purple-700">Vehicle Registry</h3>
                 <p className="text-sm text-purple-600 mt-1">Browse all vehicles</p>
+              </div>
+            </Link>
+
+            <Link
+              href="/encoder/ticket-payments"
+              className="bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg p-4 transition-colors group"
+            >
+              <div className="text-center">
+                <div className="mb-3 flex justify-center">
+                  <div className={`${getDashboardIconChipClasses('amber')} group-hover:scale-110 transition-transform`}>
+                    <DashboardIconSlot icon={DASHBOARD_ICONS.ticket} size={DASHBOARD_ICON_POLICY.sizes.hero} />
+                  </div>
+                </div>
+                <h3 className="font-semibold text-amber-700">Ticket Payments</h3>
+                <p className="text-sm text-amber-600 mt-1">Record settlements and receipt notes</p>
               </div>
             </Link>
           </div>

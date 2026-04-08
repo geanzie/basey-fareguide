@@ -6,6 +6,8 @@ export type IncidentStatus =
   | "RESOLVED"
   | "DISMISSED";
 
+export type TicketPaymentStatus = "NOT_APPLICABLE" | "UNPAID" | "PAID";
+
 export type IncidentType =
   | "FARE_OVERCHARGE"
   | "FARE_UNDERCHARGE"
@@ -35,6 +37,9 @@ export interface IncidentListItemDto {
   status: IncidentStatus | string;
   statusLabel: string;
   ticketNumber: string | null;
+  paymentStatus: TicketPaymentStatus | null;
+  paidAt: string | null;
+  officialReceiptNumber: string | null;
   penaltyAmount: number | null;
   remarks: string | null;
   createdAt: string;
