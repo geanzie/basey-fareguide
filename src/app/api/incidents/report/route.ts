@@ -15,15 +15,24 @@ function parseSubmittedCoordinates(payload: string | null): SubmittedCoordinates
   }
 
   try {
-    const parsed = JSON.parse(payload) as Partial<SubmittedCoordinates>
+    const parsed = JSON.parse(payload) as {
+      latitude?: unknown
+      longitude?: unknown
+    }
 
-    if (!Number.isFinite(parsed.latitude) || !Number.isFinite(parsed.longitude)) {
+    const { latitude, longitude } = parsed
+
+    if (typeof latitude !== 'number' || !Number.isFinite(latitude)) {
+      return null
+    }
+
+    if (typeof longitude !== 'number' || !Number.isFinite(longitude)) {
       return null
     }
 
     return {
-      latitude: parsed.latitude,
-      longitude: parsed.longitude,
+      latitude,
+      longitude,
     }
   } catch {
     return null
