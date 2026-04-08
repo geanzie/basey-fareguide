@@ -1,51 +1,35 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/create-next-app).
+# Frontend Application
 
-## Getting Started
+This folder contains the live Basey Fare Check application built with Next.js, React, TypeScript, Tailwind CSS, Prisma, and SWR.
 
-First, run the development server:
+## Core Scripts
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run type-check
+npx next build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Additional project scripts:
 
-You can start editing the page by modifying `app/route.ts`. The page auto-updates as you edit the file.
+- `npm run build` runs `prisma generate` and then `next build`
+- `npm run test` runs the Vitest suite
+- `npm run db:generate` regenerates the Prisma client
+- `npm run db:push` pushes the Prisma schema to the configured database
 
-## Development Performance Note
+## Practical Build Note
 
-If local `next dev` feels unusually slow on Windows, move this project out of a OneDrive-synced directory before doing deeper tuning. OneDrive file syncing can add noticeable overhead for `.next-dev`, `.next`, `node_modules`, and Prisma engine files, which makes first-hit route compilation and Prisma client startup feel slower than the deployed app.
+On Windows inside a OneDrive-synced directory, `npm run build` can fail during `prisma generate` because Prisma cannot reliably rename its engine DLL. When validating the app itself, prefer `npx next build` as the cleaner signal for frontend build health.
 
-This project intentionally separates development and production build artifacts:
+## Docs In This Folder
 
-- `npm run dev` writes to `.next-dev`
-- `npm run build`, `npm start`, and Vercel builds use `.next`
+- `docs/mobile/` contains the current mobile manual verification checklist and validation log template.
+- `docs/email/` contains the email/password-reset setup and testing notes.
+- `docs/data/` contains frontend-specific data integration notes.
+- `src/data/BASEY_LOCATIONS_USAGE.md` stays next to the location dataset it documents.
+- `scripts/LOCATIONS_README.md` stays next to the script workflow it documents.
 
-That split prevents the `Cannot find module './<chunk>.js'` runtime error that can happen when `next dev` and production output overwrite each other in the same folder. If you still hit a stale-chunk error after changing branches or interrupting builds, stop the app and remove `.next-dev` and `.next` before restarting.
+## Working Notes
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
-## API Routes
-
-This directory contains example API routes for the headless API app.
-
-For more details, see [route.js file convention](https://nextjs.org/docs/app/api-reference/file-conventions/route).
+The Git repository root is this `frontend/` directory.
