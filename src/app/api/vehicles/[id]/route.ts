@@ -8,6 +8,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await requireRequestRole(request, [...ADMIN_OR_ENCODER])
     const { id } = await params
     const vehicle = await prisma.vehicle.findUnique({
       where: { id },
@@ -33,10 +34,7 @@ export async function GET(
 
     return NextResponse.json(vehicle)
   } catch (error) {
-    return NextResponse.json(
-      { error: 'Failed to fetch vehicle' },
-      { status: 500 }
-    )
+    return createAuthErrorResponse(error)
   }
 }
 

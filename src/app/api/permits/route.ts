@@ -6,6 +6,7 @@ import { serializePermit } from '@/lib/serializers'
 
 export async function GET(request: NextRequest) {
   try {
+    await requireRequestRole(request, [...ADMIN_OR_ENCODER])
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status') as PermitStatus | null
     const vehicleType = searchParams.get('vehicleType') as VehicleType | null
@@ -60,10 +61,8 @@ export async function GET(request: NextRequest) {
         totalPages: Math.ceil(total / limit)
       }
     })
-      } catch (error) {    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+  } catch (error) {
+    return createAuthErrorResponse(error)
   }
 }
 

@@ -233,10 +233,12 @@ export default function VehicleLookupField({
                       <p className="text-sm text-gray-500">
                         {vehicle.vehicleType.replace(/_/g, ' ')} - {vehicle.make} {vehicle.model} - {vehicle.color}
                       </p>
-                      <p className="text-xs text-gray-500">
-                        Owner: {vehicle.ownerName}
-                        {vehicle.driverName ? ` - Driver: ${vehicle.driverName}` : ''}
-                      </p>
+                      {(vehicle.ownerName || vehicle.driverName) ? (
+                        <p className="text-xs text-gray-500">
+                          {vehicle.ownerName ? `Owner: ${vehicle.ownerName}` : 'Vehicle matched'}
+                          {vehicle.driverName ? ` - Driver: ${vehicle.driverName}` : ''}
+                        </p>
+                      ) : null}
                     </div>
                   </button>
                 </li>
@@ -255,10 +257,12 @@ export default function VehicleLookupField({
             {selectedVehicle.plateNumber} - {selectedVehicle.vehicleType.replace(/_/g, ' ')} -{' '}
             {selectedVehicle.make} {selectedVehicle.model}
           </p>
-          <p className="mt-1 text-blue-700">
-            Owner: {selectedVehicle.ownerName}
-            {selectedVehicle.driverName ? ` - Driver: ${selectedVehicle.driverName}` : ''}
-          </p>
+          {(selectedVehicle.ownerName || selectedVehicle.driverName) ? (
+            <p className="mt-1 text-blue-700">
+              {selectedVehicle.ownerName ? `Owner: ${selectedVehicle.ownerName}` : 'Vehicle selected'}
+              {selectedVehicle.driverName ? ` - Driver: ${selectedVehicle.driverName}` : ''}
+            </p>
+          ) : null}
         </div>
       )}
     </div>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PermitStatus } from "@prisma/client";
 
+import { createAuthErrorResponse, requireRequestUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { serializeVehicleLookup } from "@/lib/serializers";
 
@@ -31,6 +32,7 @@ export async function GET(request: NextRequest) {
   const startedAt = Date.now();
 
   try {
+    const user = await requireRequestUser(request);
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search")?.trim() ?? "";
     const limit = parseLimit(searchParams.get("limit"));
@@ -39,6 +41,7 @@ export async function GET(request: NextRequest) {
       searchParams.get("requireActivePermit"),
       true,
     );
+    const canViewSensitiveIdentity = user.userType !== "PUBLIC";
 
     if (search.length < MIN_QUERY_LENGTH) {
       const durationMs = Date.now() - startedAt;
@@ -75,8 +78,6 @@ export async function GET(request: NextRequest) {
         { make: { contains: search, mode: "insensitive" as const } },
         { model: { contains: search, mode: "insensitive" as const } },
         { color: { contains: search, mode: "insensitive" as const } },
-        { ownerName: { contains: search, mode: "insensitive" as const } },
-        { driverName: { contains: search, mode: "insensitive" as const } },
         {
           permit: {
             is: {
@@ -87,6 +88,12 @@ export async function GET(request: NextRequest) {
             },
           },
         },
+        ...(canViewSensitiveIdentity
+          ? [
+              { ownerName: { contains: search, mode: "insensitive" as const } },
+              { driverName: { contains: search, mode: "insensitive" as const } },
+            ]
+          : []),
       ],
     };
 
@@ -129,9 +136,20 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({
-      vehicles: vehicles.map((vehicle) => serializeVehicleLookup(vehicle)),
+      vehicles: vehicles.map((vehicle) =>
+        serializeVehicleLookup({
+          ...vehicle,
+          ownerName: canViewSensitiveIdentity ? vehicle.ownerName : null,
+          driverName: canViewSensitiveIdentity ? vehicle.driverName ?? null : null,
+          driverLicense: canViewSensitiveIdentity ? vehicle.driverLicense ?? null : null,
+        }),
+      ),
     });
   } catch (error) {
+    if (error instanceof Error && (error.message === "Unauthorized" || error.message === "Forbidden")) {
+      return createAuthErrorResponse(error);
+    }
+
     const durationMs = Date.now() - startedAt;
 
     console.error("[vehicle-options] error", {

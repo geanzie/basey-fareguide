@@ -72,7 +72,7 @@ export function serializeVehicleLookup(record: {
   make: string;
   model: string;
   color: string;
-  ownerName: string;
+  ownerName?: string | null;
   driverName?: string | null;
   driverLicense?: string | null;
   permit?: {
@@ -87,7 +87,7 @@ export function serializeVehicleLookup(record: {
     make: record.make,
     model: record.model,
     color: record.color,
-    ownerName: record.ownerName,
+    ownerName: record.ownerName ?? null,
     driverName: record.driverName ?? null,
     driverLicense: record.driverLicense ?? null,
   };

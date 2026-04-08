@@ -38,7 +38,7 @@ export interface VehicleLookupDto {
   make: string;
   model: string;
   color: string;
-  ownerName: string;
+  ownerName: string | null;
   driverName: string | null;
   driverLicense: string | null;
 }

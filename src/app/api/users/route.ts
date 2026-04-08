@@ -1,16 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { verifyAuth } from '@/lib/auth'
+import { ADMIN_ONLY, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
+
+const DEFAULT_LIMIT = 50
+const MAX_LIMIT = 100
+
+function parseLimit(raw: string | null) {
+  const parsed = Number.parseInt(raw ?? String(DEFAULT_LIMIT), 10)
+
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return DEFAULT_LIMIT
+  }
+
+  return Math.min(parsed, MAX_LIMIT)
+}
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await verifyAuth(request)
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    await requireRequestRole(request, [...ADMIN_ONLY])
 
     const { searchParams } = new URL(request.url)
-    const limit = parseInt(searchParams.get('limit') || '50')
+    const limit = parseLimit(searchParams.get('limit'))
 
     const users = await prisma.user.findMany({
       take: limit,
@@ -32,9 +42,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       users
     })
-      } catch (error) {    return NextResponse.json(
-      { error: 'Failed to fetch users' },
-      { status: 500 }
-    )
+  } catch (error) {
+    return createAuthErrorResponse(error)
   }
 }

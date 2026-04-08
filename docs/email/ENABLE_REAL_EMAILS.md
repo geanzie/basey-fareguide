@@ -14,7 +14,7 @@ I've updated your email configuration to **actually send emails** instead of jus
 
 2. **Environment Configuration** (`.env.local`)
    - Set `EMAIL_FROM=onboarding@resend.dev` (Resend's testing email)
-   - Your API key is already configured: `re_ScczQt6K_JkSjdhi8dGkCB7KA7bthrNSp`
+   - Your API key should be configured in `.env.local`: `re_your_api_key_here`
 
 ## 🚀 How to Test
 
@@ -26,11 +26,11 @@ npm run dev
 
 ### Step 2: Test Password Reset
 1. Go to: http://localhost:3000/auth/request-reset
-2. Enter: `ocenagener@gmail.com`
+2. Enter: `your-email@example.com`
 3. Click "Send OTP Code"
 
 ### Step 3: Check Email
-- **Check your inbox**: ocenagener@gmail.com
+- **Check your inbox**: your-email@example.com
 - **Check spam folder** (Resend emails sometimes land in spam first)
 - **Terminal**: You'll see "SENDING EMAIL" instead of "Development Mode"
 
@@ -64,7 +64,7 @@ You'll now see:
 ============================================================
 📧 SENDING EMAIL (Development Mode)
 ============================================================
-To: ocenagener@gmail.com
+To: your-email@example.com
 User: user
 OTP Code: 747969
 ============================================================
@@ -135,7 +135,7 @@ EMAIL_FROM=Basey Fare Check <noreply@baseyfareguide.com>
 
 Make sure your `.env.local` has:
 ```bash
-RESEND_API_KEY=re_ScczQt6K_JkSjdhi8dGkCB7KA7bthrNSp
+RESEND_API_KEY=re_your_api_key_here
 EMAIL_FROM=onboarding@resend.dev
 ```
 
@@ -161,7 +161,7 @@ EMAIL_FROM=onboarding@resend.dev
 ## Next Steps
 
 1. **Restart your dev server** (Ctrl+C, then `npm run dev`)
-2. **Test password reset** with ocenagener@gmail.com
+2. **Test password reset** with your-email@example.com
 3. **Check email inbox** (and spam!)
 4. **Verify OTP works** on reset page
 

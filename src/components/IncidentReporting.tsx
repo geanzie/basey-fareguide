@@ -373,7 +373,7 @@ const IncidentReporting = () => {
             Select Vehicle to Report *
           </label>
           <div className="mb-2 text-xs text-green-600 bg-green-50 border border-green-200 rounded px-2 py-1">
-            Search by permit plate, vehicle plate, owner, or driver. Only vehicles with active permits are shown.
+            Search by permit plate or vehicle plate. Only vehicles with active permits are shown.
           </div>
 
           <VehicleLookupField
@@ -393,7 +393,9 @@ const IncidentReporting = () => {
               <div className="text-sm text-blue-700 space-y-1">
                 <p><strong>Plate Number:</strong> {formData.plateNumber}</p>
                 <p><strong>Type:</strong> {formData.vehicleType.replace('_', ' ')}</p>
-                <p><strong>Owner:</strong> {selectedVehicle.ownerName}</p>
+                {selectedVehicle.ownerName ? (
+                  <p><strong>Owner:</strong> {selectedVehicle.ownerName}</p>
+                ) : null}
                 {formData.driverLicense ? (
                   <p><strong>Driver License:</strong> {formData.driverLicense}</p>
                 ) : null}

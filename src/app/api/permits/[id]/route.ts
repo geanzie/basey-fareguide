@@ -9,6 +9,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await requireRequestRole(request, [...ADMIN_OR_ENCODER])
     const { id } = await params
     const permit = await prisma.permit.findUnique({
       where: { id },
@@ -38,10 +39,7 @@ export async function GET(
 
     return NextResponse.json(permit)
   } catch (error) {
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return createAuthErrorResponse(error)
   }
 }
 

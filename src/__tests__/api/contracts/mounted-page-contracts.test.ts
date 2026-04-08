@@ -26,6 +26,7 @@ const prismaMock = vi.hoisted(() => ({
 const authMock = vi.hoisted(() => ({
   verifyAuth: vi.fn(),
   requireRequestUser: vi.fn(),
+  requireRequestRole: vi.fn(),
   createAuthErrorResponse: vi.fn((error: unknown) => {
     throw error;
   }),
@@ -41,6 +42,7 @@ vi.mock("@/lib/auth", async () => {
     ...actual,
     verifyAuth: authMock.verifyAuth,
     requireRequestUser: authMock.requireRequestUser,
+    requireRequestRole: authMock.requireRequestRole,
     createAuthErrorResponse: authMock.createAuthErrorResponse,
   };
 });
@@ -60,6 +62,10 @@ beforeEach(() => {
   authMock.requireRequestUser.mockResolvedValue({
     id: "public-1",
     userType: "PUBLIC",
+  });
+  authMock.requireRequestRole.mockResolvedValue({
+    id: "encoder-1",
+    userType: "DATA_ENCODER",
   });
 });
 
