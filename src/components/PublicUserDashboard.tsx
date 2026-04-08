@@ -95,8 +95,8 @@ function PublicUserDashboard() {
   }
 
   return (
-    <div className="space-y-8">
-      <section className="app-surface-card-strong rounded-2xl border border-blue-200/80 p-6">
+    <div className="space-y-6 sm:space-y-8">
+      <section className="app-surface-card-strong rounded-2xl border border-blue-200/80 p-5 sm:p-6">
         <div className="flex items-start gap-4">
           <div className={getDashboardIconChipClasses('blue')}>
             <DashboardIconSlot
@@ -106,7 +106,7 @@ function PublicUserDashboard() {
             />
           </div>
           <div className="min-w-0">
-            <h2 className="text-2xl font-bold text-slate-900">Your activity in Basey Fare Check</h2>
+            <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">Your activity in Basey Fare Check</h2>
             <p className="mt-2 max-w-2xl text-sm text-slate-600">
               Start with one action, then review your latest fares and reports.
             </p>
@@ -154,7 +154,7 @@ function PublicUserDashboard() {
         />
       </section>
 
-      <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <SummaryCard
           label="Saved Routes"
           value={summary.routes}
@@ -191,7 +191,7 @@ function PublicUserDashboard() {
             icon={DASHBOARD_ICONS.routes}
             tone="blue"
           />
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             {recentRoutes.length === 0 ? (
               <EmptyState
                 title="No fare calculations yet"
@@ -250,7 +250,7 @@ function PublicUserDashboard() {
             icon={DASHBOARD_ICONS.incidents}
             tone="red"
           />
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             {reportedIncidents.length === 0 ? (
               <EmptyState
                 title="No incident reports yet"
@@ -318,7 +318,7 @@ function ActionCard({
   return (
     <Link
       href={href}
-      className={`rounded-2xl p-5 transition hover:-translate-y-0.5 hover:shadow-lg ${accentClasses[accent]}`}
+      className={`rounded-2xl p-4 sm:p-5 transition hover:-translate-y-0.5 hover:shadow-lg ${accentClasses[accent]}`}
     >
       <div className="flex items-start gap-3">
         {icon ? (
@@ -350,7 +350,7 @@ function SummaryCard({
   value: number | string
 }) {
   return (
-    <div className="app-surface-card rounded-2xl p-5">
+    <div className="app-surface-card rounded-2xl p-4 sm:p-5">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm text-slate-500">{label}</p>
@@ -385,7 +385,7 @@ function SectionHeader({
   title: string
 }) {
   return (
-    <div className="flex flex-col gap-3 border-b border-gray-200 p-6 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-3 border-b border-gray-200 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
       <div>
         <div className="flex items-center gap-2">
           {icon ? (

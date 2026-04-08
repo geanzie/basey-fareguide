@@ -280,9 +280,9 @@ export default function EnforcerIncidentsList() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       <div className="app-surface-card-strong rounded-3xl">
-        <div className="px-6 py-6">
+        <div className="px-4 py-5 sm:px-6 sm:py-6">
           <div className="flex items-start gap-4">
             <div className={getDashboardIconChipClasses('red')}>
               <DashboardIconSlot
@@ -292,7 +292,7 @@ export default function EnforcerIncidentsList() {
               />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Enforcer Incident Queue</h1>
+              <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl">Queue overview</h2>
               <p className="text-gray-600 mt-1">
                 Take cases, review evidence, and issue tickets or resolutions when needed.
               </p>
@@ -300,8 +300,7 @@ export default function EnforcerIncidentsList() {
           </div>
         </div>
       </div>
-
-      <div className="px-6 py-8 space-y-8">
+      <div className="space-y-6 sm:space-y-8">
         {stats.pending > 0 ? (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <div className="flex items-start gap-3">
@@ -561,9 +560,9 @@ export default function EnforcerIncidentsList() {
 
       {showIncidentDetails && selectedIncident ? (
         <div className="fixed inset-0 z-50 h-full w-full overflow-y-auto bg-slate-950/35 backdrop-blur-sm">
-          <div className="app-surface-overlay relative top-20 mx-auto w-11/12 max-w-4xl rounded-3xl p-5">
+          <div className="app-surface-overlay app-mobile-sheet-safe relative top-4 mx-auto w-[calc(100%-1.5rem)] max-h-[calc(100vh-2rem)] max-w-4xl overflow-y-auto rounded-3xl p-4 sm:top-12 sm:w-11/12 sm:p-5">
             <div className="mt-3">
-              <div className="flex items-center justify-between mb-6">
+              <div className="mb-6 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <DashboardIconSlot
                     icon={DASHBOARD_ICONS.list}
@@ -633,7 +632,7 @@ export default function EnforcerIncidentsList() {
                 ) : null}
               </div>
 
-              <div className="mt-6 flex items-center justify-between border-t border-slate-200/80 pt-4">
+              <div className="mt-6 flex flex-col gap-4 border-t border-slate-200/80 pt-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex flex-wrap gap-3">
                   <button
                     onClick={() => openEvidenceManager(selectedIncident.id)}
@@ -719,7 +718,7 @@ export default function EnforcerIncidentsList() {
 
       {showTicketModal && ticketIncident ? (
         <div className="fixed inset-0 z-50 h-full w-full overflow-y-auto bg-slate-950/35 backdrop-blur-sm">
-          <div className="app-surface-overlay relative top-10 mx-auto max-h-[90vh] w-11/12 max-w-2xl overflow-y-auto rounded-3xl p-5">
+          <div className="app-surface-overlay app-mobile-sheet-safe relative top-4 mx-auto max-h-[calc(100vh-2rem)] w-[calc(100%-1.5rem)] max-w-2xl overflow-y-auto rounded-3xl p-4 sm:top-10 sm:max-h-[90vh] sm:w-11/12 sm:p-5">
             <div className="mt-3">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
@@ -787,17 +786,17 @@ export default function EnforcerIncidentsList() {
                   />
                 </div>
 
-                <div className="flex justify-end space-x-3 mt-6">
+                <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end sm:space-x-0">
                   <button
                     type="button"
                     onClick={closeTicketModal}
-                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+                    className="w-full rounded-lg bg-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-400 sm:w-auto"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
+                    className="w-full rounded-lg bg-emerald-600 px-4 py-2 text-white hover:bg-emerald-700 sm:w-auto"
                   >
                     Issue Ticket
                   </button>

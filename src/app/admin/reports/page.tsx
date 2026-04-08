@@ -132,8 +132,8 @@ export default function AdminReportsPage() {
 
         {reportData ? (
           <>
-            <div className="app-surface-card rounded-2xl p-6 mb-6">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="app-surface-card mb-6 rounded-2xl p-4 sm:p-6">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">Operations Report</h3>
                   <p className="text-sm text-gray-600">
@@ -141,11 +141,11 @@ export default function AdminReportsPage() {
                   </p>
                 </div>
 
-                <div className="flex gap-3">
+                <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
                   <select
                     value={selectedPeriod}
                     onChange={(e) => setSelectedPeriod(e.target.value as '7d' | '30d' | '90d' | '1y')}
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500"
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 sm:w-auto"
                   >
                     <option value="7d">Last 7 days</option>
                     <option value="30d">Last 30 days</option>
@@ -155,7 +155,7 @@ export default function AdminReportsPage() {
 
                   <button
                     onClick={exportReport}
-                    className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium"
+                    className="w-full rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 sm:w-auto"
                   >
                     Export CSV
                   </button>
@@ -163,8 +163,8 @@ export default function AdminReportsPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <div className="app-surface-card rounded-2xl p-6">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-8">
+              <div className="app-surface-card rounded-2xl p-4 sm:p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Incident Analytics</h3>
 
                 <section className="space-y-2 mb-6">
@@ -188,7 +188,7 @@ export default function AdminReportsPage() {
                 </section>
               </div>
 
-              <div className="app-surface-card rounded-2xl p-6">
+              <div className="app-surface-card rounded-2xl p-4 sm:p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">User Analytics</h3>
                 <p className="text-sm text-gray-600 mb-6">
                   {reportData.users.total} total users, {reportData.users.active} active in the selected period.
@@ -205,7 +205,7 @@ export default function AdminReportsPage() {
                 </div>
               </div>
 
-              <div className="app-surface-card rounded-2xl p-6">
+              <div className="app-surface-card rounded-2xl p-4 sm:p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Storage Analytics</h3>
                 <p className="text-sm text-gray-600 mb-6">
                   {reportData.storage.totalFiles} stored file{reportData.storage.totalFiles === 1 ? '' : 's'} using{' '}
@@ -226,7 +226,7 @@ export default function AdminReportsPage() {
                 </div>
               </div>
 
-              <div className="app-surface-card rounded-2xl p-6">
+              <div className="app-surface-card rounded-2xl p-4 sm:p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Monthly Incident Trends</h3>
 
                 <div className="space-y-3">

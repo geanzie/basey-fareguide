@@ -11,17 +11,13 @@ import {
   DASHBOARD_ICONS,
   DASHBOARD_ICON_POLICY,
   DashboardIconSlot,
-  type DashboardIcon,
 } from '@/components/dashboardIcons'
-
-interface NavigationItem {
-  id: string
-  label: string
-  icon: DashboardIcon
-  href: string
-  badge?: string
-  children?: NavigationItem[]
-}
+import {
+  AuthenticatedMobileBottomNavigation,
+  AuthenticatedMobileProfileSheet,
+  AuthenticatedSidebarNavigation,
+} from '@/components/AuthenticatedNavigation'
+import { getAuthenticatedNavigationTitle } from '@/lib/navigation/authenticatedNavigation'
 
 interface UnifiedLayoutProps {
   children: React.ReactNode
@@ -38,8 +34,8 @@ export default function UnifiedLayout({
   subtitle,
   headerContent,
 }: UnifiedLayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const [mobileProfileSheetOpen, setMobileProfileSheetOpen] = useState(false)
   const [pageData, setPageData] = useState(getCurrentPageData)
   const pathname = usePathname()
   const { logout, status } = useAuth()
@@ -51,37 +47,30 @@ export default function UnifiedLayout({
     return unsubscribe
   }, [])
 
+  useEffect(() => {
+    setUserMenuOpen(false)
+    setMobileProfileSheetOpen(false)
+  }, [pathname])
+
   const handleLogout = async () => {
     if (status === 'logging_out') {
       return
     }
 
     setUserMenuOpen(false)
+    setMobileProfileSheetOpen(false)
     await logout()
   }
 
-  const navigationItems: NavigationItem[] = getNavigationItems(user.userType)
-
-  const isActive = (href: string) => {
-    if (href === '/') return pathname === href
-    return pathname.startsWith(href)
-  }
+  const resolvedTitle =
+    pageData.title || title || getAuthenticatedNavigationTitle(pathname, user.userType)
+  const resolvedSubtitle = pageData.subtitle || subtitle
+  const resolvedHeaderContent = pageData.headerContent || headerContent
 
   return (
     <div className="app-shell-bg min-h-screen flex">
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-slate-950/35 backdrop-blur-sm lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
       <aside
-        className={`
-        app-surface-overlay fixed inset-y-0 left-0 z-50 w-64 border-r border-slate-200/80 transform transition-transform duration-300 ease-in-out
-        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-        lg:translate-x-0 lg:relative lg:flex lg:flex-col
-      `}
+        className="app-surface-overlay hidden w-64 border-r border-slate-200/80 lg:relative lg:flex lg:min-h-screen lg:flex-col"
       >
         <div className="flex flex-col h-full">
           <div className="flex h-20 items-center border-b border-slate-200/80 px-6 py-5">
@@ -95,53 +84,50 @@ export default function UnifiedLayout({
           </div>
 
           <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-            {navigationItems.map((item) => (
-              <NavigationLink
-                key={item.id}
-                item={item}
-                isActive={isActive(item.href)}
-                onNavigate={() => setSidebarOpen(false)}
-              />
-            ))}
+            <AuthenticatedSidebarNavigation user={user} pathname={pathname} />
           </nav>
         </div>
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="app-surface-overlay sticky top-0 z-30 h-20 flex-shrink-0 border-b border-slate-200/80">
-          <div className="flex items-center justify-between px-4 py-5 sm:px-6 h-full">
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="lg:hidden rounded-lg p-2 text-gray-600 transition-colors hover:bg-white/70 hover:text-gray-900"
-            >
-              <DashboardIconSlot
-                icon={DASHBOARD_ICONS.menu}
-                size={24}
-              />
-            </button>
-
-            <div className="flex-1 min-w-0 px-4 lg:px-0">
-              {(pageData.title || title) && (
-                <div>
-                  <h1 className="text-xl font-semibold text-gray-900 truncate">
-                    {pageData.title || title}
-                  </h1>
-                  {(pageData.subtitle || subtitle) && (
-                    <p className="text-sm text-gray-500 mt-1">
-                      {pageData.subtitle || subtitle}
+        <header className="app-surface-overlay sticky top-0 z-30 h-16 flex-shrink-0 border-b border-slate-200/80 lg:h-20">
+          <div className="flex items-center justify-between px-4 sm:px-6 h-full">
+            <div className="flex min-w-0 flex-1 items-center gap-3 lg:block">
+              <div className="lg:hidden">
+                <BrandMark size="sm" />
+              </div>
+              <div className="min-w-0">
+                {resolvedTitle ? (
+                  <div>
+                    <h1 className="truncate text-base font-semibold text-gray-900 lg:text-xl">
+                      {resolvedTitle}
+                    </h1>
+                    {resolvedSubtitle ? (
+                      <p className="mt-1 hidden text-sm text-gray-500 lg:block">
+                        {resolvedSubtitle}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : (
+                  <div>
+                    <h1 className="truncate text-base font-semibold text-gray-900 lg:text-xl">
+                      Basey Fare Check
+                    </h1>
+                    <p className="mt-1 hidden text-sm text-gray-500 lg:block">
+                      Fare Reference System
                     </p>
-                  )}
-                </div>
-              )}
+                  </div>
+                )}
+              </div>
             </div>
 
-            {(pageData.headerContent || headerContent) && (
-              <div className="flex-shrink-0 mr-4">
-                {pageData.headerContent || headerContent}
+            {resolvedHeaderContent && (
+              <div className="mr-0 flex-shrink-0 lg:mr-4">
+                {resolvedHeaderContent}
               </div>
             )}
 
-            <div className="relative">
+            <div className="relative hidden lg:block">
               <button
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
                 className="flex items-center space-x-2 rounded-lg p-2 text-gray-600 transition-colors hover:bg-white/70 hover:text-gray-900"
@@ -207,175 +193,24 @@ export default function UnifiedLayout({
           </div>
         </header>
 
-        <main className="flex-1 overflow-auto">{children}</main>
+        <main className="app-mobile-nav-offset flex-1 overflow-auto">{children}</main>
       </div>
+
+      <AuthenticatedMobileBottomNavigation
+        user={user}
+        pathname={pathname}
+        profileSheetOpen={mobileProfileSheetOpen}
+        onOpenProfileSheet={() => setMobileProfileSheetOpen(true)}
+      />
+
+      <AuthenticatedMobileProfileSheet
+        user={user}
+        pathname={pathname}
+        open={mobileProfileSheetOpen}
+        onClose={() => setMobileProfileSheetOpen(false)}
+        onLogout={handleLogout}
+        isLoggingOut={status === 'logging_out'}
+      />
     </div>
   )
-}
-
-function NavigationLink({
-  item,
-  isActive,
-  onNavigate,
-}: {
-  item: NavigationItem
-  isActive: boolean
-  onNavigate: () => void
-}) {
-  return (
-    <Link
-      href={item.href}
-      onClick={onNavigate}
-      className={`
-        flex items-center space-x-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors
-        ${
-          isActive
-            ? 'bg-emerald-100/90 text-emerald-700 ring-1 ring-emerald-200'
-            : 'text-gray-600 hover:bg-white/70 hover:text-gray-900'
-        }
-      `}
-    >
-      <DashboardIconSlot
-        icon={item.icon}
-        size={DASHBOARD_ICON_POLICY.sizes.tab}
-      />
-      <span className="flex-1">{item.label}</span>
-      {item.badge && (
-        <span className="bg-red-100 text-red-600 text-xs px-2 py-1 rounded-full">
-          {item.badge}
-        </span>
-      )}
-    </Link>
-  )
-}
-
-function getNavigationItems(userType: string): NavigationItem[] {
-  const commonItems: NavigationItem[] = [
-    // Removed coordinate verification from common items - now admin only
-  ]
-
-  switch (userType) {
-    case 'ADMIN':
-      return [
-        {
-          id: 'dashboard',
-          label: 'Admin Dashboard',
-          icon: DASHBOARD_ICONS.dashboard,
-          href: '/admin',
-        },
-        {
-          id: 'users',
-          label: 'User Management',
-          icon: DASHBOARD_ICONS.users,
-          href: '/admin/users',
-        },
-        {
-          id: 'discount-cards',
-          label: 'Discount Cards',
-          icon: DASHBOARD_ICONS.discount,
-          href: '/admin/discount-cards',
-        },
-        {
-          id: 'incidents',
-          label: 'All Incidents',
-          icon: DASHBOARD_ICONS.incidents,
-          href: '/admin/incidents',
-        },
-        {
-          id: 'reports',
-          label: 'System Reports',
-          icon: DASHBOARD_ICONS.reports,
-          href: '/admin/reports',
-        },
-        {
-          id: 'fare-rates',
-          label: 'Fare Rates',
-          icon: DASHBOARD_ICONS.fare,
-          href: '/admin/fare-rates',
-        },
-        {
-          id: 'announcements',
-          label: 'Announcements',
-          icon: DASHBOARD_ICONS.announcements,
-          href: '/admin/announcements',
-        },
-        ...commonItems,
-      ]
-
-    case 'DATA_ENCODER':
-      return [
-        {
-          id: 'dashboard',
-          label: 'Encoder Dashboard',
-          icon: DASHBOARD_ICONS.dashboard,
-          href: '/encoder',
-        },
-        {
-          id: 'permits',
-          label: 'Permit Management',
-          icon: DASHBOARD_ICONS.fileText,
-          href: '/encoder/permits',
-        },
-        {
-          id: 'vehicles',
-          label: 'Vehicle Registry',
-          icon: DASHBOARD_ICONS.vehicle,
-          href: '/encoder/vehicles',
-        },
-        ...commonItems,
-      ]
-
-    case 'ENFORCER':
-      return [
-        {
-          id: 'dashboard',
-          label: 'Enforcement Dashboard',
-          icon: DASHBOARD_ICONS.dashboard,
-          href: '/enforcer',
-        },
-      ]
-
-    case 'PUBLIC':
-      return [
-        {
-          id: 'dashboard',
-          label: 'My Dashboard',
-          icon: DASHBOARD_ICONS.dashboard,
-          href: '/dashboard',
-        },
-        {
-          id: 'calculator',
-          label: 'Fare Calculator',
-          icon: DASHBOARD_ICONS.calculator,
-          href: '/calculator',
-        },
-        {
-          id: 'discount',
-          label: 'Discount Card',
-          icon: DASHBOARD_ICONS.discount,
-          href: '/profile/discount',
-        },
-        {
-          id: 'report',
-          label: 'Report Incident',
-          icon: DASHBOARD_ICONS.incidents,
-          href: '/report',
-        },
-        {
-          id: 'history',
-          label: 'My History',
-          icon: DASHBOARD_ICONS.history,
-          href: '/history',
-        },
-        {
-          id: 'profile',
-          label: 'My Profile',
-          icon: DASHBOARD_ICONS.user,
-          href: '/profile',
-        },
-      ]
-
-    default:
-      return []
-  }
 }

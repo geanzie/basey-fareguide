@@ -40,7 +40,7 @@ export default function RootLayout({
             </AuthAwareLayout>
 
             {/* Minimal Footer */}
-            <footer className="bg-gray-900 text-white py-6">
+            <footer className="hidden bg-gray-900 py-6 text-white lg:block">
               <div className="container mx-auto px-4 text-center">
                 <div className="text-sm text-gray-400">
                   <p>&copy; 2025 Municipality of Basey, Samar • Municipal Ordinance 105 Series of 2023</p>

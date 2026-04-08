@@ -59,7 +59,7 @@ export default function PageWrapper({
 
   return (
     <div className={`app-page-bg ${className}`.trim()}>
-      <div className="px-4 py-6 sm:px-6 lg:px-8">{children}</div>
+      <div className="px-4 py-4 sm:px-6 sm:py-6 lg:px-8">{children}</div>
     </div>
   )
 }

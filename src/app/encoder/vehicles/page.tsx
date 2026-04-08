@@ -21,7 +21,8 @@ export default function VehiclesListPage() {
           <Link href="/encoder/vehicles/new">
             <ActionButton variant="primary">
               <DashboardIconSlot icon={DASHBOARD_ICONS.plus} size={DASHBOARD_ICON_POLICY.sizes.button} className="mr-2" />
-              Register Vehicle
+              <span className="sm:hidden">Register</span>
+              <span className="hidden sm:inline">Register Vehicle</span>
             </ActionButton>
           </Link>
         )}

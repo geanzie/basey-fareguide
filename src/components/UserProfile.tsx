@@ -112,21 +112,24 @@ export default function UserProfile() {
 
   return (
     <div className="app-surface-card rounded-2xl">
-      <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-        <h2 className="text-xl font-semibold text-gray-900">My Profile</h2>
+      <div className="flex flex-col gap-3 border-b border-gray-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900 sm:text-xl">Profile details</h2>
+          <p className="mt-1 text-sm text-gray-500">Keep your account information current for fare history and support.</p>
+        </div>
         {!isEditing ? (
           <button
             onClick={() => setIsEditing(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            className="w-full rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700 sm:w-auto"
           >
             Edit Profile
           </button>
         ) : (
-          <div className="space-x-2">
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
             <button
               onClick={handleSaveProfile}
               disabled={saving}
-              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
+              className="w-full rounded-lg bg-green-600 px-4 py-2 text-white transition-colors hover:bg-green-700 disabled:opacity-50 sm:w-auto"
             >
               {saving ? 'Saving...' : 'Save'}
             </button>
@@ -146,7 +149,7 @@ export default function UserProfile() {
                   barangayResidence: user.barangayResidence || ''
                 })
               }}
-              className="app-surface-inner rounded-lg px-4 py-2 text-gray-700 transition-colors hover:bg-white/80"
+              className="app-surface-inner w-full rounded-lg px-4 py-2 text-gray-700 transition-colors hover:bg-white/80 sm:w-auto"
             >
               Cancel
             </button>
@@ -154,14 +157,14 @@ export default function UserProfile() {
         )}
       </div>
 
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
             {error}
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-6">
           {/* Basic Information */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Basic Information</h3>

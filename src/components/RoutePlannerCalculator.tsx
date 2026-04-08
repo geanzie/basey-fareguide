@@ -501,17 +501,17 @@ const RoutePlannerCalculator = ({
 
   return (
     <div className="mx-auto max-w-6xl">
-      <div className="space-y-5 sm:space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         <FareRateBanner />
 
         {routeResult && (
-          <section className="app-surface-card-strong rounded-3xl p-5 sm:p-6">
+          <section className="app-surface-card-strong rounded-3xl p-4 sm:p-6">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
               <div>
                 <p className="text-sm font-medium uppercase tracking-[0.2em] text-gray-500">
                   Estimated fare
                 </p>
-                <div className="mt-2 text-4xl font-bold text-gray-900 sm:text-5xl">
+                <div className="mt-2 text-3xl font-bold text-gray-900 sm:text-5xl">
                   {formatCurrency(routeResult.fare)}
                 </div>
 
@@ -580,8 +580,23 @@ const RoutePlannerCalculator = ({
           </section>
         )}
 
-        <div className="grid gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
-          <aside className="app-surface-card rounded-3xl p-5">
+        <div className="grid gap-4 lg:gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
+          <section className="order-1 app-surface-card rounded-3xl p-4 sm:p-5 lg:order-2">
+            <MapComponent
+              origin={origin}
+              destination={destination}
+              polyline={routeResult?.polyline}
+              isCalculating={isCalculating}
+              fitBoundsToken={fitBoundsToken}
+              plannerState={plannerState}
+              plannerMessage={routeMessage}
+              onOriginChange={updateOrigin}
+              onDestinationChange={updateDestination}
+              className="h-[360px] w-full rounded-2xl border border-gray-200 min-[420px]:h-[420px] lg:h-[520px]"
+            />
+          </section>
+
+          <aside className="order-2 app-surface-card rounded-3xl p-4 sm:p-5 lg:order-1">
             <div>
               <h3 className="text-lg font-semibold text-gray-900">Pin your route</h3>
               <p className="mt-1 text-sm text-gray-600">
@@ -631,7 +646,7 @@ const RoutePlannerCalculator = ({
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2 sm:gap-3">
               <button
                 type="button"
                 onClick={handleSwap}
@@ -670,24 +685,9 @@ const RoutePlannerCalculator = ({
               OpenRouteService is used first for road-aware planning. If it becomes unavailable, the planner will clearly label any lower-confidence GPS estimate.
             </div>
           </aside>
-
-          <section className="app-surface-card rounded-3xl p-5">
-            <MapComponent
-              origin={origin}
-              destination={destination}
-              polyline={routeResult?.polyline}
-              isCalculating={isCalculating}
-              fitBoundsToken={fitBoundsToken}
-              plannerState={plannerState}
-              plannerMessage={routeMessage}
-              onOriginChange={updateOrigin}
-              onDestinationChange={updateDestination}
-              className="h-[520px] w-full rounded-2xl border border-gray-200"
-            />
-          </section>
         </div>
 
-        <section className="app-surface-card rounded-3xl p-5">
+        <section className="app-surface-card rounded-3xl p-4 sm:p-5">
           <div className="flex items-start gap-4">
             <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-100 text-xl text-blue-700">
               A to B
@@ -697,7 +697,7 @@ const RoutePlannerCalculator = ({
                 <p className="text-sm font-medium uppercase tracking-[0.2em] text-gray-500">
                   Route Planner
                 </p>
-                <h2 className="text-xl font-bold text-gray-900">Plan one route on one map</h2>
+                <h2 className="text-lg font-bold text-gray-900 sm:text-xl">Plan one route on one map</h2>
               </div>
               <p className="text-sm text-gray-600">
                 Tap the map or use your location to set A and B.

@@ -27,11 +27,17 @@ describe('Planner-only calculator entrypoints', () => {
     expect(reportLoading).toContain('ReportPageSkeleton')
   })
 
-  it('keeps the dashboard calculator aligned with the planner-only copy', () => {
+  it('redirects legacy dashboard subpages into the unified authenticated routes', () => {
     const dashboardCalculator = readFileSync(repoPath('src', 'app', 'dashboard', 'calculator', 'page.tsx'), 'utf8')
+    const dashboardIncidents = readFileSync(repoPath('src', 'app', 'dashboard', 'incidents', 'page.tsx'), 'utf8')
+    const dashboardProfile = readFileSync(repoPath('src', 'app', 'dashboard', 'profile', 'page.tsx'), 'utf8')
+    const dashboardReport = readFileSync(repoPath('src', 'app', 'dashboard', 'report', 'page.tsx'), 'utf8')
 
-    expect(dashboardCalculator).toContain('RoutePlannerCalculator')
-    expect(dashboardCalculator).not.toContain('Choose a quick estimate or an exact routed trip')
-    expect(dashboardCalculator).not.toContain('Set A and B on one map')
+    expect(dashboardCalculator).toContain("redirect('/calculator')")
+    expect(dashboardIncidents).toContain("redirect('/history?filter=reports')")
+    expect(dashboardProfile).toContain("redirect('/profile')")
+    expect(dashboardReport).toContain("redirect('/report')")
+    expect(dashboardCalculator).not.toContain('DashboardLayout')
+    expect(dashboardReport).not.toContain('DashboardLayout')
   })
 })

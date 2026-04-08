@@ -124,7 +124,7 @@ export default function AdminIncidentsPage() {
         )}
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+        <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
           <div className="app-surface-card rounded-2xl p-4">
             <div className="text-2xl font-bold text-gray-900">{incidentCounts.all}</div>
             <div className="text-sm text-gray-600">Total Incidents</div>
@@ -148,7 +148,7 @@ export default function AdminIncidentsPage() {
         </div>
 
         {/* Search and Filter Controls */}
-        <div className="app-surface-card rounded-2xl p-4 mb-6 space-y-4">
+        <div className="app-surface-card mb-6 space-y-4 rounded-2xl p-4 sm:p-5">
           {/* Search Bar */}
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -156,7 +156,7 @@ export default function AdminIncidentsPage() {
             </div>
             <input
               type="text"
-              placeholder="Search by ticket #, incident type, location, description, or reporter name..."
+              placeholder="Search ticket, type, location, or reporter..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
@@ -238,8 +238,43 @@ export default function AdminIncidentsPage() {
         </div>
 
         {/* Incidents Table */}
-        <div className="app-surface-card rounded-2xl overflow-hidden">
-          <div className="overflow-x-auto">
+        <div className="app-surface-card overflow-hidden rounded-2xl">
+          <div className="space-y-3 p-4 lg:hidden">
+            {filteredIncidents.map((incident) => (
+              <article key={incident.id} className="app-surface-inner rounded-xl p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-gray-900">{incident.typeLabel}</p>
+                    <p className="mt-1 text-sm text-gray-600">{incident.location}</p>
+                  </div>
+                  {getStatusBadge(incident.status)}
+                </div>
+                <div className="mt-3 space-y-2 text-sm text-gray-600">
+                  <p>{incident.description}</p>
+                  <p>
+                    Reported by:{' '}
+                    <span className="font-medium text-gray-900">
+                      {incident.reportedBy ? `${incident.reportedBy.firstName} ${incident.reportedBy.lastName}` : '-'}
+                    </span>
+                  </p>
+                  <p>
+                    Handled by:{' '}
+                    <span className="font-medium text-gray-900">
+                      {incident.handledBy ? `${incident.handledBy.firstName} ${incident.handledBy.lastName}` : '-'}
+                    </span>
+                  </p>
+                  <p>
+                    Date: <span className="font-medium text-gray-900">{new Date(incident.createdAt).toLocaleDateString()}</span>
+                  </p>
+                  <p>
+                    Ticket: <span className="font-medium text-gray-900">{incident.ticketNumber || '-'}</span>
+                  </p>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <div className="hidden overflow-x-auto lg:block">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
