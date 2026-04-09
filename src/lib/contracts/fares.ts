@@ -2,8 +2,10 @@ import type { PaginationDto } from "./common";
 
 export interface FareVehicleSummaryDto {
   id?: string;
-  plateNumber: string;
-  vehicleType: string;
+  permitPlateNumber: string | null;
+  plateNumber: string | null;
+  vehicleType: string | null;
+  hasVehicleContext: boolean;
 }
 
 export interface FareCalculationDto {

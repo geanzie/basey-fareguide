@@ -24,13 +24,28 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '10')
+    const recentDays = parseInt(searchParams.get('recentDays') || '0')
     const skip = (page - 1) * limit
+    const whereClause: {
+      userId: string
+      createdAt?: {
+        gte: Date
+      }
+    } = {
+      userId: user.id,
+    }
+
+    if (Number.isFinite(recentDays) && recentDays > 0) {
+      const cutoff = new Date()
+      cutoff.setDate(cutoff.getDate() - recentDays)
+      whereClause.createdAt = {
+        gte: cutoff,
+      }
+    }
 
     // Fetch user's fare calculations
     const fareCalculations = await prisma.fareCalculation.findMany({
-      where: {
-        userId: user.id
-      },
+      where: whereClause,
       orderBy: {
         createdAt: 'desc'
       },
@@ -51,8 +66,14 @@ export async function GET(request: NextRequest) {
         createdAt: true,
         vehicle: {
           select: {
+            id: true,
             vehicleType: true,
-            plateNumber: true
+            plateNumber: true,
+            permit: {
+              select: {
+                permitPlateNumber: true,
+              },
+            },
           }
         }
       }
@@ -60,9 +81,7 @@ export async function GET(request: NextRequest) {
 
     // Get total count for pagination
     const totalCalculations = await prisma.fareCalculation.count({
-      where: {
-        userId: user.id
-      }
+      where: whereClause
     })
 
     return NextResponse.json({
@@ -133,6 +152,48 @@ export async function POST(request: NextRequest) {
       // If token verification fails, continue without user ID (anonymous calculation)
     }
 
+    let resolvedVehicleId: string | null = null
+
+    if (vehicleId != null) {
+      if (typeof vehicleId !== 'string' || vehicleId.trim().length === 0) {
+        return NextResponse.json(
+          { error: 'vehicleId must be a non-empty string when provided' },
+          { status: 400 }
+        )
+      }
+
+      if (!userId) {
+        return NextResponse.json(
+          { error: 'Authentication required to attach a vehicle to a fare calculation' },
+          { status: 401 }
+        )
+      }
+
+      const selectedVehicle = await prisma.vehicle.findUnique({
+        where: { id: vehicleId },
+        select: {
+          id: true,
+          isActive: true,
+        }
+      })
+
+      if (!selectedVehicle) {
+        return NextResponse.json(
+          { error: 'Selected vehicle was not found' },
+          { status: 404 }
+        )
+      }
+
+      if (!selectedVehicle.isActive) {
+        return NextResponse.json(
+          { error: 'Selected vehicle is inactive and cannot be attached to this fare calculation' },
+          { status: 400 }
+        )
+      }
+
+      resolvedVehicleId = selectedVehicle.id
+    }
+
     // Verify discount card ownership — prevent using another user's card
     let resolvedDiscountType = discountType || null
 
@@ -196,7 +257,7 @@ export async function POST(request: NextRequest) {
     const fareCalculation = await prisma.fareCalculation.create({
       data: {
         userId,
-        vehicleId: vehicleId || null,
+        vehicleId: resolvedVehicleId,
         fromLocation: String(fromLocation),
         toLocation: String(toLocation),
         distance: parseFloat(String(distance)),
@@ -218,11 +279,16 @@ export async function POST(request: NextRequest) {
             username: true
           }
         } : false,
-        vehicle: vehicleId ? {
+        vehicle: resolvedVehicleId ? {
           select: {
             id: true,
             plateNumber: true,
-            vehicleType: true
+            vehicleType: true,
+            permit: {
+              select: {
+                permitPlateNumber: true,
+              },
+            },
           }
         } : false,
         discountCard: discountCardId ? {

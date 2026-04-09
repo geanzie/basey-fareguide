@@ -128,8 +128,12 @@ describe("mounted page contract routes", () => {
         routeData: JSON.stringify({ method: "ors" }),
         createdAt: new Date("2026-04-02T00:00:00.000Z"),
         vehicle: {
+          id: "veh-1",
           plateNumber: "ABC-1234",
           vehicleType: "TRICYCLE",
+          permit: {
+            permitPlateNumber: "BP-1001",
+          },
         },
       },
     ]);
@@ -146,6 +150,12 @@ describe("mounted page contract routes", () => {
       to: "Anglit",
       distanceKm: 12.5,
       fare: 45,
+      vehicle: {
+        permitPlateNumber: "BP-1001",
+        plateNumber: "ABC-1234",
+        vehicleType: "TRICYCLE",
+        hasVehicleContext: true,
+      },
     });
     expect(json.calculations[0].fromLocation).toBeUndefined();
     expect(json.calculations[0].calculatedFare).toBeUndefined();

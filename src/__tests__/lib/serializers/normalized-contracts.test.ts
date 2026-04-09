@@ -90,8 +90,12 @@ describe("normalized serializers", () => {
       createdAt: new Date("2026-04-02T00:00:00.000Z"),
       routeData: JSON.stringify({ method: "ors" }),
       vehicle: {
+        id: "veh-1",
         plateNumber: "ABC-1234",
         vehicleType: "TRICYCLE",
+        permit: {
+          permitPlateNumber: "BP-1001",
+        },
       },
     });
 
@@ -103,6 +107,12 @@ describe("normalized serializers", () => {
       originalFare: 56.25,
       discountApplied: 11.25,
       routeData: { method: "ors" },
+      vehicle: {
+        permitPlateNumber: "BP-1001",
+        plateNumber: "ABC-1234",
+        vehicleType: "TRICYCLE",
+        hasVehicleContext: true,
+      },
     });
     expect("fromLocation" in fare).toBe(false);
     expect("calculatedFare" in fare).toBe(false);

@@ -1,7 +1,7 @@
 'use client'
 
 import type { FormEvent, ReactNode } from 'react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import useSWR from 'swr'
 import ResponsiveTable, { ActionButton, StatusBadge } from './ResponsiveTable'
 import EvidenceManager from './EvidenceManager'
@@ -30,6 +30,12 @@ interface TicketPenaltyPreview {
   priorTicketCount: number
   priorUnpaidTicketCount: number
   ruleVersion: string
+}
+
+interface ActionNotice {
+  tone: 'success' | 'error'
+  title: string
+  message: string
 }
 
 function ActionLabel({
@@ -65,6 +71,7 @@ export default function EnforcerIncidentsList() {
   const [showTicketModal, setShowTicketModal] = useState(false)
   const [ticketPenaltyPreview, setTicketPenaltyPreview] = useState<TicketPenaltyPreview | null>(null)
   const [isTicketPenaltyLoading, setIsTicketPenaltyLoading] = useState(false)
+  const [actionNotice, setActionNotice] = useState<ActionNotice | null>(null)
   const [ticketData, setTicketData] = useState<TicketFormState>({
     ticketNumber: '',
     remarks: '',
@@ -73,6 +80,24 @@ export default function EnforcerIncidentsList() {
   const swrKey = `/api/incidents/enforcer?days=${dateRange}`
   const { data, error, isLoading, mutate } = useSWR<IncidentsResponseDto>(swrKey)
   const incidents = data?.incidents || []
+
+  useEffect(() => {
+    if (!actionNotice) {
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setActionNotice(null)
+    }, actionNotice.tone === 'success' ? 4500 : 6000)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+    }
+  }, [actionNotice])
+
+  const showActionNotice = (tone: ActionNotice['tone'], title: string, message: string) => {
+    setActionNotice({ tone, title, message })
+  }
 
   const filteredIncidents = useMemo(() => {
     return incidents.filter((incident) => {
@@ -122,14 +147,14 @@ export default function EnforcerIncidentsList() {
 
       if (!response.ok) {
         closeTicketModal()
-        alert(payload.message || 'Failed to load ticket penalty details.')
+        showActionNotice('error', 'Unable to load ticket details', payload.message || 'Failed to load ticket penalty details.')
         return
       }
 
       setTicketPenaltyPreview(payload.penalty ?? null)
     } catch (_error) {
       closeTicketModal()
-      alert('Error loading ticket penalty details. Please try again.')
+      showActionNotice('error', 'Unable to load ticket details', 'Error loading ticket penalty details. Please try again.')
     } finally {
       setIsTicketPenaltyLoading(false)
     }
@@ -154,14 +179,14 @@ export default function EnforcerIncidentsList() {
       const payload = await response.json()
 
       if (!response.ok) {
-        alert(payload.message || 'Failed to take incident.')
+        showActionNotice('error', 'Unable to take incident', payload.message || 'Failed to take incident.')
         return
       }
 
       await mutate()
       await openTicketModal({ ...incident, status: 'INVESTIGATING' })
     } catch (_error) {
-      alert('Error taking incident. Please try again.')
+      showActionNotice('error', 'Unable to take incident', 'Error taking incident. Please try again.')
     }
   }
 
@@ -187,17 +212,17 @@ export default function EnforcerIncidentsList() {
       const payload = await response.json()
 
       if (!response.ok) {
-        alert(payload.message || 'Failed to resolve incident.')
+        showActionNotice('error', 'Unable to resolve incident', payload.message || 'Failed to resolve incident.')
         return
       }
 
-      alert(payload.message || 'Incident resolved successfully.')
+      showActionNotice('success', 'Incident resolved', payload.message || 'Incident resolved successfully.')
       if (selectedIncident?.id === incident.id) {
         closeIncidentDetails()
       }
       await mutate()
     } catch (_error) {
-      alert('Error resolving incident. Please try again.')
+      showActionNotice('error', 'Unable to resolve incident', 'Error resolving incident. Please try again.')
     }
   }
 
@@ -205,12 +230,12 @@ export default function EnforcerIncidentsList() {
     event.preventDefault()
 
     if (!ticketIncident || !ticketData.ticketNumber) {
-      alert('Please complete the ticket number.')
+      showActionNotice('error', 'Ticket number required', 'Please complete the ticket number.')
       return
     }
 
     if (!ticketPenaltyPreview) {
-      alert('Penalty details are still loading. Please try again.')
+      showActionNotice('error', 'Penalty details unavailable', 'Penalty details are still loading. Please try again.')
       return
     }
 
@@ -228,16 +253,16 @@ export default function EnforcerIncidentsList() {
       const payload = await response.json()
 
       if (!response.ok) {
-        alert(payload.message || 'Failed to issue ticket.')
+        showActionNotice('error', 'Unable to issue ticket', payload.message || 'Failed to issue ticket.')
         return
       }
 
-      alert(payload.message || 'Ticket issued successfully.')
+      showActionNotice('success', 'Ticket issued', payload.message || 'Ticket issued successfully.')
       closeTicketModal()
       closeIncidentDetails()
       await mutate()
     } catch (_error) {
-      alert('Error issuing ticket. Please try again.')
+      showActionNotice('error', 'Unable to issue ticket', 'Error issuing ticket. Please try again.')
     }
   }
 
@@ -317,6 +342,45 @@ export default function EnforcerIncidentsList() {
 
   return (
     <div className="space-y-6 sm:space-y-8">
+      {actionNotice ? (
+        <div className="fixed inset-x-4 top-4 z-[60] flex justify-center sm:left-auto sm:right-4 sm:inset-x-auto sm:w-full sm:max-w-md">
+          <div
+            role={actionNotice.tone === 'error' ? 'alert' : 'status'}
+            aria-live={actionNotice.tone === 'error' ? 'assertive' : 'polite'}
+            className={`app-surface-overlay w-full rounded-2xl border px-4 py-3 shadow-2xl ${
+              actionNotice.tone === 'success'
+                ? 'border-emerald-200 bg-emerald-50/95 text-emerald-900'
+                : 'border-red-200 bg-red-50/95 text-red-900'
+            }`}
+          >
+            <div className="flex items-start gap-3">
+              <span
+                className={`mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+                  actionNotice.tone === 'success' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+                }`}
+              >
+                <DashboardIconSlot
+                  icon={actionNotice.tone === 'success' ? DASHBOARD_ICONS.check : DASHBOARD_ICONS.reports}
+                  size={DASHBOARD_ICON_POLICY.sizes.button}
+                />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold">{actionNotice.title}</p>
+                <p className="mt-1 text-sm leading-6">{actionNotice.message}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActionNotice(null)}
+                className="rounded-full p-1 text-current/70 transition hover:bg-white/70 hover:text-current"
+                aria-label="Dismiss notification"
+              >
+                <DashboardIconSlot icon={DASHBOARD_ICONS.close} size={DASHBOARD_ICON_POLICY.sizes.button} />
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <div className="app-surface-card-strong rounded-3xl">
         <div className="px-4 py-5 sm:px-6 sm:py-6">
           <div className="flex items-start gap-4">

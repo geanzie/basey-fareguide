@@ -24,6 +24,21 @@ export interface IncidentPersonDto {
   userType?: UserRole | null;
 }
 
+export interface IncidentTripSummaryDto {
+  fareCalculationId: string | null;
+  origin: string;
+  destination: string;
+  fare: number | null;
+  discountType: string | null;
+  calculatedAt: string;
+  calculationType: string | null;
+  permitPlateNumber: string | null;
+  plateNumber: string | null;
+  vehicleType: string | null;
+  hasVehicleContext: boolean;
+  routeLabel: string;
+}
+
 export interface IncidentListItemDto {
   id: string;
   type: IncidentType;
@@ -46,6 +61,7 @@ export interface IncidentListItemDto {
   updatedAt: string;
   reportedBy: IncidentPersonDto | null;
   handledBy: IncidentPersonDto | null;
+  trip: IncidentTripSummaryDto | null;
   evidenceCount?: number;
 }
 

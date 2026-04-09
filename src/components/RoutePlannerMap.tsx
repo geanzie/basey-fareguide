@@ -278,11 +278,13 @@ export default function RoutePlannerMap({
   }, [fitBoundsToken])
 
   const helperText =
-    !origin && !destination
-      ? 'Click the map to place pickup (A).'
-      : origin && !destination
-        ? 'Click again to place destination (B).'
-        : 'Drag A or B to refine your route.'
+    plannerState === 'calculating'
+      ? 'Calculating route...'
+      : !origin && !destination
+        ? 'Tap map to drop origin pin.'
+        : origin && !destination
+          ? 'Tap again to drop destination pin.'
+          : 'Drag A or B to refine your route.'
 
   const toneClasses =
     plannerState === 'fallback_estimate'
@@ -292,24 +294,23 @@ export default function RoutePlannerMap({
         : 'border-blue-200 bg-blue-50 text-blue-800'
 
   return (
-    <div className="space-y-3">
-      <div className={`rounded-xl border px-4 py-3 text-sm ${toneClasses}`}>
-        <div className="font-medium">
-          {plannerState === 'calculating' ? 'Calculating route...' : helperText}
+    <div className="relative">
+      <div ref={containerRef} className={className} style={{ zIndex: 0 }} />
+
+      <div className="pointer-events-none absolute bottom-3 left-3 z-[350] max-w-[calc(100%-1.5rem)] sm:max-w-sm">
+        <div className={`rounded-2xl border px-3 py-2 text-xs shadow-lg backdrop-blur-md sm:text-sm ${toneClasses}`}>
+          <div className="font-medium">{helperText}</div>
+          {plannerMessage ? <p className="mt-1 text-[11px] opacity-90 sm:text-xs">{plannerMessage}</p> : null}
         </div>
-        {plannerMessage && <p className="mt-1 text-xs opacity-90">{plannerMessage}</p>}
       </div>
 
-      <div className="relative">
-        <div ref={containerRef} className={className} style={{ zIndex: 0 }} />
-        {isCalculating && (
-          <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-slate-900/15 backdrop-blur-[1px]">
-            <div className="rounded-full bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-lg">
-              Recalculating route...
-            </div>
+      {isCalculating && (
+        <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-slate-900/15 backdrop-blur-[1px]">
+          <div className="rounded-full bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-lg">
+            Recalculating route...
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }

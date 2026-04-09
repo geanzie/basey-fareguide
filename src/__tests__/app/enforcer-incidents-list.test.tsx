@@ -69,16 +69,19 @@ describe('EnforcerIncidentsList', () => {
   let container: HTMLDivElement
   let root: Root
   let fetchMock: ReturnType<typeof vi.fn>
+  let mutateMock: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
     ;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
     container = document.createElement('div')
     document.body.appendChild(container)
     root = createRoot(container)
-    fetchMock = vi.fn((input: RequestInfo | URL) => {
+    mutateMock = vi.fn(() => Promise.resolve())
+    fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
+      const method = init?.method || 'GET'
 
-      if (url.includes('/api/incidents/incident-2/issue-ticket')) {
+      if (url.includes('/api/incidents/incident-2/issue-ticket') && method === 'GET') {
         return Promise.resolve(
           new Response(
             JSON.stringify({
@@ -93,6 +96,20 @@ describe('EnforcerIncidentsList', () => {
                 priorUnpaidTicketCount: 0,
                 ruleVersion: '2026-04-municipal-v1',
               },
+            }),
+            {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' },
+            },
+          ),
+        )
+      }
+
+      if (url.includes('/api/incidents/incident-2/issue-ticket') && method === 'PATCH') {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              message: 'Ticket T-202 issued successfully. Incident marked as resolved and evidence cleanup initiated.',
             }),
             {
               status: 200,
@@ -156,7 +173,7 @@ describe('EnforcerIncidentsList', () => {
       },
       error: undefined,
       isLoading: false,
-      mutate: vi.fn(),
+      mutate: mutateMock,
     } as never)
   })
 
@@ -220,5 +237,56 @@ describe('EnforcerIncidentsList', () => {
     })
 
     expect(penaltyInput).toBeUndefined()
+  })
+
+  it('shows a polished in-app success notice instead of a browser alert after issuing a ticket', async () => {
+    await act(async () => {
+      root.render(React.createElement(EnforcerIncidentsList))
+      await Promise.resolve()
+    })
+
+    const issueTicketButton = Array.from(container.querySelectorAll('button')).find(
+      (button) => (button.textContent || '').trim() === 'Issue Ticket',
+    )
+
+    expect(issueTicketButton).toBeTruthy()
+
+    await act(async () => {
+      issueTicketButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await Promise.resolve()
+    })
+
+    const ticketNumberInput = container.querySelector('input[placeholder="Enter ticket number"]') as HTMLInputElement | null
+    expect(ticketNumberInput).not.toBeNull()
+
+    await act(async () => {
+      const descriptor = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')
+      descriptor?.set?.call(ticketNumberInput, 'T-202')
+      ticketNumberInput?.dispatchEvent(new Event('input', { bubbles: true }))
+      ticketNumberInput?.dispatchEvent(new Event('change', { bubbles: true }))
+      await Promise.resolve()
+    })
+
+    const issueButtons = Array.from(container.querySelectorAll('button')).filter(
+      (button) => (button.textContent || '').trim() === 'Issue Ticket',
+    )
+    const submitButton = issueButtons.at(-1)
+
+    expect(submitButton).toBeTruthy()
+
+    await act(async () => {
+      submitButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await Promise.resolve()
+    })
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/incidents/incident-2/issue-ticket',
+      expect.objectContaining({ method: 'PATCH' }),
+    )
+    expect(mutateMock).toHaveBeenCalled()
+    expect(container.textContent).toContain('Ticket issued')
+    expect(container.textContent).toContain('Ticket T-202 issued successfully. Incident marked as resolved and evidence cleanup initiated.')
+    expect(container.querySelector('[role="status"]')).not.toBeNull()
+    expect(vi.mocked(globalThis.alert)).not.toHaveBeenCalled()
   })
 })

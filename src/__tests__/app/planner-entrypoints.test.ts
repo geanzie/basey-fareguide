@@ -7,10 +7,12 @@ function repoPath(...parts: string[]) {
 }
 
 describe('Planner-only calculator entrypoints', () => {
-  it('renders the public calculator through a lazy wrapper and route loading skeleton', () => {
+  it('renders the authenticated calculator through a guarded lazy wrapper and route loading skeleton', () => {
     const calculatorPage = readFileSync(repoPath('src', 'app', 'calculator', 'page.tsx'), 'utf8')
     const calculatorLoading = readFileSync(repoPath('src', 'app', 'calculator', 'loading.tsx'), 'utf8')
 
+    expect(calculatorPage).toContain("<RoleGuard allowedRoles={['PUBLIC']}>")
+    expect(calculatorPage).toContain('PageWrapper')
     expect(calculatorPage).toContain('LazyRoutePlannerCalculator')
     expect(calculatorLoading).toContain('CalculatorPageSkeleton')
     expect(calculatorPage).not.toContain('TripTrackerCalculator')

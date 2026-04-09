@@ -1,4 +1,5 @@
 import type { FareCalculationDto } from "@/lib/contracts";
+import { hasVehicleContext } from "@/lib/incidents/reportTripSelection";
 import { formatPinCoordinateLabel } from "@/lib/locations/pinLabelResolver";
 import { parsePinLabel } from "@/lib/locations/pinSerializer";
 
@@ -32,7 +33,7 @@ function parseRouteData(value: string | null | undefined): unknown | null {
   }
 }
 
-function formatFareLocationLabel(value: string): string {
+export function formatFareLocationLabel(value: string): string {
   const parsedPin = parsePinLabel(value);
 
   if (!parsedPin) {
@@ -59,6 +60,9 @@ export function serializeFareCalculation(record: {
     id?: string;
     plateNumber: string;
     vehicleType: string;
+    permit?: {
+      permitPlateNumber: string;
+    } | null;
   } | null;
 }): FareCalculationDto {
   return {
@@ -77,8 +81,13 @@ export function serializeFareCalculation(record: {
     vehicle: record.vehicle
       ? {
           id: record.vehicle.id,
-          plateNumber: record.vehicle.plateNumber,
-          vehicleType: record.vehicle.vehicleType,
+          permitPlateNumber: record.vehicle.permit?.permitPlateNumber ?? null,
+          plateNumber: record.vehicle.plateNumber ?? null,
+          vehicleType: record.vehicle.vehicleType ?? null,
+          hasVehicleContext: hasVehicleContext(
+            record.vehicle.permit?.permitPlateNumber ?? null,
+            record.vehicle.plateNumber ?? null,
+          ),
         }
       : null,
   };

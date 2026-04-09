@@ -1,31 +1,29 @@
+import path from 'node:path'
+
 import { PrismaPg } from '@prisma/adapter-pg'
 import type { PrismaClient as PrismaClientType } from '@prisma/client'
 import { Pool } from 'pg'
 
 const requireForPrisma = eval('require') as NodeRequire
 const prismaClientModulePath = requireForPrisma.resolve('@prisma/client')
+const prismaGeneratedClientDirectory = path.join(process.cwd(), 'node_modules', '.prisma', 'client')
 
 // In dev, schema changes can outpace the cached generated client module.
-delete requireForPrisma.cache[prismaClientModulePath]
+for (const cacheKey of Object.keys(requireForPrisma.cache)) {
+  if (cacheKey === prismaClientModulePath || cacheKey.startsWith(prismaGeneratedClientDirectory)) {
+    delete requireForPrisma.cache[cacheKey]
+  }
+}
 
 const { PrismaClient } = requireForPrisma('@prisma/client') as typeof import('@prisma/client')
 
-const PRISMA_SCHEMA_RUNTIME_VERSION = '2026-04-ticket-payments-v3'
-
 const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClientType | undefined
   prismaPool: Pool | undefined
-  prismaSchemaRuntimeVersion: string | undefined
 }
 
-const shouldReuseClient =
-  globalForPrisma.prisma && globalForPrisma.prismaSchemaRuntimeVersion === PRISMA_SCHEMA_RUNTIME_VERSION
-
-const prismaClient: PrismaClientType = shouldReuseClient
-  ? globalForPrisma.prisma!
-  : (new PrismaClient({
-      adapter: createPrismaAdapter(),
-    }) as PrismaClientType)
+const prismaClient: PrismaClientType = new PrismaClient({
+  adapter: createPrismaAdapter(),
+}) as PrismaClientType
 
 export const prisma: PrismaClientType = prismaClient
 
@@ -54,9 +52,4 @@ function createPrismaAdapter() {
   }
 
   return new PrismaPg(pool, schema ? { schema } : undefined)
-}
-
-if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = prismaClient
-  globalForPrisma.prismaSchemaRuntimeVersion = PRISMA_SCHEMA_RUNTIME_VERSION
 }

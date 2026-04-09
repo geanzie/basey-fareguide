@@ -10,7 +10,7 @@ describe('Phase 7 workflow truthfulness messaging', () => {
   it('keeps incident reporting focused on the on-screen reference number instead of an email promise', () => {
     const incidentReporting = readFileSync(repoPath('src', 'components', 'IncidentReporting.tsx'), 'utf8')
 
-    expect(incidentReporting).toContain('keep the reference number shown after submission')
+    expect(incidentReporting).toContain('Incident report submitted successfully. Reference number:')
     expect(incidentReporting.toLowerCase()).not.toContain('email you')
     expect(incidentReporting.toLowerCase()).not.toContain('reference id will be provided via email')
   })

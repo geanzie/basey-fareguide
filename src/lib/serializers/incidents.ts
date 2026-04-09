@@ -2,8 +2,10 @@ import type {
   DashboardActivityItemDto,
   IncidentListItemDto,
   IncidentPersonDto,
+  IncidentTripSummaryDto,
   TicketPaymentStatus,
 } from "@/lib/contracts";
+import { buildTripRouteLabel, hasVehicleContext } from "@/lib/incidents/reportTripSelection";
 
 const INCIDENT_TYPE_LABELS: Record<string, string> = {
   FARE_OVERCHARGE: "Fare Overcharge",
@@ -80,11 +82,53 @@ export function serializeIncidentPerson(person?: {
   };
 }
 
+function serializeIncidentTrip(record: {
+  fareCalculationId?: string | null;
+  tripOrigin?: string | null;
+  tripDestination?: string | null;
+  tripFare?: number | string | null;
+  tripDiscountType?: string | null;
+  tripCalculatedAt?: Date | string | null;
+  tripCalculationType?: string | null;
+  tripPermitPlateNumber?: string | null;
+  tripPlateNumber?: string | null;
+  tripVehicleType?: string | null;
+}): IncidentTripSummaryDto | null {
+  if (!record.fareCalculationId || !record.tripOrigin || !record.tripDestination || !record.tripCalculatedAt) {
+    return null;
+  }
+
+  return {
+    fareCalculationId: record.fareCalculationId,
+    origin: record.tripOrigin,
+    destination: record.tripDestination,
+    fare: toNullableNumber(record.tripFare),
+    discountType: toNullableString(record.tripDiscountType),
+    calculatedAt: toIsoString(record.tripCalculatedAt),
+    calculationType: toNullableString(record.tripCalculationType),
+    permitPlateNumber: toNullableString(record.tripPermitPlateNumber),
+    plateNumber: toNullableString(record.tripPlateNumber),
+    vehicleType: toNullableString(record.tripVehicleType),
+    hasVehicleContext: hasVehicleContext(record.tripPermitPlateNumber, record.tripPlateNumber),
+    routeLabel: buildTripRouteLabel(record.tripOrigin, record.tripDestination),
+  };
+}
+
 export function serializeIncident(record: {
   id: string;
   incidentType: string;
   description: string;
   location: string;
+  fareCalculationId?: string | null;
+  tripOrigin?: string | null;
+  tripDestination?: string | null;
+  tripFare?: number | string | null;
+  tripDiscountType?: string | null;
+  tripCalculatedAt?: Date | string | null;
+  tripCalculationType?: string | null;
+  tripPermitPlateNumber?: string | null;
+  tripPlateNumber?: string | null;
+  tripVehicleType?: string | null;
   plateNumber?: string | null;
   driverLicense?: string | null;
   vehicleType?: string | null;
@@ -132,6 +176,7 @@ export function serializeIncident(record: {
     updatedAt: toIsoString(record.updatedAt),
     reportedBy: serializeIncidentPerson(record.reportedBy),
     handledBy: serializeIncidentPerson(record.handledBy),
+    trip: serializeIncidentTrip(record),
     evidenceCount: record.evidenceCount,
   };
 }

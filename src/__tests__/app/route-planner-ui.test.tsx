@@ -85,6 +85,44 @@ const DEFAULT_FARE_POLICY = {
   effectiveAt: '2026-04-01T00:00:00.000Z',
 }
 
+const PLANNER_LOCATIONS = [
+  {
+    id: 'loc-1',
+    name: 'Mercado Terminal',
+    type: 'BARANGAY',
+    category: 'barangay',
+    coordinates: { lat: 11.2754, lng: 125.0689 },
+    address: 'Mercado Terminal, Basey, Samar',
+    verified: true,
+    source: 'database',
+    barangay: 'Mercado',
+    updatedAt: '2026-04-01T00:00:00.000Z',
+  },
+  {
+    id: 'loc-2',
+    name: 'Amandayehan Wharf',
+    type: 'LANDMARK',
+    category: 'landmark',
+    coordinates: { lat: 11.2854, lng: 125.0789 },
+    address: 'Amandayehan Wharf, Basey, Samar',
+    verified: true,
+    source: 'database',
+    updatedAt: '2026-04-01T00:00:00.000Z',
+  },
+  {
+    id: 'loc-3',
+    name: 'Anglit Barangay Hall',
+    type: 'BARANGAY',
+    category: 'barangay',
+    coordinates: { lat: 11.2454, lng: 125.0589 },
+    address: 'Anglit Barangay Hall, Basey, Samar',
+    verified: true,
+    source: 'database',
+    barangay: 'Anglit',
+    updatedAt: '2026-04-01T00:00:00.000Z',
+  },
+] as const
+
 function deferredResponse() {
   let resolve!: (response: Response) => void
   const promise = new Promise<Response>((resolver) => {
@@ -103,7 +141,6 @@ describe('RoutePlannerCalculator', () => {
 
   beforeEach(() => {
     vi.useFakeTimers()
-    // Tell React this test environment supports act().
     ;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
     container = document.createElement('div')
     document.body.appendChild(container)
@@ -125,6 +162,23 @@ describe('RoutePlannerCalculator', () => {
         return next instanceof Response ? Promise.resolve(next) : next
       }
 
+      if (url.includes('/api/locations')) {
+        return Promise.resolve(
+          makeResponse({
+            success: true,
+            locations: PLANNER_LOCATIONS,
+            count: PLANNER_LOCATIONS.length,
+            metadata: {
+              municipality: 'Basey',
+              province: 'Samar',
+              total_locations: PLANNER_LOCATIONS.length,
+              last_updated: '2026-04-01T00:00:00.000Z',
+              sources: ['database'],
+            },
+          }),
+        )
+      }
+
       if (url.includes('/api/fare-rates')) {
         return Promise.resolve(
           makeResponse({
@@ -137,16 +191,6 @@ describe('RoutePlannerCalculator', () => {
       if (url.includes('/api/fare-calculations')) {
         savedCalculationBodies.push(JSON.parse(String(init?.body ?? '{}')))
         return Promise.resolve(makeResponse({ success: true }))
-      }
-
-      if (url.includes('/api/discount-cards/me')) {
-        return Promise.resolve(
-          makeResponse({
-            hasDiscountCard: false,
-            isValid: false,
-            discountCard: null,
-          }),
-        )
       }
 
       throw new Error(`Unhandled fetch url: ${url}`)
@@ -197,17 +241,35 @@ describe('RoutePlannerCalculator', () => {
     matches[index].dispatchEvent(new MouseEvent('click', { bubbles: true }))
   }
 
-  it('removes the old planner mode split and separate preview panel from the live component source', () => {
+    it('replaces the old split-mode planner copy with a pin-only route surface and optional vehicle support', () => {
     const planner = readFileSync(repoPath('src', 'components', 'RoutePlannerCalculator.tsx'), 'utf8')
 
+    expect(planner).toContain('Search by plate number')
+      expect(planner).not.toContain('Set Origin')
+      expect(planner).not.toContain('Set Destination')
+      expect(planner).not.toContain('Calculate route')
+      expect(planner).not.toContain('Use current location')
+      expect(planner).not.toContain('Swap origin and destination')
+      expect(planner).not.toContain('Reset planner')
     expect(planner).not.toContain('Quick Quote')
     expect(planner).not.toContain('Exact Quote (Map Pin)')
-    expect(planner).not.toContain('Planned Route Preview')
     expect(planner).not.toContain('Route Planned Successfully!')
-    expect(planner).not.toContain('Search place for')
   })
 
-  it('auto-calculates after placing two pins and renders the route on the same map surface', async () => {
+    it('keeps the pin-only planner surface free of typed origin and destination fields', async () => {
+      await act(async () => {
+        root.render(React.createElement(RoutePlannerCalculator, { MapComponent: MockPlannerMap }))
+        await Promise.resolve()
+        await Promise.resolve()
+      })
+
+      expect(container.querySelectorAll('input[type="text"]')).toHaveLength(0)
+      expect(container.textContent).not.toContain('Use current location')
+      expect(container.textContent).not.toContain('Swap origin and destination')
+      expect(container.textContent).not.toContain('Reset planner')
+    })
+
+  it('auto-calculates after placing two pins and saves pin metadata on the same planner surface', async () => {
     routeQueue.push(
       makeResponse({
         origin: 'Mercado',
@@ -224,11 +286,13 @@ describe('RoutePlannerCalculator', () => {
         method: 'ors',
         fallbackReason: null,
         polyline: 'encoded-ors',
+        inputMode: 'pin',
       }),
     )
 
     await act(async () => {
       root.render(React.createElement(RoutePlannerCalculator, { MapComponent: MockPlannerMap }))
+      await Promise.resolve()
       await Promise.resolve()
     })
 
@@ -252,15 +316,18 @@ describe('RoutePlannerCalculator', () => {
     expect(savedCalculationBodies[0]).toMatchObject({
       fromLocation: 'Mercado',
       toLocation: 'Amandayehan Wharf',
+      vehicleId: null,
       routeData: {
         planner: {
           inputMode: 'pin',
           origin: {
+            mode: 'pin',
             lat: 11.2754,
             lng: 125.0689,
             serializedPin: 'pin:11.275400,125.068900',
           },
           destination: {
+            mode: 'pin',
             lat: 11.2854,
             lng: 125.0789,
             serializedPin: 'pin:11.285400,125.078900',
@@ -273,62 +340,36 @@ describe('RoutePlannerCalculator', () => {
     expect(container.textContent).toContain('Road-aware route')
   })
 
-  it('removes the text-search controls while keeping current-location and route editing controls', async () => {
+  it('lets riders reset both pins after a route has been created', async () => {
     routeQueue.push(
       makeResponse({
-        origin: 'Current location',
+        origin: 'Mercado',
         destination: 'Amandayehan Wharf',
-        distanceKm: 3.4,
-        durationMin: 9,
-        fare: 18,
+        distanceKm: 5.4,
+        durationMin: 12,
+        fare: 24,
         fareBreakdown: {
           baseFare: 15,
-          additionalKm: 1.4,
-          additionalFare: 3,
+          additionalKm: 2.4,
+          additionalFare: 9,
           discount: 0,
         },
         method: 'ors',
         fallbackReason: null,
-        polyline: 'encoded-swap',
-      }),
-    )
-    routeQueue.push(
-      makeResponse({
-        origin: 'Amandayehan Wharf',
-        destination: 'Current location',
-        distanceKm: 3.4,
-        durationMin: 9,
-        fare: 18,
-        fareBreakdown: {
-          baseFare: 15,
-          additionalKm: 1.4,
-          additionalFare: 3,
-          discount: 0,
-        },
-        method: 'ors',
-        fallbackReason: null,
-        polyline: 'encoded-swapped-back',
+        polyline: 'encoded-reset',
+        inputMode: 'pin',
       }),
     )
 
     await act(async () => {
       root.render(React.createElement(RoutePlannerCalculator, { MapComponent: MockPlannerMap }))
       await Promise.resolve()
+      await Promise.resolve()
     })
 
-    expect(container.querySelector('datalist')).toBeNull()
-    expect(container.querySelector('input[list="planner-location-options"]')).toBeNull()
-    expect(container.textContent).not.toContain('Search place for A')
-    expect(container.textContent).not.toContain('Search place for B')
-    expect(container.textContent).not.toContain('search a place')
-    expect(container.textContent).not.toContain('Search for a saved place')
-    expect(
-      Array.from(container.querySelectorAll('button')).some((button) => button.textContent === 'Set'),
-    ).toBe(false)
-
     await act(async () => {
+      clickButton('Mock place A')
       clickButton('Mock place B')
-      clickButton('Use current location for A')
     })
 
     await act(async () => {
@@ -337,34 +378,16 @@ describe('RoutePlannerCalculator', () => {
       await Promise.resolve()
     })
 
-    expect(container.textContent).toContain('origin:Current location')
-    expect(container.textContent).toContain('destination:Amandayehan Wharf')
-
     await act(async () => {
-      clickButton('Swap A / B')
+      clickButton('Reset pins')
     })
 
-    await act(async () => {
-      await Promise.resolve()
-      vi.advanceTimersByTime(301)
-      await Promise.resolve()
-    })
-
-    expect(container.textContent).toContain('origin:Amandayehan Wharf')
-    expect(container.textContent).toContain('destination:Current location')
-
-    await act(async () => {
-      clickButton('Clear A')
-    })
     expect(container.textContent).toContain('origin:none')
-
-    await act(async () => {
-      clickButton('Reset route')
-    })
     expect(container.textContent).toContain('destination:none')
+    expect(container.textContent).toContain('polyline:none')
   })
 
-  it('prevents stale responses and duplicate recalculation for unchanged pins while preserving first-fit behavior', async () => {
+  it('prevents stale responses and duplicate recalculation for unchanged routes while preserving first-fit behavior', async () => {
     const first = deferredResponse()
     const second = deferredResponse()
 
@@ -373,6 +396,7 @@ describe('RoutePlannerCalculator', () => {
 
     await act(async () => {
       root.render(React.createElement(RoutePlannerCalculator, { MapComponent: MockPlannerMap }))
+      await Promise.resolve()
       await Promise.resolve()
     })
 
@@ -416,6 +440,7 @@ describe('RoutePlannerCalculator', () => {
           method: 'ors',
           fallbackReason: null,
           polyline: 'newer-polyline',
+          inputMode: 'pin',
         }),
       )
       await Promise.resolve()
@@ -442,6 +467,7 @@ describe('RoutePlannerCalculator', () => {
           method: 'ors',
           fallbackReason: null,
           polyline: 'stale-polyline',
+          inputMode: 'pin',
         }),
       )
       await Promise.resolve()
@@ -459,7 +485,7 @@ describe('RoutePlannerCalculator', () => {
     expect(container.textContent).toContain('fit:1')
   })
 
-  it('shows fallback and route failure states truthfully while keeping pins editable', async () => {
+  it('shows fallback and route failure states truthfully while keeping the current selections editable', async () => {
     routeQueue.push(
       makeResponse({
         origin: 'Mercado',
@@ -476,12 +502,14 @@ describe('RoutePlannerCalculator', () => {
         method: 'gps',
         fallbackReason: 'ORS unavailable',
         polyline: null,
+        inputMode: 'pin',
       }),
     )
     routeQueue.push(makeResponse({ error: 'Destination pin is too far from any road' }, 400))
 
     await act(async () => {
       root.render(React.createElement(RoutePlannerCalculator, { MapComponent: MockPlannerMap }))
+      await Promise.resolve()
       await Promise.resolve()
     })
 
@@ -497,7 +525,7 @@ describe('RoutePlannerCalculator', () => {
     })
 
     expect(container.textContent).toContain('GPS estimate')
-    expect(container.textContent).toContain('lower-confidence GPS estimate')
+    expect(container.textContent).toContain('Lower-confidence estimate: road routing was unavailable for this request.')
 
     await act(async () => {
       clickButton('Mock move B')
@@ -509,7 +537,7 @@ describe('RoutePlannerCalculator', () => {
       await Promise.resolve()
     })
 
-    expect(container.textContent).toContain('No route could be calculated from the current pins.')
+    expect(container.textContent).toContain('No route could be calculated from the current selections.')
     expect(container.textContent).toContain('origin:Mercado')
     expect(container.textContent).toContain('destination:Moved destination')
     expect(container.textContent).toContain('Try again')

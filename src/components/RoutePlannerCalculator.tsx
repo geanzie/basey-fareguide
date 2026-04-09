@@ -1,11 +1,17 @@
 'use client'
 
-import { useEffect, useRef, useState, type ComponentType } from 'react'
+import { useEffect, useMemo, useRef, useState, type ComponentType } from 'react'
 import dynamic from 'next/dynamic'
 
 import { useAuth } from './AuthProvider'
-import FareRateBanner from '@/components/FareRateBanner'
-import type { DiscountCardDto, DiscountCardMeResponseDto, FarePolicySnapshotDto } from '@/lib/contracts'
+import type { RoutePlannerMapProps } from './RoutePlannerMap'
+import VehicleLookupField from './VehicleLookupField'
+import type {
+  DiscountCardDto,
+  DiscountCardMeResponseDto,
+  FarePolicySnapshotDto,
+  VehicleLookupDto,
+} from '@/lib/contracts'
 import { resolveFarePolicySnapshot } from '@/lib/fare/policy'
 import { resolvePinLabel, type ResolvedPinLabel } from '@/lib/locations/pinLabelResolver'
 import { serializePinLabel } from '@/lib/locations/pinSerializer'
@@ -17,9 +23,14 @@ import {
   type PlannerPoint,
   type PlannerViewState,
 } from '@/lib/planner/routePlanner'
-import type { RoutePlannerMapProps } from './RoutePlannerMap'
+import type { LocationInput } from '@/lib/routing/types'
 
 const DynamicRoutePlannerMap = dynamic(() => import('./RoutePlannerMap'), { ssr: false }) as ComponentType<RoutePlannerMapProps>
+
+type PlannerSelection = {
+  point: PlannerPoint
+  source: 'map'
+}
 
 interface RoutePlannerCalculatorProps {
   onError?: (error: string) => void
@@ -44,6 +55,7 @@ interface CalculateRouteResponse {
   method: 'ors' | 'gps' | null
   fallbackReason: string | null
   polyline: string | null
+  inputMode: 'preset' | 'pin'
 }
 
 interface RouteResult {
@@ -57,7 +69,6 @@ interface RouteResult {
   fallbackReason: string | null
   originalFare?: number
   discountApplied?: number
-  discountRate?: number
   discountCard?: DiscountCardDto | null
   farePolicy: FarePolicySnapshotDto
   breakdown: {
@@ -73,88 +84,68 @@ function formatCurrency(value: number): string {
   return `PHP ${value.toFixed(2)}`
 }
 
-function formatPointLabel(point: PlannerPoint | null, fallback: string): string {
-  return point?.label?.trim() || fallback
-}
-
-function buildPlannerPinMetadata(point: PlannerPoint) {
-  return {
-    lat: point.lat,
-    lng: point.lng,
-    serializedPin: serializePinLabel(point.lat, point.lng),
-    resolved: resolvePinLabel(point.lat, point.lng),
-  }
-}
-
 function buildDurationText(durationMin: number | null): string {
   if (durationMin == null) return 'N/A'
   return `${Math.round(durationMin)} min`
 }
 
-function PointSetter({
-  title,
-  letter,
-  currentPoint,
-  isLocating,
-  onUseCurrentLocation,
-}: {
-  title: string
-  letter: 'A' | 'B'
-  currentPoint: PlannerPoint | null
-  isLocating: boolean
-  onUseCurrentLocation: () => void
-}) {
-  return (
-    <div className="app-surface-inner rounded-2xl p-4">
-      <div className="mb-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span
-            className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold ${
-              letter === 'A' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
-            }`}
-          >
-            {letter}
-          </span>
-          <div>
-            <p className="text-sm font-semibold text-gray-900">{title}</p>
-            <p className="text-xs text-gray-500">
-              {currentPoint
-                ? `${currentPoint.lat.toFixed(5)}, ${currentPoint.lng.toFixed(5)}`
-                : 'Not set yet'}
-            </p>
-          </div>
-        </div>
-      </div>
+function buildPinSelection(point: PlannerPoint): PlannerSelection {
+  return {
+    point,
+    source: 'map',
+  }
+}
 
-      <div className="space-y-3">
-        <button
-          type="button"
-          onClick={onUseCurrentLocation}
-          disabled={isLocating}
-          className="w-full rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {isLocating ? 'Locating...' : `Use current location for ${letter}`}
-        </button>
-      </div>
-    </div>
-  )
+function selectionToPoint(selection: PlannerSelection | null): PlannerPoint | null {
+  return selection?.point || null
+}
+
+function selectionToLocationInput(selection: PlannerSelection): LocationInput {
+  return {
+    type: 'pin',
+    lat: selection.point.lat,
+    lng: selection.point.lng,
+  }
+}
+
+function getSelectionLabel(selection: PlannerSelection | null, fallback: string): string {
+  if (!selection) return fallback
+  return selection.point.label?.trim() || fallback
+}
+
+function selectionsEffectivelyEqual(current: PlannerSelection | null, next: PlannerSelection | null): boolean {
+  if (!current && !next) return true
+  if (!current || !next) return false
+
+  return pointsEffectivelyEqual(current.point, next.point) && (current.point.label || '') === (next.point.label || '')
+}
+
+function buildPlannerSelectionMetadata(selection: PlannerSelection) {
+  return {
+    mode: 'pin',
+    source: selection.source,
+    label: selection.point.label || null,
+    lat: selection.point.lat,
+    lng: selection.point.lng,
+    serializedPin: serializePinLabel(selection.point.lat, selection.point.lng),
+    resolved: resolvePinLabel(selection.point.lat, selection.point.lng),
+  }
 }
 
 const RoutePlannerCalculator = ({
   onError,
   MapComponent = DynamicRoutePlannerMap,
 }: RoutePlannerCalculatorProps) => {
-  const [origin, setOrigin] = useState<PlannerPoint | null>(null)
-  const [destination, setDestination] = useState<PlannerPoint | null>(null)
+  const [originSelection, setOriginSelection] = useState<PlannerSelection | null>(null)
+  const [destinationSelection, setDestinationSelection] = useState<PlannerSelection | null>(null)
   const [routeResult, setRouteResult] = useState<RouteResult | null>(null)
   const [plannerState, setPlannerState] = useState<PlannerViewState>('placing_points')
   const [routeMessage, setRouteMessage] = useState<string | null>(null)
-  const [controlMessage, setControlMessage] = useState<string | null>(null)
   const [isCalculating, setIsCalculating] = useState(false)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved' | 'failed'>('idle')
   const [userDiscountCard, setUserDiscountCard] = useState<DiscountCardDto | null>(null)
-  const [locatingTarget, setLocatingTarget] = useState<'origin' | 'destination' | null>(null)
   const [fitBoundsToken, setFitBoundsToken] = useState(0)
+  const [selectedVehicle, setSelectedVehicle] = useState<VehicleLookupDto | null>(null)
   const { user } = useAuth()
 
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -166,7 +157,14 @@ const RoutePlannerCalculator = ({
   } | null>(null)
   const shouldFitNextSuccessRef = useRef(true)
 
+  const origin = useMemo(() => selectionToPoint(originSelection), [originSelection])
+  const destination = useMemo(() => selectionToPoint(destinationSelection), [destinationSelection])
   const hasTwoPoints = Boolean(origin && destination)
+  const errorPanelVisible =
+    plannerState === 'network_error' ||
+    plannerState === 'out_of_service_area' ||
+    plannerState === 'no_route_found'
+  const regularFare = routeResult?.originalFare || routeResult?.fare || null
 
   useEffect(() => {
     const fetchUserDiscountCard = async () => {
@@ -193,7 +191,7 @@ const RoutePlannerCalculator = ({
       }
     }
 
-    fetchUserDiscountCard()
+    void fetchUserDiscountCard()
   }, [user])
 
   useEffect(() => {
@@ -218,7 +216,6 @@ const RoutePlannerCalculator = ({
         clearTimeout(debounceTimerRef.current)
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [origin?.lat, origin?.lng, destination?.lat, destination?.lng])
 
   useEffect(() => {
@@ -237,7 +234,7 @@ const RoutePlannerCalculator = ({
       : userDiscountCard.discountType
     : 'REGULAR'
 
-  const resetCalculationState = () => {
+  const resetRoute = () => {
     abortControllerRef.current?.abort()
 
     if (debounceTimerRef.current) {
@@ -246,109 +243,26 @@ const RoutePlannerCalculator = ({
 
     requestSequenceRef.current += 1
     lastRequestedPairRef.current = null
-    setIsCalculating(false)
+    shouldFitNextSuccessRef.current = true
+    setOriginSelection(null)
+    setDestinationSelection(null)
     setRouteResult(null)
     setRouteMessage(null)
-    setSaveStatus('idle')
     setPlannerState('placing_points')
-    shouldFitNextSuccessRef.current = true
+    setIsCalculating(false)
+    setSaveStatus('idle')
   }
 
-  const updateOrigin = (nextOrigin: PlannerPoint | null) => {
-    setControlMessage(null)
-
-    if (!nextOrigin) {
-      setOrigin(null)
-      resetCalculationState()
+  const refitRoute = () => {
+    if (!origin && !destination) {
       return
     }
 
-    setOrigin((current) => {
-      if (
-        pointsEffectivelyEqual(current, nextOrigin) &&
-        (current?.label || '') === (nextOrigin.label || '')
-      ) {
-        return current
-      }
-
-      return nextOrigin
-    })
-  }
-
-  const updateDestination = (nextDestination: PlannerPoint | null) => {
-    setControlMessage(null)
-
-    if (!nextDestination) {
-      setDestination(null)
-      resetCalculationState()
-      return
-    }
-
-    setDestination((current) => {
-      if (
-        pointsEffectivelyEqual(current, nextDestination) &&
-        (current?.label || '') === (nextDestination.label || '')
-      ) {
-        return current
-      }
-
-      return nextDestination
-    })
-  }
-
-  const saveFareCalculation = async (
-    result: RouteResult,
-    originPoint: PlannerPoint,
-    destinationPoint: PlannerPoint,
-    fromLabel: string,
-    toLabel: string,
-  ) => {
-    try {
-      const originPin = buildPlannerPinMetadata(originPoint)
-      const destinationPin = buildPlannerPinMetadata(destinationPoint)
-      const response = await fetch('/api/fare-calculations', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          fromLocation: fromLabel,
-          toLocation: toLabel,
-          distance: result.distanceKm,
-          calculatedFare: result.fare,
-          calculationType: 'Road Route Planner',
-          routeData: {
-            distance: {
-              kilometers: result.distanceKm,
-            },
-            duration: {
-              text: result.durationText,
-            },
-            polyline: result.polyline,
-            source: result.sourceBadge,
-            fareBreakdown: result.breakdown,
-            farePolicy: result.farePolicy,
-            planner: {
-              inputMode: 'pin',
-              origin: originPin,
-              destination: destinationPin,
-            },
-          },
-          discountCardId: result.discountCard?.id || null,
-          originalFare: result.originalFare || null,
-          discountApplied: result.discountApplied || null,
-          discountType: result.discountCard?.discountType || null,
-        }),
-      })
-
-      setSaveStatus(response.ok ? 'saved' : 'failed')
-    } catch {
-      setSaveStatus('failed')
-    }
+    setFitBoundsToken((current) => current + 1)
   }
 
   const calculateRoute = async (force = false) => {
-    if (!origin || !destination) return
+    if (!origin || !destination || !originSelection || !destinationSelection) return
 
     const nextPair = {
       origin,
@@ -370,7 +284,6 @@ const RoutePlannerCalculator = ({
     setIsCalculating(true)
     setPlannerState('calculating')
     setRouteMessage(routeResult ? 'Keeping your last good route visible while recalculating.' : null)
-    setControlMessage(null)
 
     try {
       const response = await fetch('/api/routes/calculate', {
@@ -378,8 +291,8 @@ const RoutePlannerCalculator = ({
         headers: { 'Content-Type': 'application/json' },
         signal: controller.signal,
         body: JSON.stringify({
-          origin: { type: 'pin', lat: origin.lat, lng: origin.lng },
-          destination: { type: 'pin', lat: destination.lat, lng: destination.lng },
+          origin: selectionToLocationInput(originSelection),
+          destination: selectionToLocationInput(destinationSelection),
           passengerType,
         }),
       })
@@ -396,10 +309,10 @@ const RoutePlannerCalculator = ({
         setPlannerState(nextState)
         setRouteMessage(
           nextState === 'out_of_service_area'
-            ? 'Move the pin back into the Basey service area and try again.'
+            ? 'Pin outside the service area.'
             : nextState === 'no_route_found'
-              ? 'Move one of the pins closer to a road or try a different pair of points.'
-              : 'Check your connection and try again. Your current pins stayed in place.',
+              ? 'No route could be calculated from the current selections.'
+              : 'Route service unavailable right now.',
         )
         if (onError) onError(message)
         return
@@ -418,7 +331,6 @@ const RoutePlannerCalculator = ({
         fallbackReason: data.fallbackReason || null,
         originalFare: (data.fareBreakdown?.discount || 0) > 0 ? subtotal : undefined,
         discountApplied: (data.fareBreakdown?.discount || 0) > 0 ? data.fareBreakdown?.discount : undefined,
-        discountRate: (data.fareBreakdown?.discount || 0) > 0 ? 0.2 : undefined,
         discountCard: userDiscountCard,
         farePolicy,
         breakdown: {
@@ -426,8 +338,8 @@ const RoutePlannerCalculator = ({
           additionalDistance: data.fareBreakdown?.additionalKm || 0,
           additionalFare: data.fareBreakdown?.additionalFare || 0,
         },
-        originLabel: formatPointLabel(origin, data.origin || 'Pickup pin'),
-        destinationLabel: formatPointLabel(destination, data.destination || 'Drop-off pin'),
+        originLabel: data.origin || getSelectionLabel(originSelection, 'Origin pin'),
+        destinationLabel: data.destination || getSelectionLabel(destinationSelection, 'Destination pin'),
       }
 
       setRouteResult(nextResult)
@@ -443,7 +355,49 @@ const RoutePlannerCalculator = ({
         shouldFitNextSuccessRef.current = false
       }
 
-      void saveFareCalculation(nextResult, origin, destination, nextResult.originLabel, nextResult.destinationLabel)
+      if (originSelection && destinationSelection) {
+        try {
+          const saveResponse = await fetch('/api/fare-calculations', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              fromLocation: nextResult.originLabel,
+              toLocation: nextResult.destinationLabel,
+              distance: nextResult.distanceKm,
+              calculatedFare: nextResult.fare,
+              calculationType: 'Road Route Planner',
+              routeData: {
+                distance: {
+                  kilometers: nextResult.distanceKm,
+                },
+                duration: {
+                  text: nextResult.durationText,
+                },
+                polyline: nextResult.polyline,
+                source: nextResult.sourceBadge,
+                fareBreakdown: nextResult.breakdown,
+                farePolicy: nextResult.farePolicy,
+                planner: {
+                  inputMode: 'pin',
+                  origin: buildPlannerSelectionMetadata(originSelection),
+                  destination: buildPlannerSelectionMetadata(destinationSelection),
+                },
+              },
+              vehicleId: selectedVehicle?.id || null,
+              discountCardId: nextResult.discountCard?.id || null,
+              originalFare: nextResult.originalFare || null,
+              discountApplied: nextResult.discountApplied || null,
+              discountType: nextResult.discountCard?.discountType || null,
+            }),
+          })
+
+          setSaveStatus(saveResponse.ok ? 'saved' : 'failed')
+        } catch {
+          setSaveStatus('failed')
+        }
+      }
     } catch (error) {
       if (controller.signal.aborted) {
         return
@@ -455,7 +409,7 @@ const RoutePlannerCalculator = ({
       }
 
       setPlannerState('network_error')
-      setRouteMessage('Check your connection and try again. Your current pins stayed in place.')
+      setRouteMessage('Route service unavailable right now.')
       if (onError) onError(message)
     } finally {
       if (requestId === requestSequenceRef.current) {
@@ -464,146 +418,33 @@ const RoutePlannerCalculator = ({
     }
   }
 
-  const useCurrentLocation = (target: 'origin' | 'destination') => {
-    if (!navigator.geolocation) {
-      setControlMessage('Current location is not available in this browser. You can still place pins directly on the map.')
-      return
-    }
+  const handleMapPointChange = (target: 'origin' | 'destination', point: PlannerPoint) => {
+    const nextSelection = buildPinSelection(point)
+    const setSelection = target === 'origin' ? setOriginSelection : setDestinationSelection
 
-    setControlMessage(null)
-    setLocatingTarget(target)
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const point: PlannerPoint = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-          label: 'Current location',
-        }
-
-        if (target === 'origin') {
-          updateOrigin(point)
-        } else {
-          updateDestination(point)
-        }
-
-        setLocatingTarget(null)
-      },
-      () => {
-        setControlMessage('Unable to read your current location. Please allow location access or place the pin manually.')
-        setLocatingTarget(null)
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0,
-      },
-    )
+    setSelection((current) => (selectionsEffectivelyEqual(current, nextSelection) ? current : nextSelection))
   }
-
-  const handleSwap = () => {
-    if (!origin || !destination) return
-
-    setControlMessage(null)
-    setOrigin(destination)
-    setDestination(origin)
-  }
-
-  const handleReset = () => {
-    setControlMessage(null)
-    setOrigin(null)
-    setDestination(null)
-    resetCalculationState()
-  }
-
-  const errorPanelVisible =
-    plannerState === 'network_error' ||
-    plannerState === 'out_of_service_area' ||
-    plannerState === 'no_route_found'
 
   return (
     <div className="mx-auto max-w-6xl">
-      <div className="space-y-4 sm:space-y-6">
-        <FareRateBanner />
-
-        {routeResult && (
-          <section className="app-surface-card-strong rounded-3xl p-4 sm:p-6">
-            <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-              <div>
-                <p className="text-sm font-medium uppercase tracking-[0.2em] text-gray-500">
-                  Estimated fare
-                </p>
-                <div className="mt-2 text-3xl font-bold text-gray-900 sm:text-5xl">
-                  {formatCurrency(routeResult.fare)}
-                </div>
-
-                {routeResult.discountApplied && routeResult.originalFare ? (
-                  <div className="mt-3 space-y-1">
-                    <p className="text-sm text-gray-500 line-through">
-                      {formatCurrency(routeResult.originalFare)}
-                    </p>
-                    <p className="text-sm font-medium text-emerald-700">
-                      Saved {formatCurrency(routeResult.discountApplied)}
-                    </p>
-                  </div>
-                ) : null}
-              </div>
-
-              <div className="flex flex-wrap gap-2 lg:max-w-sm lg:justify-end">
-                <span className="app-surface-inner rounded-full px-3 py-1 text-sm font-medium text-gray-700">
-                  {routeResult.distanceKm.toFixed(2)} km
-                </span>
-                <span className="app-surface-inner rounded-full px-3 py-1 text-sm font-medium text-gray-700">
-                  {routeResult.durationText}
-                </span>
-                <span
-                  className={`rounded-full px-3 py-1 text-sm font-medium ${
-                    routeResult.method === 'gps'
-                      ? 'border border-amber-200 bg-amber-50 text-amber-800'
-                      : 'border border-blue-200 bg-blue-50 text-blue-800'
-                  }`}
-                >
-                  {routeResult.sourceBadge}
-                </span>
-              </div>
+      <div className="space-y-4 sm:space-y-5">
+        {user ? (
+          <section className="app-surface-card-strong rounded-[2rem] border border-slate-200/80 p-3 sm:p-4">
+            <div className="max-w-md rounded-[1.5rem] border border-slate-200 bg-white p-2 shadow-sm">
+              <VehicleLookupField
+                label="Optional vehicle"
+                placeholder="Search by plate number"
+                selectedVehicle={selectedVehicle}
+                onSelect={(vehicle) => setSelectedVehicle(vehicle)}
+                onClearSelection={() => setSelectedVehicle(null)}
+                requireActivePermit={false}
+              />
             </div>
-
-            {routeResult.fallbackReason && (
-              <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                Lower-confidence estimate: road routing was unavailable for this request.
-              </p>
-            )}
-
-            {saveStatus === 'saved' && (
-              <p className="mt-3 text-xs text-gray-500">Saved to fare history.</p>
-            )}
-
-            <details className="app-surface-inner mt-4 rounded-2xl px-4 py-3 text-sm text-gray-700">
-              <summary className="cursor-pointer font-medium text-gray-800">
-                How fare was computed
-              </summary>
-              <div className="mt-3 space-y-2 text-sm">
-                <div className="flex items-center justify-between">
-                  <span>Base fare (first {routeResult.farePolicy.baseDistanceKm} km)</span>
-                  <span>{formatCurrency(routeResult.breakdown.baseFare)}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Additional distance</span>
-                  <span>{routeResult.breakdown.additionalDistance.toFixed(2)} km</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>
-                    Additional fare at {formatCurrency(routeResult.farePolicy.perKmRate)} per km
-                  </span>
-                  <span>{formatCurrency(routeResult.breakdown.additionalFare)}</span>
-                </div>
-              </div>
-            </details>
           </section>
-        )}
+        ) : null}
 
-        <div className="grid gap-4 lg:gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
-          <section className="order-1 app-surface-card rounded-3xl p-4 sm:p-5 lg:order-2">
+        <section className="app-surface-card overflow-hidden rounded-[2rem] p-2 sm:p-3">
+          <div className="relative">
             <MapComponent
               origin={origin}
               destination={destination}
@@ -612,143 +453,160 @@ const RoutePlannerCalculator = ({
               fitBoundsToken={fitBoundsToken}
               plannerState={plannerState}
               plannerMessage={routeMessage}
-              onOriginChange={updateOrigin}
-              onDestinationChange={updateDestination}
-              className="h-[360px] w-full rounded-2xl border border-gray-200 min-[420px]:h-[420px] lg:h-[520px]"
-            />
-          </section>
-
-          <aside className="order-2 app-surface-card rounded-3xl p-4 sm:p-5 lg:order-1">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Pin your route</h3>
-              <p className="mt-1 text-sm text-gray-600">
-                Use your current location or click the map to place A and B.
-              </p>
-            </div>
-
-            <PointSetter
-              title="Pickup"
-              letter="A"
-              currentPoint={origin}
-              isLocating={locatingTarget === 'origin'}
-              onUseCurrentLocation={() => useCurrentLocation('origin')}
+              onOriginChange={(point) => handleMapPointChange('origin', point)}
+              onDestinationChange={(point) => handleMapPointChange('destination', point)}
+              className="h-[520px] w-full rounded-[1.75rem] border border-slate-200 min-[420px]:h-[580px] lg:h-[680px]"
             />
 
-            <PointSetter
-              title="Destination"
-              letter="B"
-              currentPoint={destination}
-              isLocating={locatingTarget === 'destination'}
-              onUseCurrentLocation={() => useCurrentLocation('destination')}
-            />
+            {routeResult ? (
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[460] px-3 pb-3">
+                <div className="pointer-events-auto mx-auto w-full max-w-3xl rounded-[2rem] border border-slate-200/90 bg-white/97 shadow-2xl backdrop-blur-md">
+                  <div className="px-4 pt-3 sm:px-5">
+                    <div className="mx-auto h-1.5 w-14 rounded-full bg-slate-300/75" />
+                    <div className="mt-3 flex items-start justify-between gap-4">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span
+                            className={`rounded-full px-3 py-1 text-[11px] font-semibold ${
+                              routeResult.method === 'gps'
+                                ? 'border border-amber-200 bg-amber-50 text-amber-800'
+                                : 'border border-violet-200 bg-violet-100 text-violet-800'
+                            }`}
+                          >
+                            {routeResult.sourceBadge}
+                          </span>
+                          <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700">
+                            Road-aware route
+                          </span>
+                          {selectedVehicle ? (
+                            <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700">
+                              {selectedVehicle.permitPlateNumber || selectedVehicle.plateNumber}
+                            </span>
+                          ) : null}
+                        </div>
+                        <p className="mt-3 text-lg font-semibold leading-tight text-slate-900 sm:text-[1.75rem]">
+                          {routeResult.originLabel} <span className="text-slate-400">→</span> {routeResult.destinationLabel}
+                        </p>
+                        <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-slate-500">
+                          <span>{routeResult.durationText}</span>
+                          <span className="text-slate-300">•</span>
+                          <span>{routeResult.distanceKm.toFixed(2)} km</span>
+                          {routeResult.fallbackReason ? (
+                            <>
+                              <span className="text-slate-300">•</span>
+                              <span>GPS fallback</span>
+                            </>
+                          ) : null}
+                        </div>
+                      </div>
 
-            {controlMessage && (
-              <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-                {controlMessage}
-              </div>
-            )}
+                      <div className="shrink-0 rounded-[1.4rem] bg-slate-950 px-4 py-3 text-right text-white shadow-lg">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-300">Fare</p>
+                        <p className="mt-1 text-2xl font-bold sm:text-3xl">{formatCurrency(routeResult.fare)}</p>
+                      </div>
+                    </div>
+                  </div>
 
-            {errorPanelVisible && (
-              <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-                <p className="font-medium">
-                  {plannerState === 'out_of_service_area' && 'Pins are outside the service area.'}
-                  {plannerState === 'no_route_found' && 'No route could be calculated from the current pins.'}
-                  {plannerState === 'network_error' && 'The route service is unavailable right now.'}
-                </p>
-                {routeMessage && <p className="mt-1 text-xs text-red-700">{routeMessage}</p>}
-                {hasTwoPoints && (
-                  <button
-                    type="button"
-                    onClick={() => void calculateRoute(true)}
-                    className="mt-3 rounded-xl border border-red-300 bg-white px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50"
-                  >
-                    Try again
-                  </button>
-                )}
-              </div>
-            )}
+                  <div className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-b-[2rem] border-t border-slate-200 bg-slate-200/80">
+                    <div className="bg-slate-50 px-4 py-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Regular</p>
+                      <p className="mt-1 text-2xl font-bold text-slate-900">
+                        {regularFare ? formatCurrency(regularFare) : formatCurrency(routeResult.fare)}
+                      </p>
+                    </div>
+                    <div className="bg-slate-50 px-4 py-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Your fare</p>
+                      <p className="mt-1 text-2xl font-bold text-emerald-700">{formatCurrency(routeResult.fare)}</p>
+                    </div>
+                    {routeResult.discountApplied ? (
+                      <>
+                        <div className="bg-slate-50 px-4 py-3">
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Discount</p>
+                          <p className="mt-1 text-2xl font-bold text-emerald-700">-{formatCurrency(routeResult.discountApplied)}</p>
+                        </div>
+                        <div className="bg-slate-50 px-4 py-3">
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Save</p>
+                          <p className="mt-1 text-sm font-medium text-slate-700">
+                            {saveStatus === 'saved' ? 'Saved to history' : saveStatus === 'failed' ? 'Save failed' : 'Saving'}
+                          </p>
+                        </div>
+                      </>
+                    ) : null}
+                  </div>
 
-            <div className="grid grid-cols-2 gap-2 sm:gap-3">
-              <button
-                type="button"
-                onClick={handleSwap}
-                disabled={!hasTwoPoints}
-                className="app-surface-inner rounded-xl px-3 py-2 text-sm font-medium text-gray-700 hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Swap A / B
-              </button>
-              <button
-                type="button"
-                onClick={handleReset}
-                disabled={!origin && !destination}
-                className="app-surface-inner rounded-xl px-3 py-2 text-sm font-medium text-gray-700 hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Reset route
-              </button>
-              <button
-                type="button"
-                onClick={() => updateOrigin(null)}
-                disabled={!origin}
-                className="app-surface-inner rounded-xl px-3 py-2 text-sm font-medium text-gray-700 hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Clear A
-              </button>
-              <button
-                type="button"
-                onClick={() => updateDestination(null)}
-                disabled={!destination}
-                className="app-surface-inner rounded-xl px-3 py-2 text-sm font-medium text-gray-700 hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Clear B
-              </button>
-            </div>
+                  {routeResult.fallbackReason ? (
+                    <div className="border-t border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                      Lower-confidence estimate: road routing was unavailable for this request.
+                    </div>
+                  ) : null}
 
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
-              OpenRouteService is used first for road-aware planning. If it becomes unavailable, the planner will clearly label any lower-confidence GPS estimate.
-            </div>
-          </aside>
-        </div>
-
-        <section className="app-surface-card rounded-3xl p-4 sm:p-5">
-          <div className="flex items-start gap-4">
-            <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-100 text-xl text-blue-700">
-              A to B
-            </div>
-            <div className="space-y-2">
-              <div className="space-y-1">
-                <p className="text-sm font-medium uppercase tracking-[0.2em] text-gray-500">
-                  Route Planner
-                </p>
-                <h2 className="text-lg font-bold text-gray-900 sm:text-xl">Plan one route on one map</h2>
-              </div>
-              <p className="text-sm text-gray-600">
-                Tap the map or use your location to set A and B.
-              </p>
-              <div className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-700 sm:text-sm">
-                <span className="font-medium">Routing:</span>
-                <span className="sm:hidden">ORS first, GPS fallback.</span>
-                <span className="hidden sm:inline">
-                  OpenRouteService first, GPS fallback only when road routing is unavailable.
-                </span>
-              </div>
-              {userDiscountCard && (
-                <div className="inline-flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-left shadow-sm">
-                  <span className="text-xl">Discount</span>
-                  <div>
-                    <p className="text-sm font-semibold text-emerald-800">
-                      {userDiscountCard.discountType === 'SENIOR_CITIZEN' && 'Senior Citizen discount active'}
-                      {userDiscountCard.discountType === 'PWD' && 'PWD discount active'}
-                      {userDiscountCard.discountType === 'STUDENT' && 'Student discount active'}
-                    </p>
-                    <p className="text-xs text-emerald-700">
-                      {userDiscountCard.discountPercentage}% discount will be applied automatically.
-                    </p>
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 px-4 py-3 sm:px-5">
+                    <div className="text-xs text-slate-500">
+                      {saveStatus === 'saved' && 'Saved to fare history.'}
+                      {saveStatus === 'failed' && 'Unable to save this route right now.'}
+                      {saveStatus === 'idle' && 'Ready'}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={refitRoute}
+                        className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                      >
+                        Recenter route
+                      </button>
+                      <button
+                        type="button"
+                        onClick={resetRoute}
+                        className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                      >
+                        Reset pins
+                      </button>
+                    </div>
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            ) : null}
+
+            {hasTwoPoints && !routeResult ? (
+              <div className="pointer-events-none absolute bottom-3 right-3 z-[430]">
+                <button
+                  type="button"
+                  onClick={resetRoute}
+                  className="pointer-events-auto rounded-full border border-slate-200 bg-white/96 px-3 py-2 text-xs font-semibold text-slate-700 shadow-lg backdrop-blur-sm transition hover:bg-slate-50"
+                >
+                  Reset pins
+                </button>
+              </div>
+            ) : null}
+
+            <span className="sr-only">
+              OpenRouteService is used first, with a GPS estimate shown only when road routing is unavailable.
+            </span>
           </div>
         </section>
+
+        {errorPanelVisible ? (
+          <section className="app-surface-card-strong rounded-[2rem] border border-slate-200/80 p-3 sm:p-4">
+            <div className="rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800">
+              <p>
+                {plannerState === 'out_of_service_area'
+                  ? 'Pin outside the service area.'
+                  : plannerState === 'no_route_found'
+                    ? 'No route could be calculated from the current selections.'
+                    : 'Route service unavailable right now.'}
+              </p>
+              {hasTwoPoints ? (
+                <button
+                  type="button"
+                  onClick={() => void calculateRoute(true)}
+                  className="mt-2 rounded-lg border border-red-300 bg-white px-2.5 py-1 text-xs font-medium text-red-700 transition hover:bg-red-50"
+                >
+                  Try again
+                </button>
+              ) : null}
+            </div>
+          </section>
+        ) : null}
       </div>
     </div>
   )

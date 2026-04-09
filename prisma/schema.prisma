@@ -146,6 +146,16 @@ model Incident {
   description   String
   location      String
   coordinates   String?
+  fareCalculationId String?
+  tripOrigin    String?
+  tripDestination String?
+  tripFare      Decimal?
+  tripDiscountType DiscountType?
+  tripCalculatedAt DateTime?
+  tripCalculationType String?
+  tripVehicleType VehicleType?
+  tripPermitPlateNumber String?
+  tripPlateNumber String?
   reportedById  String
   handledById   String?
   vehicleId     String?
@@ -166,11 +176,13 @@ model Incident {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   resolvedAt    DateTime?
+  fareCalculation FareCalculation? @relation(fields: [fareCalculationId], references: [id])
   handledBy     User?          @relation("HandledBy", fields: [handledById], references: [id])
   reportedBy    User           @relation("ReportedBy", fields: [reportedById], references: [id])
   vehicle       Vehicle?       @relation(fields: [vehicleId], references: [id])
   evidence      Evidence[]
 
+  @@index([fareCalculationId])
   @@index([status])
   @@index([incidentType])
   @@index([reportedById])
@@ -228,6 +240,7 @@ model FareCalculation {
   discountApplied Decimal?
   discountType    DiscountType?
   createdAt       DateTime          @default(now())
+  incidents       Incident[]
   user            User?             @relation(fields: [userId], references: [id])
   vehicle         Vehicle?          @relation(fields: [vehicleId], references: [id])
   discountCard    DiscountCard?     @relation("DiscountedCalculations", fields: [discountCardId], references: [id])

@@ -64,10 +64,30 @@ function setInputValue(element: HTMLInputElement, value: string) {
   element.dispatchEvent(new Event('change', { bubbles: true }))
 }
 
+function setSelectValue(element: HTMLSelectElement, value: string) {
+  const descriptor = Object.getOwnPropertyDescriptor(
+    window.HTMLSelectElement.prototype,
+    'value',
+  )
+
+  descriptor?.set?.call(element, value)
+  element.dispatchEvent(new Event('input', { bubbles: true }))
+  element.dispatchEvent(new Event('change', { bubbles: true }))
+}
+
 describe('vehicle loading behavior', () => {
   let container: HTMLDivElement
   let root: Root
   let fetchMock: ReturnType<typeof vi.fn>
+  let fareCalculationsPayload: {
+    calculations: Array<Record<string, unknown>>
+    pagination: {
+      page: number
+      limit: number
+      total: number
+      totalPages: number
+    }
+  }
   let geolocationMock: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
@@ -76,9 +96,22 @@ describe('vehicle loading behavior', () => {
     container = document.createElement('div')
     document.body.appendChild(container)
     root = createRoot(container)
+    fareCalculationsPayload = {
+      calculations: [],
+      pagination: {
+        page: 1,
+        limit: 10,
+        total: 0,
+        totalPages: 0,
+      },
+    }
 
     fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
+
+      if (url.includes('/api/fare-calculations')) {
+        return Promise.resolve(makeJsonResponse(fareCalculationsPayload))
+      }
 
       if (url.includes('/api/permits')) {
         return Promise.resolve(
@@ -147,14 +180,123 @@ describe('vehicle loading behavior', () => {
     vi.useRealTimers()
   })
 
-  it('does not fetch vehicles or geolocation on incident report mount', async () => {
+  it('loads trip history on incident report mount without fetching vehicles or geolocation', async () => {
     await act(async () => {
       root.render(React.createElement(IncidentReporting))
       await Promise.resolve()
+      await Promise.resolve()
     })
 
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(String(fetchMock.mock.calls[0]?.[0])).toContain('/api/fare-calculations?page=1&limit=10&recentDays=30')
     expect(geolocationMock).not.toHaveBeenCalled()
+  })
+
+  it('renders a compact recent-trip picker and uses linked vehicle context from the selected trip', async () => {
+    fareCalculationsPayload = {
+      calculations: [
+        {
+          id: 'calc-1',
+          from: 'Amandayehan',
+          to: 'Anglit',
+          distanceKm: 12.5,
+          fare: 45,
+          actualFare: null,
+          originalFare: null,
+          discountApplied: null,
+          discountType: null,
+          calculationType: 'Road Route Planner',
+          createdAt: '2026-04-02T09:00:00.000Z',
+          routeData: null,
+          vehicle: {
+            permitPlateNumber: 'PERMIT-001',
+            plateNumber: 'ABC-123',
+            vehicleType: 'TRICYCLE',
+            hasVehicleContext: true,
+          },
+        },
+      ],
+      pagination: {
+        page: 1,
+        limit: 10,
+        total: 1,
+        totalPages: 1,
+      },
+    }
+
+    await act(async () => {
+      root.render(React.createElement(IncidentReporting))
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(container.textContent).toContain('Select Trip to Report')
+    expect(container.textContent).toContain('Recent trips')
+    expect(container.querySelector('input[placeholder="Type at least 2 characters to search matching vehicles"]')).toBeNull()
+    expect(
+      Array.from(container.querySelectorAll('button')).some((button) => button.textContent?.includes('Amandayehan to Anglit')),
+    ).toBe(false)
+
+    const tripPicker = container.querySelector('#recentTripPicker') as HTMLSelectElement | null
+    expect(tripPicker).not.toBeNull()
+
+    await act(async () => {
+      setSelectValue(tripPicker!, 'calc-1')
+      await Promise.resolve()
+    })
+
+    expect(container.textContent).toContain('Amandayehan to Anglit')
+    expect(container.querySelector('input[placeholder="Type at least 2 characters to search matching vehicles"]')).toBeNull()
+  })
+
+  it('keeps larger trip history inside a single compact recent-trip dropdown', async () => {
+    fareCalculationsPayload = {
+      calculations: Array.from({ length: 5 }, (_, index) => ({
+        id: `calc-${index + 1}`,
+        from: `Origin ${index + 1}`,
+        to: `Destination ${index + 1}`,
+        distanceKm: 10 + index,
+        fare: 30 + index,
+        actualFare: null,
+        originalFare: null,
+        discountApplied: null,
+        discountType: null,
+        calculationType: 'Road Route Planner',
+        createdAt: `2026-04-0${index + 1}T09:00:00.000Z`,
+        routeData: null,
+        vehicle: {
+          permitPlateNumber: `PERMIT-00${index + 1}`,
+          plateNumber: `ABC-12${index + 1}`,
+          vehicleType: 'TRICYCLE',
+          hasVehicleContext: true,
+        },
+      })),
+      pagination: {
+        page: 1,
+        limit: 10,
+        total: 5,
+        totalPages: 1,
+      },
+    }
+
+    await act(async () => {
+      root.render(React.createElement(IncidentReporting))
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(container.textContent).toContain('Recent trips')
+
+    const tripPicker = container.querySelector('#recentTripPicker') as HTMLSelectElement | null
+    expect(tripPicker).not.toBeNull()
+    expect(tripPicker?.options.length).toBe(6)
+
+    await act(async () => {
+      setSelectValue(tripPicker!, 'calc-5')
+      await Promise.resolve()
+    })
+
+    expect(container.textContent).toContain('Origin 5 to Destination 5')
   })
 
   it('auto-fills the location field when GPS resolves a barangay', async () => {
@@ -244,7 +386,7 @@ describe('vehicle loading behavior', () => {
       await Promise.resolve()
     })
 
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(fetchMock).toHaveBeenCalledTimes(1)
 
     await act(async () => {
       setInputValue(searchInput!, 'AB')

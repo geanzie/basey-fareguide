@@ -6,6 +6,9 @@ const prismaMock = vi.hoisted(() => ({
     findUnique: vi.fn(),
     update: vi.fn(),
   },
+  vehicle: {
+    findUnique: vi.fn(),
+  },
   fareCalculation: {
     create: vi.fn(),
   },
@@ -69,6 +72,25 @@ const validCard = {
   validUntil: new Date("2026-12-31T23:59:59.000Z"),
 };
 
+function makeStoredFareCalculation(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "calc-1",
+    fromLocation: "Amandayehan",
+    toLocation: "Anglit",
+    distance: 10,
+    calculatedFare: 24,
+    actualFare: null,
+    originalFare: null,
+    discountApplied: null,
+    discountType: null,
+    calculationType: "Route Planner",
+    createdAt: new Date("2026-04-09T00:00:00.000Z"),
+    routeData: null,
+    vehicle: null,
+    ...overrides,
+  };
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   authMock.verifyAuth.mockResolvedValue({
@@ -79,6 +101,7 @@ beforeEach(() => {
     id: "public-1",
     userType: "PUBLIC",
   });
+  prismaMock.vehicle.findUnique.mockReset();
 });
 
 describe("discount policy enforcement", () => {
@@ -132,7 +155,13 @@ describe("discount policy enforcement", () => {
 
   it("persists and logs fare usage only when the discount card passes the canonical policy", async () => {
     prismaMock.discountCard.findUnique.mockResolvedValueOnce(validCard);
-    prismaMock.fareCalculation.create.mockResolvedValueOnce({ id: "calc-1" });
+    prismaMock.fareCalculation.create.mockResolvedValueOnce(
+      makeStoredFareCalculation({
+        originalFare: 30,
+        discountApplied: 6,
+        discountType: "STUDENT",
+      }),
+    );
     prismaMock.discountUsageLog.create.mockResolvedValueOnce({ id: "log-1" });
     prismaMock.discountCard.update.mockResolvedValueOnce({ id: "card-1" });
 
@@ -149,5 +178,84 @@ describe("discount policy enforcement", () => {
     );
     expect(prismaMock.discountUsageLog.create).toHaveBeenCalledTimes(1);
     expect(prismaMock.discountCard.update).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects unauthenticated vehicle attachment requests", async () => {
+    authMock.verifyAuth.mockResolvedValueOnce(null);
+
+    const res = await saveFareCalculation(
+      makeFareSaveRequest({
+        discountCardId: null,
+        originalFare: null,
+        discountApplied: null,
+        discountType: null,
+        vehicleId: "vehicle-1",
+      }),
+    );
+    const json = await res.json();
+
+    expect(res.status).toBe(401);
+    expect(json.error).toMatch(/authentication required/i);
+    expect(prismaMock.vehicle.findUnique).not.toHaveBeenCalled();
+  });
+
+  it("rejects inactive vehicles before creating the fare record", async () => {
+    prismaMock.vehicle.findUnique.mockResolvedValueOnce({
+      id: "vehicle-1",
+      isActive: false,
+    });
+
+    const res = await saveFareCalculation(
+      makeFareSaveRequest({
+        discountCardId: null,
+        originalFare: null,
+        discountApplied: null,
+        discountType: null,
+        vehicleId: "vehicle-1",
+      }),
+    );
+    const json = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(json.error).toMatch(/inactive/i);
+    expect(prismaMock.fareCalculation.create).not.toHaveBeenCalled();
+  });
+
+  it("persists an optional active vehicle without changing fare computation", async () => {
+    prismaMock.vehicle.findUnique.mockResolvedValueOnce({
+      id: "vehicle-1",
+      isActive: true,
+    });
+    prismaMock.fareCalculation.create.mockResolvedValueOnce(
+      makeStoredFareCalculation({
+        id: "calc-2",
+        vehicle: {
+          id: "vehicle-1",
+          plateNumber: "ABC-1234",
+          vehicleType: "JEEPNEY",
+        },
+      }),
+    );
+
+    const res = await saveFareCalculation(
+      makeFareSaveRequest({
+        discountCardId: null,
+        originalFare: null,
+        discountApplied: null,
+        discountType: null,
+        vehicleId: "vehicle-1",
+      }),
+    );
+
+    expect(res.status).toBe(201);
+    expect(prismaMock.fareCalculation.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          vehicleId: "vehicle-1",
+          calculatedFare: 24,
+        }),
+      }),
+    );
+    expect(prismaMock.discountUsageLog.create).not.toHaveBeenCalled();
   });
 });

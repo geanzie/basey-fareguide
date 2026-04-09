@@ -164,11 +164,16 @@ const EvidenceManager = ({ incidentId, onClose }: EvidenceManagerProps) => {
   const formatDate = (dateString: string) => new Date(dateString).toLocaleString()
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-6xl shadow-lg rounded-lg bg-white">
-        <div className="mt-3">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-bold text-gray-900 flex items-center gap-3">
+    <div className="fixed inset-0 z-50 h-full w-full overflow-y-auto bg-slate-950/35 backdrop-blur-sm">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="evidence-manager-title"
+        className="app-surface-overlay app-mobile-sheet-safe relative top-4 mx-auto max-h-[calc(100vh-2rem)] w-[calc(100%-1rem)] max-w-6xl overflow-y-auto rounded-3xl p-4 sm:top-8 sm:w-11/12 sm:p-5"
+      >
+        <div className="space-y-6">
+          <div className="flex items-start justify-between gap-3">
+            <h3 id="evidence-manager-title" className="min-w-0 text-lg font-bold text-gray-900 sm:text-xl flex items-center gap-3">
               <span className={getDashboardIconChipClasses('blue')}>
                 <DashboardIconSlot icon={DASHBOARD_ICONS.folder} size={DASHBOARD_ICON_POLICY.sizes.card} />
               </span>
@@ -176,7 +181,8 @@ const EvidenceManager = ({ incidentId, onClose }: EvidenceManagerProps) => {
             </h3>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
+              className="shrink-0 rounded-full p-2 text-gray-400 transition-colors hover:bg-white/80 hover:text-gray-600"
+              aria-label="Close evidence manager"
             >
               <DashboardIconSlot icon={DASHBOARD_ICONS.close} size={DASHBOARD_ICON_POLICY.sizes.card} />
             </button>
@@ -189,23 +195,23 @@ const EvidenceManager = ({ incidentId, onClose }: EvidenceManagerProps) => {
             </div>
           ) : null}
 
-          <div className="bg-gray-50 p-4 rounded-lg mb-6">
+          <div className="app-surface-inner rounded-2xl p-4">
             <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
               <DashboardIconSlot icon={DASHBOARD_ICONS.upload} size={DASHBOARD_ICON_POLICY.sizes.button} className="text-blue-600" />
               <span>Upload Evidence</span>
             </h4>
-            <div className="flex items-center space-x-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <input
                 type="file"
                 accept="image/*,video/*,audio/*,.pdf"
                 onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-                className="flex-1"
+                className="min-w-0 flex-1 text-sm text-gray-700 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-2 file:font-medium file:text-blue-700 hover:file:bg-blue-100"
                 disabled={uploading}
               />
               <button
                 onClick={handleFileUpload}
                 disabled={!selectedFile || uploading}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center"
+                className="inline-flex w-full items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
               >
                 {uploading ? (
                   <>
@@ -236,16 +242,16 @@ const EvidenceManager = ({ incidentId, onClose }: EvidenceManagerProps) => {
             ) : evidence.length > 0 ? (
               <div className="grid gap-4">
                 {evidence.map((item) => (
-                  <div key={item.id} className="border border-gray-200 rounded-lg p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start space-x-3 flex-1">
+                  <div key={item.id} className="rounded-2xl border border-gray-200 p-4">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                      <div className="flex min-w-0 flex-1 items-start gap-3">
                         <span className={`${getDashboardIconChipClasses('slate')} h-11 w-11 rounded-xl`}>
                           <DashboardIconSlot icon={getFileIcon(item.fileType)} size={DASHBOARD_ICON_POLICY.sizes.card} />
                         </span>
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2 mb-1">
-                            <h5 className="font-medium text-gray-900">{item.fileName}</h5>
-                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(item.status)}`}>
+                        <div className="min-w-0 flex-1">
+                          <div className="mb-1 flex flex-col gap-2 sm:flex-row sm:items-start">
+                            <h5 className="min-w-0 break-all font-medium leading-snug text-gray-900">{item.fileName}</h5>
+                            <span className={`shrink-0 self-start rounded-full px-2 py-1 text-xs font-semibold ${getStatusBadge(item.status)}`}>
                               {item.status.replace('_', ' ').toLowerCase()}
                             </span>
                           </div>
@@ -273,7 +279,7 @@ const EvidenceManager = ({ incidentId, onClose }: EvidenceManagerProps) => {
                         </div>
                       </div>
 
-                      <div className="flex items-center space-x-2">
+                      <div className="flex flex-wrap items-center gap-3 lg:justify-end">
                         <a
                           href={item.storageStatus === 'DELETED' ? undefined : item.fileUrl}
                           target={item.storageStatus === 'DELETED' ? undefined : '_blank'}
@@ -307,7 +313,7 @@ const EvidenceManager = ({ incidentId, onClose }: EvidenceManagerProps) => {
                     </div>
 
                     {reviewingId === item.id ? (
-                      <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                      <div className="mt-4 rounded-xl bg-blue-50 p-4">
                         <h6 className="font-medium text-gray-900 mb-3">Review Evidence</h6>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
@@ -338,14 +344,14 @@ const EvidenceManager = ({ incidentId, onClose }: EvidenceManagerProps) => {
                             />
                           </div>
                         </div>
-                        <div className="flex justify-end space-x-2 mt-3">
+                        <div className="mt-3 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                           <button
                             onClick={() => {
                               setReviewingId(null)
                               setReviewStatus('')
                               setReviewRemarks('')
                             }}
-                            className="px-3 py-1 text-gray-600 hover:text-gray-800 text-sm"
+                            className="rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-white/70 hover:text-gray-800"
                           >
                             Cancel
                           </button>
@@ -373,10 +379,10 @@ const EvidenceManager = ({ incidentId, onClose }: EvidenceManagerProps) => {
             )}
           </div>
 
-          <div className="flex justify-end mt-6 pt-4 border-t">
+          <div className="flex flex-col-reverse gap-3 border-t pt-4 sm:flex-row sm:justify-end">
             <button
               onClick={onClose}
-              className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors inline-flex items-center gap-2"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-gray-300 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-400 sm:w-auto"
             >
               <DashboardIconSlot icon={DASHBOARD_ICONS.close} size={DASHBOARD_ICON_POLICY.sizes.button} />
               <span>Close</span>
