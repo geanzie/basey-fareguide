@@ -46,7 +46,7 @@ function deferredResponse() {
   return { promise, resolve }
 }
 
-function makeUserProfileResponse(userType: 'ADMIN' | 'PUBLIC' = 'ADMIN') {
+function makeSessionResponse(userType: 'ADMIN' | 'PUBLIC' = 'ADMIN') {
   return {
     user: {
       id: 'user-1',
@@ -54,15 +54,8 @@ function makeUserProfileResponse(userType: 'ADMIN' | 'PUBLIC' = 'ADMIN') {
       userType,
       firstName: 'Sample',
       lastName: 'User',
-      dateOfBirth: null,
-      phoneNumber: null,
-      governmentId: null,
-      idType: null,
       isActive: true,
       isVerified: true,
-      email: 'sample@example.com',
-      barangayResidence: null,
-      createdAt: '2025-01-01T00:00:00.000Z',
     },
   }
 }
@@ -121,7 +114,7 @@ describe('auth guard transitions', () => {
   let container: HTMLDivElement
   let root: Root
   let fetchMock: ReturnType<typeof vi.fn>
-  let profileResponse: Response | Promise<Response>
+  let sessionResponse: Response | Promise<Response>
   let logoutResponse: Response | Promise<Response>
 
   beforeEach(() => {
@@ -136,7 +129,7 @@ describe('auth guard transitions', () => {
     document.body.appendChild(container)
     root = createRoot(container)
 
-    profileResponse = makeJsonResponse(makeUserProfileResponse('ADMIN'))
+    sessionResponse = makeJsonResponse(makeSessionResponse('ADMIN'))
     logoutResponse = makeJsonResponse({ success: true })
 
     fetchMock = vi.fn((input: RequestInfo | URL) => {
@@ -147,10 +140,10 @@ describe('auth guard transitions', () => {
             ? input.toString()
             : input.url
 
-      if (url.endsWith('/api/user/profile')) {
-        return profileResponse instanceof Response
-          ? Promise.resolve(profileResponse)
-          : profileResponse
+      if (url.endsWith('/api/auth/session')) {
+        return sessionResponse instanceof Response
+          ? Promise.resolve(sessionResponse)
+          : sessionResponse
       }
 
       if (url.endsWith('/api/auth/logout')) {
@@ -177,7 +170,7 @@ describe('auth guard transitions', () => {
   })
 
   it('redirects unauthenticated users to /login without showing Access Denied', async () => {
-    profileResponse = makeJsonResponse({ message: 'Unauthorized' }, 401)
+    sessionResponse = makeJsonResponse({ message: 'Unauthorized' }, 401)
 
     await act(async () => {
       root.render(
@@ -197,7 +190,7 @@ describe('auth guard transitions', () => {
   })
 
   it('shows Access Denied only for authenticated users with the wrong role', async () => {
-    profileResponse = makeJsonResponse(makeUserProfileResponse('PUBLIC'))
+    sessionResponse = makeJsonResponse(makeSessionResponse('PUBLIC'))
 
     await act(async () => {
       root.render(
@@ -217,7 +210,7 @@ describe('auth guard transitions', () => {
 
   it('renders a neutral loading shell while auth is resolving', async () => {
     const pendingProfile = deferredResponse()
-    profileResponse = pendingProfile.promise
+    sessionResponse = pendingProfile.promise
 
     await act(async () => {
       root.render(
@@ -235,7 +228,7 @@ describe('auth guard transitions', () => {
     expect(container.textContent).not.toContain('Protected admin reports')
 
     await act(async () => {
-      pendingProfile.resolve(makeJsonResponse(makeUserProfileResponse('ADMIN')))
+      pendingProfile.resolve(makeJsonResponse(makeSessionResponse('ADMIN')))
       await flushPromises()
     })
   })
@@ -357,7 +350,7 @@ describe('auth guard transitions', () => {
 
     expect(container.textContent).toContain('Protected admin reports')
 
-    profileResponse = makeJsonResponse({ message: 'Unauthorized' }, 401)
+    sessionResponse = makeJsonResponse({ message: 'Unauthorized' }, 401)
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(AUTH_SESSION_REVALIDATION_MS)

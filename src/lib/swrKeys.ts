@@ -1,4 +1,5 @@
 export const SWR_KEYS = {
+  authSession: "/api/auth/session",
   userProfile: "/api/user/profile",
   incidents: "/api/incidents",
   fareCalculations: "/api/fare-calculations",

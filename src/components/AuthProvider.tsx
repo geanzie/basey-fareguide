@@ -6,12 +6,11 @@ import useSWR, { useSWRConfig } from 'swr'
 
 import AuthStateShell from './AuthStateShell'
 import UnifiedLayout from './UnifiedLayout'
-import type { SessionUserDto, UserProfileResponseDto } from '@/lib/contracts'
+import type { SessionResponseDto, SessionUserDto } from '@/lib/contracts'
 import { isAuthRoute, POST_LOGOUT_ROUTE } from '@/lib/authRoutes'
 import { SWR_KEYS } from '@/lib/swrKeys'
 import {
-  buildOptimisticUserProfileResponse,
-  fetchUserProfileResponse,
+  fetchSessionResponse,
 } from '@/lib/userProfile'
 import {
   AUTH_SESSION_IDLE_TIMEOUT_MS,
@@ -47,9 +46,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
   const { mutate: mutateCache } = useSWRConfig()
-  const { data, isLoading, mutate } = useSWR<UserProfileResponseDto | null>(
-    SWR_KEYS.userProfile,
-    fetchUserProfileResponse,
+  const { data, isLoading, mutate } = useSWR<SessionResponseDto | null>(
+    SWR_KEYS.authSession,
+    fetchSessionResponse,
   )
   const [transitionState, setTransitionState] = useState<'idle' | 'logging_out'>('idle')
   const lastActivityAtRef = useRef(Date.now())
@@ -84,8 +83,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = (userData: SessionUserDto) => {
     setTransitionState('idle')
     void mutateCache(
-      SWR_KEYS.userProfile,
-      buildOptimisticUserProfileResponse(userData),
+      SWR_KEYS.authSession,
+      { user: userData },
       { populateCache: true, revalidate: true },
     )
   }
@@ -105,6 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {}
 
     await Promise.all([
+      mutateCache(SWR_KEYS.authSession, null, { populateCache: true, revalidate: false }),
       mutateCache(SWR_KEYS.userProfile, null, { populateCache: true, revalidate: false }),
       mutateCache(SWR_KEYS.incidents, undefined, { revalidate: false }),
       mutateCache(SWR_KEYS.fareCalculations, undefined, { revalidate: false }),
@@ -126,7 +126,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const revalidateSession = async () => {
       try {
-        const nextData = await fetchUserProfileResponse()
+        const nextData = await fetchSessionResponse()
 
         if (!canceled && !nextData?.user) {
           await logoutRef.current()
@@ -134,7 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (!canceled) {
-          await mutateCache(SWR_KEYS.userProfile, nextData, {
+          await mutateCache(SWR_KEYS.authSession, nextData, {
             populateCache: true,
             revalidate: false,
           })

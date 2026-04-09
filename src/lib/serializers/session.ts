@@ -24,11 +24,6 @@ export function serializeSessionUser(user: {
   userType: SessionUserDto["userType"];
   firstName: string;
   lastName: string;
-  dateOfBirth?: Date | string | null;
-  phoneNumber?: string | null;
-  governmentId?: string | null;
-  idType?: string | null;
-  employeeId?: string | null;
   isActive: boolean;
   isVerified: boolean;
 }): SessionUserDto {
@@ -38,11 +33,6 @@ export function serializeSessionUser(user: {
     userType: user.userType,
     firstName: user.firstName,
     lastName: user.lastName,
-    dateOfBirth: toDateOnly(user.dateOfBirth),
-    phoneNumber: user.phoneNumber ?? null,
-    governmentId: user.governmentId ?? null,
-    idType: user.idType ?? null,
-    employeeId: user.employeeId ?? null,
     isActive: user.isActive,
     isVerified: user.isVerified,
   };
@@ -68,7 +58,12 @@ export function serializeUserProfile(user: {
   return {
     ...serializeSessionUser(user),
     email: user.email ?? null,
+    phoneNumber: user.phoneNumber ?? null,
+    dateOfBirth: toDateOnly(user.dateOfBirth),
+    governmentId: user.governmentId ?? null,
+    idType: user.idType ?? null,
     barangayResidence: user.barangayResidence ?? null,
+    employeeId: user.employeeId ?? null,
     createdAt: toIsoString(user.createdAt) ?? new Date(0).toISOString(),
   };
 }

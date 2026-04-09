@@ -10,7 +10,18 @@ const routerMock = vi.hoisted(() => ({
 }));
 
 const authMock = vi.hoisted(() => ({
-  useAuth: vi.fn(() => ({ user: null, status: "unauthenticated" })),
+  useAuth: vi.fn<() => {
+    user:
+      | {
+          id: string;
+          username: string;
+          firstName: string;
+          lastName: string;
+          userType: string;
+        }
+      | null;
+    status: string;
+  }>(() => ({ user: null, status: "unauthenticated" })),
 }));
 
 vi.mock("next/navigation", () => ({

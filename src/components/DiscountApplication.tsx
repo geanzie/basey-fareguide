@@ -24,8 +24,8 @@ import {
 interface DiscountApplicationProps {
   user: Pick<
     UserProfileDto,
-    'id' | 'username' | 'firstName' | 'lastName' | 'dateOfBirth' | 'phoneNumber' | 'governmentId' | 'idType' | 'userType'
-  >
+    'id' | 'username' | 'firstName' | 'lastName' | 'userType'
+  > & Partial<Pick<UserProfileDto, 'dateOfBirth' | 'governmentId' | 'idType'>>
 }
 
 export default function DiscountApplication({ user: initialUser }: DiscountApplicationProps) {
@@ -47,9 +47,9 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
   // Form state
   const [discountType, setDiscountType] = useState<DiscountType>('SENIOR_CITIZEN')
   const [fullName, setFullName] = useState(`${user.firstName} ${user.lastName}`)
-  const [dateOfBirth, setDateOfBirth] = useState(user.dateOfBirth || '')
-  const [idNumber, setIdNumber] = useState(user.governmentId || '')
-  const [idType, setIdType] = useState(user.idType || '')
+  const [dateOfBirth, setDateOfBirth] = useState('')
+  const [idNumber, setIdNumber] = useState('')
+  const [idType, setIdType] = useState('')
   const [issuingAuthority, setIssuingAuthority] = useState('')
   
   // Photo upload

@@ -6,18 +6,22 @@ export interface SessionUserDto {
   userType: UserRole;
   firstName: string;
   lastName: string;
-  dateOfBirth: string | null;
-  phoneNumber: string | null;
-  governmentId: string | null;
-  idType: string | null;
-  employeeId?: string | null;
   isActive: boolean;
   isVerified: boolean;
 }
 
+export interface SessionResponseDto {
+  user: SessionUserDto;
+}
+
 export interface UserProfileDto extends SessionUserDto {
   email: string | null;
+  phoneNumber: string | null;
+  dateOfBirth: string | null;
+  governmentId: string | null;
+  idType: string | null;
   barangayResidence: string | null;
+  employeeId?: string | null;
   createdAt: string;
 }
 
