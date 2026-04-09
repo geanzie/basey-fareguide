@@ -22,3 +22,17 @@ export function isAuthRoute(pathname: string | null | undefined): boolean {
     pathname.startsWith(`${LEGACY_AUTH_ROUTE}/`)
   );
 }
+
+export function getAuthenticatedHomeRoute(userType: UserRole | null | undefined): string {
+  switch (userType) {
+    case "ADMIN":
+      return "/admin";
+    case "DATA_ENCODER":
+      return "/encoder";
+    case "ENFORCER":
+      return "/enforcer";
+    case "PUBLIC":
+    default:
+      return "/dashboard";
+  }
+}

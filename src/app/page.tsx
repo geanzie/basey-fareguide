@@ -1,7 +1,10 @@
 'use client'
 
+import { useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
+import AuthStateShell from '@/components/AuthStateShell'
 import { useAuth } from '@/components/AuthProvider'
 import BrandMark from '@/components/BrandMark'
 import {
@@ -12,11 +15,43 @@ import {
 } from '@/components/dashboardIcons'
 import FareRateBanner from '@/components/FareRateBanner'
 import TrafficAnnouncementsFeed from '@/components/TrafficAnnouncementsFeed'
+import { getAuthenticatedHomeRoute } from '@/lib/authRoutes'
 import { PUBLIC_PENALTY_SCHEDULE } from '@/lib/incidents/penaltyRules'
 
 export default function HomePage() {
-  const { user } = useAuth()
+  const router = useRouter()
+  const { user, status } = useAuth()
   const isAuthenticated = !!user
+
+  useEffect(() => {
+    if (status !== 'authenticated' || !user) {
+      return
+    }
+
+    router.replace(getAuthenticatedHomeRoute(user.userType))
+  }, [router, status, user])
+
+  if (status === 'loading') {
+    return (
+      <div className="app-page-bg min-h-screen">
+        <AuthStateShell
+          title="Restoring session"
+          message="Checking whether you already have access to a dashboard."
+        />
+      </div>
+    )
+  }
+
+  if (status === 'authenticated' && user) {
+    return (
+      <div className="app-page-bg min-h-screen">
+        <AuthStateShell
+          title="Opening dashboard"
+          message="Redirecting you to the correct workspace for your account."
+        />
+      </div>
+    )
+  }
 
   return (
     <div className="app-page-bg">

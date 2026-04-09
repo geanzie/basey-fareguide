@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/AuthProvider'
 import BrandMark from '@/components/BrandMark'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import { getAuthenticatedHomeRoute } from '@/lib/authRoutes'
 
 interface LoginFormProps {
   onSwitchToRegister: () => void
@@ -39,20 +40,7 @@ const LoginForm = ({ onSwitchToRegister }: LoginFormProps) => {
         const data = await response.json()
 
         login(data.user)
-
-        switch (data.user.userType) {
-          case 'ADMIN':
-            router.replace('/admin')
-            break
-          case 'DATA_ENCODER':
-            router.replace('/encoder')
-            break
-          case 'ENFORCER':
-            router.replace('/enforcer')
-            break
-          default:
-            router.replace('/dashboard')
-        }
+        router.replace(getAuthenticatedHomeRoute(data.user.userType))
       } else {
         const errorData = await response.json()
         setError(errorData.message || 'Login failed')

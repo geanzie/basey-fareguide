@@ -5,8 +5,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createRoot, type Root } from "react-dom/client";
 import { SWRConfig } from "swr";
 
+const routerMock = vi.hoisted(() => ({
+  replace: vi.fn(),
+}));
+
 const authMock = vi.hoisted(() => ({
-  useAuth: vi.fn(() => ({ user: null })),
+  useAuth: vi.fn(() => ({ user: null, status: "unauthenticated" })),
+}));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => routerMock,
 }));
 
 vi.mock("@/components/AuthProvider", () => ({
@@ -38,6 +46,9 @@ describe("public home page announcements", () => {
       root.unmount();
     });
     container.remove();
+    routerMock.replace.mockReset();
+    authMock.useAuth.mockReset();
+    authMock.useAuth.mockReturnValue({ user: null, status: "unauthenticated" });
     vi.unstubAllGlobals();
     (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
   });
@@ -113,5 +124,38 @@ describe("public home page announcements", () => {
     expect(container.textContent).toContain("Road closure");
     expect(container.textContent).toContain("Fare Announcement");
     expect(container.querySelector(".app-page-bg")).not.toBeNull();
+    expect(routerMock.replace).not.toHaveBeenCalled();
+  });
+
+  it("redirects authenticated users to their role home route instead of rendering the landing page", async () => {
+    authMock.useAuth.mockReturnValue({
+      user: {
+        id: "admin-1",
+        username: "admin",
+        firstName: "Admin",
+        lastName: "User",
+        userType: "ADMIN",
+      },
+      status: "authenticated",
+    });
+
+    await act(async () => {
+      root.render(
+        React.createElement(
+          SWRConfig,
+          {
+            value: {
+              provider: () => new Map(),
+            },
+          },
+          React.createElement(HomePage),
+        ),
+      );
+      await Promise.resolve();
+    });
+
+    expect(container.textContent).toContain("Opening dashboard");
+    expect(container.textContent).not.toContain("Public Announcements");
+    expect(routerMock.replace).toHaveBeenCalledWith("/admin");
   });
 });
