@@ -432,13 +432,16 @@ const RoutePlannerCalculator = ({
           <section className="app-surface-card-strong rounded-[2rem] border border-slate-200/80 p-3 sm:p-4">
             <div className="max-w-md rounded-[1.5rem] border border-slate-200 bg-white p-2 shadow-sm">
               <VehicleLookupField
-                label="Optional vehicle"
-                placeholder="Search by plate number"
+                label="Optional: search by BPLO-issued plate number"
+                placeholder="Search"
                 selectedVehicle={selectedVehicle}
                 onSelect={(vehicle) => setSelectedVehicle(vehicle)}
                 onClearSelection={() => setSelectedVehicle(null)}
                 requireActivePermit={false}
               />
+              <p className="mt-2 px-1 text-xs leading-5 text-slate-600 sm:text-sm">
+                If you select a plate number, the vehicle is saved with the trip for easier incident reporting.
+              </p>
             </div>
           </section>
         ) : null}
