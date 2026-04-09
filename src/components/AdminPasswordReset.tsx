@@ -169,7 +169,7 @@ const AdminPasswordReset = ({ users, onRefresh }: AdminPasswordResetProps) => {
         ) : null}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="admin-password-reset-search" className="block text-sm font-medium text-gray-700 mb-2">
             Select User
           </label>
           <div className="relative mb-2">
@@ -177,14 +177,21 @@ const AdminPasswordReset = ({ users, onRefresh }: AdminPasswordResetProps) => {
               <DashboardIconSlot icon={DASHBOARD_ICONS.inspect} size={DASHBOARD_ICON_POLICY.sizes.button} />
             </div>
             <input
+              id="admin-password-reset-search"
+              name="userSearch"
               type="text"
+              autoComplete="off"
               placeholder="Search users..."
               className="w-full pl-10 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
+          <label htmlFor="admin-password-reset-user-select" className="sr-only">Choose a user for password reset</label>
           <select
+            id="admin-password-reset-user-select"
+            name="selectedUserId"
+            autoComplete="off"
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
             value={selectedUserId}
             onChange={(e) => setSelectedUserId(e.target.value)}
@@ -224,8 +231,9 @@ const AdminPasswordReset = ({ users, onRefresh }: AdminPasswordResetProps) => {
             Reset Method
           </label>
           <div className="space-y-2">
-            <label className="flex items-center">
+            <label htmlFor="admin-password-reset-generate-token" className="flex items-center">
               <input
+                id="admin-password-reset-generate-token"
                 type="radio"
                 name="action"
                 value="generate-token"
@@ -237,8 +245,9 @@ const AdminPasswordReset = ({ users, onRefresh }: AdminPasswordResetProps) => {
                 Generate Reset Token (User sets their own password)
               </span>
             </label>
-            <label className="flex items-center">
+            <label htmlFor="admin-password-reset-set-password" className="flex items-center">
               <input
+                id="admin-password-reset-set-password"
                 type="radio"
                 name="action"
                 value="set-password"
@@ -261,7 +270,9 @@ const AdminPasswordReset = ({ users, onRefresh }: AdminPasswordResetProps) => {
               </label>
               <input
                 id="newPassword"
+                name="newPassword"
                 type="password"
+                autoComplete="new-password"
                 required
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
                 placeholder="Enter new password (min 8 characters)"
@@ -275,7 +286,9 @@ const AdminPasswordReset = ({ users, onRefresh }: AdminPasswordResetProps) => {
               </label>
               <input
                 id="confirmPassword"
+                name="confirmPassword"
                 type="password"
+                autoComplete="new-password"
                 required
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
                 placeholder="Re-enter new password"

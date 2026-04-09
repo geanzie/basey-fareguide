@@ -291,11 +291,14 @@ export default function VehiclesList() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {/* Search */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="vehicles-list-search" className="block text-sm font-medium text-gray-700 mb-2">
               Search
             </label>
             <input
+              id="vehicles-list-search"
+              name="vehicleSearch"
               type="text"
+              autoComplete="off"
               placeholder="Search vehicles..."
               value={filters.search}
               onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
@@ -305,10 +308,13 @@ export default function VehiclesList() {
 
           {/* Vehicle Type Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="vehicles-list-type-filter" className="block text-sm font-medium text-gray-700 mb-2">
               Vehicle Type
             </label>
             <select
+              id="vehicles-list-type-filter"
+              name="vehicleTypeFilter"
+              autoComplete="off"
               value={filters.vehicleType}
               onChange={(e) => setFilters(prev => ({ ...prev, vehicleType: e.target.value as VehicleType | '' }))}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
@@ -322,10 +328,13 @@ export default function VehiclesList() {
 
           {/* Status Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="vehicles-list-status-filter" className="block text-sm font-medium text-gray-700 mb-2">
               Status
             </label>
             <select
+              id="vehicles-list-status-filter"
+              name="vehicleStatusFilter"
+              autoComplete="off"
               value={filters.isActive}
               onChange={(e) => setFilters(prev => ({ ...prev, isActive: e.target.value as 'true' | 'false' | '' }))}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"

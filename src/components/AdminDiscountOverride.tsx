@@ -238,7 +238,7 @@ export default function AdminDiscountOverride({ onSuccess, onCancel }: AdminDisc
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* User Selection */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="admin-discount-override-user-search" className="block text-sm font-medium text-gray-700 mb-2">
               Select User <span className="text-red-500">*</span>
             </label>
             
@@ -250,7 +250,10 @@ export default function AdminDiscountOverride({ onSuccess, onCancel }: AdminDisc
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
               />
               <input
+                id="admin-discount-override-user-search"
+                name="userSearch"
                 type="text"
+                autoComplete="off"
                 placeholder="Search by name, username, or barangay..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -325,6 +328,7 @@ export default function AdminDiscountOverride({ onSuccess, onCancel }: AdminDisc
                   }`}
                 >
                   <input
+                    id={`admin-discount-type-${type.value.toLowerCase()}`}
                     type="radio"
                     name="discountType"
                     value={type.value}
@@ -346,7 +350,10 @@ export default function AdminDiscountOverride({ onSuccess, onCancel }: AdminDisc
                 School Name (Optional)
               </label>
               <input
+                id="admin-discount-school-name"
+                name="schoolName"
                 type="text"
+                autoComplete="off"
                 value={schoolName}
                 onChange={(e) => setSchoolName(e.target.value)}
                 placeholder="e.g., Basey National High School"
@@ -361,7 +368,10 @@ export default function AdminDiscountOverride({ onSuccess, onCancel }: AdminDisc
                 Disability Type (Optional)
               </label>
               <input
+                id="admin-discount-disability-type"
+                name="disabilityType"
                 type="text"
+                autoComplete="off"
                 value={disabilityType}
                 onChange={(e) => setDisabilityType(e.target.value)}
                 placeholder="e.g., Visual Impairment, Mobility"
@@ -376,7 +386,10 @@ export default function AdminDiscountOverride({ onSuccess, onCancel }: AdminDisc
               ID Number (Optional)
             </label>
             <input
+              id="admin-discount-id-number"
+              name="idNumber"
               type="text"
+              autoComplete="off"
               value={idNumber}
               onChange={(e) => setIdNumber(e.target.value)}
               placeholder="Reference ID number if available"
@@ -397,7 +410,10 @@ export default function AdminDiscountOverride({ onSuccess, onCancel }: AdminDisc
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
                 />
                 <input
+                  id="admin-discount-valid-from"
+                  name="validFrom"
                   type="date"
+                  autoComplete="off"
                   value={validFrom}
                   onChange={(e) => setValidFrom(e.target.value)}
                   required
@@ -417,7 +433,10 @@ export default function AdminDiscountOverride({ onSuccess, onCancel }: AdminDisc
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
                 />
                 <input
+                  id="admin-discount-valid-until"
+                  name="validUntil"
                   type="date"
+                  autoComplete="off"
                   value={validUntil}
                   onChange={(e) => setValidUntil(e.target.value)}
                   required
@@ -434,6 +453,9 @@ export default function AdminDiscountOverride({ onSuccess, onCancel }: AdminDisc
               Override Reason <span className="text-red-500">*</span>
             </label>
             <textarea
+              id="admin-discount-override-reason"
+              name="overrideReason"
+              autoComplete="off"
               value={overrideReason}
               onChange={(e) => setOverrideReason(e.target.value)}
               required
@@ -453,6 +475,9 @@ export default function AdminDiscountOverride({ onSuccess, onCancel }: AdminDisc
               Additional Notes (Optional)
             </label>
             <textarea
+              id="admin-discount-notes"
+              name="notes"
+              autoComplete="off"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}

@@ -163,7 +163,7 @@ export default function AdminUserManagement() {
       if (activeTab === 'users') {
         await fetchUsers()
       }
-    } catch (_error) {
+    } catch {
       alert('Failed to create user')
     } finally {
       setLoading(false)
@@ -194,7 +194,7 @@ export default function AdminUserManagement() {
       if (activeTab === 'users') {
         await fetchUsers()
       }
-    } catch (_error) {
+    } catch {
       alert(`Failed to ${action} user`)
     } finally {
       setLoading(false)
@@ -221,7 +221,7 @@ export default function AdminUserManagement() {
 
       alert(data.message || `User ${!currentStatus ? 'activated' : 'deactivated'} successfully!`)
       await fetchUsers()
-    } catch (_error) {
+    } catch {
       alert('Failed to update user status')
     } finally {
       setLoading(false)
@@ -275,9 +275,12 @@ export default function AdminUserManagement() {
         </div>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <LabeledInput label="Username *">
+          <LabeledInput label="Username *" fieldId="admin-user-username">
             <input
+              id="admin-user-username"
+              name="username"
               type="text"
+              autoComplete="username"
               required
               value={newUser.username}
               onChange={(event) => setNewUser({ ...newUser, username: event.target.value })}
@@ -285,9 +288,12 @@ export default function AdminUserManagement() {
             />
           </LabeledInput>
 
-          <LabeledInput label="First Name *">
+          <LabeledInput label="First Name *" fieldId="admin-user-first-name">
             <input
+              id="admin-user-first-name"
+              name="firstName"
               type="text"
+              autoComplete="given-name"
               required
               value={newUser.firstName}
               onChange={(event) => setNewUser({ ...newUser, firstName: event.target.value })}
@@ -295,9 +301,12 @@ export default function AdminUserManagement() {
             />
           </LabeledInput>
 
-          <LabeledInput label="Last Name *">
+          <LabeledInput label="Last Name *" fieldId="admin-user-last-name">
             <input
+              id="admin-user-last-name"
+              name="lastName"
               type="text"
+              autoComplete="family-name"
               required
               value={newUser.lastName}
               onChange={(event) => setNewUser({ ...newUser, lastName: event.target.value })}
@@ -305,9 +314,12 @@ export default function AdminUserManagement() {
             />
           </LabeledInput>
 
-          <LabeledInput label="Phone Number *">
+          <LabeledInput label="Phone Number *" fieldId="admin-user-phone-number">
             <input
+              id="admin-user-phone-number"
+              name="phoneNumber"
               type="tel"
+              autoComplete="tel"
               required
               value={newUser.phoneNumber}
               onChange={(event) => setNewUser({ ...newUser, phoneNumber: event.target.value })}
@@ -315,8 +327,11 @@ export default function AdminUserManagement() {
             />
           </LabeledInput>
 
-          <LabeledInput label="User Role *">
+          <LabeledInput label="User Role *" fieldId="admin-user-role">
             <select
+              id="admin-user-role"
+              name="userType"
+              autoComplete="off"
               required
               value={newUser.userType}
               onChange={(event) => setNewUser({ ...newUser, userType: event.target.value as UserType })}
@@ -328,18 +343,24 @@ export default function AdminUserManagement() {
             </select>
           </LabeledInput>
 
-          <LabeledInput label="Employee ID">
+          <LabeledInput label="Employee ID" fieldId="admin-user-employee-id">
             <input
+              id="admin-user-employee-id"
+              name="employeeId"
               type="text"
+              autoComplete="off"
               value={newUser.employeeId}
               onChange={(event) => setNewUser({ ...newUser, employeeId: event.target.value })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
           </LabeledInput>
 
-          <LabeledInput label="Department">
+          <LabeledInput label="Department" fieldId="admin-user-department">
             <input
+              id="admin-user-department"
+              name="department"
               type="text"
+              autoComplete="organization"
               value={newUser.department}
               onChange={(event) => setNewUser({ ...newUser, department: event.target.value })}
               placeholder="e.g., Traffic Management, Transport Office"
@@ -347,9 +368,12 @@ export default function AdminUserManagement() {
             />
           </LabeledInput>
 
-          <LabeledInput label="Position">
+          <LabeledInput label="Position" fieldId="admin-user-position">
             <input
+              id="admin-user-position"
+              name="position"
               type="text"
+              autoComplete="organization-title"
               value={newUser.position}
               onChange={(event) => setNewUser({ ...newUser, position: event.target.value })}
               placeholder="e.g., Traffic Enforcer, Data Entry Clerk"
@@ -358,8 +382,11 @@ export default function AdminUserManagement() {
           </LabeledInput>
         </div>
 
-        <LabeledInput label="Notes">
+        <LabeledInput label="Notes" fieldId="admin-user-notes">
           <textarea
+            id="admin-user-notes"
+            name="notes"
+            autoComplete="off"
             value={newUser.notes}
             onChange={(event) => setNewUser({ ...newUser, notes: event.target.value })}
             rows={3}
@@ -460,9 +487,12 @@ export default function AdminUserManagement() {
         <div className="app-surface-inner rounded-lg p-4">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Search Users</label>
+              <label htmlFor="admin-users-search" className="block text-sm font-medium text-gray-700 mb-2">Search Users</label>
               <input
+                id="admin-users-search"
+                name="userSearch"
                 type="text"
+                autoComplete="off"
                 placeholder="Search by name, username, phone, ID, or barangay..."
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
@@ -471,8 +501,11 @@ export default function AdminUserManagement() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">User Type</label>
+              <label htmlFor="admin-users-type-filter" className="block text-sm font-medium text-gray-700 mb-2">User Type</label>
               <select
+                id="admin-users-type-filter"
+                name="userTypeFilter"
+                autoComplete="off"
                 value={filterUserType}
                 onChange={(event) => setFilterUserType(event.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -526,7 +559,7 @@ export default function AdminUserManagement() {
               <span className="font-semibold">{users.length}</span> total users
               {searchQuery ? (
                 <span className="ml-2">
-                  - Searching for: <span className="font-semibold">"{searchQuery}"</span>
+                  - Searching for: <span className="font-semibold">&quot;{searchQuery}&quot;</span>
                 </span>
               ) : null}
             </p>
@@ -657,14 +690,16 @@ function FilterButton({
 
 function LabeledInput({
   children,
+  fieldId,
   label,
 }: {
   children: React.ReactNode
+  fieldId: string
   label: string
 }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700">{label}</label>
+      <label htmlFor={fieldId} className="block text-sm font-medium text-gray-700">{label}</label>
       {children}
     </div>
   )

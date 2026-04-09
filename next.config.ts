@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+// Remove any need for eval-based client source maps so CSP can stay strict.
 // Importing CJS export; type cast applied below to avoid TS issues
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
@@ -77,12 +78,11 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            // Improved CSP - In development, we need 'unsafe-eval' and 'unsafe-inline' for Next.js hot reloading
-            // In production, these are more restricted
+            // Client bundles use non-eval source maps so script-src can omit unsafe-eval.
             value: process.env.NODE_ENV === 'development' 
               ? [
                   "default-src 'self'",
-                  "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://maps.googleapis.com https://maps.gstatic.com",
+                  "script-src 'self' 'unsafe-inline' https://maps.googleapis.com https://maps.gstatic.com",
                   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
                   "img-src 'self' data: https: https://maps.gstatic.com https://maps.googleapis.com blob:",
                   "font-src 'self' data: https://fonts.gstatic.com",
@@ -94,7 +94,7 @@ const nextConfig: NextConfig = {
                 ].join('; ')
               : [
                   "default-src 'self'",
-                  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://maps.googleapis.com https://maps.gstatic.com",
+                  "script-src 'self' 'unsafe-inline' https://maps.googleapis.com https://maps.gstatic.com",
                   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
                   "img-src 'self' data: https: https://maps.gstatic.com https://maps.googleapis.com blob:",
                   "font-src 'self' data: https://fonts.gstatic.com",

@@ -217,6 +217,7 @@ export default function AdminFareRatesManager() {
             <label className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
               <div className="flex items-center gap-3">
                 <input
+                  id="admin-fare-publish-immediate"
                   type="radio"
                   name="publishMode"
                   value="immediate"
@@ -233,6 +234,7 @@ export default function AdminFareRatesManager() {
             <label className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
               <div className="flex items-center gap-3">
                 <input
+                  id="admin-fare-publish-scheduled"
                   type="radio"
                   name="publishMode"
                   value="scheduled"
@@ -251,7 +253,10 @@ export default function AdminFareRatesManager() {
             <label className="text-sm text-slate-700">
               <span className="mb-2 block font-medium text-slate-900">Base fare</span>
               <input
+                id="admin-fare-base-fare"
+                name="baseFare"
                 type="number"
+                autoComplete="off"
                 min="0.01"
                 step="0.01"
                 value={baseFare}
@@ -263,7 +268,10 @@ export default function AdminFareRatesManager() {
             <label className="text-sm text-slate-700">
               <span className="mb-2 block font-medium text-slate-900">Additional fare per km</span>
               <input
+                id="admin-fare-per-km-rate"
+                name="perKmRate"
                 type="number"
+                autoComplete="off"
                 min="0.01"
                 step="0.01"
                 value={perKmRate}
@@ -281,7 +289,10 @@ export default function AdminFareRatesManager() {
             <label className="text-sm text-slate-700">
               <span className="mb-2 block font-medium text-slate-900">Effective date and time (Asia/Manila)</span>
               <input
+                id="admin-fare-effective-at"
+                name="effectiveAt"
                 type="datetime-local"
+                autoComplete="off"
                 value={effectiveAt}
                 onChange={(event) => setEffectiveAt(event.target.value)}
                 className="w-full rounded-xl border border-slate-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
@@ -292,6 +303,9 @@ export default function AdminFareRatesManager() {
           <label className="text-sm text-slate-700">
             <span className="mb-2 block font-medium text-slate-900">Admin note</span>
             <textarea
+              id="admin-fare-notes"
+              name="notes"
+              autoComplete="off"
               value={notes}
               onChange={(event) => setNotes(event.target.value)}
               rows={4}
@@ -320,6 +334,9 @@ export default function AdminFareRatesManager() {
 
           <div className="mt-4 grid gap-4 md:grid-cols-[1fr_auto]">
             <textarea
+              id="admin-fare-cancel-reason"
+              name="cancelReason"
+              autoComplete="off"
               value={cancelReason}
               onChange={(event) => setCancelReason(event.target.value)}
               rows={3}

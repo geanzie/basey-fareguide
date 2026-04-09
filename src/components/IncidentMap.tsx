@@ -163,7 +163,12 @@ const IncidentMap: React.FC<IncidentMapProps> = ({ incidents, onIncidentSelect }
           
           <div className="flex items-center space-x-3">
             {/* Status Filter */}
+            <label htmlFor="incident-map-status-filter" className="sr-only">Filter incident map by status</label>
             <select
+              id="incident-map-status-filter"
+              name="statusFilter"
+              autoComplete="off"
+              aria-label="Filter incident map by status"
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
               className="text-sm border border-gray-300 rounded-lg px-3 py-1"
@@ -175,7 +180,12 @@ const IncidentMap: React.FC<IncidentMapProps> = ({ incidents, onIncidentSelect }
             </select>
 
             {/* Type Filter */}
+            <label htmlFor="incident-map-type-filter" className="sr-only">Filter incident map by type</label>
             <select
+              id="incident-map-type-filter"
+              name="typeFilter"
+              autoComplete="off"
+              aria-label="Filter incident map by type"
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
               className="text-sm border border-gray-300 rounded-lg px-3 py-1"

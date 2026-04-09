@@ -170,9 +170,12 @@ export default function UserProfile() {
             <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Basic Information</h3>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+              <label htmlFor="profile-username" className="block text-sm font-medium text-gray-700 mb-1">Username</label>
               <input
+                id="profile-username"
+                name="username"
                 type="text"
+                autoComplete="username"
                 value={user.username}
                 disabled
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500"
@@ -181,10 +184,12 @@ export default function UserProfile() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+              <label htmlFor="profile-first-name" className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
               <input
+                id="profile-first-name"
                 type="text"
                 name="firstName"
+                autoComplete="given-name"
                 value={isEditing ? formData.firstName : user.firstName || ''}
                 onChange={handleInputChange}
                 disabled={!isEditing}
@@ -197,10 +202,12 @@ export default function UserProfile() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+              <label htmlFor="profile-last-name" className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
               <input
+                id="profile-last-name"
                 type="text"
                 name="lastName"
+                autoComplete="family-name"
                 value={isEditing ? formData.lastName : user.lastName || ''}
                 onChange={handleInputChange}
                 disabled={!isEditing}
@@ -213,10 +220,12 @@ export default function UserProfile() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+              <label htmlFor="profile-email" className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
               <input
+                id="profile-email"
                 type="email"
                 name="email"
+                autoComplete="email"
                 value={isEditing ? formData.email : user.email || ''}
                 onChange={handleInputChange}
                 disabled={!isEditing}
@@ -231,10 +240,12 @@ export default function UserProfile() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+              <label htmlFor="profile-phone-number" className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
               <input
+                id="profile-phone-number"
                 type="tel"
                 name="phoneNumber"
+                autoComplete="tel"
                 value={isEditing ? formData.phoneNumber : user.phoneNumber || ''}
                 onChange={handleInputChange}
                 disabled={!isEditing}
@@ -253,10 +264,12 @@ export default function UserProfile() {
             <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Additional Information</h3>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
+              <label htmlFor="profile-date-of-birth" className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
               <input
+                id="profile-date-of-birth"
                 type="date"
                 name="dateOfBirth"
+                autoComplete="bday"
                 value={isEditing ? formData.dateOfBirth : user.dateOfBirth ? user.dateOfBirth.split('T')[0] : ''}
                 onChange={handleInputChange}
                 disabled={!isEditing}
@@ -269,9 +282,11 @@ export default function UserProfile() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Government ID Type</label>
+              <label htmlFor="profile-id-type" className="block text-sm font-medium text-gray-700 mb-1">Government ID Type</label>
               <select
+                id="profile-id-type"
                 name="idType"
+                autoComplete="off"
                 value={isEditing ? formData.idType : user.idType || ''}
                 onChange={handleInputChange}
                 disabled={!isEditing}
@@ -296,10 +311,12 @@ export default function UserProfile() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Government ID Number</label>
+              <label htmlFor="profile-government-id" className="block text-sm font-medium text-gray-700 mb-1">Government ID Number</label>
               <input
+                id="profile-government-id"
                 type="text"
                 name="governmentId"
+                autoComplete="off"
                 value={isEditing ? formData.governmentId : user.governmentId || ''}
                 onChange={handleInputChange}
                 disabled={!isEditing}
@@ -312,10 +329,12 @@ export default function UserProfile() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Barangay Residence</label>
+              <label htmlFor="profile-barangay-residence" className="block text-sm font-medium text-gray-700 mb-1">Barangay Residence</label>
               <input
+                id="profile-barangay-residence"
                 type="text"
                 name="barangayResidence"
+                autoComplete="off"
                 value={isEditing ? formData.barangayResidence : user.barangayResidence || ''}
                 onChange={handleInputChange}
                 disabled={!isEditing}

@@ -224,9 +224,12 @@ export default function TicketPaymentsWorkspace({
       <div className="app-surface-card rounded-2xl p-5">
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">Search tickets or receipts</label>
+            <label htmlFor="ticket-payments-search" className="mb-2 block text-sm font-medium text-gray-700">Search tickets or receipts</label>
             <input
+              id="ticket-payments-search"
+              name="ticketPaymentSearch"
               type="text"
+              autoComplete="off"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               placeholder="Search by ticket number, official receipt, plate number, location, or violation..."
@@ -377,9 +380,12 @@ export default function TicketPaymentsWorkspace({
             {allowPaymentRecording && selectedIncident.paymentStatus === 'UNPAID' ? (
               <div className="mt-5 space-y-4 border-t border-slate-200 pt-4">
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700">Official Receipt Number</label>
+                  <label htmlFor="ticket-payment-receipt-number" className="mb-2 block text-sm font-medium text-gray-700">Official Receipt Number</label>
                   <input
+                    id="ticket-payment-receipt-number"
+                    name="officialReceiptNumber"
                     type="text"
+                    autoComplete="off"
                     value={paymentForm.officialReceiptNumber}
                     onChange={(event) =>
                       setPaymentForm((current) => ({
@@ -392,9 +398,12 @@ export default function TicketPaymentsWorkspace({
                   />
                 </div>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700">Payment Timestamp</label>
+                  <label htmlFor="ticket-payment-paid-at" className="mb-2 block text-sm font-medium text-gray-700">Payment Timestamp</label>
                   <input
+                    id="ticket-payment-paid-at"
+                    name="paidAt"
                     type="datetime-local"
+                    autoComplete="off"
                     value={paymentForm.paidAt}
                     onChange={(event) =>
                       setPaymentForm((current) => ({
@@ -406,8 +415,11 @@ export default function TicketPaymentsWorkspace({
                   />
                 </div>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700">Receipt Notes</label>
+                  <label htmlFor="ticket-payment-remarks" className="mb-2 block text-sm font-medium text-gray-700">Receipt Notes</label>
                   <textarea
+                    id="ticket-payment-remarks"
+                    name="remarks"
+                    autoComplete="off"
                     value={paymentForm.remarks}
                     onChange={(event) =>
                       setPaymentForm((current) => ({

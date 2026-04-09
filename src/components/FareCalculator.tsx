@@ -131,6 +131,8 @@ const FareCalculator = () => {
               </label>
               <select
                 id="from"
+                name="fromLocation"
+                autoComplete="off"
                 value={fromLocation}
                 onChange={(e) => setFromLocation(e.target.value)}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200 bg-white"
@@ -153,6 +155,8 @@ const FareCalculator = () => {
               </label>
               <select
                 id="to"
+                name="toLocation"
+                autoComplete="off"
                 value={toLocation}
                 onChange={(e) => setToLocation(e.target.value)}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200 bg-white"

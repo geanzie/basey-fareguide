@@ -147,6 +147,8 @@ const IncidentsList = () => {
             <input
               type="text"
               id="search"
+              name="incidentSearch"
+              autoComplete="off"
               placeholder="Search by plate number, location, or description..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -171,6 +173,7 @@ const IncidentsList = () => {
             <select
               id="status"
               name="status"
+              autoComplete="off"
               value={filter.status}
               onChange={handleFilterChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
@@ -189,6 +192,7 @@ const IncidentsList = () => {
             <select
               id="incidentType"
               name="incidentType"
+              autoComplete="off"
               value={filter.incidentType}
               onChange={handleFilterChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
@@ -207,6 +211,7 @@ const IncidentsList = () => {
             <select
               id="dateRange"
               name="dateRange"
+              autoComplete="off"
               value={filter.dateRange}
               onChange={handleFilterChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"

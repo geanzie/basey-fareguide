@@ -237,11 +237,14 @@ export default function AdminDiscountList({ onRefresh }: DiscountListProps) {
         <form onSubmit={handleSearch} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-3">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="admin-discount-list-search" className="block text-sm font-medium text-gray-700 mb-1">
                 Search
               </label>
               <input
+                id="admin-discount-list-search"
+                name="discountSearch"
                 type="text"
+                autoComplete="off"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Name, ID number, username..."
@@ -250,10 +253,13 @@ export default function AdminDiscountList({ onRefresh }: DiscountListProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="admin-discount-list-type-filter" className="block text-sm font-medium text-gray-700 mb-1">
                 Discount Type
               </label>
               <select
+                id="admin-discount-list-type-filter"
+                name="discountTypeFilter"
+                autoComplete="off"
                 value={discountTypeFilter}
                 onChange={(e) => setDiscountTypeFilter(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -266,10 +272,13 @@ export default function AdminDiscountList({ onRefresh }: DiscountListProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="admin-discount-list-status-filter" className="block text-sm font-medium text-gray-700 mb-1">
                 Verification Status
               </label>
               <select
+                id="admin-discount-list-status-filter"
+                name="verificationStatusFilter"
+                autoComplete="off"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -285,10 +294,13 @@ export default function AdminDiscountList({ onRefresh }: DiscountListProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="admin-discount-list-active-filter" className="block text-sm font-medium text-gray-700 mb-1">
                 Active Status
               </label>
               <select
+                id="admin-discount-list-active-filter"
+                name="activeFilter"
+                autoComplete="off"
                 value={activeFilter}
                 onChange={(e) => setActiveFilter(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -300,10 +312,13 @@ export default function AdminDiscountList({ onRefresh }: DiscountListProps) {
             </div>
 
             <div className="md:col-span-3">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="admin-discount-list-override-filter" className="block text-sm font-medium text-gray-700 mb-1">
                 Admin Override
               </label>
               <select
+                id="admin-discount-list-override-filter"
+                name="overrideFilter"
+                autoComplete="off"
                 value={overrideFilter}
                 onChange={(e) => setOverrideFilter(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"

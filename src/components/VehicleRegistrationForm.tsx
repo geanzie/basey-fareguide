@@ -135,12 +135,14 @@ export default function VehicleRegistrationForm() {
             <h3 className="text-lg font-medium text-gray-900 mb-4">Vehicle Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="vehicle-registration-plate-number" className="block text-sm font-medium text-gray-700 mb-2">
                   Plate Number *
                 </label>
                 <input
+                  id="vehicle-registration-plate-number"
                   type="text"
                   name="plateNumber"
+                  autoComplete="off"
                   value={formData.plateNumber}
                   onChange={handleInputChange}
                   placeholder="e.g., ABC-1234"
@@ -152,11 +154,13 @@ export default function VehicleRegistrationForm() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="vehicle-registration-vehicle-type" className="block text-sm font-medium text-gray-700 mb-2">
                   Vehicle Type *
                 </label>
                 <select
+                  id="vehicle-registration-vehicle-type"
                   name="vehicleType"
+                  autoComplete="off"
                   value={formData.vehicleType}
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
@@ -168,12 +172,14 @@ export default function VehicleRegistrationForm() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="vehicle-registration-make" className="block text-sm font-medium text-gray-700 mb-2">
                   Make *
                 </label>
                 <input
+                  id="vehicle-registration-make"
                   type="text"
                   name="make"
+                  autoComplete="off"
                   value={formData.make}
                   onChange={handleInputChange}
                   placeholder="e.g., Honda, Suzuki, Toyota"
@@ -185,12 +191,14 @@ export default function VehicleRegistrationForm() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="vehicle-registration-model" className="block text-sm font-medium text-gray-700 mb-2">
                   Model *
                 </label>
                 <input
+                  id="vehicle-registration-model"
                   type="text"
                   name="model"
+                  autoComplete="off"
                   value={formData.model}
                   onChange={handleInputChange}
                   placeholder="e.g., TMX 155, Multicab"
@@ -202,11 +210,13 @@ export default function VehicleRegistrationForm() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="vehicle-registration-year" className="block text-sm font-medium text-gray-700 mb-2">
                   Year *
                 </label>
                 <select
+                  id="vehicle-registration-year"
                   name="year"
+                  autoComplete="off"
                   value={formData.year}
                   onChange={handleInputChange}
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
@@ -221,12 +231,14 @@ export default function VehicleRegistrationForm() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="vehicle-registration-color" className="block text-sm font-medium text-gray-700 mb-2">
                   Color *
                 </label>
                 <input
+                  id="vehicle-registration-color"
                   type="text"
                   name="color"
+                  autoComplete="off"
                   value={formData.color}
                   onChange={handleInputChange}
                   placeholder="e.g., Red, Blue, White"
@@ -238,12 +250,14 @@ export default function VehicleRegistrationForm() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="vehicle-registration-capacity" className="block text-sm font-medium text-gray-700 mb-2">
                   Capacity (passengers) *
                 </label>
                 <input
+                  id="vehicle-registration-capacity"
                   type="number"
                   name="capacity"
+                  autoComplete="off"
                   value={formData.capacity}
                   onChange={handleInputChange}
                   min="1"
@@ -262,12 +276,14 @@ export default function VehicleRegistrationForm() {
             <h3 className="text-lg font-medium text-gray-900 mb-4">Owner & Driver Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="vehicle-registration-owner-name" className="block text-sm font-medium text-gray-700 mb-2">
                   Owner Name *
                 </label>
                 <input
+                  id="vehicle-registration-owner-name"
                   type="text"
                   name="ownerName"
+                  autoComplete="name"
                   value={formData.ownerName}
                   onChange={handleInputChange}
                   placeholder="e.g., Juan Dela Cruz"
@@ -279,12 +295,14 @@ export default function VehicleRegistrationForm() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="vehicle-registration-owner-contact" className="block text-sm font-medium text-gray-700 mb-2">
                   Owner Contact *
                 </label>
                 <input
+                  id="vehicle-registration-owner-contact"
                   type="text"
                   name="ownerContact"
+                  autoComplete="off"
                   value={formData.ownerContact}
                   onChange={handleInputChange}
                   placeholder="Phone number or email"
@@ -296,12 +314,14 @@ export default function VehicleRegistrationForm() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="vehicle-registration-driver-name" className="block text-sm font-medium text-gray-700 mb-2">
                   Driver Name (Optional)
                 </label>
                 <input
+                  id="vehicle-registration-driver-name"
                   type="text"
                   name="driverName"
+                  autoComplete="name"
                   value={formData.driverName}
                   onChange={handleInputChange}
                   placeholder="e.g., Pedro Santos"
@@ -311,12 +331,14 @@ export default function VehicleRegistrationForm() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="vehicle-registration-driver-license" className="block text-sm font-medium text-gray-700 mb-2">
                   Driver License Number (Optional)
                 </label>
                 <input
+                  id="vehicle-registration-driver-license"
                   type="text"
                   name="driverLicense"
+                  autoComplete="off"
                   value={formData.driverLicense}
                   onChange={handleInputChange}
                   placeholder="e.g., A01-12-345678"
@@ -332,12 +354,14 @@ export default function VehicleRegistrationForm() {
             <h3 className="text-lg font-medium text-gray-900 mb-4">Registration & Insurance</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="vehicle-registration-registration-expiry" className="block text-sm font-medium text-gray-700 mb-2">
                   Registration Expiry Date *
                 </label>
                 <input
+                  id="vehicle-registration-registration-expiry"
                   type="date"
                   name="registrationExpiry"
+                  autoComplete="off"
                   value={formData.registrationExpiry}
                   onChange={handleInputChange}
                   min={new Date().toISOString().split('T')[0]}
@@ -349,12 +373,14 @@ export default function VehicleRegistrationForm() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="vehicle-registration-insurance-expiry" className="block text-sm font-medium text-gray-700 mb-2">
                   Insurance Expiry Date (Optional)
                 </label>
                 <input
+                  id="vehicle-registration-insurance-expiry"
                   type="date"
                   name="insuranceExpiry"
+                  autoComplete="off"
                   value={formData.insuranceExpiry}
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"

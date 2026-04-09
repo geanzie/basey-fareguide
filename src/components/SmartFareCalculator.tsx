@@ -235,7 +235,9 @@ const SmartFareCalculator = ({
           </label>
           <input
             id="from"
+            name="fromLocation"
             type="text"
+            autoComplete="off"
             value={fromLocation}
             onChange={(e) => handleFromLocationChange(e.target.value)}
             onFocus={() => setShowFromSuggestions(true)}
@@ -280,7 +282,9 @@ const SmartFareCalculator = ({
           </label>
           <input
             id="to"
+            name="toLocation"
             type="text"
+            autoComplete="off"
             value={toLocation}
             onChange={(e) => handleToLocationChange(e.target.value)}
             onFocus={() => setShowToSuggestions(true)}

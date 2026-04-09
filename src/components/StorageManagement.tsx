@@ -214,11 +214,14 @@ export default function StorageManagement() {
                 </p>
 
                 <div className="flex items-center space-x-4 mb-4">
-                  <label className="text-sm font-medium text-gray-700">
+                  <label htmlFor="storage-management-days-old" className="text-sm font-medium text-gray-700">
                     Delete files older than:
                   </label>
                   <input
+                    id="storage-management-days-old"
+                    name="daysOld"
                     type="number"
+                    autoComplete="off"
                     value={daysOld}
                     onChange={(e) => setDaysOld(parseInt(e.target.value))}
                     className="w-20 px-3 py-2 border border-gray-300 rounded-lg text-sm"

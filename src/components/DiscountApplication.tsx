@@ -472,11 +472,14 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="discount-application-full-name" className="block text-sm font-medium text-gray-700 mb-2">
                 Full Name <span className="text-red-500">*</span>
               </label>
               <input
+                id="discount-application-full-name"
+                name="fullName"
                 type="text"
+                autoComplete="name"
                 value={fullName}
                 readOnly
                 disabled
@@ -489,11 +492,14 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="discount-application-date-of-birth" className="block text-sm font-medium text-gray-700 mb-2">
                 Date of Birth <span className="text-red-500">*</span>
               </label>
               <input
+                id="discount-application-date-of-birth"
+                name="dateOfBirth"
                 type="date"
+                autoComplete="bday"
                 value={dateOfBirth}
                 readOnly
                 disabled
@@ -518,11 +524,14 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="discount-application-id-number" className="block text-sm font-medium text-gray-700 mb-2">
                 ID Number {discountType === 'PWD' && <span className="text-red-500">*</span>}
               </label>
               <input
+                id="discount-application-id-number"
+                name="idNumber"
                 type="text"
+                autoComplete="off"
                 value={idNumber}
                 onChange={(e) => setIdNumber(e.target.value)}
                 placeholder="e.g., 1234-5678-9012"
@@ -544,11 +553,14 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="discount-application-id-type" className="block text-sm font-medium text-gray-700 mb-2">
                 ID Type
               </label>
               <input
+                id="discount-application-id-type"
+                name="idType"
                 type="text"
+                autoComplete="off"
                 value={idType}
                 onChange={(e) => setIdType(e.target.value)}
                 placeholder="e.g., OSCA ID, PWD ID, School ID"
@@ -570,11 +582,14 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="discount-application-issuing-authority" className="block text-sm font-medium text-gray-700 mb-2">
               Issuing Authority
             </label>
             <input
+              id="discount-application-issuing-authority"
+              name="issuingAuthority"
               type="text"
+              autoComplete="off"
               value={issuingAuthority}
               onChange={(e) => setIssuingAuthority(e.target.value)}
               placeholder="e.g., DSWD, School Name, Municipal Office"
@@ -645,11 +660,13 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
               </div>
             )}
             
-            <label className="cursor-pointer">
+            <label htmlFor="discount-application-photo" className="cursor-pointer">
               <div className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                 Choose Photo
               </div>
               <input
+                id="discount-application-photo"
+                name="discountPhoto"
                 type="file"
                 accept="image/*"
                 onChange={handlePhotoChange}
@@ -671,11 +688,14 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="discount-application-school-name" className="block text-sm font-medium text-gray-700 mb-2">
                   School Name <span className="text-red-500">*</span>
                 </label>
                 <input
+                  id="discount-application-school-name"
+                  name="schoolName"
                   type="text"
+                  autoComplete="off"
                   value={schoolName}
                   onChange={(e) => setSchoolName(e.target.value)}
                   placeholder="Enter your school name"
@@ -685,11 +705,14 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="discount-application-school-address" className="block text-sm font-medium text-gray-700 mb-2">
                   School Address
                 </label>
                 <input
+                  id="discount-application-school-address"
+                  name="schoolAddress"
                   type="text"
+                  autoComplete="off"
                   value={schoolAddress}
                   onChange={(e) => setSchoolAddress(e.target.value)}
                   placeholder="School address"
@@ -699,11 +722,14 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="discount-application-grade-level" className="block text-sm font-medium text-gray-700 mb-2">
                     Grade/Year Level <span className="text-red-500">*</span>
                   </label>
                   <input
+                    id="discount-application-grade-level"
+                    name="gradeLevel"
                     type="text"
+                    autoComplete="off"
                     value={gradeLevel}
                     onChange={(e) => setGradeLevel(e.target.value)}
                     placeholder="e.g., Grade 12, 3rd Year College"
@@ -713,11 +739,14 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="discount-application-school-id-expiry" className="block text-sm font-medium text-gray-700 mb-2">
                     School ID Expiry <span className="text-red-500">*</span>
                   </label>
                   <input
+                    id="discount-application-school-id-expiry"
+                    name="schoolIdExpiry"
                     type="date"
+                    autoComplete="off"
                     value={schoolIdExpiry}
                     onChange={(e) => setSchoolIdExpiry(e.target.value)}
                     min={new Date().toISOString().split('T')[0]}
@@ -737,10 +766,13 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="discount-application-disability-type" className="block text-sm font-medium text-gray-700 mb-2">
                   Disability Type <span className="text-red-500">*</span>
                 </label>
                 <select
+                  id="discount-application-disability-type"
+                  name="disabilityType"
+                  autoComplete="off"
                   value={disabilityType}
                   onChange={(e) => setDisabilityType(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -759,11 +791,14 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="discount-application-pwd-id-expiry" className="block text-sm font-medium text-gray-700 mb-2">
                   PWD ID Expiry <span className="text-red-500">*</span>
                 </label>
                 <input
+                  id="discount-application-pwd-id-expiry"
+                  name="pwdIdExpiry"
                   type="date"
+                  autoComplete="off"
                   value={pwdIdExpiry}
                   onChange={(e) => setPwdIdExpiry(e.target.value)}
                   min={new Date().toISOString().split('T')[0]}

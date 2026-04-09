@@ -200,11 +200,15 @@ const EvidenceManager = ({ incidentId, onClose }: EvidenceManagerProps) => {
               <DashboardIconSlot icon={DASHBOARD_ICONS.upload} size={DASHBOARD_ICON_POLICY.sizes.button} className="text-blue-600" />
               <span>Upload Evidence</span>
             </h4>
+            <label htmlFor="evidence-upload" className="sr-only">Choose evidence file to upload</label>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <input
+                id="evidence-upload"
+                name="evidenceUpload"
                 type="file"
                 accept="image/*,video/*,audio/*,.pdf"
                 onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                aria-label="Choose evidence file to upload"
                 className="min-w-0 flex-1 text-sm text-gray-700 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-2 file:font-medium file:text-blue-700 hover:file:bg-blue-100"
                 disabled={uploading}
               />
@@ -317,10 +321,13 @@ const EvidenceManager = ({ incidentId, onClose }: EvidenceManagerProps) => {
                         <h6 className="font-medium text-gray-900 mb-3">Review Evidence</h6>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                            <label htmlFor="evidence-review-status" className="block text-sm font-medium text-gray-700 mb-1">
                               Review Status
                             </label>
                             <select
+                              id="evidence-review-status"
+                              name="reviewStatus"
+                              autoComplete="off"
                               value={reviewStatus}
                               onChange={(e) => setReviewStatus(e.target.value)}
                               className="w-full border border-gray-300 rounded-lg px-3 py-2"
@@ -332,11 +339,14 @@ const EvidenceManager = ({ incidentId, onClose }: EvidenceManagerProps) => {
                             </select>
                           </div>
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                            <label htmlFor="evidence-review-remarks" className="block text-sm font-medium text-gray-700 mb-1">
                               Remarks (Optional)
                             </label>
                             <input
+                              id="evidence-review-remarks"
+                              name="reviewRemarks"
                               type="text"
+                              autoComplete="off"
                               value={reviewRemarks}
                               onChange={(e) => setReviewRemarks(e.target.value)}
                               placeholder="Add review comments..."

@@ -497,6 +497,8 @@ const IncidentReporting = () => {
               </label>
               <select
                 id="recentTripPicker"
+                name="recentTripPicker"
+                autoComplete="off"
                 value={selectedTripId}
                 onChange={handleTripPickerChange}
                 className="mt-3 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 focus:border-red-500 focus:ring-2 focus:ring-red-500"
@@ -562,6 +564,7 @@ const IncidentReporting = () => {
                 <select
                   id="incidentType"
                   name="incidentType"
+                  autoComplete="off"
                   value={formData.incidentType}
                   onChange={handleInputChange}
                   required
@@ -583,6 +586,7 @@ const IncidentReporting = () => {
                 <textarea
                   id="description"
                   name="description"
+                  autoComplete="off"
                   value={formData.description}
                   onChange={handleInputChange}
                   required
@@ -601,6 +605,7 @@ const IncidentReporting = () => {
                     type="date"
                     id="incidentDate"
                     name="incidentDate"
+                    autoComplete="off"
                     value={formData.incidentDate}
                     onChange={handleInputChange}
                     required
@@ -615,6 +620,7 @@ const IncidentReporting = () => {
                     type="time"
                     id="incidentTime"
                     name="incidentTime"
+                    autoComplete="off"
                     value={formData.incidentTime}
                     onChange={handleInputChange}
                     required
@@ -632,6 +638,7 @@ const IncidentReporting = () => {
                     <select
                       id="location"
                       name="location"
+                      autoComplete="off"
                       value={formData.location}
                       onChange={handleInputChange}
                       required

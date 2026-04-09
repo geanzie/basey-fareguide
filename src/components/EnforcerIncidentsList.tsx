@@ -568,7 +568,9 @@ export default function EnforcerIncidentsList({ mode }: EnforcerIncidentsListPro
               />
               <input
                 id="incident-search"
+                name="incidentSearch"
                 type="text"
+                autoComplete="off"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search by plate number, location, ticket number, description, or reporter..."
@@ -916,11 +918,14 @@ export default function EnforcerIncidentsList({ mode }: EnforcerIncidentsListPro
 
               <form onSubmit={handleTicketSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="issue-ticket-number" className="block text-sm font-medium text-gray-700 mb-2">
                     Ticket Number *
                   </label>
                   <input
+                    id="issue-ticket-number"
+                    name="ticketNumber"
                     type="text"
+                    autoComplete="off"
                     value={ticketData.ticketNumber}
                     onChange={(e) => setTicketData((prev) => ({ ...prev, ticketNumber: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
@@ -981,10 +986,13 @@ export default function EnforcerIncidentsList({ mode }: EnforcerIncidentsListPro
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="issue-ticket-remarks" className="block text-sm font-medium text-gray-700 mb-2">
                     Remarks
                   </label>
                   <textarea
+                    id="issue-ticket-remarks"
+                    name="remarks"
+                    autoComplete="off"
                     value={ticketData.remarks}
                     onChange={(e) => setTicketData((prev) => ({ ...prev, remarks: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"

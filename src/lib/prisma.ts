@@ -1,10 +1,11 @@
+import { createRequire } from 'node:module'
 import path from 'node:path'
 
 import { PrismaPg } from '@prisma/adapter-pg'
 import type { PrismaClient as PrismaClientType } from '@prisma/client'
 import { Pool } from 'pg'
 
-const requireForPrisma = eval('require') as NodeRequire
+const requireForPrisma = createRequire(import.meta.url)
 const prismaClientModulePath = requireForPrisma.resolve('@prisma/client')
 const prismaGeneratedClientDirectory = path.join(process.cwd(), 'node_modules', '.prisma', 'client')
 

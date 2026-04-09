@@ -319,7 +319,10 @@ export default function AdminAnnouncementsManager() {
               </span>
             </span>
             <input
+              id="admin-announcement-headline"
+              name="headline"
               type="text"
+              autoComplete="off"
               value={title}
               onChange={(event) => setTitle(event.target.value)}
               maxLength={ANNOUNCEMENT_TITLE_MAX_LENGTH}
@@ -331,6 +334,9 @@ export default function AdminAnnouncementsManager() {
           <label className="text-sm text-slate-700">
             <span className="mb-2 block font-medium text-slate-900">Category</span>
             <select
+              id="admin-announcement-category"
+              name="category"
+              autoComplete="off"
               value={category}
               onChange={(event) => setCategory(event.target.value as AnnouncementCategoryDto)}
               className="w-full rounded-xl border border-slate-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
@@ -351,6 +357,9 @@ export default function AdminAnnouncementsManager() {
               </span>
             </span>
             <textarea
+              id="admin-announcement-body"
+              name="body"
+              autoComplete="off"
               value={body}
               onChange={(event) => setBody(event.target.value)}
               maxLength={ANNOUNCEMENT_BODY_MAX_LENGTH}
@@ -364,7 +373,10 @@ export default function AdminAnnouncementsManager() {
             <label className="text-sm text-slate-700">
               <span className="mb-2 block font-medium text-slate-900">Start date and time (Asia/Manila)</span>
               <input
+                id="admin-announcement-starts-at"
+                name="startsAt"
                 type="datetime-local"
+                autoComplete="off"
                 value={startsAt}
                 onChange={(event) => setStartsAt(event.target.value)}
                 required
@@ -377,7 +389,10 @@ export default function AdminAnnouncementsManager() {
                 End date and time (Asia/Manila, optional)
               </span>
               <input
+                id="admin-announcement-ends-at"
+                name="endsAt"
                 type="datetime-local"
+                autoComplete="off"
                 value={endsAt}
                 onChange={(event) => setEndsAt(event.target.value)}
                 className="w-full rounded-xl border border-slate-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"

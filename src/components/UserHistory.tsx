@@ -206,9 +206,12 @@ export default function UserHistory() {
           </div>
 
           <div className="w-full lg:max-w-md">
-            <label className="mb-2 block text-sm font-medium text-gray-700">Search history</label>
+            <label htmlFor="user-history-search" className="mb-2 block text-sm font-medium text-gray-700">Search history</label>
             <input
+              id="user-history-search"
+              name="historySearch"
               type="text"
+              autoComplete="off"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               placeholder="Search routes, locations, statuses, or fares"

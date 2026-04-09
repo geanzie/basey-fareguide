@@ -256,11 +256,14 @@ export default function AdminLocationManager() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="admin-location-name" className="block text-sm font-medium text-gray-700 mb-1">
                   Location Name *
                 </label>
                 <input
+                  id="admin-location-name"
+                  name="name"
                   type="text"
+                  autoComplete="off"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
@@ -269,10 +272,13 @@ export default function AdminLocationManager() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="admin-location-type" className="block text-sm font-medium text-gray-700 mb-1">
                   Type *
                 </label>
                 <select
+                  id="admin-location-type"
+                  name="type"
+                  autoComplete="off"
                   value={formData.type}
                   onChange={(e) => setFormData({ ...formData, type: e.target.value })}
                   className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
@@ -287,11 +293,14 @@ export default function AdminLocationManager() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="admin-location-coordinates" className="block text-sm font-medium text-gray-700 mb-1">
                   Coordinates * (latitude,longitude)
                 </label>
                 <input
+                  id="admin-location-coordinates"
+                  name="coordinates"
                   type="text"
+                  autoComplete="off"
                   value={formData.coordinates}
                   onChange={(e) => setFormData({ ...formData, coordinates: e.target.value })}
                   placeholder="11.2727,125.0627"
@@ -311,11 +320,14 @@ export default function AdminLocationManager() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="admin-location-barangay" className="block text-sm font-medium text-gray-700 mb-1">
                   Barangay
                 </label>
                 <input
+                  id="admin-location-barangay"
+                  name="barangay"
                   type="text"
+                  autoComplete="off"
                   value={formData.barangay}
                   onChange={(e) => setFormData({ ...formData, barangay: e.target.value })}
                   className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
@@ -324,10 +336,13 @@ export default function AdminLocationManager() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="admin-location-description" className="block text-sm font-medium text-gray-700 mb-1">
                 Description
               </label>
               <textarea
+                id="admin-location-description"
+                name="description"
+                autoComplete="off"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
@@ -438,14 +453,22 @@ export default function AdminLocationManager() {
       {/* Search and Filter */}
       <div className="app-surface-card rounded-2xl p-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <label htmlFor="admin-location-search" className="sr-only">Search locations</label>
           <input
+            id="admin-location-search"
+            name="locationSearch"
             type="text"
+            autoComplete="off"
             placeholder="Search locations..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
           />
+          <label htmlFor="admin-location-type-filter" className="sr-only">Filter locations by type</label>
           <select
+            id="admin-location-type-filter"
+            name="locationTypeFilter"
+            autoComplete="off"
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
             className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
@@ -457,8 +480,12 @@ export default function AdminLocationManager() {
             <option value="URBAN">Urban</option>
             <option value="RURAL">Rural</option>
           </select>
+          <label htmlFor="admin-location-barangay-filter" className="sr-only">Filter locations by barangay</label>
           <input
+            id="admin-location-barangay-filter"
+            name="barangayFilter"
             type="text"
+            autoComplete="off"
             placeholder="Filter by barangay..."
             value={barangayFilter}
             onChange={(e) => setBarangayFilter(e.target.value)}

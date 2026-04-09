@@ -256,11 +256,14 @@ export default function PermitManagement() {
       <div className="app-surface-card rounded-2xl p-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="permit-management-search" className="block text-sm font-medium text-gray-700 mb-1">
               Search
             </label>
             <input
+              id="permit-management-search"
+              name="permitSearch"
               type="text"
+              autoComplete="off"
               placeholder="Permit plate, vehicle plate, or driver name"
               className="w-full border border-gray-300 rounded-md px-3 py-2"
               value={filters.search}
@@ -268,10 +271,13 @@ export default function PermitManagement() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="permit-management-status-filter" className="block text-sm font-medium text-gray-700 mb-1">
               Status
             </label>
             <select
+              id="permit-management-status-filter"
+              name="permitStatusFilter"
+              autoComplete="off"
               className="w-full border border-gray-300 rounded-md px-3 py-2"
               value={filters.status}
               onChange={(e) => setFilters({ ...filters, status: e.target.value as PermitStatus | '' })}
@@ -284,10 +290,13 @@ export default function PermitManagement() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="permit-management-vehicle-type-filter" className="block text-sm font-medium text-gray-700 mb-1">
               Vehicle Type
             </label>
             <select
+              id="permit-management-vehicle-type-filter"
+              name="permitVehicleTypeFilter"
+              autoComplete="off"
               className="w-full border border-gray-300 rounded-md px-3 py-2"
               value={filters.vehicleType}
               onChange={(e) => setFilters({ ...filters, vehicleType: e.target.value as VehicleType | '' })}
@@ -357,11 +366,14 @@ export default function PermitManagement() {
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="permit-management-permit-plate-number" className="block text-sm font-medium text-gray-700 mb-1">
                   Permit Plate Number *
                 </label>
                 <input
+                  id="permit-management-permit-plate-number"
+                  name="permitPlateNumber"
                   type="text"
+                  autoComplete="off"
                   required
                   className="w-full border border-gray-300 rounded-md px-3 py-2 font-mono"
                   value={formData.permitPlateNumber}
@@ -374,10 +386,13 @@ export default function PermitManagement() {
                 </p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="permit-management-remarks" className="block text-sm font-medium text-gray-700 mb-1">
                   Remarks (Optional)
                 </label>
                 <textarea
+                  id="permit-management-remarks"
+                  name="remarks"
+                  autoComplete="off"
                   className="w-full border border-gray-300 rounded-md px-3 py-2"
                   rows={3}
                   value={formData.remarks}

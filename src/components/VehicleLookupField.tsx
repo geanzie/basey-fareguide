@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 
 import type { VehicleLookupDto, VehicleLookupResponseDto } from '@/lib/contracts'
 
@@ -11,10 +11,13 @@ const DEFAULT_DEBOUNCE_MS = 300
 interface VehicleLookupFieldProps {
   label: string
   onSelect: (vehicle: VehicleLookupDto) => void
+  id?: string
+  name?: string
   placeholder?: string
   selectedVehicle: VehicleLookupDto | null
   helperText?: string
   noResultsText?: string
+  autoComplete?: string
   requireActivePermit?: boolean
   disabled?: boolean
   resultFilter?: (vehicle: VehicleLookupDto) => boolean
@@ -23,16 +26,21 @@ interface VehicleLookupFieldProps {
 
 export default function VehicleLookupField({
   label,
+  id,
+  name = 'vehicleLookup',
   onSelect,
   placeholder = 'Search by plate number, permit, owner, or driver name',
   selectedVehicle,
   helperText,
   noResultsText = 'No vehicles matched your search.',
+  autoComplete = 'off',
   requireActivePermit = true,
   disabled = false,
   resultFilter,
   onClearSelection,
 }: VehicleLookupFieldProps) {
+  const generatedId = useId()
+  const inputId = id ?? `vehicle-lookup-${generatedId}`
   const [query, setQuery] = useState('')
   const [options, setOptions] = useState<VehicleLookupDto[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -162,10 +170,13 @@ export default function VehicleLookupField({
 
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-gray-700">{label}</label>
+      <label htmlFor={inputId} className="block text-sm font-medium text-gray-700">{label}</label>
       <div className="relative">
         <input
+          id={inputId}
+          name={name}
           type="text"
+          autoComplete={autoComplete}
           value={query}
           onChange={(event) => {
             const nextValue = event.target.value
@@ -184,6 +195,7 @@ export default function VehicleLookupField({
           }}
           disabled={disabled}
           placeholder={placeholder}
+          aria-autocomplete="list"
           className="w-full rounded-lg border border-gray-300 px-4 py-3 pr-28 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
         />
 
