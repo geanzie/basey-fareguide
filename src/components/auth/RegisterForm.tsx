@@ -85,10 +85,8 @@ const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
     }
 
     try {
-      const registrationData = {
-        ...formData,
-      }
-      delete registrationData.confirmPassword
+      const { confirmPassword, ...registrationData } = formData
+      void confirmPassword
 
       const response = await fetch('/api/auth/register', {
         method: 'POST',
