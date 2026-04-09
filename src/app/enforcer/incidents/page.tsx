@@ -11,7 +11,7 @@ export default function EnforcerIncidentsPage() {
         title="Incident Queue"
         subtitle="Respond to and manage traffic violations in priority order"
       >
-        <EnforcerIncidentsList />
+        <EnforcerIncidentsList mode="queue" />
       </PageWrapper>
     </RoleGuard>
   )

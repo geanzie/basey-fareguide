@@ -5,7 +5,12 @@ import { useEffect, useMemo, useState } from 'react'
 import useSWR from 'swr'
 import ResponsiveTable, { ActionButton, StatusBadge } from './ResponsiveTable'
 import EvidenceManager from './EvidenceManager'
-import type { IncidentListItemDto, IncidentsResponseDto } from '@/lib/contracts'
+import type {
+  EnforcerIncidentScope,
+  EnforcerIncidentsViewMode,
+  IncidentListItemDto,
+  IncidentsResponseDto,
+} from '@/lib/contracts'
 import {
   DASHBOARD_ICONS,
   DASHBOARD_ICON_POLICY,
@@ -38,6 +43,37 @@ interface ActionNotice {
   message: string
 }
 
+type EnforcerStatusFilter = 'ALL' | 'PENDING' | 'INVESTIGATING' | 'RESOLVED'
+
+const QUEUE_STATUS_FILTERS = ['ALL', 'PENDING', 'INVESTIGATING'] as const satisfies readonly EnforcerStatusFilter[]
+
+const DASHBOARD_STATUS_FILTERS = ['ALL', 'PENDING', 'INVESTIGATING', 'RESOLVED'] as const satisfies readonly EnforcerStatusFilter[]
+
+const UNRESOLVED_INCIDENT_STATUSES = ['PENDING', 'INVESTIGATING'] as const
+
+const ALLOWED_STATUS_FILTERS: Record<EnforcerIncidentsViewMode, readonly EnforcerStatusFilter[]> = {
+  dashboard: DASHBOARD_STATUS_FILTERS,
+  queue: QUEUE_STATUS_FILTERS,
+}
+
+const STATUS_TABS: Record<EnforcerIncidentsViewMode, Array<{ key: EnforcerStatusFilter; label: string }>> = {
+  dashboard: [
+    { key: 'ALL', label: 'All' },
+    { key: 'PENDING', label: 'Pending' },
+    { key: 'INVESTIGATING', label: 'Investigating' },
+    { key: 'RESOLVED', label: 'Resolved' },
+  ],
+  queue: [
+    { key: 'ALL', label: 'All' },
+    { key: 'PENDING', label: 'Pending' },
+    { key: 'INVESTIGATING', label: 'Investigating' },
+  ],
+}
+
+interface EnforcerIncidentsListProps {
+  mode: EnforcerIncidentsViewMode
+}
+
 function ActionLabel({
   children,
   icon,
@@ -59,9 +95,8 @@ function ActionLabel({
   )
 }
 
-export default function EnforcerIncidentsList() {
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'INVESTIGATING' | 'RESOLVED'>('ALL')
-  const [dateRange, setDateRange] = useState<number>(90)
+export default function EnforcerIncidentsList({ mode }: EnforcerIncidentsListProps) {
+  const [statusFilter, setStatusFilter] = useState<EnforcerStatusFilter>('ALL')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedIncident, setSelectedIncident] = useState<IncidentListItemDto | null>(null)
   const [showIncidentDetails, setShowIncidentDetails] = useState(false)
@@ -77,9 +112,24 @@ export default function EnforcerIncidentsList() {
     remarks: '',
   })
 
-  const swrKey = `/api/incidents/enforcer?days=${dateRange}`
+  const isQueueMode = mode === 'queue'
+  const requestScope: EnforcerIncidentScope = isQueueMode ? 'unresolved' : 'all'
+  const swrKey = `/api/incidents/enforcer?scope=${requestScope}&mode=${mode}`
+  const allowedStatusFilters = ALLOWED_STATUS_FILTERS[mode]
+  const statusTabs = STATUS_TABS[mode]
+
   const { data, error, isLoading, mutate } = useSWR<IncidentsResponseDto>(swrKey)
   const incidents = data?.incidents || []
+
+  useEffect(() => {
+    if (!isQueueMode) {
+      return
+    }
+
+    if (!allowedStatusFilters.includes(statusFilter)) {
+      setStatusFilter('ALL')
+    }
+  }, [allowedStatusFilters, isQueueMode, statusFilter])
 
   useEffect(() => {
     if (!actionNotice) {
@@ -99,8 +149,18 @@ export default function EnforcerIncidentsList() {
     setActionNotice({ tone, title, message })
   }
 
+  const scopedIncidents = useMemo(() => {
+    if (!isQueueMode) {
+      return incidents
+    }
+
+    return incidents.filter((incident) =>
+      UNRESOLVED_INCIDENT_STATUSES.includes(incident.status as (typeof UNRESOLVED_INCIDENT_STATUSES)[number]),
+    )
+  }, [incidents, isQueueMode])
+
   const filteredIncidents = useMemo(() => {
-    return incidents.filter((incident) => {
+    return scopedIncidents.filter((incident) => {
       const matchesStatus = statusFilter === 'ALL' || incident.status === statusFilter
 
       if (!searchQuery.trim()) {
@@ -119,17 +179,32 @@ export default function EnforcerIncidentsList() {
 
       return Boolean(matchesStatus && matchesSearch)
     })
-  }, [incidents, searchQuery, statusFilter])
+  }, [scopedIncidents, searchQuery, statusFilter])
 
   const stats = useMemo(
     () => ({
-      total: incidents.length,
-      pending: incidents.filter((incident) => incident.status === 'PENDING').length,
-      investigating: incidents.filter((incident) => incident.status === 'INVESTIGATING').length,
-      resolved: incidents.filter((incident) => incident.status === 'RESOLVED').length,
+      total: scopedIncidents.length,
+      pending: scopedIncidents.filter((incident) => incident.status === 'PENDING').length,
+      investigating: scopedIncidents.filter((incident) => incident.status === 'INVESTIGATING').length,
+      resolved: scopedIncidents.filter((incident) => incident.status === 'RESOLVED').length,
     }),
-    [incidents],
+    [scopedIncidents],
   )
+
+  const getStatusTabCount = (filter: EnforcerStatusFilter) => {
+    switch (filter) {
+      case 'ALL':
+        return stats.total
+      case 'PENDING':
+        return stats.pending
+      case 'INVESTIGATING':
+        return stats.investigating
+      case 'RESOLVED':
+        return stats.resolved
+      default:
+        return 0
+    }
+  }
 
   const openTicketModal = async (incident: IncidentListItemDto) => {
     setTicketIncident(incident)
@@ -381,25 +456,27 @@ export default function EnforcerIncidentsList() {
         </div>
       ) : null}
 
-      <div className="app-surface-card-strong rounded-3xl">
-        <div className="px-4 py-5 sm:px-6 sm:py-6">
-          <div className="flex items-start gap-4">
-            <div className={getDashboardIconChipClasses('red')}>
-              <DashboardIconSlot
-                icon={DASHBOARD_ICONS.incidents}
-                size={DASHBOARD_ICON_POLICY.sizes.hero}
-                className="text-red-700"
-              />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl">Queue overview</h2>
-              <p className="text-gray-600 mt-1">
-                Take cases, review evidence, and issue tickets or resolutions when needed.
-              </p>
+      {!isQueueMode ? (
+        <div className="app-surface-card-strong rounded-3xl">
+          <div className="px-4 py-5 sm:px-6 sm:py-6">
+            <div className="flex items-start gap-4">
+              <div className={getDashboardIconChipClasses('red')}>
+                <DashboardIconSlot
+                  icon={DASHBOARD_ICONS.incidents}
+                  size={DASHBOARD_ICON_POLICY.sizes.hero}
+                  className="text-red-700"
+                />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl">Queue overview</h2>
+                <p className="text-gray-600 mt-1">
+                  Review live queue status alongside completed enforcement history.
+                </p>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      ) : null}
       <div className="space-y-6 sm:space-y-8">
         {stats.pending > 0 ? (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
@@ -421,56 +498,45 @@ export default function EnforcerIncidentsList() {
           </div>
         ) : null}
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <MetricCard
-            label="Total Incidents"
-            value={stats.total}
-            icon={DASHBOARD_ICONS.list}
-            tone="slate"
-          />
-          <MetricCard
-            label="Pending"
-            value={stats.pending}
-            icon={DASHBOARD_ICONS.approval}
-            tone="amber"
-          />
-          <MetricCard
-            label="Investigating"
-            value={stats.investigating}
-            icon={DASHBOARD_ICONS.inspect}
-            tone="blue"
-          />
-          <MetricCard
-            label="Resolved"
-            value={stats.resolved}
-            icon={DASHBOARD_ICONS.check}
-            tone="emerald"
-          />
-        </div>
+        {!isQueueMode ? (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <MetricCard
+              label="Total Incidents"
+              value={stats.total}
+              icon={DASHBOARD_ICONS.list}
+              tone="slate"
+            />
+            <MetricCard
+              label="Pending"
+              value={stats.pending}
+              icon={DASHBOARD_ICONS.approval}
+              tone="amber"
+            />
+            <MetricCard
+              label="Investigating"
+              value={stats.investigating}
+              icon={DASHBOARD_ICONS.inspect}
+              tone="blue"
+            />
+            <MetricCard
+              label="Resolved"
+              value={stats.resolved}
+              icon={DASHBOARD_ICONS.check}
+              tone="emerald"
+            />
+          </div>
+        ) : null}
 
         <div className="app-surface-card rounded-2xl p-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <label htmlFor="dateRange" className="inline-flex items-center gap-2 text-sm font-medium text-gray-700">
-              <DashboardIconSlot
-                icon={DASHBOARD_ICONS.approval}
-                size={DASHBOARD_ICON_POLICY.sizes.button}
-                className="text-gray-500"
-              />
-              <span>Include resolved incidents from:</span>
-            </label>
-            <select
-              id="dateRange"
-              value={dateRange}
-              onChange={(e) => setDateRange(Number(e.target.value))}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-            >
-              <option value={7}>Last 7 days</option>
-              <option value={30}>Last 30 days</option>
-              <option value={90}>Last 90 days</option>
-              <option value={180}>Last 6 months</option>
-              <option value={365}>Last year</option>
-              <option value={3650}>All time</option>
-            </select>
+          <div>
+            <p className="text-sm font-medium text-gray-700">
+              {isQueueMode ? 'Unresolved work queue' : 'All enforcement incidents'}
+            </p>
+            <p className="mt-1 text-sm text-gray-500">
+              {isQueueMode
+                ? 'Focus on pending and investigating incidents that still need action.'
+                : 'Review live queue volume together with the resolved enforcement record.'}
+            </p>
           </div>
           <div className="inline-flex items-center gap-2 text-sm text-gray-500">
             <DashboardIconSlot
@@ -479,7 +545,7 @@ export default function EnforcerIncidentsList() {
               className="text-gray-400"
             />
             <span>
-              <span className="font-medium">{incidents.length}</span> incident{incidents.length === 1 ? '' : 's'} returned
+              <span className="font-medium">{scopedIncidents.length}</span> incident{scopedIncidents.length === 1 ? '' : 's'} returned
             </span>
           </div>
         </div>
@@ -511,12 +577,7 @@ export default function EnforcerIncidentsList() {
             </div>
           </div>
           <div className="flex gap-2 flex-wrap">
-            {[
-              { key: 'ALL', label: 'All', count: stats.total },
-              { key: 'PENDING', label: 'Pending', count: stats.pending },
-              { key: 'INVESTIGATING', label: 'Investigating', count: stats.investigating },
-              { key: 'RESOLVED', label: 'Resolved', count: stats.resolved },
-            ].map((tab) => (
+            {statusTabs.map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => setStatusFilter(tab.key as typeof statusFilter)}
@@ -526,7 +587,7 @@ export default function EnforcerIncidentsList() {
                     : 'app-surface-inner border border-gray-300/80 text-gray-700 hover:bg-white/80'
                 }`}
               >
-                {tab.label} ({tab.count})
+                {tab.label} ({getStatusTabCount(tab.key)})
               </button>
             ))}
           </div>
@@ -656,7 +717,7 @@ export default function EnforcerIncidentsList() {
               ]}
               data={filteredIncidents}
               loading={isLoading}
-              emptyMessage="No incidents found for the selected filters."
+              emptyMessage={isQueueMode ? 'No unresolved incidents found for the selected filters.' : 'No incidents found for the selected filters.'}
               className="rounded-lg"
             />
           </div>

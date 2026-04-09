@@ -169,6 +169,48 @@ describe('EnforcerIncidentsList', () => {
               lastName: 'Santos',
             },
           },
+          {
+            id: 'incident-3',
+            status: 'RESOLVED',
+            statusLabel: 'Resolved',
+            type: 'OTHER',
+            typeLabel: 'Other',
+            location: 'Basey Terminal',
+            date: '2026-03-28T09:00:00.000Z',
+            createdAt: '2026-03-28T09:15:00.000Z',
+            description: 'Resolved ticket archived for reporting.',
+            plateNumber: 'RES-321',
+            driverLicense: 'D-24680',
+            ticketNumber: 'T-099',
+            paymentStatus: 'PAID',
+            paidAt: '2026-03-30T10:00:00.000Z',
+            penaltyAmount: 750,
+            reportedBy: {
+              firstName: 'Carlos',
+              lastName: 'Reyes',
+            },
+          },
+          {
+            id: 'incident-4',
+            status: 'DISMISSED',
+            statusLabel: 'Dismissed',
+            type: 'OTHER',
+            typeLabel: 'Other',
+            location: 'Old Municipal Hall',
+            date: '2026-03-20T08:00:00.000Z',
+            createdAt: '2026-03-20T08:10:00.000Z',
+            description: 'Dismissed after duplicate report review.',
+            plateNumber: 'DIS-654',
+            driverLicense: 'D-13579',
+            ticketNumber: null,
+            paymentStatus: null,
+            paidAt: null,
+            penaltyAmount: null,
+            reportedBy: {
+              firstName: 'Andrea',
+              lastName: 'Lopez',
+            },
+          },
         ],
       },
       error: undefined,
@@ -189,12 +231,14 @@ describe('EnforcerIncidentsList', () => {
 
   it('keeps workflow actions text-visible while rendering icon-supported controls', async () => {
     await act(async () => {
-      root.render(React.createElement(EnforcerIncidentsList))
+      root.render(React.createElement(EnforcerIncidentsList, { mode: 'dashboard' }))
       await Promise.resolve()
     })
 
+    expect(vi.mocked(useSWR)).toHaveBeenCalledWith('/api/incidents/enforcer?scope=all&mode=dashboard')
     expect(container.textContent).toContain('Queue overview')
     expect(container.textContent).toContain('Search incidents')
+    expect(container.textContent).toContain('4 incidents returned')
     expect(container.textContent).toContain('View Details')
     expect(container.textContent).toContain('Evidence')
     expect(container.textContent).toContain('Take and Issue Ticket')
@@ -209,7 +253,7 @@ describe('EnforcerIncidentsList', () => {
 
   it('renders the enforced penalty preview as read-only in the ticket modal', async () => {
     await act(async () => {
-      root.render(React.createElement(EnforcerIncidentsList))
+      root.render(React.createElement(EnforcerIncidentsList, { mode: 'dashboard' }))
       await Promise.resolve()
     })
 
@@ -241,7 +285,7 @@ describe('EnforcerIncidentsList', () => {
 
   it('shows a polished in-app success notice instead of a browser alert after issuing a ticket', async () => {
     await act(async () => {
-      root.render(React.createElement(EnforcerIncidentsList))
+      root.render(React.createElement(EnforcerIncidentsList, { mode: 'dashboard' }))
       await Promise.resolve()
     })
 
@@ -288,5 +332,28 @@ describe('EnforcerIncidentsList', () => {
     expect(container.textContent).toContain('Ticket T-202 issued successfully. Incident marked as resolved and evidence cleanup initiated.')
     expect(container.querySelector('[role="status"]')).not.toBeNull()
     expect(vi.mocked(globalThis.alert)).not.toHaveBeenCalled()
+  })
+
+  it('keeps queue mode operational and unresolved-only', async () => {
+    await act(async () => {
+      root.render(React.createElement(EnforcerIncidentsList, { mode: 'queue' }))
+      await Promise.resolve()
+    })
+
+    expect(vi.mocked(useSWR)).toHaveBeenCalledWith('/api/incidents/enforcer?scope=unresolved&mode=queue')
+    expect(container.textContent).toContain('Unresolved work queue')
+    expect(container.textContent).toContain('2 incidents returned')
+    expect(container.textContent).not.toContain('Queue overview')
+    expect(container.textContent).not.toContain('Total Incidents')
+    expect(container.textContent).not.toContain('Include resolved incidents from:')
+    expect(container.textContent).not.toContain('Resolved ticket archived for reporting.')
+    expect(container.textContent).not.toContain('Dismissed after duplicate report review.')
+
+    const buttons = Array.from(container.querySelectorAll('button')).map((button) => (button.textContent || '').trim())
+
+    expect(buttons).not.toContain('Resolved (1)')
+    expect(buttons).toContain('All (2)')
+    expect(buttons).toContain('Pending (1)')
+    expect(buttons).toContain('Investigating (1)')
   })
 })

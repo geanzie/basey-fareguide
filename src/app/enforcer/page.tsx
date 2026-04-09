@@ -11,7 +11,7 @@ export default function EnforcerPage() {
         title="Traffic Enforcement Center"
         subtitle="Queue, evidence, and resolution work for the active enforcement team"
       >
-        <EnforcerIncidentsList />
+        <EnforcerIncidentsList mode="dashboard" />
       </PageWrapper>
     </RoleGuard>
   )

@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { ENFORCER_ONLY, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
 import { serializeIncident } from '@/lib/serializers'
+import type { EnforcerIncidentScope } from '@/lib/contracts'
+
+const ENFORCER_INCIDENT_SCOPES: readonly EnforcerIncidentScope[] = ['all', 'unresolved']
+
+function isEnforcerIncidentScope(value: string): value is EnforcerIncidentScope {
+  return ENFORCER_INCIDENT_SCOPES.includes(value as EnforcerIncidentScope)
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,34 +16,36 @@ export async function GET(request: NextRequest) {
 
     // Get query parameters for filtering
     const { searchParams } = new URL(request.url)
-    const days = searchParams.get('days') || '30'
+    const scopeParam = searchParams.get('scope')
     const filter = searchParams.get('filter') || 'all'
 
-    // Calculate date range
-    const daysAgo = new Date()
-    daysAgo.setDate(daysAgo.getDate() - parseInt(days))
+    if (scopeParam !== null && !isEnforcerIncidentScope(scopeParam)) {
+      return NextResponse.json(
+        {
+          message: `Invalid scope \"${scopeParam}\". Expected one of: ${ENFORCER_INCIDENT_SCOPES.join(', ')}.`,
+        },
+        { status: 400 },
+      )
+    }
+
+    const scope: EnforcerIncidentScope = scopeParam ?? 'all'
 
     // Build where clause
-    // Date filter only applies to RESOLVED incidents
-    // PENDING and INVESTIGATING incidents should always be visible
-    const whereClause: any = {
-      OR: [
-        {
-          // Show pending and investigating incidents regardless of age
-          status: { in: ['PENDING', 'INVESTIGATING'] }
-        },
-        {
-          // Show resolved incidents within the date range
-          status: 'RESOLVED',
-          createdAt: { gte: daysAgo }
-        }
-      ]
-    }
+    const whereClause: any =
+      scope === 'unresolved'
+        ? {
+            status: { in: ['PENDING', 'INVESTIGATING'] },
+          }
+        : {}
 
     // Add violation type filter if specified
     if (filter !== 'all') {
       whereClause.incidentType = filter
     }
+
+    const orderBy = {
+      createdAt: scope === 'unresolved' ? 'asc' : 'desc',
+    } as const
 
     const incidents = await prisma.incident.findMany({
       where: whereClause,
@@ -73,9 +82,7 @@ export async function GET(request: NextRequest) {
           }
         }
       },
-      orderBy: {
-        createdAt: 'asc' // FIFO - First In, First Out
-      }
+      orderBy,
     })
 
     const incidentsWithCounts = incidents.map((incident) =>
@@ -107,7 +114,7 @@ export async function GET(request: NextRequest) {
       incidents: incidentsWithCounts,
       message: 'Incidents retrieved successfully',
       filters: {
-        days: parseInt(days),
+        scope,
         violationType: filter
       }
     }, {

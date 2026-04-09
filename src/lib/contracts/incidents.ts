@@ -6,6 +6,10 @@ export type IncidentStatus =
   | "RESOLVED"
   | "DISMISSED";
 
+export type EnforcerIncidentsViewMode = "dashboard" | "queue";
+
+export type EnforcerIncidentScope = "all" | "unresolved";
+
 export type TicketPaymentStatus = "NOT_APPLICABLE" | "UNPAID" | "PAID";
 
 export type IncidentType =
@@ -70,8 +74,9 @@ export interface IncidentsResponseDto {
   pagination?: PaginationDto;
   message?: string;
   filters?: {
-    days: number;
-    violationType: string;
+    days?: number;
+    violationType?: string;
+    scope?: EnforcerIncidentScope;
   };
 }
 
