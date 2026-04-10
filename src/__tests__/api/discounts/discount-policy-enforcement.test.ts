@@ -10,6 +10,7 @@ const prismaMock = vi.hoisted(() => ({
     findUnique: vi.fn(),
   },
   fareCalculation: {
+    findFirst: vi.fn(),
     create: vi.fn(),
   },
   discountUsageLog: {
@@ -101,10 +102,29 @@ beforeEach(() => {
     id: "public-1",
     userType: "PUBLIC",
   });
+  prismaMock.fareCalculation.findFirst.mockResolvedValue(null);
   prismaMock.vehicle.findUnique.mockReset();
 });
 
 describe("discount policy enforcement", () => {
+  it("rejects unauthenticated fare persistence requests before creating anonymous rows", async () => {
+    authMock.verifyAuth.mockResolvedValueOnce(null);
+
+    const res = await saveFareCalculation(
+      makeFareSaveRequest({
+        discountCardId: null,
+        originalFare: null,
+        discountApplied: null,
+        discountType: null,
+      }),
+    );
+    const json = await res.json();
+
+    expect(res.status).toBe(401);
+    expect(json.error).toMatch(/authentication required/i);
+    expect(prismaMock.fareCalculation.create).not.toHaveBeenCalled();
+  });
+
   it("uses the shared policy in the preview route for invalid cards", async () => {
     prismaMock.discountCard.findUnique.mockResolvedValueOnce({
       ...validCard,
@@ -178,6 +198,26 @@ describe("discount policy enforcement", () => {
     );
     expect(prismaMock.discountUsageLog.create).toHaveBeenCalledTimes(1);
     expect(prismaMock.discountCard.update).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns the existing fare record for a recent duplicate save request", async () => {
+    prismaMock.fareCalculation.findFirst.mockResolvedValueOnce(makeStoredFareCalculation());
+
+    const res = await saveFareCalculation(
+      makeFareSaveRequest({
+        discountCardId: null,
+        originalFare: null,
+        discountApplied: null,
+        discountType: null,
+      }),
+    );
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json.success).toBe(true);
+    expect(json.message).toMatch(/already saved/i);
+    expect(prismaMock.fareCalculation.create).not.toHaveBeenCalled();
+    expect(prismaMock.discountUsageLog.create).not.toHaveBeenCalled();
   });
 
   it("rejects unauthenticated vehicle attachment requests", async () => {

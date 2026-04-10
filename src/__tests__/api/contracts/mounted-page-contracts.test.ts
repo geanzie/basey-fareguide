@@ -25,6 +25,7 @@ const prismaMock = vi.hoisted(() => ({
 
 const authMock = vi.hoisted(() => ({
   verifyAuth: vi.fn(),
+  verifyAuthWithSelect: vi.fn(),
   requireRequestUser: vi.fn(),
   requireRequestRole: vi.fn(),
   createAuthErrorResponse: vi.fn((error: unknown) => {
@@ -41,6 +42,7 @@ vi.mock("@/lib/auth", async () => {
   return {
     ...actual,
     verifyAuth: authMock.verifyAuth,
+    verifyAuthWithSelect: authMock.verifyAuthWithSelect,
     requireRequestUser: authMock.requireRequestUser,
     requireRequestRole: authMock.requireRequestRole,
     createAuthErrorResponse: authMock.createAuthErrorResponse,
@@ -63,6 +65,7 @@ beforeEach(() => {
     id: "public-1",
     userType: "PUBLIC",
   });
+  authMock.verifyAuthWithSelect.mockResolvedValue(null);
   authMock.requireRequestRole.mockResolvedValue({
     id: "encoder-1",
     userType: "DATA_ENCODER",
@@ -162,7 +165,7 @@ describe("mounted page contract routes", () => {
   });
 
   it("returns normalized profile DTO fields for session-aware consumers", async () => {
-    prismaMock.user.findUnique.mockResolvedValueOnce({
+    authMock.verifyAuthWithSelect.mockResolvedValueOnce({
       id: "public-1",
       username: "public-user",
       firstName: "Public",

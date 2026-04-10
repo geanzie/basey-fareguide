@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { buildPaginationMetadata, parsePaginationParams } from '@/lib/api/pagination';
 import { prisma } from '@/lib/prisma';
 import { ADMIN_ONLY, createAuthErrorResponse, requireRequestRole } from '@/lib/auth';
+import { invalidatePlannerLocationsCache } from '@/lib/locations/plannerLocations';
 import {
   buildLocationValidationLog,
   buildLocationValidationSummary,
@@ -17,8 +19,10 @@ export async function GET(request: NextRequest) {
 
     // Parse query parameters
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '50');
+    const pagination = parsePaginationParams(searchParams, {
+      defaultLimit: 50,
+      maxLimit: 100,
+    });
     const search = searchParams.get('search') || '';
     const type = searchParams.get('type') || '';
     const barangay = searchParams.get('barangay') || '';
@@ -50,18 +54,13 @@ export async function GET(request: NextRequest) {
     const locations = await prisma.location.findMany({
       where,
       orderBy: { createdAt: 'desc' },
-      skip: (page - 1) * limit,
-      take: limit
+      skip: pagination.skip,
+      take: pagination.limit
     });
 
     return NextResponse.json({
       locations,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit)
-      }
+      pagination: buildPaginationMetadata(pagination, total)
     });
   } catch (error) {
     console.error('Error fetching locations:', error);
@@ -140,6 +139,8 @@ export async function POST(request: NextRequest) {
           : {})
       }
     });
+
+    invalidatePlannerLocationsCache();
 
     return NextResponse.json({
       message: 'Location created successfully',

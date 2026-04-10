@@ -67,7 +67,21 @@ const plannerLocationSelect = {
   updatedAt: true,
 } as const;
 
+const PLANNER_LOCATIONS_CACHE_TTL_MS = 60_000;
+
+let plannerLocationsCache:
+  | {
+      value: PlannerLocation[];
+      expiresAt: number;
+    }
+  | null = null;
+
 export async function listPlannerLocations(): Promise<PlannerLocation[]> {
+  const now = Date.now();
+  if (plannerLocationsCache && plannerLocationsCache.expiresAt > now) {
+    return plannerLocationsCache.value;
+  }
+
   const rows = await prisma.location.findMany({
     where: {
       isActive: true,
@@ -77,9 +91,20 @@ export async function listPlannerLocations(): Promise<PlannerLocation[]> {
     orderBy: { name: "asc" },
   });
 
-  return rows
+  const locations = rows
     .map(toPlannerLocation)
     .filter((location): location is PlannerLocation => location !== null);
+
+  plannerLocationsCache = {
+    value: locations,
+    expiresAt: now + PLANNER_LOCATIONS_CACHE_TTL_MS,
+  };
+
+  return locations;
+}
+
+export function invalidatePlannerLocationsCache() {
+  plannerLocationsCache = null;
 }
 
 export async function resolvePlannerLocationByName(

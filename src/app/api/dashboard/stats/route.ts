@@ -9,19 +9,27 @@ export async function GET(request: NextRequest) {
     // Get dashboard statistics
     const [
       totalUsers,
-      totalIncidents,
-      pendingIncidents,
-      resolvedIncidents,
+      incidentCounts,
       totalVehicles,
       totalPermits
     ] = await Promise.all([
       prisma.user.count(),
-      prisma.incident.count(),
-      prisma.incident.count({ where: { status: 'PENDING' } }),
-      prisma.incident.count({ where: { status: 'RESOLVED' } }),
+      prisma.incident.groupBy({
+        by: ['status'],
+        _count: {
+          _all: true,
+        },
+      }),
       prisma.vehicle.count(),
       prisma.permit.count()
     ])
+
+    const totalIncidents = incidentCounts.reduce(
+      (sum, group) => sum + group._count._all,
+      0,
+    )
+    const pendingIncidents = incidentCounts.find((group) => group.status === 'PENDING')?._count._all ?? 0
+    const resolvedIncidents = incidentCounts.find((group) => group.status === 'RESOLVED')?._count._all ?? 0
 
     return NextResponse.json({
       stats: {

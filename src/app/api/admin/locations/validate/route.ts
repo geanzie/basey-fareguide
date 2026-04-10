@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { ADMIN_ONLY, createAuthErrorResponse, requireRequestRole } from '@/lib/auth';
+import { invalidatePlannerLocationsCache } from '@/lib/locations/plannerLocations';
 import {
   buildLocationValidationLog,
   buildLocationValidationSummary,
@@ -73,6 +74,7 @@ export async function POST(request: NextRequest) {
           }
         });
         persisted = true;
+        invalidatePlannerLocationsCache();
       }
     }
 

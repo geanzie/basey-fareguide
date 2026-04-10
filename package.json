@@ -14,6 +14,9 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:seed": "node prisma/seed.js",
+    "cleanup:public:inspect": "node scripts/public-schema-cleanup.js inspect",
+    "cleanup:public:export": "node scripts/public-schema-cleanup.js export",
+    "cleanup:public:drop-sql": "node scripts/public-schema-cleanup.js drop-sql",
     "postinstall": "prisma generate"
   },
   "dependencies": {

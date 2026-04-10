@@ -1,0 +1,987 @@
+{
+  "summary": {
+    "slice": "legacy-metadata-unblocked-1",
+    "schema": "public",
+    "tableCount": 11,
+    "totalRows": 209,
+    "totalSizeBytes": 475136,
+    "externalInboundForeignKeyCount": 0,
+    "dropOrder": [
+      "auth_group_permissions",
+      "django_admin_log",
+      "django_migrations",
+      "locations_servicearea",
+      "token_blacklist_blacklistedtoken",
+      "users_user_groups",
+      "users_user_user_permissions",
+      "token_blacklist_outstandingtoken",
+      "auth_group",
+      "auth_permission",
+      "django_content_type"
+    ]
+  },
+  "report": {
+    "generatedAt": "2026-04-10T00:40:36.183Z",
+    "schema": "public",
+    "slice": {
+      "name": "legacy-metadata-unblocked-1",
+      "description": "Second standalone slice: legacy framework metadata and token-blacklist artifacts with no remaining external inbound blockers.",
+      "tables": [
+        "auth_group",
+        "auth_group_permissions",
+        "auth_permission",
+        "django_admin_log",
+        "django_content_type",
+        "django_migrations",
+        "locations_servicearea",
+        "token_blacklist_blacklistedtoken",
+        "token_blacklist_outstandingtoken",
+        "users_user_groups",
+        "users_user_user_permissions"
+      ]
+    },
+    "tables": [
+      {
+        "table_name": "auth_group",
+        "row_count": 0,
+        "total_size_bytes": 24576
+      },
+      {
+        "table_name": "auth_group_permissions",
+        "row_count": 0,
+        "total_size_bytes": 32768
+      },
+      {
+        "table_name": "auth_permission",
+        "row_count": 124,
+        "total_size_bytes": 90112
+      },
+      {
+        "table_name": "django_admin_log",
+        "row_count": 0,
+        "total_size_bytes": 32768
+      },
+      {
+        "table_name": "django_content_type",
+        "row_count": 31,
+        "total_size_bytes": 40960
+      },
+      {
+        "table_name": "django_migrations",
+        "row_count": 46,
+        "total_size_bytes": 32768
+      },
+      {
+        "table_name": "locations_servicearea",
+        "row_count": 0,
+        "total_size_bytes": 32768
+      },
+      {
+        "table_name": "token_blacklist_blacklistedtoken",
+        "row_count": 1,
+        "total_size_bytes": 40960
+      },
+      {
+        "table_name": "token_blacklist_outstandingtoken",
+        "row_count": 7,
+        "total_size_bytes": 81920
+      },
+      {
+        "table_name": "users_user_groups",
+        "row_count": 0,
+        "total_size_bytes": 32768
+      },
+      {
+        "table_name": "users_user_user_permissions",
+        "row_count": 0,
+        "total_size_bytes": 32768
+      }
+    ],
+    "columns": [
+      {
+        "table_name": "auth_group",
+        "ordinal_position": 1,
+        "column_name": "id",
+        "formatted_type": "integer",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "auth_group",
+        "ordinal_position": 2,
+        "column_name": "name",
+        "formatted_type": "character varying(150)",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "auth_group_permissions",
+        "ordinal_position": 1,
+        "column_name": "id",
+        "formatted_type": "bigint",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "auth_group_permissions",
+        "ordinal_position": 2,
+        "column_name": "group_id",
+        "formatted_type": "integer",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "auth_group_permissions",
+        "ordinal_position": 3,
+        "column_name": "permission_id",
+        "formatted_type": "integer",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "auth_permission",
+        "ordinal_position": 1,
+        "column_name": "id",
+        "formatted_type": "integer",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "auth_permission",
+        "ordinal_position": 2,
+        "column_name": "name",
+        "formatted_type": "character varying(255)",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "auth_permission",
+        "ordinal_position": 3,
+        "column_name": "content_type_id",
+        "formatted_type": "integer",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "auth_permission",
+        "ordinal_position": 4,
+        "column_name": "codename",
+        "formatted_type": "character varying(100)",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "django_admin_log",
+        "ordinal_position": 1,
+        "column_name": "id",
+        "formatted_type": "integer",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "django_admin_log",
+        "ordinal_position": 2,
+        "column_name": "action_time",
+        "formatted_type": "timestamp with time zone",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "django_admin_log",
+        "ordinal_position": 3,
+        "column_name": "object_id",
+        "formatted_type": "text",
+        "is_nullable": true,
+        "default_expression": null
+      },
+      {
+        "table_name": "django_admin_log",
+        "ordinal_position": 4,
+        "column_name": "object_repr",
+        "formatted_type": "character varying(200)",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "django_admin_log",
+        "ordinal_position": 5,
+        "column_name": "action_flag",
+        "formatted_type": "smallint",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "django_admin_log",
+        "ordinal_position": 6,
+        "column_name": "change_message",
+        "formatted_type": "text",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "django_admin_log",
+        "ordinal_position": 7,
+        "column_name": "content_type_id",
+        "formatted_type": "integer",
+        "is_nullable": true,
+        "default_expression": null
+      },
+      {
+        "table_name": "django_admin_log",
+        "ordinal_position": 8,
+        "column_name": "user_id",
+        "formatted_type": "bigint",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "django_content_type",
+        "ordinal_position": 1,
+        "column_name": "id",
+        "formatted_type": "integer",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "django_content_type",
+        "ordinal_position": 3,
+        "column_name": "app_label",
+        "formatted_type": "character varying(100)",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "django_content_type",
+        "ordinal_position": 4,
+        "column_name": "model",
+        "formatted_type": "character varying(100)",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "django_migrations",
+        "ordinal_position": 1,
+        "column_name": "id",
+        "formatted_type": "bigint",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "django_migrations",
+        "ordinal_position": 2,
+        "column_name": "app",
+        "formatted_type": "character varying(255)",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "django_migrations",
+        "ordinal_position": 3,
+        "column_name": "name",
+        "formatted_type": "character varying(255)",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "django_migrations",
+        "ordinal_position": 4,
+        "column_name": "applied",
+        "formatted_type": "timestamp with time zone",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "locations_servicearea",
+        "ordinal_position": 1,
+        "column_name": "id",
+        "formatted_type": "bigint",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "locations_servicearea",
+        "ordinal_position": 2,
+        "column_name": "name",
+        "formatted_type": "character varying(200)",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "locations_servicearea",
+        "ordinal_position": 3,
+        "column_name": "boundary",
+        "formatted_type": "geography(Polygon,4326)",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "locations_servicearea",
+        "ordinal_position": 4,
+        "column_name": "transport_type",
+        "formatted_type": "character varying(20)",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "locations_servicearea",
+        "ordinal_position": 5,
+        "column_name": "is_active",
+        "formatted_type": "boolean",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "locations_servicearea",
+        "ordinal_position": 6,
+        "column_name": "created_at",
+        "formatted_type": "timestamp with time zone",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "locations_servicearea",
+        "ordinal_position": 7,
+        "column_name": "updated_at",
+        "formatted_type": "timestamp with time zone",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "token_blacklist_blacklistedtoken",
+        "ordinal_position": 1,
+        "column_name": "id",
+        "formatted_type": "bigint",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "token_blacklist_blacklistedtoken",
+        "ordinal_position": 2,
+        "column_name": "blacklisted_at",
+        "formatted_type": "timestamp with time zone",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "token_blacklist_blacklistedtoken",
+        "ordinal_position": 3,
+        "column_name": "token_id",
+        "formatted_type": "bigint",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "token_blacklist_outstandingtoken",
+        "ordinal_position": 1,
+        "column_name": "id",
+        "formatted_type": "bigint",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "token_blacklist_outstandingtoken",
+        "ordinal_position": 3,
+        "column_name": "token",
+        "formatted_type": "text",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "token_blacklist_outstandingtoken",
+        "ordinal_position": 4,
+        "column_name": "created_at",
+        "formatted_type": "timestamp with time zone",
+        "is_nullable": true,
+        "default_expression": null
+      },
+      {
+        "table_name": "token_blacklist_outstandingtoken",
+        "ordinal_position": 5,
+        "column_name": "expires_at",
+        "formatted_type": "timestamp with time zone",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "token_blacklist_outstandingtoken",
+        "ordinal_position": 6,
+        "column_name": "user_id",
+        "formatted_type": "bigint",
+        "is_nullable": true,
+        "default_expression": null
+      },
+      {
+        "table_name": "token_blacklist_outstandingtoken",
+        "ordinal_position": 7,
+        "column_name": "jti",
+        "formatted_type": "character varying(255)",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "users_user_groups",
+        "ordinal_position": 1,
+        "column_name": "id",
+        "formatted_type": "bigint",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "users_user_groups",
+        "ordinal_position": 2,
+        "column_name": "user_id",
+        "formatted_type": "bigint",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "users_user_groups",
+        "ordinal_position": 3,
+        "column_name": "group_id",
+        "formatted_type": "integer",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "users_user_user_permissions",
+        "ordinal_position": 1,
+        "column_name": "id",
+        "formatted_type": "bigint",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "users_user_user_permissions",
+        "ordinal_position": 2,
+        "column_name": "user_id",
+        "formatted_type": "bigint",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "users_user_user_permissions",
+        "ordinal_position": 3,
+        "column_name": "permission_id",
+        "formatted_type": "integer",
+        "is_nullable": false,
+        "default_expression": null
+      }
+    ],
+    "constraints": [
+      {
+        "table_name": "auth_group",
+        "constraint_name": "auth_group_name_key",
+        "constraint_type": "u",
+        "definition": "UNIQUE (name)"
+      },
+      {
+        "table_name": "auth_group",
+        "constraint_name": "auth_group_pkey",
+        "constraint_type": "p",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "table_name": "auth_group_permissions",
+        "constraint_name": "auth_group_permissio_permission_id_84c5c92e_fk_auth_perm",
+        "constraint_type": "f",
+        "definition": "FOREIGN KEY (permission_id) REFERENCES auth_permission(id) DEFERRABLE INITIALLY DEFERRED"
+      },
+      {
+        "table_name": "auth_group_permissions",
+        "constraint_name": "auth_group_permissions_group_id_b120cbf9_fk_auth_group_id",
+        "constraint_type": "f",
+        "definition": "FOREIGN KEY (group_id) REFERENCES auth_group(id) DEFERRABLE INITIALLY DEFERRED"
+      },
+      {
+        "table_name": "auth_group_permissions",
+        "constraint_name": "auth_group_permissions_group_id_permission_id_0cd325b0_uniq",
+        "constraint_type": "u",
+        "definition": "UNIQUE (group_id, permission_id)"
+      },
+      {
+        "table_name": "auth_group_permissions",
+        "constraint_name": "auth_group_permissions_pkey",
+        "constraint_type": "p",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "table_name": "auth_permission",
+        "constraint_name": "auth_permission_content_type_id_2f476e4b_fk_django_co",
+        "constraint_type": "f",
+        "definition": "FOREIGN KEY (content_type_id) REFERENCES django_content_type(id) DEFERRABLE INITIALLY DEFERRED"
+      },
+      {
+        "table_name": "auth_permission",
+        "constraint_name": "auth_permission_content_type_id_codename_01ab375a_uniq",
+        "constraint_type": "u",
+        "definition": "UNIQUE (content_type_id, codename)"
+      },
+      {
+        "table_name": "auth_permission",
+        "constraint_name": "auth_permission_pkey",
+        "constraint_type": "p",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "table_name": "django_admin_log",
+        "constraint_name": "django_admin_log_action_flag_check",
+        "constraint_type": "c",
+        "definition": "CHECK (action_flag >= 0)"
+      },
+      {
+        "table_name": "django_admin_log",
+        "constraint_name": "django_admin_log_content_type_id_c4bce8eb_fk_django_co",
+        "constraint_type": "f",
+        "definition": "FOREIGN KEY (content_type_id) REFERENCES django_content_type(id) DEFERRABLE INITIALLY DEFERRED"
+      },
+      {
+        "table_name": "django_admin_log",
+        "constraint_name": "django_admin_log_pkey",
+        "constraint_type": "p",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "table_name": "django_admin_log",
+        "constraint_name": "django_admin_log_user_id_c564eba6_fk_users_user_id",
+        "constraint_type": "f",
+        "definition": "FOREIGN KEY (user_id) REFERENCES users_user(id) DEFERRABLE INITIALLY DEFERRED"
+      },
+      {
+        "table_name": "django_content_type",
+        "constraint_name": "django_content_type_app_label_model_76bd3d3b_uniq",
+        "constraint_type": "u",
+        "definition": "UNIQUE (app_label, model)"
+      },
+      {
+        "table_name": "django_content_type",
+        "constraint_name": "django_content_type_pkey",
+        "constraint_type": "p",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "table_name": "django_migrations",
+        "constraint_name": "django_migrations_pkey",
+        "constraint_type": "p",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "table_name": "locations_servicearea",
+        "constraint_name": "locations_servicearea_pkey",
+        "constraint_type": "p",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "table_name": "token_blacklist_blacklistedtoken",
+        "constraint_name": "token_blacklist_blacklistedtoken_pkey",
+        "constraint_type": "p",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "table_name": "token_blacklist_blacklistedtoken",
+        "constraint_name": "token_blacklist_blacklistedtoken_token_id_3cc7fe56_fk",
+        "constraint_type": "f",
+        "definition": "FOREIGN KEY (token_id) REFERENCES token_blacklist_outstandingtoken(id) DEFERRABLE INITIALLY DEFERRED"
+      },
+      {
+        "table_name": "token_blacklist_blacklistedtoken",
+        "constraint_name": "token_blacklist_blacklistedtoken_token_id_key",
+        "constraint_type": "u",
+        "definition": "UNIQUE (token_id)"
+      },
+      {
+        "table_name": "token_blacklist_outstandingtoken",
+        "constraint_name": "token_blacklist_outs_user_id_83bc629a_fk_users_use",
+        "constraint_type": "f",
+        "definition": "FOREIGN KEY (user_id) REFERENCES users_user(id) DEFERRABLE INITIALLY DEFERRED"
+      },
+      {
+        "table_name": "token_blacklist_outstandingtoken",
+        "constraint_name": "token_blacklist_outstandingtoken_jti_hex_d9bdf6f7_uniq",
+        "constraint_type": "u",
+        "definition": "UNIQUE (jti)"
+      },
+      {
+        "table_name": "token_blacklist_outstandingtoken",
+        "constraint_name": "token_blacklist_outstandingtoken_pkey",
+        "constraint_type": "p",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "table_name": "users_user_groups",
+        "constraint_name": "users_user_groups_group_id_9afc8d0e_fk_auth_group_id",
+        "constraint_type": "f",
+        "definition": "FOREIGN KEY (group_id) REFERENCES auth_group(id) DEFERRABLE INITIALLY DEFERRED"
+      },
+      {
+        "table_name": "users_user_groups",
+        "constraint_name": "users_user_groups_pkey",
+        "constraint_type": "p",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "table_name": "users_user_groups",
+        "constraint_name": "users_user_groups_user_id_5f6f5a90_fk_users_user_id",
+        "constraint_type": "f",
+        "definition": "FOREIGN KEY (user_id) REFERENCES users_user(id) DEFERRABLE INITIALLY DEFERRED"
+      },
+      {
+        "table_name": "users_user_groups",
+        "constraint_name": "users_user_groups_user_id_group_id_b88eab82_uniq",
+        "constraint_type": "u",
+        "definition": "UNIQUE (user_id, group_id)"
+      },
+      {
+        "table_name": "users_user_user_permissions",
+        "constraint_name": "users_user_user_perm_permission_id_0b93982e_fk_auth_perm",
+        "constraint_type": "f",
+        "definition": "FOREIGN KEY (permission_id) REFERENCES auth_permission(id) DEFERRABLE INITIALLY DEFERRED"
+      },
+      {
+        "table_name": "users_user_user_permissions",
+        "constraint_name": "users_user_user_permissions_pkey",
+        "constraint_type": "p",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "table_name": "users_user_user_permissions",
+        "constraint_name": "users_user_user_permissions_user_id_20aca447_fk_users_user_id",
+        "constraint_type": "f",
+        "definition": "FOREIGN KEY (user_id) REFERENCES users_user(id) DEFERRABLE INITIALLY DEFERRED"
+      },
+      {
+        "table_name": "users_user_user_permissions",
+        "constraint_name": "users_user_user_permissions_user_id_permission_id_43338c45_uniq",
+        "constraint_type": "u",
+        "definition": "UNIQUE (user_id, permission_id)"
+      }
+    ],
+    "indexes": [
+      {
+        "table_name": "auth_group",
+        "index_name": "auth_group_name_a6ea08ec_like",
+        "index_definition": "CREATE INDEX auth_group_name_a6ea08ec_like ON public.auth_group USING btree (name varchar_pattern_ops)"
+      },
+      {
+        "table_name": "auth_group",
+        "index_name": "auth_group_name_key",
+        "index_definition": "CREATE UNIQUE INDEX auth_group_name_key ON public.auth_group USING btree (name)"
+      },
+      {
+        "table_name": "auth_group",
+        "index_name": "auth_group_pkey",
+        "index_definition": "CREATE UNIQUE INDEX auth_group_pkey ON public.auth_group USING btree (id)"
+      },
+      {
+        "table_name": "auth_group_permissions",
+        "index_name": "auth_group_permissions_group_id_b120cbf9",
+        "index_definition": "CREATE INDEX auth_group_permissions_group_id_b120cbf9 ON public.auth_group_permissions USING btree (group_id)"
+      },
+      {
+        "table_name": "auth_group_permissions",
+        "index_name": "auth_group_permissions_group_id_permission_id_0cd325b0_uniq",
+        "index_definition": "CREATE UNIQUE INDEX auth_group_permissions_group_id_permission_id_0cd325b0_uniq ON public.auth_group_permissions USING btree (group_id, permission_id)"
+      },
+      {
+        "table_name": "auth_group_permissions",
+        "index_name": "auth_group_permissions_permission_id_84c5c92e",
+        "index_definition": "CREATE INDEX auth_group_permissions_permission_id_84c5c92e ON public.auth_group_permissions USING btree (permission_id)"
+      },
+      {
+        "table_name": "auth_group_permissions",
+        "index_name": "auth_group_permissions_pkey",
+        "index_definition": "CREATE UNIQUE INDEX auth_group_permissions_pkey ON public.auth_group_permissions USING btree (id)"
+      },
+      {
+        "table_name": "auth_permission",
+        "index_name": "auth_permission_content_type_id_2f476e4b",
+        "index_definition": "CREATE INDEX auth_permission_content_type_id_2f476e4b ON public.auth_permission USING btree (content_type_id)"
+      },
+      {
+        "table_name": "auth_permission",
+        "index_name": "auth_permission_content_type_id_codename_01ab375a_uniq",
+        "index_definition": "CREATE UNIQUE INDEX auth_permission_content_type_id_codename_01ab375a_uniq ON public.auth_permission USING btree (content_type_id, codename)"
+      },
+      {
+        "table_name": "auth_permission",
+        "index_name": "auth_permission_pkey",
+        "index_definition": "CREATE UNIQUE INDEX auth_permission_pkey ON public.auth_permission USING btree (id)"
+      },
+      {
+        "table_name": "django_admin_log",
+        "index_name": "django_admin_log_content_type_id_c4bce8eb",
+        "index_definition": "CREATE INDEX django_admin_log_content_type_id_c4bce8eb ON public.django_admin_log USING btree (content_type_id)"
+      },
+      {
+        "table_name": "django_admin_log",
+        "index_name": "django_admin_log_pkey",
+        "index_definition": "CREATE UNIQUE INDEX django_admin_log_pkey ON public.django_admin_log USING btree (id)"
+      },
+      {
+        "table_name": "django_admin_log",
+        "index_name": "django_admin_log_user_id_c564eba6",
+        "index_definition": "CREATE INDEX django_admin_log_user_id_c564eba6 ON public.django_admin_log USING btree (user_id)"
+      },
+      {
+        "table_name": "django_content_type",
+        "index_name": "django_content_type_app_label_model_76bd3d3b_uniq",
+        "index_definition": "CREATE UNIQUE INDEX django_content_type_app_label_model_76bd3d3b_uniq ON public.django_content_type USING btree (app_label, model)"
+      },
+      {
+        "table_name": "django_content_type",
+        "index_name": "django_content_type_pkey",
+        "index_definition": "CREATE UNIQUE INDEX django_content_type_pkey ON public.django_content_type USING btree (id)"
+      },
+      {
+        "table_name": "django_migrations",
+        "index_name": "django_migrations_pkey",
+        "index_definition": "CREATE UNIQUE INDEX django_migrations_pkey ON public.django_migrations USING btree (id)"
+      },
+      {
+        "table_name": "locations_servicearea",
+        "index_name": "locations_servicearea_boundary_97fd4523_id",
+        "index_definition": "CREATE INDEX locations_servicearea_boundary_97fd4523_id ON public.locations_servicearea USING gist (boundary)"
+      },
+      {
+        "table_name": "locations_servicearea",
+        "index_name": "locations_servicearea_is_active_8c56c4a9",
+        "index_definition": "CREATE INDEX locations_servicearea_is_active_8c56c4a9 ON public.locations_servicearea USING btree (is_active)"
+      },
+      {
+        "table_name": "locations_servicearea",
+        "index_name": "locations_servicearea_pkey",
+        "index_definition": "CREATE UNIQUE INDEX locations_servicearea_pkey ON public.locations_servicearea USING btree (id)"
+      },
+      {
+        "table_name": "token_blacklist_blacklistedtoken",
+        "index_name": "token_blacklist_blacklistedtoken_pkey",
+        "index_definition": "CREATE UNIQUE INDEX token_blacklist_blacklistedtoken_pkey ON public.token_blacklist_blacklistedtoken USING btree (id)"
+      },
+      {
+        "table_name": "token_blacklist_blacklistedtoken",
+        "index_name": "token_blacklist_blacklistedtoken_token_id_key",
+        "index_definition": "CREATE UNIQUE INDEX token_blacklist_blacklistedtoken_token_id_key ON public.token_blacklist_blacklistedtoken USING btree (token_id)"
+      },
+      {
+        "table_name": "token_blacklist_outstandingtoken",
+        "index_name": "token_blacklist_outstandingtoken_jti_hex_d9bdf6f7_like",
+        "index_definition": "CREATE INDEX token_blacklist_outstandingtoken_jti_hex_d9bdf6f7_like ON public.token_blacklist_outstandingtoken USING btree (jti varchar_pattern_ops)"
+      },
+      {
+        "table_name": "token_blacklist_outstandingtoken",
+        "index_name": "token_blacklist_outstandingtoken_jti_hex_d9bdf6f7_uniq",
+        "index_definition": "CREATE UNIQUE INDEX token_blacklist_outstandingtoken_jti_hex_d9bdf6f7_uniq ON public.token_blacklist_outstandingtoken USING btree (jti)"
+      },
+      {
+        "table_name": "token_blacklist_outstandingtoken",
+        "index_name": "token_blacklist_outstandingtoken_pkey",
+        "index_definition": "CREATE UNIQUE INDEX token_blacklist_outstandingtoken_pkey ON public.token_blacklist_outstandingtoken USING btree (id)"
+      },
+      {
+        "table_name": "token_blacklist_outstandingtoken",
+        "index_name": "token_blacklist_outstandingtoken_user_id_83bc629a",
+        "index_definition": "CREATE INDEX token_blacklist_outstandingtoken_user_id_83bc629a ON public.token_blacklist_outstandingtoken USING btree (user_id)"
+      },
+      {
+        "table_name": "users_user_groups",
+        "index_name": "users_user_groups_group_id_9afc8d0e",
+        "index_definition": "CREATE INDEX users_user_groups_group_id_9afc8d0e ON public.users_user_groups USING btree (group_id)"
+      },
+      {
+        "table_name": "users_user_groups",
+        "index_name": "users_user_groups_pkey",
+        "index_definition": "CREATE UNIQUE INDEX users_user_groups_pkey ON public.users_user_groups USING btree (id)"
+      },
+      {
+        "table_name": "users_user_groups",
+        "index_name": "users_user_groups_user_id_5f6f5a90",
+        "index_definition": "CREATE INDEX users_user_groups_user_id_5f6f5a90 ON public.users_user_groups USING btree (user_id)"
+      },
+      {
+        "table_name": "users_user_groups",
+        "index_name": "users_user_groups_user_id_group_id_b88eab82_uniq",
+        "index_definition": "CREATE UNIQUE INDEX users_user_groups_user_id_group_id_b88eab82_uniq ON public.users_user_groups USING btree (user_id, group_id)"
+      },
+      {
+        "table_name": "users_user_user_permissions",
+        "index_name": "users_user_user_permissions_permission_id_0b93982e",
+        "index_definition": "CREATE INDEX users_user_user_permissions_permission_id_0b93982e ON public.users_user_user_permissions USING btree (permission_id)"
+      },
+      {
+        "table_name": "users_user_user_permissions",
+        "index_name": "users_user_user_permissions_pkey",
+        "index_definition": "CREATE UNIQUE INDEX users_user_user_permissions_pkey ON public.users_user_user_permissions USING btree (id)"
+      },
+      {
+        "table_name": "users_user_user_permissions",
+        "index_name": "users_user_user_permissions_user_id_20aca447",
+        "index_definition": "CREATE INDEX users_user_user_permissions_user_id_20aca447 ON public.users_user_user_permissions USING btree (user_id)"
+      },
+      {
+        "table_name": "users_user_user_permissions",
+        "index_name": "users_user_user_permissions_user_id_permission_id_43338c45_uniq",
+        "index_definition": "CREATE UNIQUE INDEX users_user_user_permissions_user_id_permission_id_43338c45_uniq ON public.users_user_user_permissions USING btree (user_id, permission_id)"
+      }
+    ],
+    "outboundForeignKeys": [
+      {
+        "table_name": "auth_group_permissions",
+        "column_name": "permission_id",
+        "foreign_table_schema": "public",
+        "foreign_table_name": "auth_permission",
+        "foreign_column_name": "id",
+        "constraint_name": "auth_group_permissio_permission_id_84c5c92e_fk_auth_perm"
+      },
+      {
+        "table_name": "auth_group_permissions",
+        "column_name": "group_id",
+        "foreign_table_schema": "public",
+        "foreign_table_name": "auth_group",
+        "foreign_column_name": "id",
+        "constraint_name": "auth_group_permissions_group_id_b120cbf9_fk_auth_group_id"
+      },
+      {
+        "table_name": "auth_permission",
+        "column_name": "content_type_id",
+        "foreign_table_schema": "public",
+        "foreign_table_name": "django_content_type",
+        "foreign_column_name": "id",
+        "constraint_name": "auth_permission_content_type_id_2f476e4b_fk_django_co"
+      },
+      {
+        "table_name": "django_admin_log",
+        "column_name": "content_type_id",
+        "foreign_table_schema": "public",
+        "foreign_table_name": "django_content_type",
+        "foreign_column_name": "id",
+        "constraint_name": "django_admin_log_content_type_id_c4bce8eb_fk_django_co"
+      },
+      {
+        "table_name": "django_admin_log",
+        "column_name": "user_id",
+        "foreign_table_schema": "public",
+        "foreign_table_name": "users_user",
+        "foreign_column_name": "id",
+        "constraint_name": "django_admin_log_user_id_c564eba6_fk_users_user_id"
+      },
+      {
+        "table_name": "token_blacklist_blacklistedtoken",
+        "column_name": "token_id",
+        "foreign_table_schema": "public",
+        "foreign_table_name": "token_blacklist_outstandingtoken",
+        "foreign_column_name": "id",
+        "constraint_name": "token_blacklist_blacklistedtoken_token_id_3cc7fe56_fk"
+      },
+      {
+        "table_name": "token_blacklist_outstandingtoken",
+        "column_name": "user_id",
+        "foreign_table_schema": "public",
+        "foreign_table_name": "users_user",
+        "foreign_column_name": "id",
+        "constraint_name": "token_blacklist_outs_user_id_83bc629a_fk_users_use"
+      },
+      {
+        "table_name": "users_user_groups",
+        "column_name": "group_id",
+        "foreign_table_schema": "public",
+        "foreign_table_name": "auth_group",
+        "foreign_column_name": "id",
+        "constraint_name": "users_user_groups_group_id_9afc8d0e_fk_auth_group_id"
+      },
+      {
+        "table_name": "users_user_groups",
+        "column_name": "user_id",
+        "foreign_table_schema": "public",
+        "foreign_table_name": "users_user",
+        "foreign_column_name": "id",
+        "constraint_name": "users_user_groups_user_id_5f6f5a90_fk_users_user_id"
+      },
+      {
+        "table_name": "users_user_user_permissions",
+        "column_name": "permission_id",
+        "foreign_table_schema": "public",
+        "foreign_table_name": "auth_permission",
+        "foreign_column_name": "id",
+        "constraint_name": "users_user_user_perm_permission_id_0b93982e_fk_auth_perm"
+      },
+      {
+        "table_name": "users_user_user_permissions",
+        "column_name": "user_id",
+        "foreign_table_schema": "public",
+        "foreign_table_name": "users_user",
+        "foreign_column_name": "id",
+        "constraint_name": "users_user_user_permissions_user_id_20aca447_fk_users_user_id"
+      }
+    ],
+    "inboundForeignKeys": [
+      {
+        "dependent_schema": "public",
+        "dependent_table": "auth_group_permissions",
+        "dependent_column": "permission_id",
+        "referenced_table": "auth_permission",
+        "referenced_column": "id",
+        "constraint_name": "auth_group_permissio_permission_id_84c5c92e_fk_auth_perm"
+      },
+      {
+        "dependent_schema": "public",
+        "dependent_table": "auth_group_permissions",
+        "dependent_column": "group_id",
+        "referenced_table": "auth_group",
+        "referenced_column": "id",
+        "constraint_name": "auth_group_permissions_group_id_b120cbf9_fk_auth_group_id"
+      },
+      {
+        "dependent_schema": "public",
+        "dependent_table": "auth_permission",
+        "dependent_column": "content_type_id",
+        "referenced_table": "django_content_type",
+        "referenced_column": "id",
+        "constraint_name": "auth_permission_content_type_id_2f476e4b_fk_django_co"
+      },
+      {
+        "dependent_schema": "public",
+        "dependent_table": "django_admin_log",
+        "dependent_column": "content_type_id",
+        "referenced_table": "django_content_type",
+        "referenced_column": "id",
+        "constraint_name": "django_admin_log_content_type_id_c4bce8eb_fk_django_co"
+      },
+      {
+        "dependent_schema": "public",
+        "dependent_table": "token_blacklist_blacklistedtoken",
+        "dependent_column": "token_id",
+        "referenced_table": "token_blacklist_outstandingtoken",
+        "referenced_column": "id",
+        "constraint_name": "token_blacklist_blacklistedtoken_token_id_3cc7fe56_fk"
+      },
+      {
+        "dependent_schema": "public",
+        "dependent_table": "users_user_groups",
+        "dependent_column": "group_id",
+        "referenced_table": "auth_group",
+        "referenced_column": "id",
+        "constraint_name": "users_user_groups_group_id_9afc8d0e_fk_auth_group_id"
+      },
+      {
+        "dependent_schema": "public",
+        "dependent_table": "users_user_user_permissions",
+        "dependent_column": "permission_id",
+        "referenced_table": "auth_permission",
+        "referenced_column": "id",
+        "constraint_name": "users_user_user_perm_permission_id_0b93982e_fk_auth_perm"
+      }
+    ],
+    "dropOrder": [
+      "auth_group_permissions",
+      "django_admin_log",
+      "django_migrations",
+      "locations_servicearea",
+      "token_blacklist_blacklistedtoken",
+      "users_user_groups",
+      "users_user_user_permissions",
+      "token_blacklist_outstandingtoken",
+      "auth_group",
+      "auth_permission",
+      "django_content_type"
+    ]
+  }
+}

@@ -64,9 +64,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const normalizedEmail = email.toLowerCase()
+
     // Find user by email
-    const user = await prisma.user.findFirst({
-      where: { email: email.toLowerCase() }
+    const user = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+      },
     })
     
     // For security, always return success even if user doesn't exist
@@ -93,7 +100,9 @@ export async function POST(request: NextRequest) {
       where: { id: user.id },
       data: {
         passwordResetOtp: otp,
-        passwordResetOtpExpiry: otpExpiry
+        passwordResetOtpExpiry: otpExpiry,
+        passwordResetToken: null,
+        passwordResetExpiry: null,
       }
     })
 
@@ -126,6 +135,8 @@ export async function POST(request: NextRequest) {
       data: {
         passwordResetOtp: null,
         passwordResetOtpExpiry: null,
+        passwordResetToken: null,
+        passwordResetExpiry: null,
       },
     })
 

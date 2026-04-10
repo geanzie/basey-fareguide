@@ -1,0 +1,157 @@
+[
+  {
+    "id": 1,
+    "app_label": "admin",
+    "model": "logentry"
+  },
+  {
+    "id": 2,
+    "app_label": "auth",
+    "model": "permission"
+  },
+  {
+    "id": 3,
+    "app_label": "auth",
+    "model": "group"
+  },
+  {
+    "id": 4,
+    "app_label": "contenttypes",
+    "model": "contenttype"
+  },
+  {
+    "id": 5,
+    "app_label": "sessions",
+    "model": "session"
+  },
+  {
+    "id": 6,
+    "app_label": "authtoken",
+    "model": "token"
+  },
+  {
+    "id": 7,
+    "app_label": "authtoken",
+    "model": "tokenproxy"
+  },
+  {
+    "id": 8,
+    "app_label": "token_blacklist",
+    "model": "blacklistedtoken"
+  },
+  {
+    "id": 9,
+    "app_label": "token_blacklist",
+    "model": "outstandingtoken"
+  },
+  {
+    "id": 10,
+    "app_label": "users",
+    "model": "user"
+  },
+  {
+    "id": 11,
+    "app_label": "users",
+    "model": "discountcard"
+  },
+  {
+    "id": 12,
+    "app_label": "users",
+    "model": "discountusagelog"
+  },
+  {
+    "id": 13,
+    "app_label": "users",
+    "model": "incident"
+  },
+  {
+    "id": 14,
+    "app_label": "users",
+    "model": "vehicle"
+  },
+  {
+    "id": 15,
+    "app_label": "users",
+    "model": "farecalculation"
+  },
+  {
+    "id": 16,
+    "app_label": "locations",
+    "model": "location"
+  },
+  {
+    "id": 17,
+    "app_label": "locations",
+    "model": "servicearea"
+  },
+  {
+    "id": 18,
+    "app_label": "routes",
+    "model": "route"
+  },
+  {
+    "id": 19,
+    "app_label": "fares",
+    "model": "fare"
+  },
+  {
+    "id": 20,
+    "app_label": "fares",
+    "model": "pricingpolicy"
+  },
+  {
+    "id": 21,
+    "app_label": "trips",
+    "model": "trip"
+  },
+  {
+    "id": 22,
+    "app_label": "trips",
+    "model": "ratingreview"
+  },
+  {
+    "id": 23,
+    "app_label": "trips",
+    "model": "cancellation"
+  },
+  {
+    "id": 24,
+    "app_label": "trips",
+    "model": "tripevent"
+  },
+  {
+    "id": 25,
+    "app_label": "trips",
+    "model": "tripquote"
+  },
+  {
+    "id": 26,
+    "app_label": "dispatch",
+    "model": "dispatchoffer"
+  },
+  {
+    "id": 27,
+    "app_label": "dispatch",
+    "model": "driveravailability"
+  },
+  {
+    "id": 28,
+    "app_label": "dispatch",
+    "model": "driverlocation"
+  },
+  {
+    "id": 29,
+    "app_label": "dispatch",
+    "model": "driverprofile"
+  },
+  {
+    "id": 30,
+    "app_label": "dispatch",
+    "model": "drivervehicle"
+  },
+  {
+    "id": 31,
+    "app_label": "dispatch",
+    "model": "tripassignment"
+  }
+]

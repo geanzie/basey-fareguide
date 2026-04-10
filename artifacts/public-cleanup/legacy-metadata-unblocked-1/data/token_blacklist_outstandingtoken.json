@@ -1,0 +1,58 @@
+[
+  {
+    "id": 1,
+    "token": "[REDACTED_JWT]",
+    "created_at": "2026-03-22T05:15:07.368351+00:00",
+    "expires_at": "2026-04-21T05:15:07+00:00",
+    "user_id": 1,
+    "jti": "[REDACTED_JTI]"
+  },
+  {
+    "id": 2,
+    "token": "[REDACTED_JWT]",
+    "created_at": "2026-03-22T05:30:38.94802+00:00",
+    "expires_at": "2026-04-21T05:30:38+00:00",
+    "user_id": 1,
+    "jti": "[REDACTED_JTI]"
+  },
+  {
+    "id": 3,
+    "token": "[REDACTED_JWT]",
+    "created_at": "2026-03-22T06:24:15.947263+00:00",
+    "expires_at": "2026-04-21T06:24:15+00:00",
+    "user_id": 1,
+    "jti": "[REDACTED_JTI]"
+  },
+  {
+    "id": 4,
+    "token": "[REDACTED_JWT]",
+    "created_at": "2026-03-22T06:24:15.929767+00:00",
+    "expires_at": "2026-04-21T06:24:15+00:00",
+    "user_id": 1,
+    "jti": "[REDACTED_JTI]"
+  },
+  {
+    "id": 5,
+    "token": "[REDACTED_JWT]",
+    "created_at": "2026-03-22T06:24:15.931712+00:00",
+    "expires_at": "2026-04-21T06:24:15+00:00",
+    "user_id": 1,
+    "jti": "[REDACTED_JTI]"
+  },
+  {
+    "id": 6,
+    "token": "[REDACTED_JWT]",
+    "created_at": "2026-03-22T06:24:15.951309+00:00",
+    "expires_at": "2026-04-21T06:24:15+00:00",
+    "user_id": 1,
+    "jti": "[REDACTED_JTI]"
+  },
+  {
+    "id": 7,
+    "token": "[REDACTED_JWT]",
+    "created_at": "2026-03-22T07:21:54.785399+00:00",
+    "expires_at": "2026-04-21T07:21:54+00:00",
+    "user_id": 1,
+    "jti": "[REDACTED_JTI]"
+  }
+]

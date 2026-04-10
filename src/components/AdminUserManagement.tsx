@@ -39,6 +39,14 @@ interface AdminUserListItem {
   phoneNumber?: string
 }
 
+interface PaginatedAdminUsersResponse {
+  success?: boolean
+  users?: AdminUserListItem[]
+  pagination?: {
+    totalPages?: number
+  }
+}
+
 type AdminTab = 'create' | 'pending' | 'users' | 'password-reset'
 
 const EMPTY_USER_FORM: AdminUserForm = {
@@ -59,6 +67,8 @@ const TABS: Array<{ key: AdminTab; label: string }> = [
   { key: 'users', label: 'All Users' },
   { key: 'password-reset', label: 'Password Reset' },
 ]
+
+const ADMIN_USERS_PAGE_SIZE = 100
 
 export default function AdminUserManagement() {
   const [activeTab, setActiveTab] = useState<AdminTab>('create')
@@ -106,15 +116,32 @@ export default function AdminUserManagement() {
     })
   }, [filterStatus, filterUserType, searchQuery, users])
 
+  async function loadAllUsers(endpoint: string) {
+    const collectedUsers: AdminUserListItem[] = []
+    let page = 1
+    let totalPages = 1
+
+    while (page <= totalPages) {
+      const separator = endpoint.includes('?') ? '&' : '?'
+      const response = await fetch(`${endpoint}${separator}page=${page}&limit=${ADMIN_USERS_PAGE_SIZE}`)
+      const data: PaginatedAdminUsersResponse = await response.json()
+
+      if (!response.ok || !data.success) {
+        throw new Error('Failed to fetch users')
+      }
+
+      collectedUsers.push(...(data.users || []))
+      totalPages = data.pagination?.totalPages || page
+      page += 1
+    }
+
+    return collectedUsers
+  }
+
   async function fetchUsers() {
     try {
       setLoading(true)
-      const response = await fetch('/api/admin/users')
-      const data = await response.json()
-
-      if (data.success) {
-        setUsers(data.users)
-      }
+      setUsers(await loadAllUsers('/api/admin/users'))
     } finally {
       setLoading(false)
     }
@@ -123,12 +150,7 @@ export default function AdminUserManagement() {
   async function fetchPendingUsers() {
     try {
       setLoading(true)
-      const response = await fetch('/api/admin/users/pending')
-      const data = await response.json()
-
-      if (data.success) {
-        setPendingUsers(data.users)
-      }
+      setPendingUsers(await loadAllUsers('/api/admin/users/pending'))
     } finally {
       setLoading(false)
     }

@@ -9,12 +9,12 @@ import VehicleLookupField from './VehicleLookupField'
 import type {
   DiscountCardDto,
   DiscountCardMeResponseDto,
+  FareCalculationMutationResponseDto,
   FarePolicySnapshotDto,
   VehicleLookupDto,
 } from '@/lib/contracts'
 import { resolveFarePolicySnapshot } from '@/lib/fare/policy'
-import { resolvePinLabel, type ResolvedPinLabel } from '@/lib/locations/pinLabelResolver'
-import { serializePinLabel } from '@/lib/locations/pinSerializer'
+import type { ResolvedPinLabel } from '@/lib/locations/pinLabelResolver'
 import {
   classifyPlannerError,
   getRouteSourceBadge,
@@ -120,15 +120,18 @@ function selectionsEffectivelyEqual(current: PlannerSelection | null, next: Plan
   return pointsEffectivelyEqual(current.point, next.point) && (current.point.label || '') === (next.point.label || '')
 }
 
-function buildPlannerSelectionMetadata(selection: PlannerSelection) {
+function buildFareCalculationPayload(routeResult: RouteResult, vehicle: VehicleLookupDto | null) {
   return {
-    mode: 'pin',
-    source: selection.source,
-    label: selection.point.label || null,
-    lat: selection.point.lat,
-    lng: selection.point.lng,
-    serializedPin: serializePinLabel(selection.point.lat, selection.point.lng),
-    resolved: resolvePinLabel(selection.point.lat, selection.point.lng),
+    fromLocation: routeResult.originLabel,
+    toLocation: routeResult.destinationLabel,
+    distance: routeResult.distanceKm,
+    calculatedFare: routeResult.fare,
+    calculationType: 'Road Route Planner',
+    vehicleId: vehicle?.id || null,
+    discountCardId: routeResult.discountCard?.id || null,
+    originalFare: routeResult.originalFare || null,
+    discountApplied: routeResult.discountApplied || null,
+    discountType: routeResult.discountCard?.discountType || null,
   }
 }
 
@@ -142,15 +145,20 @@ const RoutePlannerCalculator = ({
   const [plannerState, setPlannerState] = useState<PlannerViewState>('placing_points')
   const [routeMessage, setRouteMessage] = useState<string | null>(null)
   const [isCalculating, setIsCalculating] = useState(false)
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saved' | 'failed'>('idle')
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle')
   const [userDiscountCard, setUserDiscountCard] = useState<DiscountCardDto | null>(null)
   const [fitBoundsToken, setFitBoundsToken] = useState(0)
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleLookupDto | null>(null)
+  const [displayedRoutePair, setDisplayedRoutePair] = useState<{
+    origin: PlannerPoint
+    destination: PlannerPoint
+  } | null>(null)
   const { user } = useAuth()
 
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
   const requestSequenceRef = useRef(0)
+  const displayedRouteVersionRef = useRef(0)
   const lastRequestedPairRef = useRef<{
     origin: PlannerPoint
     destination: PlannerPoint
@@ -165,6 +173,16 @@ const RoutePlannerCalculator = ({
     plannerState === 'out_of_service_area' ||
     plannerState === 'no_route_found'
   const regularFare = routeResult?.originalFare || routeResult?.fare || null
+  const hasFreshDisplayedRoute =
+    origin && destination && displayedRoutePair
+      ? routePairEffectivelyEqual(displayedRoutePair, { origin, destination })
+      : false
+  const canSaveDisplayedRoute =
+    Boolean(user) &&
+    Boolean(routeResult) &&
+    hasFreshDisplayedRoute &&
+    !isCalculating &&
+    (plannerState === 'route_ready' || plannerState === 'fallback_estimate')
 
   useEffect(() => {
     const fetchUserDiscountCard = async () => {
@@ -242,11 +260,13 @@ const RoutePlannerCalculator = ({
     }
 
     requestSequenceRef.current += 1
+    displayedRouteVersionRef.current += 1
     lastRequestedPairRef.current = null
     shouldFitNextSuccessRef.current = true
     setOriginSelection(null)
     setDestinationSelection(null)
     setRouteResult(null)
+    setDisplayedRoutePair(null)
     setRouteMessage(null)
     setPlannerState('placing_points')
     setIsCalculating(false)
@@ -343,6 +363,9 @@ const RoutePlannerCalculator = ({
       }
 
       setRouteResult(nextResult)
+      displayedRouteVersionRef.current += 1
+      setDisplayedRoutePair(nextPair)
+      setSaveStatus('idle')
       setPlannerState(nextResult.method === 'gps' ? 'fallback_estimate' : 'route_ready')
       setRouteMessage(
         nextResult.method === 'gps'
@@ -353,50 +376,6 @@ const RoutePlannerCalculator = ({
       if (shouldFitNextSuccessRef.current) {
         setFitBoundsToken((current) => current + 1)
         shouldFitNextSuccessRef.current = false
-      }
-
-      if (originSelection && destinationSelection) {
-        try {
-          const saveResponse = await fetch('/api/fare-calculations', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              fromLocation: nextResult.originLabel,
-              toLocation: nextResult.destinationLabel,
-              distance: nextResult.distanceKm,
-              calculatedFare: nextResult.fare,
-              calculationType: 'Road Route Planner',
-              routeData: {
-                distance: {
-                  kilometers: nextResult.distanceKm,
-                },
-                duration: {
-                  text: nextResult.durationText,
-                },
-                polyline: nextResult.polyline,
-                source: nextResult.sourceBadge,
-                fareBreakdown: nextResult.breakdown,
-                farePolicy: nextResult.farePolicy,
-                planner: {
-                  inputMode: 'pin',
-                  origin: buildPlannerSelectionMetadata(originSelection),
-                  destination: buildPlannerSelectionMetadata(destinationSelection),
-                },
-              },
-              vehicleId: selectedVehicle?.id || null,
-              discountCardId: nextResult.discountCard?.id || null,
-              originalFare: nextResult.originalFare || null,
-              discountApplied: nextResult.discountApplied || null,
-              discountType: nextResult.discountCard?.discountType || null,
-            }),
-          })
-
-          setSaveStatus(saveResponse.ok ? 'saved' : 'failed')
-        } catch {
-          setSaveStatus('failed')
-        }
       }
     } catch (error) {
       if (controller.signal.aborted) {
@@ -418,11 +397,65 @@ const RoutePlannerCalculator = ({
     }
   }
 
+  const saveCurrentRoute = async () => {
+    if (!routeResult || !canSaveDisplayedRoute) {
+      return
+    }
+
+    const displayedRouteVersion = displayedRouteVersionRef.current
+    setSaveStatus('saving')
+
+    try {
+      const response = await fetch('/api/fare-calculations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(buildFareCalculationPayload(routeResult, selectedVehicle)),
+      })
+
+      const data = (await response.json()) as Partial<FareCalculationMutationResponseDto> & {
+        error?: string
+      }
+
+      if (displayedRouteVersion !== displayedRouteVersionRef.current) {
+        return
+      }
+
+      if (!response.ok || !data.success) {
+        setSaveStatus('failed')
+        if (onError) {
+          onError(data.error || 'Unable to save this route right now.')
+        }
+        return
+      }
+
+      setSaveStatus('saved')
+    } catch {
+      if (displayedRouteVersion === displayedRouteVersionRef.current) {
+        setSaveStatus('failed')
+      }
+    }
+  }
+
   const handleMapPointChange = (target: 'origin' | 'destination', point: PlannerPoint) => {
     const nextSelection = buildPinSelection(point)
-    const setSelection = target === 'origin' ? setOriginSelection : setDestinationSelection
+    const currentSelection = target === 'origin' ? originSelection : destinationSelection
 
-    setSelection((current) => (selectionsEffectivelyEqual(current, nextSelection) ? current : nextSelection))
+    if (selectionsEffectivelyEqual(currentSelection, nextSelection)) {
+      return
+    }
+
+    displayedRouteVersionRef.current += 1
+    setDisplayedRoutePair(null)
+    setSaveStatus('idle')
+
+    if (target === 'origin') {
+      setOriginSelection(nextSelection)
+      return
+    }
+
+    setDestinationSelection(nextSelection)
   }
 
   return (
@@ -432,7 +465,7 @@ const RoutePlannerCalculator = ({
           <section className="app-surface-card-strong rounded-[2rem] border border-slate-200/80 p-3 sm:p-4">
             <div className="max-w-md rounded-[1.5rem] border border-slate-200 bg-white p-2 shadow-sm">
               <VehicleLookupField
-                label="Optional: search by BPLO-issued plate number"
+                label="Optional: Search by plate number (BPLO-issued)"
                 placeholder="Search"
                 selectedVehicle={selectedVehicle}
                 onSelect={(vehicle) => setSelectedVehicle(vehicle)}
@@ -522,18 +555,10 @@ const RoutePlannerCalculator = ({
                       <p className="mt-1 text-2xl font-bold text-emerald-700">{formatCurrency(routeResult.fare)}</p>
                     </div>
                     {routeResult.discountApplied ? (
-                      <>
-                        <div className="bg-slate-50 px-4 py-3">
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Discount</p>
-                          <p className="mt-1 text-2xl font-bold text-emerald-700">-{formatCurrency(routeResult.discountApplied)}</p>
-                        </div>
-                        <div className="bg-slate-50 px-4 py-3">
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Save</p>
-                          <p className="mt-1 text-sm font-medium text-slate-700">
-                            {saveStatus === 'saved' ? 'Saved to history' : saveStatus === 'failed' ? 'Save failed' : 'Saving'}
-                          </p>
-                        </div>
-                      </>
+                      <div className="bg-slate-50 px-4 py-3">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Discount</p>
+                        <p className="mt-1 text-2xl font-bold text-emerald-700">-{formatCurrency(routeResult.discountApplied)}</p>
+                      </div>
                     ) : null}
                   </div>
 
@@ -545,11 +570,28 @@ const RoutePlannerCalculator = ({
 
                   <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 px-4 py-3 sm:px-5">
                     <div className="text-xs text-slate-500">
-                      {saveStatus === 'saved' && 'Saved to fare history.'}
-                      {saveStatus === 'failed' && 'Unable to save this route right now.'}
-                      {saveStatus === 'idle' && 'Ready'}
+                      {!user && 'Log in to save this route to your history.'}
+                      {user && saveStatus === 'saved' && 'Saved to fare history.'}
+                      {user && saveStatus === 'failed' && 'Unable to save this route right now.'}
+                      {user && saveStatus === 'saving' && 'Saving to fare history...'}
+                      {user && saveStatus === 'idle' && canSaveDisplayedRoute && 'This result is not yet saved.'}
+                      {user && saveStatus === 'idle' && !canSaveDisplayedRoute && 'Resolve the current route before saving.'}
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => void saveCurrentRoute()}
+                        disabled={!canSaveDisplayedRoute || saveStatus === 'saving' || saveStatus === 'saved'}
+                        className="rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-emerald-300"
+                      >
+                        {!user
+                          ? 'Log in to save'
+                          : saveStatus === 'saved'
+                            ? 'Saved'
+                            : saveStatus === 'saving'
+                              ? 'Saving...'
+                              : 'Save to history'}
+                      </button>
                       <button
                         type="button"
                         onClick={refitRoute}

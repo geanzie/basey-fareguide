@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { buildPaginationMetadata, parsePaginationParams } from '@/lib/api/pagination'
 import { prisma } from '@/lib/prisma'
 import { ADMIN_ONLY, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
 
@@ -12,8 +13,10 @@ export async function GET(request: NextRequest) {
 
     // Get query parameters
     const { searchParams } = new URL(request.url)
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '50')
+    const pagination = parsePaginationParams(searchParams, {
+      defaultLimit: 50,
+      maxLimit: 100,
+    })
     const discountType = searchParams.get('discountType') || undefined
     const verificationStatus = searchParams.get('verificationStatus') || undefined
     const isActive = searchParams.get('isActive')
@@ -53,16 +56,13 @@ export async function GET(request: NextRequest) {
       ]
     }
 
-    // Calculate pagination
-    const skip = (page - 1) * limit
-
     // Fetch discount cards (this will work after migration)
     // @ts-ignore - Will be available after migration
     const [discountCards, totalCount] = await Promise.all([
       prisma.discountCard.findMany({
         where,
-        skip,
-        take: limit,
+        skip: pagination.skip,
+        take: pagination.limit,
         include: {
           user: {
             select: {
@@ -75,26 +75,24 @@ export async function GET(request: NextRequest) {
             }
           }
         },
-        orderBy: {
-          createdAt: 'desc'
-        }
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }]
       }),
       // @ts-ignore
       prisma.discountCard.count({ where })
     ])
 
-    const totalPages = Math.ceil(totalCount / limit)
+    const paginationMetadata = buildPaginationMetadata(pagination, totalCount)
 
     return NextResponse.json({
       success: true,
       discountCards,
       pagination: {
-        page,
-        limit,
+        page: paginationMetadata.page,
+        limit: paginationMetadata.limit,
         totalCount,
-        totalPages,
-        hasNext: page < totalPages,
-        hasPrev: page > 1
+        totalPages: paginationMetadata.totalPages,
+        hasNext: paginationMetadata.page < paginationMetadata.totalPages,
+        hasPrev: paginationMetadata.page > 1
       },
       filters: {
         discountType,

@@ -1,0 +1,1668 @@
+{
+  "summary": {
+    "slice": "legacy-shells-1",
+    "schema": "public",
+    "tableCount": 12,
+    "totalRows": 0,
+    "totalSizeBytes": 540672,
+    "externalInboundForeignKeyCount": 0,
+    "dropOrder": [
+      "authtoken_token",
+      "dispatch_driveravailability",
+      "dispatch_driverlocation",
+      "dispatch_tripassignment",
+      "django_session",
+      "trips_cancellation",
+      "trips_ratingreview",
+      "users_discountusagelog",
+      "users_incident",
+      "dispatch_dispatchoffer",
+      "dispatch_drivervehicle",
+      "dispatch_driverprofile"
+    ]
+  },
+  "report": {
+    "generatedAt": "2026-04-10T00:33:37.771Z",
+    "schema": "public",
+    "slice": {
+      "name": "legacy-shells-1",
+      "description": "First low-risk slice: empty or superseded legacy shells with no live runtime dependency.",
+      "tables": [
+        "authtoken_token",
+        "dispatch_dispatchoffer",
+        "dispatch_driveravailability",
+        "dispatch_driverlocation",
+        "dispatch_driverprofile",
+        "dispatch_drivervehicle",
+        "dispatch_tripassignment",
+        "django_session",
+        "trips_cancellation",
+        "trips_ratingreview",
+        "users_discountusagelog",
+        "users_incident"
+      ]
+    },
+    "tables": [
+      {
+        "table_name": "authtoken_token",
+        "row_count": 0,
+        "total_size_bytes": 24576
+      },
+      {
+        "table_name": "dispatch_dispatchoffer",
+        "row_count": 0,
+        "total_size_bytes": 49152
+      },
+      {
+        "table_name": "dispatch_driveravailability",
+        "row_count": 0,
+        "total_size_bytes": 40960
+      },
+      {
+        "table_name": "dispatch_driverlocation",
+        "row_count": 0,
+        "total_size_bytes": 32768
+      },
+      {
+        "table_name": "dispatch_driverprofile",
+        "row_count": 0,
+        "total_size_bytes": 57344
+      },
+      {
+        "table_name": "dispatch_drivervehicle",
+        "row_count": 0,
+        "total_size_bytes": 32768
+      },
+      {
+        "table_name": "dispatch_tripassignment",
+        "row_count": 0,
+        "total_size_bytes": 40960
+      },
+      {
+        "table_name": "django_session",
+        "row_count": 0,
+        "total_size_bytes": 32768
+      },
+      {
+        "table_name": "trips_cancellation",
+        "row_count": 0,
+        "total_size_bytes": 32768
+      },
+      {
+        "table_name": "trips_ratingreview",
+        "row_count": 0,
+        "total_size_bytes": 40960
+      },
+      {
+        "table_name": "users_discountusagelog",
+        "row_count": 0,
+        "total_size_bytes": 40960
+      },
+      {
+        "table_name": "users_incident",
+        "row_count": 0,
+        "total_size_bytes": 114688
+      }
+    ],
+    "columns": [
+      {
+        "table_name": "authtoken_token",
+        "ordinal_position": 1,
+        "column_name": "key",
+        "formatted_type": "character varying(40)",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "authtoken_token",
+        "ordinal_position": 2,
+        "column_name": "created",
+        "formatted_type": "timestamp with time zone",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "authtoken_token",
+        "ordinal_position": 3,
+        "column_name": "user_id",
+        "formatted_type": "bigint",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_dispatchoffer",
+        "ordinal_position": 1,
+        "column_name": "id",
+        "formatted_type": "bigint",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_dispatchoffer",
+        "ordinal_position": 2,
+        "column_name": "status",
+        "formatted_type": "character varying(20)",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_dispatchoffer",
+        "ordinal_position": 3,
+        "column_name": "offered_at",
+        "formatted_type": "timestamp with time zone",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_dispatchoffer",
+        "ordinal_position": 4,
+        "column_name": "expires_at",
+        "formatted_type": "timestamp with time zone",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_dispatchoffer",
+        "ordinal_position": 5,
+        "column_name": "responded_at",
+        "formatted_type": "timestamp with time zone",
+        "is_nullable": true,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_dispatchoffer",
+        "ordinal_position": 6,
+        "column_name": "trip_id",
+        "formatted_type": "bigint",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_dispatchoffer",
+        "ordinal_position": 7,
+        "column_name": "driver_id",
+        "formatted_type": "bigint",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_driveravailability",
+        "ordinal_position": 1,
+        "column_name": "id",
+        "formatted_type": "bigint",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_driveravailability",
+        "ordinal_position": 2,
+        "column_name": "status",
+        "formatted_type": "character varying(20)",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_driveravailability",
+        "ordinal_position": 3,
+        "column_name": "updated_at",
+        "formatted_type": "timestamp with time zone",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_driveravailability",
+        "ordinal_position": 4,
+        "column_name": "current_trip_id",
+        "formatted_type": "bigint",
+        "is_nullable": true,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_driveravailability",
+        "ordinal_position": 5,
+        "column_name": "driver_id",
+        "formatted_type": "bigint",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_driverlocation",
+        "ordinal_position": 1,
+        "column_name": "id",
+        "formatted_type": "bigint",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_driverlocation",
+        "ordinal_position": 4,
+        "column_name": "heading",
+        "formatted_type": "double precision",
+        "is_nullable": true,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_driverlocation",
+        "ordinal_position": 5,
+        "column_name": "speed_kmh",
+        "formatted_type": "double precision",
+        "is_nullable": true,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_driverlocation",
+        "ordinal_position": 6,
+        "column_name": "recorded_at",
+        "formatted_type": "timestamp with time zone",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_driverlocation",
+        "ordinal_position": 7,
+        "column_name": "position",
+        "formatted_type": "geography(Point,4326)",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_driverlocation",
+        "ordinal_position": 8,
+        "column_name": "driver_id",
+        "formatted_type": "bigint",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_driverprofile",
+        "ordinal_position": 1,
+        "column_name": "id",
+        "formatted_type": "bigint",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_driverprofile",
+        "ordinal_position": 2,
+        "column_name": "license_number",
+        "formatted_type": "character varying(50)",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_driverprofile",
+        "ordinal_position": 3,
+        "column_name": "license_expiry",
+        "formatted_type": "date",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_driverprofile",
+        "ordinal_position": 4,
+        "column_name": "operator_permit",
+        "formatted_type": "character varying(100)",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_driverprofile",
+        "ordinal_position": 5,
+        "column_name": "verification_status",
+        "formatted_type": "character varying(20)",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_driverprofile",
+        "ordinal_position": 6,
+        "column_name": "verified_at",
+        "formatted_type": "timestamp with time zone",
+        "is_nullable": true,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_driverprofile",
+        "ordinal_position": 7,
+        "column_name": "is_available",
+        "formatted_type": "boolean",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_driverprofile",
+        "ordinal_position": 8,
+        "column_name": "last_seen_at",
+        "formatted_type": "timestamp with time zone",
+        "is_nullable": true,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_driverprofile",
+        "ordinal_position": 9,
+        "column_name": "created_at",
+        "formatted_type": "timestamp with time zone",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_driverprofile",
+        "ordinal_position": 10,
+        "column_name": "updated_at",
+        "formatted_type": "timestamp with time zone",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_driverprofile",
+        "ordinal_position": 11,
+        "column_name": "user_id",
+        "formatted_type": "bigint",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_driverprofile",
+        "ordinal_position": 12,
+        "column_name": "verified_by_id",
+        "formatted_type": "bigint",
+        "is_nullable": true,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_drivervehicle",
+        "ordinal_position": 1,
+        "column_name": "id",
+        "formatted_type": "bigint",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_drivervehicle",
+        "ordinal_position": 2,
+        "column_name": "plate_number",
+        "formatted_type": "character varying(20)",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_drivervehicle",
+        "ordinal_position": 3,
+        "column_name": "transport_type",
+        "formatted_type": "character varying(20)",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_drivervehicle",
+        "ordinal_position": 4,
+        "column_name": "model",
+        "formatted_type": "character varying(100)",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_drivervehicle",
+        "ordinal_position": 5,
+        "column_name": "color",
+        "formatted_type": "character varying(50)",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_drivervehicle",
+        "ordinal_position": 6,
+        "column_name": "year",
+        "formatted_type": "smallint",
+        "is_nullable": true,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_drivervehicle",
+        "ordinal_position": 7,
+        "column_name": "is_primary",
+        "formatted_type": "boolean",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_drivervehicle",
+        "ordinal_position": 8,
+        "column_name": "registration_expiry",
+        "formatted_type": "date",
+        "is_nullable": true,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_drivervehicle",
+        "ordinal_position": 9,
+        "column_name": "is_active",
+        "formatted_type": "boolean",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_drivervehicle",
+        "ordinal_position": 10,
+        "column_name": "driver_id",
+        "formatted_type": "bigint",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_tripassignment",
+        "ordinal_position": 1,
+        "column_name": "id",
+        "formatted_type": "bigint",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_tripassignment",
+        "ordinal_position": 2,
+        "column_name": "assigned_at",
+        "formatted_type": "timestamp with time zone",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_tripassignment",
+        "ordinal_position": 3,
+        "column_name": "accepted_offer_id",
+        "formatted_type": "bigint",
+        "is_nullable": true,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_tripassignment",
+        "ordinal_position": 4,
+        "column_name": "driver_id",
+        "formatted_type": "bigint",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_tripassignment",
+        "ordinal_position": 5,
+        "column_name": "trip_id",
+        "formatted_type": "bigint",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "dispatch_tripassignment",
+        "ordinal_position": 6,
+        "column_name": "vehicle_id",
+        "formatted_type": "bigint",
+        "is_nullable": true,
+        "default_expression": null
+      },
+      {
+        "table_name": "django_session",
+        "ordinal_position": 1,
+        "column_name": "session_key",
+        "formatted_type": "character varying(40)",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "django_session",
+        "ordinal_position": 2,
+        "column_name": "session_data",
+        "formatted_type": "text",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "django_session",
+        "ordinal_position": 3,
+        "column_name": "expire_date",
+        "formatted_type": "timestamp with time zone",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "trips_cancellation",
+        "ordinal_position": 1,
+        "column_name": "id",
+        "formatted_type": "bigint",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "trips_cancellation",
+        "ordinal_position": 2,
+        "column_name": "reason_code",
+        "formatted_type": "character varying(30)",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "trips_cancellation",
+        "ordinal_position": 3,
+        "column_name": "reason_text",
+        "formatted_type": "text",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "trips_cancellation",
+        "ordinal_position": 4,
+        "column_name": "created_at",
+        "formatted_type": "timestamp with time zone",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "trips_cancellation",
+        "ordinal_position": 5,
+        "column_name": "canceled_by_id",
+        "formatted_type": "bigint",
+        "is_nullable": true,
+        "default_expression": null
+      },
+      {
+        "table_name": "trips_cancellation",
+        "ordinal_position": 6,
+        "column_name": "trip_id",
+        "formatted_type": "bigint",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "trips_ratingreview",
+        "ordinal_position": 1,
+        "column_name": "id",
+        "formatted_type": "bigint",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "trips_ratingreview",
+        "ordinal_position": 2,
+        "column_name": "rating",
+        "formatted_type": "smallint",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "trips_ratingreview",
+        "ordinal_position": 3,
+        "column_name": "comment",
+        "formatted_type": "text",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "trips_ratingreview",
+        "ordinal_position": 4,
+        "column_name": "created_at",
+        "formatted_type": "timestamp with time zone",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "trips_ratingreview",
+        "ordinal_position": 5,
+        "column_name": "ratee_id",
+        "formatted_type": "bigint",
+        "is_nullable": true,
+        "default_expression": null
+      },
+      {
+        "table_name": "trips_ratingreview",
+        "ordinal_position": 6,
+        "column_name": "rater_id",
+        "formatted_type": "bigint",
+        "is_nullable": true,
+        "default_expression": null
+      },
+      {
+        "table_name": "trips_ratingreview",
+        "ordinal_position": 7,
+        "column_name": "trip_id",
+        "formatted_type": "bigint",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "users_discountusagelog",
+        "ordinal_position": 1,
+        "column_name": "id",
+        "formatted_type": "bigint",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "users_discountusagelog",
+        "ordinal_position": 2,
+        "column_name": "used_amount",
+        "formatted_type": "numeric(8,2)",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "users_discountusagelog",
+        "ordinal_position": 3,
+        "column_name": "original_fare",
+        "formatted_type": "numeric(8,2)",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "users_discountusagelog",
+        "ordinal_position": 4,
+        "column_name": "discounted_fare",
+        "formatted_type": "numeric(8,2)",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "users_discountusagelog",
+        "ordinal_position": 5,
+        "column_name": "discount_rate",
+        "formatted_type": "numeric(4,2)",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "users_discountusagelog",
+        "ordinal_position": 6,
+        "column_name": "from_location",
+        "formatted_type": "character varying(200)",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "users_discountusagelog",
+        "ordinal_position": 7,
+        "column_name": "to_location",
+        "formatted_type": "character varying(200)",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "users_discountusagelog",
+        "ordinal_position": 8,
+        "column_name": "distance",
+        "formatted_type": "numeric(8,2)",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "users_discountusagelog",
+        "ordinal_position": 9,
+        "column_name": "ip_address",
+        "formatted_type": "inet",
+        "is_nullable": true,
+        "default_expression": null
+      },
+      {
+        "table_name": "users_discountusagelog",
+        "ordinal_position": 10,
+        "column_name": "gps_coordinates",
+        "formatted_type": "jsonb",
+        "is_nullable": true,
+        "default_expression": null
+      },
+      {
+        "table_name": "users_discountusagelog",
+        "ordinal_position": 11,
+        "column_name": "created_at",
+        "formatted_type": "timestamp with time zone",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "users_discountusagelog",
+        "ordinal_position": 12,
+        "column_name": "discount_card_id",
+        "formatted_type": "bigint",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "users_incident",
+        "ordinal_position": 1,
+        "column_name": "id",
+        "formatted_type": "bigint",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "users_incident",
+        "ordinal_position": 2,
+        "column_name": "incident_type",
+        "formatted_type": "character varying(30)",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "users_incident",
+        "ordinal_position": 3,
+        "column_name": "description",
+        "formatted_type": "text",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "users_incident",
+        "ordinal_position": 4,
+        "column_name": "location",
+        "formatted_type": "character varying(500)",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "users_incident",
+        "ordinal_position": 5,
+        "column_name": "gps_coordinates",
+        "formatted_type": "jsonb",
+        "is_nullable": true,
+        "default_expression": null
+      },
+      {
+        "table_name": "users_incident",
+        "ordinal_position": 6,
+        "column_name": "vehicle_info",
+        "formatted_type": "jsonb",
+        "is_nullable": true,
+        "default_expression": null
+      },
+      {
+        "table_name": "users_incident",
+        "ordinal_position": 7,
+        "column_name": "evidence_files",
+        "formatted_type": "jsonb",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "users_incident",
+        "ordinal_position": 8,
+        "column_name": "status",
+        "formatted_type": "character varying(20)",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "users_incident",
+        "ordinal_position": 9,
+        "column_name": "priority",
+        "formatted_type": "character varying(20)",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "users_incident",
+        "ordinal_position": 10,
+        "column_name": "admin_notes",
+        "formatted_type": "text",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "users_incident",
+        "ordinal_position": 11,
+        "column_name": "resolved_at",
+        "formatted_type": "timestamp with time zone",
+        "is_nullable": true,
+        "default_expression": null
+      },
+      {
+        "table_name": "users_incident",
+        "ordinal_position": 12,
+        "column_name": "created_at",
+        "formatted_type": "timestamp with time zone",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "users_incident",
+        "ordinal_position": 13,
+        "column_name": "updated_at",
+        "formatted_type": "timestamp with time zone",
+        "is_nullable": false,
+        "default_expression": null
+      },
+      {
+        "table_name": "users_incident",
+        "ordinal_position": 14,
+        "column_name": "resolved_by_id",
+        "formatted_type": "bigint",
+        "is_nullable": true,
+        "default_expression": null
+      },
+      {
+        "table_name": "users_incident",
+        "ordinal_position": 15,
+        "column_name": "user_id",
+        "formatted_type": "bigint",
+        "is_nullable": true,
+        "default_expression": null
+      }
+    ],
+    "constraints": [
+      {
+        "table_name": "authtoken_token",
+        "constraint_name": "authtoken_token_pkey",
+        "constraint_type": "p",
+        "definition": "PRIMARY KEY (key)"
+      },
+      {
+        "table_name": "authtoken_token",
+        "constraint_name": "authtoken_token_user_id_35299eff_fk_users_user_id",
+        "constraint_type": "f",
+        "definition": "FOREIGN KEY (user_id) REFERENCES users_user(id) DEFERRABLE INITIALLY DEFERRED"
+      },
+      {
+        "table_name": "authtoken_token",
+        "constraint_name": "authtoken_token_user_id_key",
+        "constraint_type": "u",
+        "definition": "UNIQUE (user_id)"
+      },
+      {
+        "table_name": "dispatch_dispatchoffer",
+        "constraint_name": "dispatch_dispatchoff_driver_id_2cc5f6ce_fk_dispatch_",
+        "constraint_type": "f",
+        "definition": "FOREIGN KEY (driver_id) REFERENCES dispatch_driverprofile(id) DEFERRABLE INITIALLY DEFERRED"
+      },
+      {
+        "table_name": "dispatch_dispatchoffer",
+        "constraint_name": "dispatch_dispatchoffer_pkey",
+        "constraint_type": "p",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "table_name": "dispatch_dispatchoffer",
+        "constraint_name": "dispatch_dispatchoffer_trip_id_cbf8835f_fk_trips_trip_id",
+        "constraint_type": "f",
+        "definition": "FOREIGN KEY (trip_id) REFERENCES trips_trip(id) DEFERRABLE INITIALLY DEFERRED"
+      },
+      {
+        "table_name": "dispatch_dispatchoffer",
+        "constraint_name": "dispatch_dispatchoffer_trip_id_driver_id_0dc74f8e_uniq",
+        "constraint_type": "u",
+        "definition": "UNIQUE (trip_id, driver_id)"
+      },
+      {
+        "table_name": "dispatch_driveravailability",
+        "constraint_name": "dispatch_driveravail_current_trip_id_87239ef3_fk_trips_tri",
+        "constraint_type": "f",
+        "definition": "FOREIGN KEY (current_trip_id) REFERENCES trips_trip(id) DEFERRABLE INITIALLY DEFERRED"
+      },
+      {
+        "table_name": "dispatch_driveravailability",
+        "constraint_name": "dispatch_driveravail_driver_id_25e809cb_fk_dispatch_",
+        "constraint_type": "f",
+        "definition": "FOREIGN KEY (driver_id) REFERENCES dispatch_driverprofile(id) DEFERRABLE INITIALLY DEFERRED"
+      },
+      {
+        "table_name": "dispatch_driveravailability",
+        "constraint_name": "dispatch_driveravailability_driver_id_key",
+        "constraint_type": "u",
+        "definition": "UNIQUE (driver_id)"
+      },
+      {
+        "table_name": "dispatch_driveravailability",
+        "constraint_name": "dispatch_driveravailability_pkey",
+        "constraint_type": "p",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "table_name": "dispatch_driverlocation",
+        "constraint_name": "dispatch_driverlocat_driver_id_3a7a30e7_fk_dispatch_",
+        "constraint_type": "f",
+        "definition": "FOREIGN KEY (driver_id) REFERENCES dispatch_driverprofile(id) DEFERRABLE INITIALLY DEFERRED"
+      },
+      {
+        "table_name": "dispatch_driverlocation",
+        "constraint_name": "dispatch_driverlocation_driver_id_key",
+        "constraint_type": "u",
+        "definition": "UNIQUE (driver_id)"
+      },
+      {
+        "table_name": "dispatch_driverlocation",
+        "constraint_name": "dispatch_driverlocation_pkey",
+        "constraint_type": "p",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "table_name": "dispatch_driverprofile",
+        "constraint_name": "dispatch_driverprofile_license_number_key",
+        "constraint_type": "u",
+        "definition": "UNIQUE (license_number)"
+      },
+      {
+        "table_name": "dispatch_driverprofile",
+        "constraint_name": "dispatch_driverprofile_pkey",
+        "constraint_type": "p",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "table_name": "dispatch_driverprofile",
+        "constraint_name": "dispatch_driverprofile_user_id_698a7187_fk_users_user_id",
+        "constraint_type": "f",
+        "definition": "FOREIGN KEY (user_id) REFERENCES users_user(id) DEFERRABLE INITIALLY DEFERRED"
+      },
+      {
+        "table_name": "dispatch_driverprofile",
+        "constraint_name": "dispatch_driverprofile_user_id_key",
+        "constraint_type": "u",
+        "definition": "UNIQUE (user_id)"
+      },
+      {
+        "table_name": "dispatch_driverprofile",
+        "constraint_name": "dispatch_driverprofile_verified_by_id_9942dbde_fk_users_user_id",
+        "constraint_type": "f",
+        "definition": "FOREIGN KEY (verified_by_id) REFERENCES users_user(id) DEFERRABLE INITIALLY DEFERRED"
+      },
+      {
+        "table_name": "dispatch_drivervehicle",
+        "constraint_name": "dispatch_drivervehic_driver_id_158b0f7f_fk_dispatch_",
+        "constraint_type": "f",
+        "definition": "FOREIGN KEY (driver_id) REFERENCES dispatch_driverprofile(id) DEFERRABLE INITIALLY DEFERRED"
+      },
+      {
+        "table_name": "dispatch_drivervehicle",
+        "constraint_name": "dispatch_drivervehicle_pkey",
+        "constraint_type": "p",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "table_name": "dispatch_drivervehicle",
+        "constraint_name": "dispatch_drivervehicle_plate_number_key",
+        "constraint_type": "u",
+        "definition": "UNIQUE (plate_number)"
+      },
+      {
+        "table_name": "dispatch_drivervehicle",
+        "constraint_name": "dispatch_drivervehicle_year_check",
+        "constraint_type": "c",
+        "definition": "CHECK (year >= 0)"
+      },
+      {
+        "table_name": "dispatch_tripassignment",
+        "constraint_name": "dispatch_tripassignm_accepted_offer_id_6978c1f5_fk_dispatch_",
+        "constraint_type": "f",
+        "definition": "FOREIGN KEY (accepted_offer_id) REFERENCES dispatch_dispatchoffer(id) DEFERRABLE INITIALLY DEFERRED"
+      },
+      {
+        "table_name": "dispatch_tripassignment",
+        "constraint_name": "dispatch_tripassignm_driver_id_07188ef9_fk_dispatch_",
+        "constraint_type": "f",
+        "definition": "FOREIGN KEY (driver_id) REFERENCES dispatch_driverprofile(id) DEFERRABLE INITIALLY DEFERRED"
+      },
+      {
+        "table_name": "dispatch_tripassignment",
+        "constraint_name": "dispatch_tripassignm_vehicle_id_8066abeb_fk_dispatch_",
+        "constraint_type": "f",
+        "definition": "FOREIGN KEY (vehicle_id) REFERENCES dispatch_drivervehicle(id) DEFERRABLE INITIALLY DEFERRED"
+      },
+      {
+        "table_name": "dispatch_tripassignment",
+        "constraint_name": "dispatch_tripassignment_pkey",
+        "constraint_type": "p",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "table_name": "dispatch_tripassignment",
+        "constraint_name": "dispatch_tripassignment_trip_id_de7cd365_fk_trips_trip_id",
+        "constraint_type": "f",
+        "definition": "FOREIGN KEY (trip_id) REFERENCES trips_trip(id) DEFERRABLE INITIALLY DEFERRED"
+      },
+      {
+        "table_name": "dispatch_tripassignment",
+        "constraint_name": "dispatch_tripassignment_trip_id_key",
+        "constraint_type": "u",
+        "definition": "UNIQUE (trip_id)"
+      },
+      {
+        "table_name": "django_session",
+        "constraint_name": "django_session_pkey",
+        "constraint_type": "p",
+        "definition": "PRIMARY KEY (session_key)"
+      },
+      {
+        "table_name": "trips_cancellation",
+        "constraint_name": "trips_cancellation_canceled_by_id_dfb4951a_fk_users_user_id",
+        "constraint_type": "f",
+        "definition": "FOREIGN KEY (canceled_by_id) REFERENCES users_user(id) DEFERRABLE INITIALLY DEFERRED"
+      },
+      {
+        "table_name": "trips_cancellation",
+        "constraint_name": "trips_cancellation_pkey",
+        "constraint_type": "p",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "table_name": "trips_cancellation",
+        "constraint_name": "trips_cancellation_trip_id_a57e1fea_fk_trips_trip_id",
+        "constraint_type": "f",
+        "definition": "FOREIGN KEY (trip_id) REFERENCES trips_trip(id) DEFERRABLE INITIALLY DEFERRED"
+      },
+      {
+        "table_name": "trips_cancellation",
+        "constraint_name": "trips_cancellation_trip_id_key",
+        "constraint_type": "u",
+        "definition": "UNIQUE (trip_id)"
+      },
+      {
+        "table_name": "trips_ratingreview",
+        "constraint_name": "rating_1_to_5",
+        "constraint_type": "c",
+        "definition": "CHECK (rating >= 1 AND rating <= 5)"
+      },
+      {
+        "table_name": "trips_ratingreview",
+        "constraint_name": "trips_ratingreview_pkey",
+        "constraint_type": "p",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "table_name": "trips_ratingreview",
+        "constraint_name": "trips_ratingreview_ratee_id_b39f7a6b_fk_users_user_id",
+        "constraint_type": "f",
+        "definition": "FOREIGN KEY (ratee_id) REFERENCES users_user(id) DEFERRABLE INITIALLY DEFERRED"
+      },
+      {
+        "table_name": "trips_ratingreview",
+        "constraint_name": "trips_ratingreview_rater_id_5ab36ded_fk_users_user_id",
+        "constraint_type": "f",
+        "definition": "FOREIGN KEY (rater_id) REFERENCES users_user(id) DEFERRABLE INITIALLY DEFERRED"
+      },
+      {
+        "table_name": "trips_ratingreview",
+        "constraint_name": "trips_ratingreview_rating_check",
+        "constraint_type": "c",
+        "definition": "CHECK (rating >= 0)"
+      },
+      {
+        "table_name": "trips_ratingreview",
+        "constraint_name": "trips_ratingreview_trip_id_38c9fd79_fk_trips_trip_id",
+        "constraint_type": "f",
+        "definition": "FOREIGN KEY (trip_id) REFERENCES trips_trip(id) DEFERRABLE INITIALLY DEFERRED"
+      },
+      {
+        "table_name": "trips_ratingreview",
+        "constraint_name": "trips_ratingreview_trip_id_key",
+        "constraint_type": "u",
+        "definition": "UNIQUE (trip_id)"
+      },
+      {
+        "table_name": "users_discountusagelog",
+        "constraint_name": "users_discountusagel_discount_card_id_7ab255b6_fk_users_dis",
+        "constraint_type": "f",
+        "definition": "FOREIGN KEY (discount_card_id) REFERENCES users_discountcard(id) DEFERRABLE INITIALLY DEFERRED"
+      },
+      {
+        "table_name": "users_discountusagelog",
+        "constraint_name": "users_discountusagelog_pkey",
+        "constraint_type": "p",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "table_name": "users_incident",
+        "constraint_name": "users_incident_pkey",
+        "constraint_type": "p",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "table_name": "users_incident",
+        "constraint_name": "users_incident_resolved_by_id_078e80f3_fk_users_user_id",
+        "constraint_type": "f",
+        "definition": "FOREIGN KEY (resolved_by_id) REFERENCES users_user(id) DEFERRABLE INITIALLY DEFERRED"
+      },
+      {
+        "table_name": "users_incident",
+        "constraint_name": "users_incident_user_id_6a121831_fk_users_user_id",
+        "constraint_type": "f",
+        "definition": "FOREIGN KEY (user_id) REFERENCES users_user(id) DEFERRABLE INITIALLY DEFERRED"
+      }
+    ],
+    "indexes": [
+      {
+        "table_name": "authtoken_token",
+        "index_name": "authtoken_token_key_10f0b77e_like",
+        "index_definition": "CREATE INDEX authtoken_token_key_10f0b77e_like ON public.authtoken_token USING btree (key varchar_pattern_ops)"
+      },
+      {
+        "table_name": "authtoken_token",
+        "index_name": "authtoken_token_pkey",
+        "index_definition": "CREATE UNIQUE INDEX authtoken_token_pkey ON public.authtoken_token USING btree (key)"
+      },
+      {
+        "table_name": "authtoken_token",
+        "index_name": "authtoken_token_user_id_key",
+        "index_definition": "CREATE UNIQUE INDEX authtoken_token_user_id_key ON public.authtoken_token USING btree (user_id)"
+      },
+      {
+        "table_name": "dispatch_dispatchoffer",
+        "index_name": "dispatch_dispatchoffer_driver_id_2cc5f6ce",
+        "index_definition": "CREATE INDEX dispatch_dispatchoffer_driver_id_2cc5f6ce ON public.dispatch_dispatchoffer USING btree (driver_id)"
+      },
+      {
+        "table_name": "dispatch_dispatchoffer",
+        "index_name": "dispatch_dispatchoffer_pkey",
+        "index_definition": "CREATE UNIQUE INDEX dispatch_dispatchoffer_pkey ON public.dispatch_dispatchoffer USING btree (id)"
+      },
+      {
+        "table_name": "dispatch_dispatchoffer",
+        "index_name": "dispatch_dispatchoffer_status_d3884cad",
+        "index_definition": "CREATE INDEX dispatch_dispatchoffer_status_d3884cad ON public.dispatch_dispatchoffer USING btree (status)"
+      },
+      {
+        "table_name": "dispatch_dispatchoffer",
+        "index_name": "dispatch_dispatchoffer_status_d3884cad_like",
+        "index_definition": "CREATE INDEX dispatch_dispatchoffer_status_d3884cad_like ON public.dispatch_dispatchoffer USING btree (status varchar_pattern_ops)"
+      },
+      {
+        "table_name": "dispatch_dispatchoffer",
+        "index_name": "dispatch_dispatchoffer_trip_id_cbf8835f",
+        "index_definition": "CREATE INDEX dispatch_dispatchoffer_trip_id_cbf8835f ON public.dispatch_dispatchoffer USING btree (trip_id)"
+      },
+      {
+        "table_name": "dispatch_dispatchoffer",
+        "index_name": "dispatch_dispatchoffer_trip_id_driver_id_0dc74f8e_uniq",
+        "index_definition": "CREATE UNIQUE INDEX dispatch_dispatchoffer_trip_id_driver_id_0dc74f8e_uniq ON public.dispatch_dispatchoffer USING btree (trip_id, driver_id)"
+      },
+      {
+        "table_name": "dispatch_driveravailability",
+        "index_name": "dispatch_driveravailability_current_trip_id_87239ef3",
+        "index_definition": "CREATE INDEX dispatch_driveravailability_current_trip_id_87239ef3 ON public.dispatch_driveravailability USING btree (current_trip_id)"
+      },
+      {
+        "table_name": "dispatch_driveravailability",
+        "index_name": "dispatch_driveravailability_driver_id_key",
+        "index_definition": "CREATE UNIQUE INDEX dispatch_driveravailability_driver_id_key ON public.dispatch_driveravailability USING btree (driver_id)"
+      },
+      {
+        "table_name": "dispatch_driveravailability",
+        "index_name": "dispatch_driveravailability_pkey",
+        "index_definition": "CREATE UNIQUE INDEX dispatch_driveravailability_pkey ON public.dispatch_driveravailability USING btree (id)"
+      },
+      {
+        "table_name": "dispatch_driveravailability",
+        "index_name": "dispatch_driveravailability_status_ef41712e",
+        "index_definition": "CREATE INDEX dispatch_driveravailability_status_ef41712e ON public.dispatch_driveravailability USING btree (status)"
+      },
+      {
+        "table_name": "dispatch_driveravailability",
+        "index_name": "dispatch_driveravailability_status_ef41712e_like",
+        "index_definition": "CREATE INDEX dispatch_driveravailability_status_ef41712e_like ON public.dispatch_driveravailability USING btree (status varchar_pattern_ops)"
+      },
+      {
+        "table_name": "dispatch_driverlocation",
+        "index_name": "dispatch_driverlocation_driver_id_key",
+        "index_definition": "CREATE UNIQUE INDEX dispatch_driverlocation_driver_id_key ON public.dispatch_driverlocation USING btree (driver_id)"
+      },
+      {
+        "table_name": "dispatch_driverlocation",
+        "index_name": "dispatch_driverlocation_pkey",
+        "index_definition": "CREATE UNIQUE INDEX dispatch_driverlocation_pkey ON public.dispatch_driverlocation USING btree (id)"
+      },
+      {
+        "table_name": "dispatch_driverlocation",
+        "index_name": "dispatch_driverlocation_position_58069c54_id",
+        "index_definition": "CREATE INDEX dispatch_driverlocation_position_58069c54_id ON public.dispatch_driverlocation USING gist (\"position\")"
+      },
+      {
+        "table_name": "dispatch_driverprofile",
+        "index_name": "dispatch_driverprofile_license_number_82473058_like",
+        "index_definition": "CREATE INDEX dispatch_driverprofile_license_number_82473058_like ON public.dispatch_driverprofile USING btree (license_number varchar_pattern_ops)"
+      },
+      {
+        "table_name": "dispatch_driverprofile",
+        "index_name": "dispatch_driverprofile_license_number_key",
+        "index_definition": "CREATE UNIQUE INDEX dispatch_driverprofile_license_number_key ON public.dispatch_driverprofile USING btree (license_number)"
+      },
+      {
+        "table_name": "dispatch_driverprofile",
+        "index_name": "dispatch_driverprofile_pkey",
+        "index_definition": "CREATE UNIQUE INDEX dispatch_driverprofile_pkey ON public.dispatch_driverprofile USING btree (id)"
+      },
+      {
+        "table_name": "dispatch_driverprofile",
+        "index_name": "dispatch_driverprofile_user_id_key",
+        "index_definition": "CREATE UNIQUE INDEX dispatch_driverprofile_user_id_key ON public.dispatch_driverprofile USING btree (user_id)"
+      },
+      {
+        "table_name": "dispatch_driverprofile",
+        "index_name": "dispatch_driverprofile_verification_status_68141849",
+        "index_definition": "CREATE INDEX dispatch_driverprofile_verification_status_68141849 ON public.dispatch_driverprofile USING btree (verification_status)"
+      },
+      {
+        "table_name": "dispatch_driverprofile",
+        "index_name": "dispatch_driverprofile_verification_status_68141849_like",
+        "index_definition": "CREATE INDEX dispatch_driverprofile_verification_status_68141849_like ON public.dispatch_driverprofile USING btree (verification_status varchar_pattern_ops)"
+      },
+      {
+        "table_name": "dispatch_driverprofile",
+        "index_name": "dispatch_driverprofile_verified_by_id_9942dbde",
+        "index_definition": "CREATE INDEX dispatch_driverprofile_verified_by_id_9942dbde ON public.dispatch_driverprofile USING btree (verified_by_id)"
+      },
+      {
+        "table_name": "dispatch_drivervehicle",
+        "index_name": "dispatch_drivervehicle_driver_id_158b0f7f",
+        "index_definition": "CREATE INDEX dispatch_drivervehicle_driver_id_158b0f7f ON public.dispatch_drivervehicle USING btree (driver_id)"
+      },
+      {
+        "table_name": "dispatch_drivervehicle",
+        "index_name": "dispatch_drivervehicle_pkey",
+        "index_definition": "CREATE UNIQUE INDEX dispatch_drivervehicle_pkey ON public.dispatch_drivervehicle USING btree (id)"
+      },
+      {
+        "table_name": "dispatch_drivervehicle",
+        "index_name": "dispatch_drivervehicle_plate_number_7906cbf5_like",
+        "index_definition": "CREATE INDEX dispatch_drivervehicle_plate_number_7906cbf5_like ON public.dispatch_drivervehicle USING btree (plate_number varchar_pattern_ops)"
+      },
+      {
+        "table_name": "dispatch_drivervehicle",
+        "index_name": "dispatch_drivervehicle_plate_number_key",
+        "index_definition": "CREATE UNIQUE INDEX dispatch_drivervehicle_plate_number_key ON public.dispatch_drivervehicle USING btree (plate_number)"
+      },
+      {
+        "table_name": "dispatch_tripassignment",
+        "index_name": "dispatch_tripassignment_accepted_offer_id_6978c1f5",
+        "index_definition": "CREATE INDEX dispatch_tripassignment_accepted_offer_id_6978c1f5 ON public.dispatch_tripassignment USING btree (accepted_offer_id)"
+      },
+      {
+        "table_name": "dispatch_tripassignment",
+        "index_name": "dispatch_tripassignment_driver_id_07188ef9",
+        "index_definition": "CREATE INDEX dispatch_tripassignment_driver_id_07188ef9 ON public.dispatch_tripassignment USING btree (driver_id)"
+      },
+      {
+        "table_name": "dispatch_tripassignment",
+        "index_name": "dispatch_tripassignment_pkey",
+        "index_definition": "CREATE UNIQUE INDEX dispatch_tripassignment_pkey ON public.dispatch_tripassignment USING btree (id)"
+      },
+      {
+        "table_name": "dispatch_tripassignment",
+        "index_name": "dispatch_tripassignment_trip_id_key",
+        "index_definition": "CREATE UNIQUE INDEX dispatch_tripassignment_trip_id_key ON public.dispatch_tripassignment USING btree (trip_id)"
+      },
+      {
+        "table_name": "dispatch_tripassignment",
+        "index_name": "dispatch_tripassignment_vehicle_id_8066abeb",
+        "index_definition": "CREATE INDEX dispatch_tripassignment_vehicle_id_8066abeb ON public.dispatch_tripassignment USING btree (vehicle_id)"
+      },
+      {
+        "table_name": "django_session",
+        "index_name": "django_session_expire_date_a5c62663",
+        "index_definition": "CREATE INDEX django_session_expire_date_a5c62663 ON public.django_session USING btree (expire_date)"
+      },
+      {
+        "table_name": "django_session",
+        "index_name": "django_session_pkey",
+        "index_definition": "CREATE UNIQUE INDEX django_session_pkey ON public.django_session USING btree (session_key)"
+      },
+      {
+        "table_name": "django_session",
+        "index_name": "django_session_session_key_c0390e0f_like",
+        "index_definition": "CREATE INDEX django_session_session_key_c0390e0f_like ON public.django_session USING btree (session_key varchar_pattern_ops)"
+      },
+      {
+        "table_name": "trips_cancellation",
+        "index_name": "trips_cancellation_canceled_by_id_dfb4951a",
+        "index_definition": "CREATE INDEX trips_cancellation_canceled_by_id_dfb4951a ON public.trips_cancellation USING btree (canceled_by_id)"
+      },
+      {
+        "table_name": "trips_cancellation",
+        "index_name": "trips_cancellation_pkey",
+        "index_definition": "CREATE UNIQUE INDEX trips_cancellation_pkey ON public.trips_cancellation USING btree (id)"
+      },
+      {
+        "table_name": "trips_cancellation",
+        "index_name": "trips_cancellation_trip_id_key",
+        "index_definition": "CREATE UNIQUE INDEX trips_cancellation_trip_id_key ON public.trips_cancellation USING btree (trip_id)"
+      },
+      {
+        "table_name": "trips_ratingreview",
+        "index_name": "trips_ratingreview_pkey",
+        "index_definition": "CREATE UNIQUE INDEX trips_ratingreview_pkey ON public.trips_ratingreview USING btree (id)"
+      },
+      {
+        "table_name": "trips_ratingreview",
+        "index_name": "trips_ratingreview_ratee_id_b39f7a6b",
+        "index_definition": "CREATE INDEX trips_ratingreview_ratee_id_b39f7a6b ON public.trips_ratingreview USING btree (ratee_id)"
+      },
+      {
+        "table_name": "trips_ratingreview",
+        "index_name": "trips_ratingreview_rater_id_5ab36ded",
+        "index_definition": "CREATE INDEX trips_ratingreview_rater_id_5ab36ded ON public.trips_ratingreview USING btree (rater_id)"
+      },
+      {
+        "table_name": "trips_ratingreview",
+        "index_name": "trips_ratingreview_trip_id_key",
+        "index_definition": "CREATE UNIQUE INDEX trips_ratingreview_trip_id_key ON public.trips_ratingreview USING btree (trip_id)"
+      },
+      {
+        "table_name": "users_discountusagelog",
+        "index_name": "users_disco_discoun_b82ba6_idx",
+        "index_definition": "CREATE INDEX users_disco_discoun_b82ba6_idx ON public.users_discountusagelog USING btree (discount_card_id, created_at)"
+      },
+      {
+        "table_name": "users_discountusagelog",
+        "index_name": "users_discountusagelog_created_at_b0d8d2c8",
+        "index_definition": "CREATE INDEX users_discountusagelog_created_at_b0d8d2c8 ON public.users_discountusagelog USING btree (created_at)"
+      },
+      {
+        "table_name": "users_discountusagelog",
+        "index_name": "users_discountusagelog_discount_card_id_7ab255b6",
+        "index_definition": "CREATE INDEX users_discountusagelog_discount_card_id_7ab255b6 ON public.users_discountusagelog USING btree (discount_card_id)"
+      },
+      {
+        "table_name": "users_discountusagelog",
+        "index_name": "users_discountusagelog_pkey",
+        "index_definition": "CREATE UNIQUE INDEX users_discountusagelog_pkey ON public.users_discountusagelog USING btree (id)"
+      },
+      {
+        "table_name": "users_incident",
+        "index_name": "users_incid_inciden_531815_idx",
+        "index_definition": "CREATE INDEX users_incid_inciden_531815_idx ON public.users_incident USING btree (incident_type, status)"
+      },
+      {
+        "table_name": "users_incident",
+        "index_name": "users_incid_status_3d9c48_idx",
+        "index_definition": "CREATE INDEX users_incid_status_3d9c48_idx ON public.users_incident USING btree (status, priority)"
+      },
+      {
+        "table_name": "users_incident",
+        "index_name": "users_incid_user_id_1ecbd2_idx",
+        "index_definition": "CREATE INDEX users_incid_user_id_1ecbd2_idx ON public.users_incident USING btree (user_id, created_at)"
+      },
+      {
+        "table_name": "users_incident",
+        "index_name": "users_incident_created_at_a4ebcb8d",
+        "index_definition": "CREATE INDEX users_incident_created_at_a4ebcb8d ON public.users_incident USING btree (created_at)"
+      },
+      {
+        "table_name": "users_incident",
+        "index_name": "users_incident_incident_type_57ad607c",
+        "index_definition": "CREATE INDEX users_incident_incident_type_57ad607c ON public.users_incident USING btree (incident_type)"
+      },
+      {
+        "table_name": "users_incident",
+        "index_name": "users_incident_incident_type_57ad607c_like",
+        "index_definition": "CREATE INDEX users_incident_incident_type_57ad607c_like ON public.users_incident USING btree (incident_type varchar_pattern_ops)"
+      },
+      {
+        "table_name": "users_incident",
+        "index_name": "users_incident_pkey",
+        "index_definition": "CREATE UNIQUE INDEX users_incident_pkey ON public.users_incident USING btree (id)"
+      },
+      {
+        "table_name": "users_incident",
+        "index_name": "users_incident_priority_15d5e816",
+        "index_definition": "CREATE INDEX users_incident_priority_15d5e816 ON public.users_incident USING btree (priority)"
+      },
+      {
+        "table_name": "users_incident",
+        "index_name": "users_incident_priority_15d5e816_like",
+        "index_definition": "CREATE INDEX users_incident_priority_15d5e816_like ON public.users_incident USING btree (priority varchar_pattern_ops)"
+      },
+      {
+        "table_name": "users_incident",
+        "index_name": "users_incident_resolved_by_id_078e80f3",
+        "index_definition": "CREATE INDEX users_incident_resolved_by_id_078e80f3 ON public.users_incident USING btree (resolved_by_id)"
+      },
+      {
+        "table_name": "users_incident",
+        "index_name": "users_incident_status_fcfc2755",
+        "index_definition": "CREATE INDEX users_incident_status_fcfc2755 ON public.users_incident USING btree (status)"
+      },
+      {
+        "table_name": "users_incident",
+        "index_name": "users_incident_status_fcfc2755_like",
+        "index_definition": "CREATE INDEX users_incident_status_fcfc2755_like ON public.users_incident USING btree (status varchar_pattern_ops)"
+      },
+      {
+        "table_name": "users_incident",
+        "index_name": "users_incident_user_id_6a121831",
+        "index_definition": "CREATE INDEX users_incident_user_id_6a121831 ON public.users_incident USING btree (user_id)"
+      }
+    ],
+    "outboundForeignKeys": [
+      {
+        "table_name": "authtoken_token",
+        "column_name": "user_id",
+        "foreign_table_schema": "public",
+        "foreign_table_name": "users_user",
+        "foreign_column_name": "id",
+        "constraint_name": "authtoken_token_user_id_35299eff_fk_users_user_id"
+      },
+      {
+        "table_name": "dispatch_dispatchoffer",
+        "column_name": "driver_id",
+        "foreign_table_schema": "public",
+        "foreign_table_name": "dispatch_driverprofile",
+        "foreign_column_name": "id",
+        "constraint_name": "dispatch_dispatchoff_driver_id_2cc5f6ce_fk_dispatch_"
+      },
+      {
+        "table_name": "dispatch_dispatchoffer",
+        "column_name": "trip_id",
+        "foreign_table_schema": "public",
+        "foreign_table_name": "trips_trip",
+        "foreign_column_name": "id",
+        "constraint_name": "dispatch_dispatchoffer_trip_id_cbf8835f_fk_trips_trip_id"
+      },
+      {
+        "table_name": "dispatch_driveravailability",
+        "column_name": "current_trip_id",
+        "foreign_table_schema": "public",
+        "foreign_table_name": "trips_trip",
+        "foreign_column_name": "id",
+        "constraint_name": "dispatch_driveravail_current_trip_id_87239ef3_fk_trips_tri"
+      },
+      {
+        "table_name": "dispatch_driveravailability",
+        "column_name": "driver_id",
+        "foreign_table_schema": "public",
+        "foreign_table_name": "dispatch_driverprofile",
+        "foreign_column_name": "id",
+        "constraint_name": "dispatch_driveravail_driver_id_25e809cb_fk_dispatch_"
+      },
+      {
+        "table_name": "dispatch_driverlocation",
+        "column_name": "driver_id",
+        "foreign_table_schema": "public",
+        "foreign_table_name": "dispatch_driverprofile",
+        "foreign_column_name": "id",
+        "constraint_name": "dispatch_driverlocat_driver_id_3a7a30e7_fk_dispatch_"
+      },
+      {
+        "table_name": "dispatch_driverprofile",
+        "column_name": "user_id",
+        "foreign_table_schema": "public",
+        "foreign_table_name": "users_user",
+        "foreign_column_name": "id",
+        "constraint_name": "dispatch_driverprofile_user_id_698a7187_fk_users_user_id"
+      },
+      {
+        "table_name": "dispatch_driverprofile",
+        "column_name": "verified_by_id",
+        "foreign_table_schema": "public",
+        "foreign_table_name": "users_user",
+        "foreign_column_name": "id",
+        "constraint_name": "dispatch_driverprofile_verified_by_id_9942dbde_fk_users_user_id"
+      },
+      {
+        "table_name": "dispatch_drivervehicle",
+        "column_name": "driver_id",
+        "foreign_table_schema": "public",
+        "foreign_table_name": "dispatch_driverprofile",
+        "foreign_column_name": "id",
+        "constraint_name": "dispatch_drivervehic_driver_id_158b0f7f_fk_dispatch_"
+      },
+      {
+        "table_name": "dispatch_tripassignment",
+        "column_name": "accepted_offer_id",
+        "foreign_table_schema": "public",
+        "foreign_table_name": "dispatch_dispatchoffer",
+        "foreign_column_name": "id",
+        "constraint_name": "dispatch_tripassignm_accepted_offer_id_6978c1f5_fk_dispatch_"
+      },
+      {
+        "table_name": "dispatch_tripassignment",
+        "column_name": "driver_id",
+        "foreign_table_schema": "public",
+        "foreign_table_name": "dispatch_driverprofile",
+        "foreign_column_name": "id",
+        "constraint_name": "dispatch_tripassignm_driver_id_07188ef9_fk_dispatch_"
+      },
+      {
+        "table_name": "dispatch_tripassignment",
+        "column_name": "vehicle_id",
+        "foreign_table_schema": "public",
+        "foreign_table_name": "dispatch_drivervehicle",
+        "foreign_column_name": "id",
+        "constraint_name": "dispatch_tripassignm_vehicle_id_8066abeb_fk_dispatch_"
+      },
+      {
+        "table_name": "dispatch_tripassignment",
+        "column_name": "trip_id",
+        "foreign_table_schema": "public",
+        "foreign_table_name": "trips_trip",
+        "foreign_column_name": "id",
+        "constraint_name": "dispatch_tripassignment_trip_id_de7cd365_fk_trips_trip_id"
+      },
+      {
+        "table_name": "trips_cancellation",
+        "column_name": "canceled_by_id",
+        "foreign_table_schema": "public",
+        "foreign_table_name": "users_user",
+        "foreign_column_name": "id",
+        "constraint_name": "trips_cancellation_canceled_by_id_dfb4951a_fk_users_user_id"
+      },
+      {
+        "table_name": "trips_cancellation",
+        "column_name": "trip_id",
+        "foreign_table_schema": "public",
+        "foreign_table_name": "trips_trip",
+        "foreign_column_name": "id",
+        "constraint_name": "trips_cancellation_trip_id_a57e1fea_fk_trips_trip_id"
+      },
+      {
+        "table_name": "trips_ratingreview",
+        "column_name": "ratee_id",
+        "foreign_table_schema": "public",
+        "foreign_table_name": "users_user",
+        "foreign_column_name": "id",
+        "constraint_name": "trips_ratingreview_ratee_id_b39f7a6b_fk_users_user_id"
+      },
+      {
+        "table_name": "trips_ratingreview",
+        "column_name": "rater_id",
+        "foreign_table_schema": "public",
+        "foreign_table_name": "users_user",
+        "foreign_column_name": "id",
+        "constraint_name": "trips_ratingreview_rater_id_5ab36ded_fk_users_user_id"
+      },
+      {
+        "table_name": "trips_ratingreview",
+        "column_name": "trip_id",
+        "foreign_table_schema": "public",
+        "foreign_table_name": "trips_trip",
+        "foreign_column_name": "id",
+        "constraint_name": "trips_ratingreview_trip_id_38c9fd79_fk_trips_trip_id"
+      },
+      {
+        "table_name": "users_discountusagelog",
+        "column_name": "discount_card_id",
+        "foreign_table_schema": "public",
+        "foreign_table_name": "users_discountcard",
+        "foreign_column_name": "id",
+        "constraint_name": "users_discountusagel_discount_card_id_7ab255b6_fk_users_dis"
+      },
+      {
+        "table_name": "users_incident",
+        "column_name": "resolved_by_id",
+        "foreign_table_schema": "public",
+        "foreign_table_name": "users_user",
+        "foreign_column_name": "id",
+        "constraint_name": "users_incident_resolved_by_id_078e80f3_fk_users_user_id"
+      },
+      {
+        "table_name": "users_incident",
+        "column_name": "user_id",
+        "foreign_table_schema": "public",
+        "foreign_table_name": "users_user",
+        "foreign_column_name": "id",
+        "constraint_name": "users_incident_user_id_6a121831_fk_users_user_id"
+      }
+    ],
+    "inboundForeignKeys": [
+      {
+        "dependent_schema": "public",
+        "dependent_table": "dispatch_dispatchoffer",
+        "dependent_column": "driver_id",
+        "referenced_table": "dispatch_driverprofile",
+        "referenced_column": "id",
+        "constraint_name": "dispatch_dispatchoff_driver_id_2cc5f6ce_fk_dispatch_"
+      },
+      {
+        "dependent_schema": "public",
+        "dependent_table": "dispatch_driveravailability",
+        "dependent_column": "driver_id",
+        "referenced_table": "dispatch_driverprofile",
+        "referenced_column": "id",
+        "constraint_name": "dispatch_driveravail_driver_id_25e809cb_fk_dispatch_"
+      },
+      {
+        "dependent_schema": "public",
+        "dependent_table": "dispatch_driverlocation",
+        "dependent_column": "driver_id",
+        "referenced_table": "dispatch_driverprofile",
+        "referenced_column": "id",
+        "constraint_name": "dispatch_driverlocat_driver_id_3a7a30e7_fk_dispatch_"
+      },
+      {
+        "dependent_schema": "public",
+        "dependent_table": "dispatch_drivervehicle",
+        "dependent_column": "driver_id",
+        "referenced_table": "dispatch_driverprofile",
+        "referenced_column": "id",
+        "constraint_name": "dispatch_drivervehic_driver_id_158b0f7f_fk_dispatch_"
+      },
+      {
+        "dependent_schema": "public",
+        "dependent_table": "dispatch_tripassignment",
+        "dependent_column": "accepted_offer_id",
+        "referenced_table": "dispatch_dispatchoffer",
+        "referenced_column": "id",
+        "constraint_name": "dispatch_tripassignm_accepted_offer_id_6978c1f5_fk_dispatch_"
+      },
+      {
+        "dependent_schema": "public",
+        "dependent_table": "dispatch_tripassignment",
+        "dependent_column": "driver_id",
+        "referenced_table": "dispatch_driverprofile",
+        "referenced_column": "id",
+        "constraint_name": "dispatch_tripassignm_driver_id_07188ef9_fk_dispatch_"
+      },
+      {
+        "dependent_schema": "public",
+        "dependent_table": "dispatch_tripassignment",
+        "dependent_column": "vehicle_id",
+        "referenced_table": "dispatch_drivervehicle",
+        "referenced_column": "id",
+        "constraint_name": "dispatch_tripassignm_vehicle_id_8066abeb_fk_dispatch_"
+      }
+    ],
+    "dropOrder": [
+      "authtoken_token",
+      "dispatch_driveravailability",
+      "dispatch_driverlocation",
+      "dispatch_tripassignment",
+      "django_session",
+      "trips_cancellation",
+      "trips_ratingreview",
+      "users_discountusagelog",
+      "users_incident",
+      "dispatch_dispatchoffer",
+      "dispatch_drivervehicle",
+      "dispatch_driverprofile"
+    ]
+  }
+}

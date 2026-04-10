@@ -1,0 +1,278 @@
+[
+  {
+    "id": 1,
+    "app": "contenttypes",
+    "name": "0001_initial",
+    "applied": "2026-03-22T05:04:24.659281+00:00"
+  },
+  {
+    "id": 2,
+    "app": "contenttypes",
+    "name": "0002_remove_content_type_name",
+    "applied": "2026-03-22T05:04:25.026997+00:00"
+  },
+  {
+    "id": 3,
+    "app": "auth",
+    "name": "0001_initial",
+    "applied": "2026-03-22T05:04:26.20401+00:00"
+  },
+  {
+    "id": 4,
+    "app": "auth",
+    "name": "0002_alter_permission_name_max_length",
+    "applied": "2026-03-22T05:04:26.420329+00:00"
+  },
+  {
+    "id": 5,
+    "app": "auth",
+    "name": "0003_alter_user_email_max_length",
+    "applied": "2026-03-22T05:04:26.566884+00:00"
+  },
+  {
+    "id": 6,
+    "app": "auth",
+    "name": "0004_alter_user_username_opts",
+    "applied": "2026-03-22T05:04:26.783904+00:00"
+  },
+  {
+    "id": 7,
+    "app": "auth",
+    "name": "0005_alter_user_last_login_null",
+    "applied": "2026-03-22T05:04:27.001297+00:00"
+  },
+  {
+    "id": 8,
+    "app": "auth",
+    "name": "0006_require_contenttypes_0002",
+    "applied": "2026-03-22T05:04:27.226571+00:00"
+  },
+  {
+    "id": 9,
+    "app": "auth",
+    "name": "0007_alter_validators_add_error_messages",
+    "applied": "2026-03-22T05:04:27.445761+00:00"
+  },
+  {
+    "id": 10,
+    "app": "auth",
+    "name": "0008_alter_user_username_max_length",
+    "applied": "2026-03-22T05:04:27.663141+00:00"
+  },
+  {
+    "id": 11,
+    "app": "auth",
+    "name": "0009_alter_user_last_name_max_length",
+    "applied": "2026-03-22T05:04:27.882451+00:00"
+  },
+  {
+    "id": 12,
+    "app": "auth",
+    "name": "0010_alter_group_name_max_length",
+    "applied": "2026-03-22T05:04:28.245759+00:00"
+  },
+  {
+    "id": 13,
+    "app": "auth",
+    "name": "0011_update_proxy_permissions",
+    "applied": "2026-03-22T05:04:28.400338+00:00"
+  },
+  {
+    "id": 14,
+    "app": "auth",
+    "name": "0012_alter_user_first_name_max_length",
+    "applied": "2026-03-22T05:04:28.619146+00:00"
+  },
+  {
+    "id": 15,
+    "app": "users",
+    "name": "0001_initial",
+    "applied": "2026-03-22T05:04:34.010528+00:00"
+  },
+  {
+    "id": 16,
+    "app": "admin",
+    "name": "0001_initial",
+    "applied": "2026-03-22T05:04:34.61927+00:00"
+  },
+  {
+    "id": 17,
+    "app": "admin",
+    "name": "0002_logentry_remove_auto_add",
+    "applied": "2026-03-22T05:04:34.710488+00:00"
+  },
+  {
+    "id": 18,
+    "app": "admin",
+    "name": "0003_logentry_add_action_flag_choices",
+    "applied": "2026-03-22T05:04:34.93302+00:00"
+  },
+  {
+    "id": 19,
+    "app": "authtoken",
+    "name": "0001_initial",
+    "applied": "2026-03-22T05:04:35.520259+00:00"
+  },
+  {
+    "id": 20,
+    "app": "authtoken",
+    "name": "0002_auto_20160226_1747",
+    "applied": "2026-03-22T05:04:35.617889+00:00"
+  },
+  {
+    "id": 21,
+    "app": "authtoken",
+    "name": "0003_tokenproxy",
+    "applied": "2026-03-22T05:04:35.835628+00:00"
+  },
+  {
+    "id": 22,
+    "app": "authtoken",
+    "name": "0004_alter_tokenproxy_options",
+    "applied": "2026-03-22T05:04:36.054125+00:00"
+  },
+  {
+    "id": 23,
+    "app": "locations",
+    "name": "0001_initial",
+    "applied": "2026-03-22T05:04:37.002045+00:00"
+  },
+  {
+    "id": 24,
+    "app": "routes",
+    "name": "0001_initial",
+    "applied": "2026-03-22T05:04:37.660528+00:00"
+  },
+  {
+    "id": 25,
+    "app": "fares",
+    "name": "0001_initial",
+    "applied": "2026-03-22T05:04:38.101351+00:00"
+  },
+  {
+    "id": 26,
+    "app": "fares",
+    "name": "0002_pricingpolicy",
+    "applied": "2026-03-22T05:04:38.620601+00:00"
+  },
+  {
+    "id": 27,
+    "app": "trips",
+    "name": "0001_initial",
+    "applied": "2026-03-22T05:04:41.244862+00:00"
+  },
+  {
+    "id": 28,
+    "app": "dispatch",
+    "name": "0001_initial",
+    "applied": "2026-03-22T05:04:42.50802+00:00"
+  },
+  {
+    "id": 29,
+    "app": "dispatch",
+    "name": "0002_driverlocation_pointfield",
+    "applied": "2026-03-22T05:04:43.094212+00:00"
+  },
+  {
+    "id": 30,
+    "app": "dispatch",
+    "name": "0003_fk_relationships",
+    "applied": "2026-03-22T05:04:44.986949+00:00"
+  },
+  {
+    "id": 31,
+    "app": "locations",
+    "name": "0002_location_position_servicearea",
+    "applied": "2026-03-22T05:04:45.572298+00:00"
+  },
+  {
+    "id": 32,
+    "app": "locations",
+    "name": "0003_alter_servicearea_transport_type",
+    "applied": "2026-03-22T05:04:45.647533+00:00"
+  },
+  {
+    "id": 33,
+    "app": "routes",
+    "name": "0002_alter_route_transport_type",
+    "applied": "2026-03-22T05:04:45.865979+00:00"
+  },
+  {
+    "id": 34,
+    "app": "sessions",
+    "name": "0001_initial",
+    "applied": "2026-03-22T05:04:46.446163+00:00"
+  },
+  {
+    "id": 35,
+    "app": "token_blacklist",
+    "name": "0001_initial",
+    "applied": "2026-03-22T05:04:47.057433+00:00"
+  },
+  {
+    "id": 36,
+    "app": "token_blacklist",
+    "name": "0002_outstandingtoken_jti_hex",
+    "applied": "2026-03-22T05:04:47.282482+00:00"
+  },
+  {
+    "id": 37,
+    "app": "token_blacklist",
+    "name": "0003_auto_20171017_2007",
+    "applied": "2026-03-22T05:04:47.585181+00:00"
+  },
+  {
+    "id": 38,
+    "app": "token_blacklist",
+    "name": "0004_auto_20171017_2013",
+    "applied": "2026-03-22T05:04:48.027499+00:00"
+  },
+  {
+    "id": 39,
+    "app": "token_blacklist",
+    "name": "0005_remove_outstandingtoken_jti",
+    "applied": "2026-03-22T05:04:48.326947+00:00"
+  },
+  {
+    "id": 40,
+    "app": "token_blacklist",
+    "name": "0006_auto_20171017_2113",
+    "applied": "2026-03-22T05:04:48.625233+00:00"
+  },
+  {
+    "id": 41,
+    "app": "token_blacklist",
+    "name": "0007_auto_20171017_2214",
+    "applied": "2026-03-22T05:04:49.297244+00:00"
+  },
+  {
+    "id": 42,
+    "app": "token_blacklist",
+    "name": "0008_migrate_to_bigautofield",
+    "applied": "2026-03-22T05:04:50.332647+00:00"
+  },
+  {
+    "id": 43,
+    "app": "token_blacklist",
+    "name": "0010_fix_migrate_to_bigautofield",
+    "applied": "2026-03-22T05:04:50.491802+00:00"
+  },
+  {
+    "id": 44,
+    "app": "token_blacklist",
+    "name": "0011_linearizes_history",
+    "applied": "2026-03-22T05:04:50.708314+00:00"
+  },
+  {
+    "id": 45,
+    "app": "token_blacklist",
+    "name": "0012_alter_outstandingtoken_user",
+    "applied": "2026-03-22T05:04:50.935765+00:00"
+  },
+  {
+    "id": 46,
+    "app": "token_blacklist",
+    "name": "0013_alter_blacklistedtoken_options_and_more",
+    "applied": "2026-03-22T05:04:51.163463+00:00"
+  }
+]

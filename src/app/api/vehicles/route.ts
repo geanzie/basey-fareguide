@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { buildPaginationMetadata, parsePaginationParams } from '@/lib/api/pagination'
 import { VehicleType } from '@prisma/client'
 import { ADMIN_OR_ENCODER, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
 import { serializeVehicle } from '@/lib/serializers'
@@ -11,9 +12,10 @@ export async function GET(request: NextRequest) {
     const vehicleType = searchParams.get('vehicleType') as VehicleType | null
     const search = searchParams.get('search')
     const isActive = searchParams.get('isActive')
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '20')
-    const skip = (page - 1) * limit
+    const pagination = parsePaginationParams(searchParams, {
+      defaultLimit: 20,
+      maxLimit: 100,
+    })
 
     // Build where clause
     const where: any = {}
@@ -41,9 +43,9 @@ export async function GET(request: NextRequest) {
     const [vehicles, total] = await Promise.all([
       prisma.vehicle.findMany({
         where,
-        skip,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
+        skip: pagination.skip,
+        take: pagination.limit,
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         include: {
           permit: {
             select: {
@@ -59,16 +61,9 @@ export async function GET(request: NextRequest) {
       prisma.vehicle.count({ where })
     ])
 
-    const totalPages = Math.ceil(total / limit)
-
     return NextResponse.json({
       vehicles: vehicles.map((vehicle) => serializeVehicle(vehicle)),
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages
-      }
+      pagination: buildPaginationMetadata(pagination, total)
     })
   } catch (error) {
     return createAuthErrorResponse(error)

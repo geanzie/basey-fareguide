@@ -8,8 +8,13 @@ import { createRoot, type Root } from 'react-dom/client'
 
 import type { RoutePlannerMapProps } from '@/components/RoutePlannerMap'
 
+const authState = vi.hoisted(() => ({
+  user: null as { id: string } | null,
+  status: 'unauthenticated' as 'authenticated' | 'unauthenticated',
+}))
+
 vi.mock('@/components/AuthProvider', () => ({
-  useAuth: () => ({ user: null }),
+  useAuth: () => ({ user: authState.user, status: authState.status }),
 }))
 
 import RoutePlannerCalculator from '@/components/RoutePlannerCalculator'
@@ -142,6 +147,8 @@ describe('RoutePlannerCalculator', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     ;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+    authState.user = null
+    authState.status = 'unauthenticated'
     container = document.createElement('div')
     document.body.appendChild(container)
     root = createRoot(container)
@@ -188,9 +195,19 @@ describe('RoutePlannerCalculator', () => {
         )
       }
 
+      if (url.includes('/api/discount-cards/me')) {
+        return Promise.resolve(
+          makeResponse({
+            hasDiscountCard: false,
+            isValid: false,
+            discountCard: null,
+          }),
+        )
+      }
+
       if (url.includes('/api/fare-calculations')) {
         savedCalculationBodies.push(JSON.parse(String(init?.body ?? '{}')))
-        return Promise.resolve(makeResponse({ success: true }))
+        return Promise.resolve(makeResponse({ success: true, calculation: { id: 'calc-1' } }))
       }
 
       throw new Error(`Unhandled fetch url: ${url}`)
@@ -269,7 +286,7 @@ describe('RoutePlannerCalculator', () => {
       expect(container.textContent).not.toContain('Reset planner')
     })
 
-  it('auto-calculates after placing two pins and saves pin metadata on the same planner surface', async () => {
+  it('auto-calculates after placing two pins without saving until the rider explicitly confirms', async () => {
     routeQueue.push(
       makeResponse({
         origin: 'Mercado',
@@ -312,32 +329,73 @@ describe('RoutePlannerCalculator', () => {
       origin: { type: 'pin', lat: 11.2754, lng: 125.0689 },
       destination: { type: 'pin', lat: 11.2854, lng: 125.0789 },
     })
+    expect(savedCalculationBodies).toHaveLength(0)
+    expect(container.textContent).toContain('PHP 24.00')
+    expect(container.textContent).toContain('polyline:encoded-ors')
+    expect(container.textContent).toContain('Road-aware route')
+    expect(container.textContent).toContain('Log in to save this route to your history.')
+  })
+
+  it('saves only after an authenticated rider clicks save and omits planner routeData from persistence', async () => {
+    authState.user = { id: 'public-1' }
+    authState.status = 'authenticated'
+
+    routeQueue.push(
+      makeResponse({
+        origin: 'Mercado',
+        destination: 'Amandayehan Wharf',
+        distanceKm: 5.4,
+        durationMin: 12,
+        fare: 24,
+        fareBreakdown: {
+          baseFare: 15,
+          additionalKm: 2.4,
+          additionalFare: 9,
+          discount: 0,
+        },
+        method: 'ors',
+        fallbackReason: null,
+        polyline: 'encoded-save',
+        inputMode: 'pin',
+      }),
+    )
+
+    await act(async () => {
+      root.render(React.createElement(RoutePlannerCalculator, { MapComponent: MockPlannerMap }))
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    await act(async () => {
+      clickButton('Mock place A')
+      clickButton('Mock place B')
+    })
+
+    await act(async () => {
+      await Promise.resolve()
+      vi.advanceTimersByTime(301)
+      await Promise.resolve()
+    })
+
+    expect(savedCalculationBodies).toHaveLength(0)
+
+    await act(async () => {
+      clickButton('Save to history')
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
     expect(savedCalculationBodies).toHaveLength(1)
     expect(savedCalculationBodies[0]).toMatchObject({
       fromLocation: 'Mercado',
       toLocation: 'Amandayehan Wharf',
       vehicleId: null,
-      routeData: {
-        planner: {
-          inputMode: 'pin',
-          origin: {
-            mode: 'pin',
-            lat: 11.2754,
-            lng: 125.0689,
-            serializedPin: 'pin:11.275400,125.068900',
-          },
-          destination: {
-            mode: 'pin',
-            lat: 11.2854,
-            lng: 125.0789,
-            serializedPin: 'pin:11.285400,125.078900',
-          },
-        },
-      },
+      distance: 5.4,
+      calculatedFare: 24,
+      calculationType: 'Road Route Planner',
     })
-    expect(container.textContent).toContain('PHP 24.00')
-    expect(container.textContent).toContain('polyline:encoded-ors')
-    expect(container.textContent).toContain('Road-aware route')
+    expect(savedCalculationBodies[0]).not.toHaveProperty('routeData')
+    expect(container.textContent).toContain('Saved to fare history.')
   })
 
   it('lets riders reset both pins after a route has been created', async () => {

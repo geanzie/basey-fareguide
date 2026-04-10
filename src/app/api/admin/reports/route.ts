@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { ADMIN_ONLY, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
 
+const REPORT_TREND_ROW_LIMIT = 5000
+
 export async function GET(request: NextRequest) {
   try {
     await requireRequestRole(request, [...ADMIN_ONLY])
@@ -30,14 +32,18 @@ export async function GET(request: NextRequest) {
         startDate.setDate(now.getDate() - 30)
     }
 
-    // Fetch incidents data
     const [
       totalIncidents,
       incidentsByStatus,
       incidentsByType,
-      recentIncidents
+      recentIncidents,
+      totalUsers,
+      activeUsers,
+      usersByType,
+      recentUsers,
+      evidenceTotals,
+      evidenceByType,
     ] = await Promise.all([
-      // Total incidents
       prisma.incident.count({
         where: {
           createdAt: {
@@ -45,8 +51,6 @@ export async function GET(request: NextRequest) {
           }
         }
       }),
-      
-      // Incidents by status
       prisma.incident.groupBy({
         by: ['status'],
         _count: true,
@@ -56,8 +60,6 @@ export async function GET(request: NextRequest) {
           }
         }
       }),
-      
-      // Incidents by incident type
       prisma.incident.groupBy({
         by: ['incidentType'],
         _count: true,
@@ -67,64 +69,60 @@ export async function GET(request: NextRequest) {
           }
         }
       }),
-
-      // Recent incidents for monthly trends
+      // Trend tiles only need bounded source rows; headline totals come from aggregates above.
       prisma.incident.findMany({
         where: {
           createdAt: {
             gte: startDate
           }
         },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: REPORT_TREND_ROW_LIMIT,
         select: {
           createdAt: true,
           status: true
         }
-      })
-    ])
-
-    // Fetch users data
-    const [
-      totalUsers,
-      activeUsers,
-      usersByType,
-      recentUsers
-    ] = await Promise.all([
-      // Total users
+      }),
       prisma.user.count(),
-      
-      // Active users
       prisma.user.count({
         where: {
           isActive: true
         }
       }),
-      
-      // Users by type
       prisma.user.groupBy({
         by: ['userType'],
         _count: true
       }),
-
-      // Recent users for registration trends
       prisma.user.findMany({
         where: {
           createdAt: {
             gte: startDate
           }
         },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: REPORT_TREND_ROW_LIMIT,
         select: {
           createdAt: true
         }
-      })
+      }),
+      prisma.evidence.aggregate({
+        _count: {
+          _all: true,
+        },
+        _sum: {
+          fileSize: true,
+        },
+      }),
+      prisma.evidence.groupBy({
+        by: ['fileType'],
+        _count: {
+          _all: true,
+        },
+        _sum: {
+          fileSize: true,
+        },
+      }),
     ])
-
-    // Fetch storage/evidence data
-    const evidenceFiles = await prisma.evidence.findMany({
-      select: {
-        fileType: true,
-        fileSize: true
-      }
-    })
 
     // Process monthly trends for incidents
     const monthlyTrends: Record<string, { total: number; resolved: number }> = {}
@@ -150,18 +148,17 @@ export async function GET(request: NextRequest) {
     })
 
     // Process storage data
-    let totalFiles = evidenceFiles.length
-    let totalSizeBytes = evidenceFiles.reduce((sum, file) => sum + (file.fileSize || 0), 0)
+    let totalFiles = evidenceTotals._count._all
+    let totalSizeBytes = evidenceTotals._sum.fileSize || 0
     let totalSizeMB = totalSizeBytes / (1024 * 1024)
 
     const storageByType: Record<string, { files: number; sizeMB: number }> = {}
-    evidenceFiles.forEach(file => {
+    evidenceByType.forEach(file => {
       const type = file.fileType || 'UNKNOWN'
-      if (!storageByType[type]) {
-        storageByType[type] = { files: 0, sizeMB: 0 }
+      storageByType[type] = {
+        files: file._count._all,
+        sizeMB: (file._sum.fileSize || 0) / (1024 * 1024),
       }
-      storageByType[type].files++
-      storageByType[type].sizeMB += (file.fileSize || 0) / (1024 * 1024)
     })
 
     // Convert grouped data to objects

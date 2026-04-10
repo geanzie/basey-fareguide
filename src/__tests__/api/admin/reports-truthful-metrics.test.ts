@@ -12,7 +12,8 @@ const prismaMock = vi.hoisted(() => ({
     findMany: vi.fn(),
   },
   evidence: {
-    findMany: vi.fn(),
+    aggregate: vi.fn(),
+    groupBy: vi.fn(),
   },
 }));
 
@@ -61,9 +62,13 @@ beforeEach(() => {
     { createdAt: new Date("2026-04-01T00:00:00.000Z") },
     { createdAt: new Date("2026-04-02T00:00:00.000Z") },
   ]);
-  prismaMock.evidence.findMany.mockResolvedValue([
-    { fileType: "IMAGE", fileSize: 1024 },
-    { fileType: "VIDEO", fileSize: 2048 },
+  prismaMock.evidence.aggregate.mockResolvedValue({
+    _count: { _all: 2 },
+    _sum: { fileSize: 3072 },
+  });
+  prismaMock.evidence.groupBy.mockResolvedValue([
+    { fileType: "IMAGE", _count: { _all: 1 }, _sum: { fileSize: 1024 } },
+    { fileType: "VIDEO", _count: { _all: 1 }, _sum: { fileSize: 2048 } },
   ]);
 });
 
@@ -81,5 +86,17 @@ describe("GET /api/admin/reports", () => {
     expect(json.data.system).toBeUndefined();
     expect(JSON.stringify(json.data)).not.toContain("uptime");
     expect(JSON.stringify(json.data)).not.toContain("responseTime");
+    expect(prismaMock.incident.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        take: 5000,
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      }),
+    );
+    expect(prismaMock.user.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        take: 5000,
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      }),
+    );
   });
 });

@@ -18,6 +18,8 @@ interface TicketPaymentsWorkspaceProps {
   defaultPaymentFilter?: PaymentFilter
 }
 
+const TICKET_PAYMENT_PAGE_SIZE = 100
+
 function formatCurrency(amount: number) {
   return `PHP ${amount.toLocaleString()}`
 }
@@ -70,14 +72,24 @@ export default function TicketPaymentsWorkspace({
     try {
       setLoading(true)
       setError(null)
-      const response = await fetch('/api/incidents?limit=500')
+      const loadedIncidents: IncidentListItemDto[] = []
+      let page = 1
+      let totalPages = 1
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch ticketed incidents')
+      while (page <= totalPages) {
+        const response = await fetch(`/api/incidents?page=${page}&limit=${TICKET_PAYMENT_PAGE_SIZE}`)
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch ticketed incidents')
+        }
+
+        const payload: IncidentsResponseDto = await response.json()
+        loadedIncidents.push(...(payload.incidents || []))
+        totalPages = payload.pagination?.totalPages || page
+        page += 1
       }
 
-      const payload: IncidentsResponseDto = await response.json()
-      setIncidents((payload.incidents || []).filter((incident) => Boolean(incident.ticketNumber)))
+      setIncidents(loadedIncidents.filter((incident) => Boolean(incident.ticketNumber)))
     } catch (_error) {
       setError('Failed to load ticket payment records.')
     } finally {

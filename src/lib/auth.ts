@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
 import { prisma } from '@/lib/prisma'
-import { UserType } from '@prisma/client'
+import { Prisma, UserType } from '@prisma/client'
 
 export interface AuthUser {
   id: string
@@ -10,7 +10,18 @@ export interface AuthUser {
   username: string
   userType: UserType
   isActive: boolean
+  isVerified: boolean
 }
+
+const authUserSelect = {
+  id: true,
+  firstName: true,
+  lastName: true,
+  username: true,
+  userType: true,
+  isActive: true,
+  isVerified: true,
+} satisfies Prisma.UserSelect
 
 export const ADMIN_ONLY = [UserType.ADMIN] as const
 export const ENFORCER_ONLY = [UserType.ENFORCER] as const
@@ -60,15 +71,44 @@ export async function verifyAuth(request: NextRequest): Promise<AuthUser | null>
     
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        username: true,
-        userType: true,
-        isActive: true
-      }
+      select: authUserSelect,
     })
+
+    return user?.isActive ? user : null
+  } catch (error) {
+    return null
+  }
+}
+
+export async function verifyAuthWithSelect<T extends Prisma.UserSelect>(
+  request: NextRequest,
+  select: T,
+): Promise<Prisma.UserGetPayload<{ select: T & typeof authUserSelect }> | null> {
+  try {
+    let token: string | undefined
+
+    const authHeader = request.headers.get('authorization')
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7)
+    }
+
+    if (!token) {
+      token = request.cookies.get('auth-token')?.value
+    }
+
+    if (!token) {
+      return null
+    }
+
+    const decoded = jwt.verify(token, getJWTSecret()) as any
+
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: {
+        ...select,
+        ...authUserSelect,
+      },
+    }) as (Prisma.UserGetPayload<{ select: T & typeof authUserSelect }> & { isActive: boolean }) | null
 
     return user?.isActive ? user : null
   } catch (error) {

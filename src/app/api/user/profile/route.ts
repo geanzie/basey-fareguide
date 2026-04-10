@@ -1,37 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { createAuthErrorResponse, requireRequestUser } from '@/lib/auth'
+import { createAuthErrorResponse, requireRequestUser, verifyAuthWithSelect } from '@/lib/auth'
 import { serializeUserProfile } from '@/lib/serializers'
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await requireRequestUser(request)
-
-    const currentUser = await prisma.user.findUnique({
-      where: { id: user.id },
-      select: {
-        id: true,
-        username: true,
-        firstName: true,
-        lastName: true,
-        email: true,
-        phoneNumber: true,
-        dateOfBirth: true,
-        governmentId: true,
-        idType: true,
-        barangayResidence: true,
-        userType: true,
-        isActive: true,
-        isVerified: true,
-        createdAt: true
-      }
+    const currentUser = await verifyAuthWithSelect(request, {
+      email: true,
+      phoneNumber: true,
+      dateOfBirth: true,
+      governmentId: true,
+      idType: true,
+      barangayResidence: true,
+      createdAt: true,
     })
 
     if (!currentUser) {
-      return NextResponse.json(
-        { message: 'User not found' },
-        { status: 404 }
-      )
+      throw new Error('Unauthorized')
     }
 
     return NextResponse.json({ user: serializeUserProfile(currentUser) })

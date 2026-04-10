@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { ADMIN_OR_ENFORCER, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
 
+const RECENT_INCIDENT_LIMIT = 10
+const INCIDENT_STATS_TREND_ROW_LIMIT = 5000
+
 export async function GET(request: NextRequest) {
   try {
     await requireRequestRole(request, [...ADMIN_OR_ENFORCER])
@@ -19,8 +22,8 @@ export async function GET(request: NextRequest) {
 
     // Get recent incidents (last 10)
     const recentIncidents = await prisma.incident.findMany({
-      take: 10,
-      orderBy: { createdAt: 'desc' },
+      take: RECENT_INCIDENT_LIMIT,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       select: {
         id: true,
         incidentType: true,
@@ -59,6 +62,8 @@ export async function GET(request: NextRequest) {
           gte: sixMonthsAgo
         }
       },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: INCIDENT_STATS_TREND_ROW_LIMIT,
       select: {
         createdAt: true,
         status: true
@@ -79,6 +84,9 @@ export async function GET(request: NextRequest) {
       }
       return acc
     }, {} as Record<string, { total: number; resolved: number; pending: number }>)
+
+    const currentMonthKey = new Date().toISOString().slice(0, 7)
+    const currentMonthSummary = monthlyTrends[currentMonthKey] || { total: 0, resolved: 0, pending: 0 }
 
     return NextResponse.json({
       success: true,
@@ -106,12 +114,8 @@ export async function GET(request: NextRequest) {
       })),
       monthlyTrends,
       summary: {
-        totalThisMonth: Object.values(monthlyTrends).reduce((sum, month) => 
-          sum + (new Date(Object.keys(monthlyTrends).pop() + '-01').getMonth() === new Date().getMonth() 
-            ? month.total : 0), 0),
-        resolvedThisMonth: Object.values(monthlyTrends).reduce((sum, month) => 
-          sum + (new Date(Object.keys(monthlyTrends).pop() + '-01').getMonth() === new Date().getMonth() 
-            ? month.resolved : 0), 0),
+        totalThisMonth: currentMonthSummary.total,
+        resolvedThisMonth: currentMonthSummary.resolved,
         averageResolutionTime: null // Could be calculated if needed
       }
     })

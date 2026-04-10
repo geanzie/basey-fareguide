@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { buildPaginationMetadata, parsePaginationParams } from '@/lib/api/pagination'
 import { prisma } from '@/lib/prisma'
 import { createAuthErrorResponse, requireRequestUser } from '@/lib/auth'
 import { serializeDashboardActivityItem } from '@/lib/serializers'
@@ -6,26 +7,34 @@ import { serializeDashboardActivityItem } from '@/lib/serializers'
 export async function GET(request: NextRequest) {
   try {
     await requireRequestUser(request)
+    const { searchParams } = new URL(request.url)
+    const pagination = parsePaginationParams(searchParams, {
+      defaultLimit: 10,
+      maxLimit: 50,
+    })
 
-    // Get recent activity (last 10 incidents)
-    const recentIncidents = await prisma.incident.findMany({
-      take: 10,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        reportedBy: {
-          select: {
-            firstName: true,
-            lastName: true
-          }
-        },
-        handledBy: {
-          select: {
-            firstName: true,
-            lastName: true
+    const [recentIncidents, total] = await Promise.all([
+      prisma.incident.findMany({
+        skip: pagination.skip,
+        take: pagination.limit,
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        include: {
+          reportedBy: {
+            select: {
+              firstName: true,
+              lastName: true
+            }
+          },
+          handledBy: {
+            select: {
+              firstName: true,
+              lastName: true
+            }
           }
         }
-      }
-    })
+      }),
+      prisma.incident.count(),
+    ])
 
     return NextResponse.json({
       activity: recentIncidents.map((incident) =>
@@ -41,6 +50,8 @@ export async function GET(request: NextRequest) {
           handledBy: incident.handledBy,
         }),
       )
+      ,
+      pagination: buildPaginationMetadata(pagination, total)
     })
   } catch (error) {
     return createAuthErrorResponse(error)

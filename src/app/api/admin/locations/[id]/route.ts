@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { ADMIN_ONLY, createAuthErrorResponse, requireRequestRole } from '@/lib/auth';
+import { invalidatePlannerLocationsCache } from '@/lib/locations/plannerLocations';
 import {
   buildLocationValidationLog,
   buildLocationValidationSummary,
@@ -91,6 +92,8 @@ export async function PUT(
       }
     });
 
+    invalidatePlannerLocationsCache();
+
     return NextResponse.json({
       message: 'Location updated successfully',
       location: updatedLocation
@@ -133,6 +136,8 @@ export async function DELETE(
         updatedAt: new Date()
       }
     });
+
+    invalidatePlannerLocationsCache();
 
     return NextResponse.json({
       message: 'Location deleted successfully'

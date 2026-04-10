@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ADMIN_ONLY, createAuthErrorResponse, requireRequestRole } from "@/lib/auth";
-import { FARE_RATE_MIGRATION_REQUIRED_MESSAGE, getAdminFareRates } from "@/lib/fare/rateService";
+import {
+  FARE_RATE_MIGRATION_REQUIRED_MESSAGE,
+  getAdminFareRates,
+  invalidateResolvedFareRatesCache,
+} from "@/lib/fare/rateService";
 import { FARE_BASE_DISTANCE_KM } from "@/lib/fare/policy";
 import { parseManilaDateTimeInput } from "@/lib/manilaTime";
 import { serializeFareRateVersion } from "@/lib/serializers";
@@ -147,6 +151,8 @@ export async function POST(request: NextRequest) {
       };
     });
 
+    invalidateResolvedFareRatesCache();
+
     return NextResponse.json(
       {
         success: true,
@@ -210,6 +216,8 @@ export async function DELETE(request: NextRequest) {
         cancellationReason: reason,
       },
     });
+
+    invalidateResolvedFareRatesCache();
 
     return NextResponse.json({
       success: true,

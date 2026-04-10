@@ -59,8 +59,11 @@ describe('EvidenceManager', () => {
     const uploadHeading = Array.from(container.querySelectorAll('h4')).find(
       (element) => element.textContent === 'Upload Evidence',
     )
-    const uploadControls = uploadHeading?.nextElementSibling as HTMLDivElement | null
+    const uploadInput = container.querySelector('#evidence-upload') as HTMLInputElement | null
+    const uploadControls = uploadInput?.parentElement as HTMLDivElement | null
 
+    expect(uploadHeading).not.toBeNull()
+    expect(uploadInput).not.toBeNull()
     expect(uploadControls).not.toBeNull()
     expect(uploadControls?.className).toContain('flex-col')
     expect(uploadControls?.className).toContain('sm:flex-row')

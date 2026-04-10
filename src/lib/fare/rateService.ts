@@ -27,6 +27,15 @@ const fareRateVersionInclude = {
   },
 } as const;
 
+const FARE_RATE_CACHE_TTL_MS = 60_000;
+
+let resolvedFareRatesCache:
+  | {
+      value: FareRatesResponseDto;
+      expiresAt: number;
+    }
+  | null = null;
+
 function isFareRateTableMissingError(error: unknown): boolean {
   if (!(error instanceof Error)) {
     return false;
@@ -64,6 +73,10 @@ function buildFarePolicySnapshot(
 }
 
 export async function getResolvedFareRates(now: Date = new Date()): Promise<FareRatesResponseDto> {
+  if (resolvedFareRatesCache && resolvedFareRatesCache.expiresAt > now.getTime()) {
+    return resolvedFareRatesCache.value;
+  }
+
   let currentVersion;
   let upcomingVersion;
 
@@ -90,19 +103,37 @@ export async function getResolvedFareRates(now: Date = new Date()): Promise<Fare
     ]);
   } catch (error) {
     if (isFareRateTableMissingError(error)) {
-      return {
+      const fallbackValue = {
         current: DEFAULT_FARE_POLICY,
         upcoming: null,
       };
+
+      resolvedFareRatesCache = {
+        value: fallbackValue,
+        expiresAt: now.getTime() + FARE_RATE_CACHE_TTL_MS,
+      };
+
+      return fallbackValue;
     }
 
     throw error;
   }
 
-  return {
+  const resolvedFareRates = {
     current: buildFarePolicySnapshot(currentVersion),
     upcoming: upcomingVersion ? buildFarePolicySnapshot(upcomingVersion) : null,
   };
+
+  resolvedFareRatesCache = {
+    value: resolvedFareRates,
+    expiresAt: now.getTime() + FARE_RATE_CACHE_TTL_MS,
+  };
+
+  return resolvedFareRates;
+}
+
+export function invalidateResolvedFareRatesCache() {
+  resolvedFareRatesCache = null;
 }
 
 export async function getAdminFareRates(now: Date = new Date()): Promise<AdminFareRatesResponseDto> {

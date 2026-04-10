@@ -1,8 +1,47 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { buildPaginationMetadata, parsePaginationParams } from '@/lib/api/pagination'
 import { verifyAuth } from '@/lib/auth'
 import { evaluateDiscountCardPolicy } from '@/lib/discountCardPolicy'
 import { serializeFareCalculation } from '@/lib/serializers'
+
+const RECENT_DUPLICATE_SAVE_WINDOW_MS = 60_000
+
+const fareCalculationSerializeSelect = {
+  id: true,
+  fromLocation: true,
+  toLocation: true,
+  distance: true,
+  calculatedFare: true,
+  actualFare: true,
+  originalFare: true,
+  discountApplied: true,
+  discountType: true,
+  calculationType: true,
+  routeData: true,
+  createdAt: true,
+  vehicle: {
+    select: {
+      id: true,
+      plateNumber: true,
+      vehicleType: true,
+      permit: {
+        select: {
+          permitPlateNumber: true,
+        },
+      },
+    },
+  },
+} as const
+
+function toOptionalNumber(value: unknown): number | null {
+  if (value === null || value === undefined) {
+    return null
+  }
+
+  const parsedValue = Number.parseFloat(String(value))
+  return Number.isFinite(parsedValue) ? parsedValue : null
+}
 
 // GET - Retrieve fare calculation history
 export async function GET(request: NextRequest) {
@@ -14,6 +53,12 @@ export async function GET(request: NextRequest) {
     if (!user) {
       return NextResponse.json({ 
         calculations: [],
+        pagination: {
+          page: 1,
+          limit: 10,
+          total: 0,
+          totalPages: 0,
+        },
         total: 0,
         page: 1,
         totalPages: 0,
@@ -22,10 +67,11 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '10')
+    const pagination = parsePaginationParams(searchParams, {
+      defaultLimit: 10,
+      maxLimit: 50,
+    })
     const recentDays = parseInt(searchParams.get('recentDays') || '0')
-    const skip = (page - 1) * limit
     const whereClause: {
       userId: string
       createdAt?: {
@@ -44,54 +90,47 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch user's fare calculations
-    const fareCalculations = await prisma.fareCalculation.findMany({
-      where: whereClause,
-      orderBy: {
-        createdAt: 'desc'
-      },
-      skip,
-      take: limit,
-      select: {
-        id: true,
-        fromLocation: true,
-        toLocation: true,
-        distance: true,
-        calculatedFare: true,
-        actualFare: true,
-        originalFare: true,
-        discountApplied: true,
-        discountType: true,
-        calculationType: true,
-        routeData: true,
-        createdAt: true,
-        vehicle: {
-          select: {
-            id: true,
-            vehicleType: true,
-            plateNumber: true,
-            permit: {
-              select: {
-                permitPlateNumber: true,
+    const [fareCalculations, totalCalculations] = await Promise.all([
+      prisma.fareCalculation.findMany({
+        where: whereClause,
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        skip: pagination.skip,
+        take: pagination.limit,
+        select: {
+          id: true,
+          fromLocation: true,
+          toLocation: true,
+          distance: true,
+          calculatedFare: true,
+          actualFare: true,
+          originalFare: true,
+          discountApplied: true,
+          discountType: true,
+          calculationType: true,
+          routeData: true,
+          createdAt: true,
+          vehicle: {
+            select: {
+              id: true,
+              vehicleType: true,
+              plateNumber: true,
+              permit: {
+                select: {
+                  permitPlateNumber: true,
+                },
               },
-            },
+            }
           }
         }
-      }
-    })
-
-    // Get total count for pagination
-    const totalCalculations = await prisma.fareCalculation.count({
-      where: whereClause
-    })
+      }),
+      prisma.fareCalculation.count({
+        where: whereClause
+      }),
+    ])
 
     return NextResponse.json({
       calculations: fareCalculations.map((calculation) => serializeFareCalculation(calculation)),
-      pagination: {
-        page,
-        limit,
-        total: totalCalculations,
-        totalPages: Math.ceil(totalCalculations / limit)
-      }
+      pagination: buildPaginationMetadata(pagination, totalCalculations)
     })
 
   } catch (error) {
@@ -105,6 +144,15 @@ export async function GET(request: NextRequest) {
 // POST - Save a new fare calculation
 export async function POST(request: NextRequest) {
   try {
+    const user = await verifyAuth(request)
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Authentication required to save fare calculations' },
+        { status: 401 }
+      )
+    }
+
     const body = await request.json()
     const { 
       fromLocation, 
@@ -120,9 +168,18 @@ export async function POST(request: NextRequest) {
       discountApplied,
       discountType
     } = body
+    const userId = user.id
 
     // Validate required fields
-    if (!fromLocation || !toLocation || !distance || !calculatedFare || !calculationType) {
+    if (
+      !fromLocation ||
+      !toLocation ||
+      distance === null ||
+      distance === undefined ||
+      calculatedFare === null ||
+      calculatedFare === undefined ||
+      !calculationType
+    ) {
       return NextResponse.json(
         { 
           error: 'Missing required fields',
@@ -133,24 +190,23 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate data types
-    if (typeof distance !== 'number' || typeof calculatedFare !== 'number') {
+    if (
+      typeof distance !== 'number' ||
+      !Number.isFinite(distance) ||
+      typeof calculatedFare !== 'number' ||
+      !Number.isFinite(calculatedFare)
+    ) {
       return NextResponse.json(
         { error: 'Distance and calculatedFare must be numbers' },
         { status: 400 }
       )
     }
 
-    // Get user ID from the shared auth helper when available.
-    let userId: string | undefined = undefined
-    
-    try {
-      const user = await verifyAuth(request)
-      if (user) {
-        userId = user.id
-      }
-    } catch (error) {
-      // If token verification fails, continue without user ID (anonymous calculation)
-    }
+    const parsedDistance = Number.parseFloat(String(distance))
+    const parsedCalculatedFare = Number.parseFloat(String(calculatedFare))
+    const parsedOriginalFare = toOptionalNumber(originalFare)
+    const parsedDiscountApplied = toOptionalNumber(discountApplied)
+    const serializedRouteData = routeData ? JSON.stringify(routeData) : null
 
     let resolvedVehicleId: string | null = null
 
@@ -159,13 +215,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           { error: 'vehicleId must be a non-empty string when provided' },
           { status: 400 }
-        )
-      }
-
-      if (!userId) {
-        return NextResponse.json(
-          { error: 'Authentication required to attach a vehicle to a fare calculation' },
-          { status: 401 }
         )
       }
 
@@ -198,14 +247,7 @@ export async function POST(request: NextRequest) {
     let resolvedDiscountType = discountType || null
 
     if (discountCardId) {
-      if (!userId) {
-        return NextResponse.json(
-          { error: 'Authentication required to use a discount card' },
-          { status: 401 }
-        )
-      }
-
-      if (typeof originalFare !== 'number' || typeof discountApplied !== 'number' || discountApplied <= 0) {
+      if (parsedOriginalFare === null || parsedDiscountApplied === null || parsedDiscountApplied <= 0) {
         return NextResponse.json(
           { error: 'A valid discount usage must include originalFare and a positive discountApplied amount' },
           { status: 400 }
@@ -253,6 +295,39 @@ export async function POST(request: NextRequest) {
       resolvedDiscountType = card.discountType
     }
 
+    const duplicateWindowStart = new Date(Date.now() - RECENT_DUPLICATE_SAVE_WINDOW_MS)
+    const existingCalculation = await prisma.fareCalculation.findFirst({
+      where: {
+        userId,
+        vehicleId: resolvedVehicleId,
+        fromLocation: String(fromLocation),
+        toLocation: String(toLocation),
+        distance: parsedDistance,
+        calculatedFare: parsedCalculatedFare,
+        calculationType: String(calculationType),
+        routeData: serializedRouteData,
+        discountCardId: discountCardId || null,
+        originalFare: parsedOriginalFare,
+        discountApplied: parsedDiscountApplied,
+        discountType: resolvedDiscountType,
+        createdAt: {
+          gte: duplicateWindowStart,
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      select: fareCalculationSerializeSelect,
+    })
+
+    if (existingCalculation) {
+      return NextResponse.json({
+        success: true,
+        calculation: serializeFareCalculation(existingCalculation),
+        message: 'Fare calculation already saved',
+      })
+    }
+
     // Create fare calculation record
     const fareCalculation = await prisma.fareCalculation.create({
       data: {
@@ -260,67 +335,33 @@ export async function POST(request: NextRequest) {
         vehicleId: resolvedVehicleId,
         fromLocation: String(fromLocation),
         toLocation: String(toLocation),
-        distance: parseFloat(String(distance)),
-        calculatedFare: parseFloat(String(calculatedFare)),
+        distance: parsedDistance,
+        calculatedFare: parsedCalculatedFare,
         calculationType: String(calculationType),
-        routeData: routeData ? JSON.stringify(routeData) : null,
+        routeData: serializedRouteData,
         // Discount card fields
         discountCardId: discountCardId || null,
-        originalFare: originalFare ? parseFloat(String(originalFare)) : null,
-        discountApplied: discountApplied ? parseFloat(String(discountApplied)) : null,
+        originalFare: parsedOriginalFare,
+        discountApplied: parsedDiscountApplied,
         discountType: resolvedDiscountType
       },
-      include: {
-        user: userId ? {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            username: true
-          }
-        } : false,
-        vehicle: resolvedVehicleId ? {
-          select: {
-            id: true,
-            plateNumber: true,
-            vehicleType: true,
-            permit: {
-              select: {
-                permitPlateNumber: true,
-              },
-            },
-          }
-        } : false,
-        discountCard: discountCardId ? {
-          select: {
-            id: true,
-            discountType: true,
-            user: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true
-              }
-            }
-          }
-        } : false
-      }
+      select: fareCalculationSerializeSelect,
     })
 
     // Create discount usage log if discount was applied
-    if (discountCardId && userId && discountApplied && discountApplied > 0) {
+    if (discountCardId && parsedDiscountApplied && parsedDiscountApplied > 0 && parsedOriginalFare) {
       try {
         await prisma.discountUsageLog.create({
           data: {
             discountCardId: discountCardId,
             fareCalculationId: fareCalculation.id,
-            originalFare: parseFloat(String(originalFare)),
-            discountAmount: parseFloat(String(discountApplied)),
-            finalFare: parseFloat(String(calculatedFare)),
-            discountRate: discountApplied / originalFare, // Calculate actual rate used
+            originalFare: parsedOriginalFare,
+            discountAmount: parsedDiscountApplied,
+            finalFare: parsedCalculatedFare,
+            discountRate: parsedDiscountApplied / parsedOriginalFare, // Calculate actual rate used
             fromLocation: String(fromLocation),
             toLocation: String(toLocation),
-            distance: parseFloat(String(distance)),
+            distance: parsedDistance,
             // Optional tracking fields
             ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || null,
             gpsCoordinates: null, // Can be added later if needed

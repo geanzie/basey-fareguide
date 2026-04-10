@@ -16,18 +16,25 @@ export async function GET(request: NextRequest) {
         : latest;
     }, null);
 
-    return NextResponse.json({
-      success: true,
-      locations,
-      count: locations.length,
-      metadata: {
-        municipality: 'Basey',
-        province: 'Samar',
-        total_locations: locations.length,
-        last_updated: lastUpdated,
-        sources: ['database']
-      }
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        locations,
+        count: locations.length,
+        metadata: {
+          municipality: 'Basey',
+          province: 'Samar',
+          total_locations: locations.length,
+          last_updated: lastUpdated,
+          sources: ['database']
+        }
+      },
+      {
+        headers: {
+          'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
+        },
+      },
+    );
   } catch (error) {
     console.error('Error fetching locations:', error);
     return NextResponse.json(

@@ -14,6 +14,9 @@ import type { AnnouncementCategoryValue } from "@/lib/announcements/categories";
 export const ANNOUNCEMENT_MIGRATION_REQUIRED_MESSAGE =
   "Traffic announcement management is waiting on database migrations. Run `npx prisma migrate deploy` against the active database to enable admin scheduling and public traffic notices.";
 
+export const PUBLIC_ANNOUNCEMENT_LIMIT = 3;
+export const ADMIN_ANNOUNCEMENT_BATCH_SIZE = 200;
+
 interface AnnouncementRow {
   id: string;
   title: string;
@@ -41,6 +44,10 @@ interface AnnouncementRow {
 interface SqlRunner {
   $queryRaw<T = unknown>(query: Prisma.Sql): Promise<T>;
   $executeRaw(query: Prisma.Sql): Promise<number>;
+}
+
+interface AdminAnnouncementQueryOptions {
+  batchSize?: number;
 }
 
 export class AnnouncementNotFoundError extends Error {
@@ -91,6 +98,10 @@ const announcementRowSelect = Prisma.sql`
   LEFT JOIN "users" created_user ON created_user."id" = a."createdBy"
   LEFT JOIN "users" updated_user ON updated_user."id" = a."updatedBy"
   LEFT JOIN "users" archived_user ON archived_user."id" = a."archivedBy"
+`;
+
+const announcementNewestFirstOrder = Prisma.sql`
+  ORDER BY a."startsAt" DESC, a."createdAt" DESC, a."id" DESC
 `;
 
 function isAnnouncementTableMissingError(error: unknown): boolean {
@@ -148,8 +159,57 @@ function sortRowsNewestFirst(rows: AnnouncementRow[]): AnnouncementRow[] {
 
     const leftCreatedAt = toDate(left.createdAt)?.getTime() ?? 0;
     const rightCreatedAt = toDate(right.createdAt)?.getTime() ?? 0;
-    return rightCreatedAt - leftCreatedAt;
+    if (rightCreatedAt !== leftCreatedAt) {
+      return rightCreatedAt - leftCreatedAt;
+    }
+
+    return right.id.localeCompare(left.id);
   });
+}
+
+async function queryAnnouncementRows(
+  runner: SqlRunner,
+  options?: {
+    where?: Prisma.Sql;
+    limit?: number;
+    offset?: number;
+  },
+): Promise<AnnouncementRow[]> {
+  const whereClause = options?.where ?? Prisma.empty;
+  const paginationClause =
+    typeof options?.limit === "number"
+      ? Prisma.sql`LIMIT ${options.limit} OFFSET ${options.offset ?? 0}`
+      : Prisma.empty;
+
+  return runner.$queryRaw<AnnouncementRow[]>(Prisma.sql`
+    ${announcementRowSelect}
+    ${whereClause}
+    ${announcementNewestFirstOrder}
+    ${paginationClause}
+  `);
+}
+
+async function queryAdminAnnouncementRowsInBatches(
+  runner: SqlRunner,
+  batchSize: number,
+): Promise<AnnouncementRow[]> {
+  const rows: AnnouncementRow[] = [];
+  let offset = 0;
+
+  while (true) {
+    const batch = await queryAnnouncementRows(runner, {
+      limit: batchSize,
+      offset,
+    });
+
+    rows.push(...batch);
+
+    if (batch.length < batchSize) {
+      return rows;
+    }
+
+    offset += batchSize;
+  }
 }
 
 function serializeAnnouncementRow(
@@ -196,12 +256,14 @@ export async function getPublicAnnouncements(now: Date = new Date()): Promise<An
   let rows: AnnouncementRow[];
 
   try {
-    rows = await prisma.$queryRaw<AnnouncementRow[]>(Prisma.sql`
-      ${announcementRowSelect}
-      WHERE a."archivedAt" IS NULL
-        AND a."startsAt" <= ${now}
-        AND (a."endsAt" IS NULL OR a."endsAt" > ${now})
-    `);
+    rows = await queryAnnouncementRows(prisma, {
+      where: Prisma.sql`
+        WHERE a."archivedAt" IS NULL
+          AND a."startsAt" <= ${now}
+          AND (a."endsAt" IS NULL OR a."endsAt" > ${now})
+      `,
+      limit: PUBLIC_ANNOUNCEMENT_LIMIT,
+    });
   } catch (error) {
     if (isAnnouncementTableMissingError(error)) {
       return { announcements: [] };
@@ -212,7 +274,7 @@ export async function getPublicAnnouncements(now: Date = new Date()): Promise<An
 
   return {
     announcements: sortRowsNewestFirst(rows)
-      .slice(0, 3)
+      .slice(0, PUBLIC_ANNOUNCEMENT_LIMIT)
       .map((row) =>
         serializePublicAnnouncement({
           id: row.id,
@@ -228,13 +290,13 @@ export async function getPublicAnnouncements(now: Date = new Date()): Promise<An
 
 export async function getAdminAnnouncements(
   now: Date = new Date(),
+  options?: AdminAnnouncementQueryOptions,
 ): Promise<AdminAnnouncementsResponseDto> {
   let rows: AnnouncementRow[];
+  const batchSize = Math.max(1, options?.batchSize ?? ADMIN_ANNOUNCEMENT_BATCH_SIZE);
 
   try {
-    rows = await prisma.$queryRaw<AnnouncementRow[]>(Prisma.sql`
-      ${announcementRowSelect}
-    `);
+    rows = await queryAdminAnnouncementRowsInBatches(prisma, batchSize);
   } catch (error) {
     if (isAnnouncementTableMissingError(error)) {
       return {

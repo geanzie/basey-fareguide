@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { buildPaginationMetadata, parsePaginationParams } from '@/lib/api/pagination'
 import { ADMIN_OR_ENCODER, createAuthErrorResponse, requireRequestRole, requireRequestUser } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
@@ -7,44 +8,42 @@ export async function GET(request: NextRequest) {
     const user = await requireRequestUser(request)
 
     const { searchParams } = new URL(request.url)
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '10')
-    const skip = (page - 1) * limit
+    const pagination = parsePaginationParams(searchParams, {
+      defaultLimit: 10,
+      maxLimit: 50,
+    })
 
-    // Fetch user's fare calculations
-    const fareCalculations = await prisma.fareCalculation.findMany({
-      where: {
-        userId: user.id
-      },
-      orderBy: {
-        createdAt: 'desc'
-      },
-      skip,
-      take: limit,
-      select: {
-        id: true,
-        fromLocation: true,
-        toLocation: true,
-        distance: true,
-        calculatedFare: true,
-        actualFare: true,
-        calculationType: true,
-        createdAt: true,
-        vehicle: {
-          select: {
-            vehicleType: true,
-            plateNumber: true
+    const [fareCalculations, totalCalculations] = await Promise.all([
+      prisma.fareCalculation.findMany({
+        where: {
+          userId: user.id
+        },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        skip: pagination.skip,
+        take: pagination.limit,
+        select: {
+          id: true,
+          fromLocation: true,
+          toLocation: true,
+          distance: true,
+          calculatedFare: true,
+          actualFare: true,
+          calculationType: true,
+          createdAt: true,
+          vehicle: {
+            select: {
+              vehicleType: true,
+              plateNumber: true
+            }
           }
         }
-      }
-    })
-
-    // Get total count for pagination
-    const totalCalculations = await prisma.fareCalculation.count({
-      where: {
-        userId: user.id
-      }
-    })
+      }),
+      prisma.fareCalculation.count({
+        where: {
+          userId: user.id
+        }
+      }),
+    ])
 
     // Format routes for frontend
     const formattedRoutes = fareCalculations.map(calc => ({
@@ -63,12 +62,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       routes: formattedRoutes,
-      pagination: {
-        page,
-        limit,
-        total: totalCalculations,
-        totalPages: Math.ceil(totalCalculations / limit)
-      }
+      pagination: buildPaginationMetadata(pagination, totalCalculations)
     })
   } catch (error) {
     return createAuthErrorResponse(error)

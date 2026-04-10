@@ -17,4 +17,10 @@ export const AUTH_SESSION_REVALIDATION_MS = parsePositiveInteger(
   process.env.NEXT_PUBLIC_AUTH_REVALIDATION_MS,
   60 * 1000,
 )
+
+export const AUTH_SESSION_BOOTSTRAP_TIMEOUT_MS = parsePositiveInteger(
+  process.env.NEXT_PUBLIC_AUTH_BOOTSTRAP_TIMEOUT_MS,
+  8000,
+)
+
 export const AUTH_SESSION_JWT_EXPIRES_IN = AUTH_SESSION_MAX_AGE_SECONDS

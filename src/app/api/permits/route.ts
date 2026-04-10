@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { buildPaginationMetadata, parsePaginationParams } from '@/lib/api/pagination'
 import { VehicleType, PermitStatus } from '@prisma/client'
 import { ADMIN_OR_ENCODER, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
 import { serializePermit } from '@/lib/serializers'
@@ -11,9 +12,10 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status') as PermitStatus | null
     const vehicleType = searchParams.get('vehicleType') as VehicleType | null
     const search = searchParams.get('search')
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '10')
-    const skip = (page - 1) * limit
+    const pagination = parsePaginationParams(searchParams, {
+      defaultLimit: 10,
+      maxLimit: 100,
+    })
 
     // Build where clause
     const where: any = {}
@@ -38,9 +40,9 @@ export async function GET(request: NextRequest) {
     const [permits, total] = await Promise.all([
       prisma.permit.findMany({
         where,
-        skip,
-        take: limit,
-        orderBy: { encodedAt: 'desc' },
+        skip: pagination.skip,
+        take: pagination.limit,
+        orderBy: [{ encodedAt: 'desc' }, { id: 'desc' }],
         include: {
           renewalHistory: {
             orderBy: { renewedAt: 'desc' },
@@ -54,12 +56,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       permits: permits.map((permit) => serializePermit(permit)),
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit)
-      }
+      pagination: buildPaginationMetadata(pagination, total)
     })
   } catch (error) {
     return createAuthErrorResponse(error)

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const prismaMock = vi.hoisted(() => ({
   user: {
-    findFirst: vi.fn(),
+    findUnique: vi.fn(),
     update: vi.fn(),
   },
 }))
@@ -71,11 +71,11 @@ describe('request reset route', () => {
 
     expect(response.status).toBe(503)
     expect(json.message).toMatch(/temporarily unavailable/i)
-    expect(prismaMock.user.findFirst).not.toHaveBeenCalled()
+    expect(prismaMock.user.findUnique).not.toHaveBeenCalled()
   })
 
   it('clears the stored OTP again if email delivery fails after generation', async () => {
-    prismaMock.user.findFirst.mockResolvedValue({
+    prismaMock.user.findUnique.mockResolvedValue({
       id: 'user-1',
       email: 'user@example.com',
       username: 'sampleuser',
@@ -101,13 +101,15 @@ describe('request reset route', () => {
         data: {
           passwordResetOtp: null,
           passwordResetOtpExpiry: null,
+          passwordResetToken: null,
+          passwordResetExpiry: null,
         },
       }),
     )
   })
 
   it('returns masked email details only after OTP email delivery succeeds', async () => {
-    prismaMock.user.findFirst.mockResolvedValue({
+    prismaMock.user.findUnique.mockResolvedValue({
       id: 'user-1',
       email: 'username@example.com',
       username: 'sampleuser',

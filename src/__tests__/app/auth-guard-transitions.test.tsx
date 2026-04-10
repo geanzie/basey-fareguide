@@ -24,6 +24,7 @@ vi.mock('next/navigation', () => ({
 import { AuthProvider, useAuth } from '@/components/AuthProvider'
 import RoleGuard from '@/components/RoleGuard'
 import {
+  AUTH_SESSION_BOOTSTRAP_TIMEOUT_MS,
   AUTH_SESSION_IDLE_TIMEOUT_MS,
   AUTH_SESSION_REVALIDATION_MS,
 } from '@/lib/authSession'
@@ -231,6 +232,33 @@ describe('auth guard transitions', () => {
       pendingProfile.resolve(makeJsonResponse(makeSessionResponse('ADMIN')))
       await flushPromises()
     })
+  })
+
+  it('falls back to unauthenticated routing when the initial session bootstrap never resolves', async () => {
+    const pendingProfile = deferredResponse()
+    sessionResponse = pendingProfile.promise
+
+    await act(async () => {
+      root.render(
+        <AuthTestHarness>
+          <RoleGuard allowedRoles={['ADMIN']}>
+            <div>Protected admin reports</div>
+          </RoleGuard>
+        </AuthTestHarness>,
+      )
+      await Promise.resolve()
+    })
+
+    expect(container.textContent).toContain('Verifying access')
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(AUTH_SESSION_BOOTSTRAP_TIMEOUT_MS)
+      await flushPromises()
+    })
+
+    expect(replaceMock).toHaveBeenCalledWith('/login')
+    expect(container.textContent).toContain('Redirecting to login')
+    expect(container.textContent).not.toContain('Protected admin reports')
   })
 
   it('logs out from a protected page without flashing Access Denied and redirects to /', async () => {

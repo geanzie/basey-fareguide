@@ -29,6 +29,7 @@ const prismaMock = vi.hoisted(() => ({
 
 const fareRateServiceMock = vi.hoisted(() => ({
   getAdminFareRates: vi.fn(),
+  invalidateResolvedFareRatesCache: vi.fn(),
 }));
 
 vi.mock("@/lib/auth", () => ({
@@ -43,6 +44,7 @@ vi.mock("@/lib/prisma", () => ({
 
 vi.mock("@/lib/fare/rateService", () => ({
   getAdminFareRates: fareRateServiceMock.getAdminFareRates,
+  invalidateResolvedFareRatesCache: fareRateServiceMock.invalidateResolvedFareRatesCache,
 }));
 
 import { DELETE, GET, POST } from "@/app/api/admin/fare-rates/route";
@@ -154,6 +156,7 @@ describe("admin fare rate management route", () => {
     );
     expect(json.message).toMatch(/published successfully/i);
     expect(json.fareRateVersion.baseFare).toBe(19.5);
+    expect(fareRateServiceMock.invalidateResolvedFareRatesCache).toHaveBeenCalledTimes(1);
   });
 
   it("replaces an existing scheduled version and stores the Manila schedule in UTC", async () => {
@@ -209,6 +212,7 @@ describe("admin fare rate management route", () => {
     const createCall = txFareRateVersionMock.create.mock.calls[0]?.[0];
     expect(createCall.data.effectiveAt.toISOString()).toBe("2026-04-05T01:30:00.000Z");
     expect(json.replacedVersionId).toBe("future-1");
+    expect(fareRateServiceMock.invalidateResolvedFareRatesCache).toHaveBeenCalledTimes(1);
   });
 
   it("cancels the next scheduled fare version", async () => {
@@ -233,5 +237,6 @@ describe("admin fare rate management route", () => {
       }),
     );
     expect(json.canceledVersionId).toBe("future-1");
+    expect(fareRateServiceMock.invalidateResolvedFareRatesCache).toHaveBeenCalledTimes(1);
   });
 });

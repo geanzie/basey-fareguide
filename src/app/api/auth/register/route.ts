@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS } from '@/lib/rateLimit'
 
@@ -38,8 +39,14 @@ export async function POST(request: NextRequest) {
       userType
     } = await request.json()
 
+    const normalizedUsername = typeof username === 'string' ? username.trim() : ''
+    const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : ''
+    const normalizedGovernmentId = typeof governmentId === 'string' ? governmentId.trim() : ''
+    const normalizedIdType = typeof idType === 'string' ? idType.trim() : ''
+    const normalizedBarangayResidence = typeof barangayResidence === 'string' ? barangayResidence.trim() : ''
+
     // Validate required fields
-    if (!username || !password || !firstName || !lastName || !email || !phoneNumber) {
+    if (!normalizedUsername || !password || !firstName || !lastName || !normalizedEmail || !phoneNumber) {
       return NextResponse.json(
         { message: 'All required fields must be provided' },
         { status: 400 }
@@ -48,7 +55,7 @@ export async function POST(request: NextRequest) {
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) {
+    if (!emailRegex.test(normalizedEmail)) {
       return NextResponse.json(
         { message: 'Please enter a valid email address' },
         { status: 400 }
@@ -56,7 +63,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate idType is provided
-    if (!idType || idType.trim() === '') {
+    if (!normalizedIdType) {
       return NextResponse.json(
         { message: 'Government ID Type is required' },
         { status: 400 }
@@ -64,7 +71,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate governmentId is provided
-    if (!governmentId || governmentId.trim() === '') {
+    if (!normalizedGovernmentId) {
       return NextResponse.json(
         { message: 'Government ID Number is required' },
         { status: 400 }
@@ -72,7 +79,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate barangayResidence is provided
-    if (!barangayResidence || barangayResidence.trim() === '') {
+    if (!normalizedBarangayResidence) {
       return NextResponse.json(
         { message: 'Barangay of Residence is required' },
         { status: 400 }
@@ -105,30 +112,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check for existing username in database
-    const existingUser = await prisma.user.findUnique({
-      where: { username }
-    })
-    
-    if (existingUser) {
-      return NextResponse.json(
-        { message: 'Username already taken' },
-        { status: 409 }
-      )
-    }
-
-    // Check for existing email
-    const existingEmail = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() }
-    })
-    
-    if (existingEmail) {
-      return NextResponse.json(
-        { message: 'Email address already registered' },
-        { status: 409 }
-      )
-    }
-
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 12)
 
@@ -137,25 +120,60 @@ export async function POST(request: NextRequest) {
     const isPublicUser = userType === 'PUBLIC'
     
     // Save user to database
-    const newUser = await prisma.user.create({
-      data: {
-        username,
-        password: hashedPassword,
-        firstName,
-        lastName,
-        email: email.toLowerCase(),
-        phoneNumber,
-        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
-        governmentId: governmentId.trim(),
-        idType: idType.trim(),
-        barangayResidence: barangayResidence.trim(),
-        userType,
-        isActive: isPublicUser, // Public users are immediately active
-        isVerified: isPublicUser, // Public users are immediately verified
-        verifiedAt: isPublicUser ? new Date() : null,
-        verifiedBy: isPublicUser ? 'AUTO_APPROVED' : null
+    let newUser
+    try {
+      newUser = await prisma.user.create({
+        data: {
+          username: normalizedUsername,
+          password: hashedPassword,
+          firstName,
+          lastName,
+          email: normalizedEmail,
+          phoneNumber,
+          dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
+          governmentId: normalizedGovernmentId,
+          idType: normalizedIdType,
+          barangayResidence: normalizedBarangayResidence,
+          userType,
+          isActive: isPublicUser,
+          isVerified: isPublicUser,
+          verifiedAt: isPublicUser ? new Date() : null,
+          verifiedBy: isPublicUser ? 'AUTO_APPROVED' : null
+        }
+      })
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        const target = Array.isArray(error.meta?.target) ? error.meta.target : []
+
+        if (target.includes('username')) {
+          return NextResponse.json(
+            { message: 'Username already taken' },
+            { status: 409 }
+          )
+        }
+
+        if (target.includes('email')) {
+          return NextResponse.json(
+            { message: 'Email address already registered' },
+            { status: 409 }
+          )
+        }
+
+        if (target.includes('governmentId')) {
+          return NextResponse.json(
+            { message: 'Government ID Number is already registered' },
+            { status: 409 }
+          )
+        }
+
+        return NextResponse.json(
+          { message: 'Account details are already registered' },
+          { status: 409 }
+        )
       }
-    })
+
+      throw error
+    }
 
     const message = isPublicUser 
       ? 'Registration successful! You can now log in to your account.'
@@ -167,7 +185,9 @@ export async function POST(request: NextRequest) {
       requiresApproval: !isPublicUser,
       canLoginImmediately: isPublicUser
     }, { status: 201 })
-      } catch (error) {    return NextResponse.json(
+  } catch (error) {
+    console.error('[REGISTER ERROR]', error)
+    return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }
     )

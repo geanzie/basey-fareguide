@@ -39,6 +39,16 @@ interface DashboardStats {
   }
 }
 
+interface AdminUsersSummaryResponse {
+  users?: Array<{ isActive: boolean; isVerified: boolean; userType: string }>
+  summary?: {
+    total: number
+    active: number
+    pending: number
+    byType: Record<string, number>
+  }
+}
+
 function getActivityIcon(status: string) {
   if (status === 'RESOLVED') {
     return {
@@ -67,7 +77,7 @@ export default function AdminDashboard() {
       setLoading(true)
 
       const [usersRes, incidentsRes, storageRes] = await Promise.all([
-        fetch('/api/admin/users'),
+        fetch('/api/admin/users?limit=1'),
         fetch('/api/admin/incidents/stats'),
         fetch('/api/admin/storage'),
       ])
@@ -78,16 +88,21 @@ export default function AdminDashboard() {
         storageRes.ok ? storageRes.json() : { storage: { total: { files: 0, sizeMB: 0 } }, recommendations: { cleanupNeeded: false } },
       ])
 
+      const typedUsersData = usersData as AdminUsersSummaryResponse
+      const userSummary = typedUsersData.summary
+      const fallbackUsers = typedUsersData.users || []
+
       setStats({
         users: {
-          total: usersData.users?.length || 0,
-          active: usersData.users?.filter((user: { isActive: boolean }) => user.isActive)?.length || 0,
-          pending: usersData.users?.filter((user: { isVerified: boolean }) => !user.isVerified)?.length || 0,
+          total: userSummary?.total ?? fallbackUsers.length,
+          active: userSummary?.active ?? fallbackUsers.filter((user) => user.isActive).length,
+          pending: userSummary?.pending ?? fallbackUsers.filter((user) => !user.isVerified).length,
           byType:
-            usersData.users?.reduce((acc: Record<string, number>, user: { userType: string }) => {
+            userSummary?.byType ??
+            fallbackUsers.reduce((acc: Record<string, number>, user) => {
               acc[user.userType] = (acc[user.userType] || 0) + 1
               return acc
-            }, {}) || {},
+            }, {}),
         },
         incidents: {
           total: incidentsData.total || 0,

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { buildPaginationMetadata, parsePaginationParams } from '@/lib/api/pagination'
 import { verifyAuth } from '@/lib/auth'
 import { serializeIncident } from '@/lib/serializers'
 
@@ -12,9 +13,10 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '100')
-    const skip = (page - 1) * limit
+    const pagination = parsePaginationParams(searchParams, {
+      defaultLimit: 100,
+      maxLimit: 100,
+    })
     
     // Get filter parameters
     const statusFilter = searchParams.get('status')
@@ -67,67 +69,65 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch incidents with filters
-    const incidents = await prisma.incident.findMany({
-      where: whereClause,
-      orderBy: {
-        createdAt: 'desc'
-      },
-      skip,
-      take: limit,
-      select: {
-        id: true,
-        incidentType: true,
-        description: true,
-        location: true,
-        fareCalculationId: true,
-        tripOrigin: true,
-        tripDestination: true,
-        tripFare: true,
-        tripDiscountType: true,
-        tripCalculatedAt: true,
-        tripCalculationType: true,
-        tripPermitPlateNumber: true,
-        tripPlateNumber: true,
-        tripVehicleType: true,
-        plateNumber: true,
-        driverLicense: true,
-        vehicleType: true,
-        incidentDate: true,
-        status: true,
-        ticketNumber: true,
-        paymentStatus: true,
-        paidAt: true,
-        officialReceiptNumber: true,
-        penaltyAmount: true,
-        remarks: true,
-        createdAt: true,
-        updatedAt: true,
-        reportedBy: {
-          select: {
-            firstName: true,
-            lastName: true,
-            userType: true
-          }
-        },
-        handledBy: {
-          select: {
-            firstName: true,
-            lastName: true
-          }
-        },
-        vehicle: {
-          select: {
-            vehicleType: true,
-            plateNumber: true
+    const [incidents, totalIncidents] = await Promise.all([
+      prisma.incident.findMany({
+        where: whereClause,
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        skip: pagination.skip,
+        take: pagination.limit,
+        select: {
+          id: true,
+          incidentType: true,
+          description: true,
+          location: true,
+          fareCalculationId: true,
+          tripOrigin: true,
+          tripDestination: true,
+          tripFare: true,
+          tripDiscountType: true,
+          tripCalculatedAt: true,
+          tripCalculationType: true,
+          tripPermitPlateNumber: true,
+          tripPlateNumber: true,
+          tripVehicleType: true,
+          plateNumber: true,
+          driverLicense: true,
+          vehicleType: true,
+          incidentDate: true,
+          status: true,
+          ticketNumber: true,
+          paymentStatus: true,
+          paidAt: true,
+          officialReceiptNumber: true,
+          penaltyAmount: true,
+          remarks: true,
+          createdAt: true,
+          updatedAt: true,
+          reportedBy: {
+            select: {
+              firstName: true,
+              lastName: true,
+              userType: true
+            }
+          },
+          handledBy: {
+            select: {
+              firstName: true,
+              lastName: true
+            }
+          },
+          vehicle: {
+            select: {
+              vehicleType: true,
+              plateNumber: true
+            }
           }
         }
-      }
-    })
-
-    // Get total count for pagination
-    const totalIncidents = await prisma.incident.count({
-      where: whereClause
-    })
+      }),
+      prisma.incident.count({
+        where: whereClause
+      }),
+    ])
 
     // Format incidents for frontend
     const formattedIncidents = incidents.map((incident) =>
@@ -166,12 +166,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       incidents: formattedIncidents,
-      pagination: {
-        page,
-        limit,
-        total: totalIncidents,
-        totalPages: Math.ceil(totalIncidents / limit)
-      }
+      pagination: buildPaginationMetadata(pagination, totalIncidents)
     })
   } catch (error) {
     console.error('Error fetching incidents:', error)
