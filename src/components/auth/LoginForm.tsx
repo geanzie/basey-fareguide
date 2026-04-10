@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 import { useAuth } from '@/components/AuthProvider'
 import BrandMark from '@/components/BrandMark'
@@ -9,32 +9,24 @@ import LoadingSpinner from '@/components/LoadingSpinner'
 import { getAuthenticatedHomeRoute } from '@/lib/authRoutes'
 
 interface LoginFormProps {
+  initialError?: string
+  initialUsername?: string
   onSwitchToRegister: () => void
 }
 
-const LoginForm = ({ onSwitchToRegister }: LoginFormProps) => {
+const LoginForm = ({
+  initialError = '',
+  initialUsername = '',
+  onSwitchToRegister,
+}: LoginFormProps) => {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const redirectUsername = searchParams.get('username') ?? ''
-  const redirectError = searchParams.get('error') ?? ''
   const { login } = useAuth()
   const [formData, setFormData] = useState({
-    username: '',
+    username: initialUsername,
     password: '',
   })
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-
-  useEffect(() => {
-    if (redirectUsername) {
-      setFormData((current) => ({
-        ...current,
-        username: redirectUsername,
-      }))
-    }
-
-    setError(redirectError)
-  }, [redirectError, redirectUsername])
+  const [error, setError] = useState(initialError)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

@@ -4,13 +4,22 @@ import { useState } from 'react'
 import LoginForm from './LoginForm'
 import RegisterForm from './RegisterForm'
 
-const AuthPage = () => {
+interface AuthPageProps {
+  initialError?: string
+  initialUsername?: string
+}
+
+const AuthPage = ({ initialError = '', initialUsername = '' }: AuthPageProps) => {
   const [isLogin, setIsLogin] = useState(true)
 
   return (
     <div>
       {isLogin ? (
-        <LoginForm onSwitchToRegister={() => setIsLogin(false)} />
+        <LoginForm
+          initialError={initialError}
+          initialUsername={initialUsername}
+          onSwitchToRegister={() => setIsLogin(false)}
+        />
       ) : (
         <RegisterForm onSwitchToLogin={() => setIsLogin(true)} />
       )}
