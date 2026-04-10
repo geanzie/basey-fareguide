@@ -42,6 +42,25 @@ export function getJWTSecret(): string {
   return secret
 }
 
+export async function resolveAuthUserFromToken(token: string | undefined): Promise<AuthUser | null> {
+  if (!token) {
+    return null
+  }
+
+  try {
+    const decoded = jwt.verify(token, getJWTSecret()) as { userId: string }
+
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: authUserSelect,
+    })
+
+    return user?.isActive ? user : null
+  } catch {
+    return null
+  }
+}
+
 /**
  * Verifies the JWT token from the Authorization header or httpOnly cookie and returns the authenticated user.
  * Returns null if authentication fails.
@@ -66,14 +85,7 @@ export async function verifyAuth(request: NextRequest): Promise<AuthUser | null>
       return null
     }
 
-    const decoded = jwt.verify(token, getJWTSecret()) as any
-    
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
-      select: authUserSelect,
-    })
-
-    return user?.isActive ? user : null
+    return resolveAuthUserFromToken(token)
   } catch (error) {
     return null
   }

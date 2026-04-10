@@ -42,13 +42,22 @@ export function useAuth() {
   return context
 }
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({
+  children,
+  initialSession,
+}: {
+  children: React.ReactNode
+  initialSession?: SessionResponseDto | null
+}) {
   const router = useRouter()
   const pathname = usePathname()
   const { mutate: mutateCache } = useSWRConfig()
   const { data, isLoading, mutate } = useSWR<SessionResponseDto | null>(
     SWR_KEYS.authSession,
     fetchSessionResponse,
+    {
+      fallbackData: initialSession,
+    },
   )
   const [transitionState, setTransitionState] = useState<'idle' | 'logging_out'>('idle')
   const lastActivityAtRef = useRef(Date.now())

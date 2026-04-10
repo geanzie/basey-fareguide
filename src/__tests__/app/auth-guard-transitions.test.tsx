@@ -61,7 +61,13 @@ function makeSessionResponse(userType: 'ADMIN' | 'PUBLIC' = 'ADMIN') {
   }
 }
 
-function AuthTestHarness({ children }: { children: React.ReactNode }) {
+function AuthTestHarness({
+  children,
+  initialSession,
+}: {
+  children: React.ReactNode
+  initialSession?: ReturnType<typeof makeSessionResponse> | null
+}) {
   return (
     <SWRConfig
       value={{
@@ -73,7 +79,7 @@ function AuthTestHarness({ children }: { children: React.ReactNode }) {
         errorRetryCount: 0,
       }}
     >
-      <AuthProvider>{children}</AuthProvider>
+      <AuthProvider initialSession={initialSession ?? undefined}>{children}</AuthProvider>
     </SWRConfig>
   )
 }
@@ -102,6 +108,21 @@ function LogoutStatusHarness() {
         Trigger logout
       </button>
       <div>Auth status: {status}</div>
+    </>
+  )
+}
+
+function OptimisticLoginHarness() {
+  const { login } = useAuth()
+
+  return (
+    <>
+      <button type="button" onClick={() => login(makeSessionResponse('ADMIN').user)}>
+        Trigger login
+      </button>
+      <RoleGuard allowedRoles={['ADMIN']}>
+        <div>Protected admin reports</div>
+      </RoleGuard>
     </>
   )
 }
@@ -259,6 +280,63 @@ describe('auth guard transitions', () => {
     expect(replaceMock).toHaveBeenCalledWith('/login')
     expect(container.textContent).toContain('Redirecting to login')
     expect(container.textContent).not.toContain('Protected admin reports')
+  })
+
+  it('renders protected content immediately when the provider receives an initial authenticated session', async () => {
+    const pendingProfile = deferredResponse()
+    sessionResponse = pendingProfile.promise
+
+    await act(async () => {
+      root.render(
+        <AuthTestHarness initialSession={makeSessionResponse('ADMIN')}>
+          <RoleGuard allowedRoles={['ADMIN']}>
+            <div>Protected admin reports</div>
+          </RoleGuard>
+        </AuthTestHarness>,
+      )
+      await Promise.resolve()
+    })
+
+    expect(container.textContent).toContain('Protected admin reports')
+    expect(container.textContent).not.toContain('Verifying access')
+
+    await act(async () => {
+      pendingProfile.resolve(makeJsonResponse(makeSessionResponse('ADMIN')))
+      await flushPromises()
+    })
+  })
+
+  it('renders protected content immediately after login even when the initial session bootstrap is still pending', async () => {
+    const pendingProfile = deferredResponse()
+    sessionResponse = pendingProfile.promise
+
+    await act(async () => {
+      root.render(
+        <AuthTestHarness>
+          <OptimisticLoginHarness />
+        </AuthTestHarness>,
+      )
+      await Promise.resolve()
+    })
+
+    expect(container.textContent).toContain('Verifying access')
+
+    const loginButton = Array.from(container.querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('Trigger login'),
+    )
+
+    await act(async () => {
+      loginButton!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await flushPromises()
+    })
+
+    expect(container.textContent).toContain('Protected admin reports')
+    expect(container.textContent).not.toContain('Verifying access')
+
+    await act(async () => {
+      pendingProfile.resolve(makeJsonResponse(makeSessionResponse('ADMIN')))
+      await flushPromises()
+    })
   })
 
   it('logs out from a protected page without flashing Access Denied and redirects to /', async () => {

@@ -57,6 +57,8 @@ model User {
   createdAnnouncements  Announcement[]        @relation("AnnouncementCreator")
   updatedAnnouncements  Announcement[]        @relation("AnnouncementUpdater")
   archivedAnnouncements Announcement[]        @relation("AnnouncementArchiver")
+  updatedRoutingSettings RoutingSettings[]    @relation("RoutingSettingsUpdater")
+  routingSettingsAuditEntries RoutingSettingsAudit[] @relation("RoutingSettingsAuditActor")
 
   @@index([username])
   @@index([userType])
@@ -86,6 +88,34 @@ model FareRateVersion {
   @@index([canceledAt])
   @@index([effectiveAt, canceledAt])
   @@map("fare_rate_versions")
+}
+
+model RoutingSettings {
+  id              String                 @id @default("global")
+  primaryProvider RoutingProviderSetting @default(ORS)
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+  updatedBy       String?
+  updatedByUser   User?                  @relation("RoutingSettingsUpdater", fields: [updatedBy], references: [id])
+  auditEntries    RoutingSettingsAudit[]
+
+  @@index([updatedAt])
+  @@map("routing_settings")
+}
+
+model RoutingSettingsAudit {
+  id                     String                  @id @default(cuid())
+  routingSettingsId      String
+  previousPrimaryProvider RoutingProviderSetting?
+  newPrimaryProvider     RoutingProviderSetting
+  changedAt              DateTime                @default(now())
+  changedBy              String?
+  routingSettings        RoutingSettings         @relation(fields: [routingSettingsId], references: [id], onDelete: Cascade)
+  changedByUser          User?                   @relation("RoutingSettingsAuditActor", fields: [changedBy], references: [id])
+
+  @@index([routingSettingsId, changedAt])
+  @@index([changedAt])
+  @@map("routing_settings_audit")
 }
 
 model Announcement {
@@ -419,6 +449,11 @@ enum UserType {
   DATA_ENCODER
   ENFORCER
   PUBLIC
+}
+
+enum RoutingProviderSetting {
+  ORS
+  GOOGLE_ROUTES
 }
 
 enum AnnouncementCategory {

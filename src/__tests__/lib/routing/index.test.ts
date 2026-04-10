@@ -198,6 +198,104 @@ describe("routing orchestrators", () => {
     expect(result.fallbackReason).toBeNull();
   });
 
+  it("uses Google Routes as the primary provider when configured", async () => {
+    vi.spyOn(console, "info").mockImplementation(() => {});
+    vi.stubEnv("ROUTING_PROVIDER", "google_routes");
+    vi.stubEnv("GOOGLE_ROUTES_API_KEY", "google-test-key");
+    vi.stubEnv("OPENROUTESERVICE_API_KEY", "test-key");
+
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            routes: [
+              {
+                distanceMeters: 15100,
+                duration: "1380s",
+                polyline: { encodedPolyline: "googleEncodedPolyline" },
+                legs: [
+                  {
+                    startLocation: {
+                      latLng: { latitude: origin.lat, longitude: origin.lng },
+                    },
+                    endLocation: {
+                      latLng: { latitude: dest.lat, longitude: dest.lng },
+                    },
+                  },
+                ],
+              },
+            ],
+          }),
+      });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { calculateShortestRoadRoute } = await loadRouting();
+    const result = await calculateShortestRoadRoute(origin, dest);
+
+    expect(result.method).toBe("google_routes");
+    expect(result.provider).toBe("google_routes");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps route caches isolated when the configured primary provider changes", async () => {
+    vi.spyOn(console, "info").mockImplementation(() => {});
+
+    vi.stubEnv("OPENROUTESERVICE_API_KEY", "test-key");
+    vi.stubEnv("ROUTING_PROVIDER", "ors");
+    const orsFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        routes: [
+          {
+            summary: { distance: 14800, duration: 1320 },
+            geometry: "encodedPolylineString",
+          },
+        ],
+      }),
+    });
+    vi.stubGlobal("fetch", orsFetch);
+
+    let routing = await loadRouting();
+    await routing.calculateShortestRoadRoute(origin, dest);
+    expect(orsFetch).toHaveBeenCalledTimes(1);
+
+    vi.resetModules();
+    vi.stubEnv("ROUTING_PROVIDER", "google_routes");
+    vi.stubEnv("GOOGLE_ROUTES_API_KEY", "google-test-key");
+    const googleFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          routes: [
+            {
+              distanceMeters: 15100,
+              duration: "1380s",
+              polyline: { encodedPolyline: "googleEncodedPolyline" },
+              legs: [
+                {
+                  startLocation: {
+                    latLng: { latitude: origin.lat, longitude: origin.lng },
+                  },
+                  endLocation: {
+                    latLng: { latitude: dest.lat, longitude: dest.lng },
+                  },
+                },
+              ],
+            },
+          ],
+        }),
+    });
+    vi.stubGlobal("fetch", googleFetch);
+
+    routing = await loadRouting();
+    const result = await routing.calculateShortestRoadRoute(origin, dest);
+
+    expect(result.provider).toBe("google_routes");
+    expect(googleFetch).toHaveBeenCalledTimes(1);
+  });
+
   it("does not downgrade to GPS when shortest-road routing fails", async () => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
     vi.stubEnv("OPENROUTESERVICE_API_KEY", "");

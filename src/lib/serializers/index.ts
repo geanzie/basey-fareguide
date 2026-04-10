@@ -7,3 +7,4 @@ export * from "./permits";
 export * from "./session";
 export * from "./tracker";
 export * from "./vehicles";
+export * from "./routingSettings";

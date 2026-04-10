@@ -1,7 +1,10 @@
 import type { Metadata } from 'next'
+import { cookies } from 'next/headers'
 import { Inter } from 'next/font/google'
 import { AuthProvider, AuthAwareLayout } from '@/components/AuthProvider'
 import { SWRProvider } from '@/components/SWRProvider'
+import { resolveAuthUserFromToken } from '@/lib/auth'
+import { serializeSessionUser } from '@/lib/serializers'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -18,11 +21,16 @@ export const viewport = {
   initialScale: 1,
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const cookieStore = await cookies()
+  const authToken = cookieStore.get('auth-token')?.value
+  const authUser = await resolveAuthUserFromToken(authToken)
+  const initialSession = authUser ? { user: serializeSessionUser(authUser) } : null
+
   return (
     <html lang="en">
       <head>
@@ -31,7 +39,7 @@ export default function RootLayout({
       </head>
       <body className={`${inter.className} app-page-bg antialiased overflow-x-hidden`} suppressHydrationWarning>
         <SWRProvider>
-          <AuthProvider>
+          <AuthProvider initialSession={initialSession}>
           <div className="min-h-screen flex flex-col max-w-full">
 
             {/* Main Content with Conditional Sidebar */}

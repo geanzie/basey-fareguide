@@ -29,7 +29,11 @@ const AdminLocationManager = dynamic(() => import('@/components/AdminLocationMan
   loading: () => <div className="p-6">Loading location manager...</div>,
 })
 
-type AdminTab = 'dashboard' | 'users' | 'storage' | 'locations'
+const AdminRoutingSettingsManager = dynamic(() => import('@/components/AdminRoutingSettingsManager'), {
+  loading: () => <div className="p-6">Loading routing settings...</div>,
+})
+
+type AdminTab = 'dashboard' | 'users' | 'storage' | 'locations' | 'routing'
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<AdminTab>('dashboard')
@@ -55,6 +59,7 @@ export default function AdminPage() {
     { key: 'users', label: 'User Management', icon: DASHBOARD_ICONS.users },
     { key: 'storage', label: 'Storage Management', icon: DASHBOARD_ICONS.storage },
     { key: 'locations', label: 'Location Management', icon: DASHBOARD_ICONS.map },
+    { key: 'routing', label: 'Routing Settings', icon: DASHBOARD_ICONS.map },
   ]
 
   return (
@@ -152,6 +157,7 @@ export default function AdminPage() {
         {activeTab === 'users' && <AdminUserManagement />}
         {activeTab === 'storage' && <StorageManagement />}
         {activeTab === 'locations' && <AdminLocationManager />}
+        {activeTab === 'routing' && <AdminRoutingSettingsManager />}
         {activeTab === 'dashboard' && <AdminDashboard />}
       </PageWrapper>
     </RoleGuard>
