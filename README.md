@@ -13,8 +13,9 @@ npx next build
 
 Additional project scripts:
 
-- `npm run build` runs the deployment build: `prisma migrate deploy`, then `next build`
+- `npm run build` runs the deployment build: `npm run db:migrate:deploy`, then `next build`
 - `npm run build:app` runs `next build` without applying migrations
+- `npm run db:migrate:deploy` applies Prisma migrations using a direct database connection for Neon/Vercel deploys
 - `npm run db:generate` refreshes Prisma client code explicitly when schema changes require it
 - `npm run test` runs the Vitest suite
 - `npm run db:generate` regenerates the Prisma client
@@ -25,6 +26,8 @@ Additional project scripts:
 ## Practical Build Note
 
 On Windows inside a OneDrive-synced directory, `prisma generate` can fail when Prisma tries to rename its engine DLL. The deployment path avoids that redundant step during build and relies on install-time generation plus `npm run db:generate` when you explicitly need to refresh the client locally.
+
+For Neon deployments, Prisma migrations should not run through the pooled `DATABASE_URL` host because advisory-lock acquisition can time out during deploys. `npm run db:migrate:deploy` now prefers `DIRECT_DATABASE_URL` when provided and otherwise derives a direct Neon host from the pooled URL before calling `prisma migrate deploy`.
 
 ## Routing Configuration
 
