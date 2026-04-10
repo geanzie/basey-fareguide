@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 import { useAuth } from '@/components/AuthProvider'
 import BrandMark from '@/components/BrandMark'
@@ -13,14 +13,28 @@ interface LoginFormProps {
 }
 
 const LoginForm = ({ onSwitchToRegister }: LoginFormProps) => {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectUsername = searchParams.get('username') ?? ''
+  const redirectError = searchParams.get('error') ?? ''
+  const { login } = useAuth()
   const [formData, setFormData] = useState({
     username: '',
     password: '',
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const router = useRouter()
-  const { login } = useAuth()
+
+  useEffect(() => {
+    if (redirectUsername) {
+      setFormData((current) => ({
+        ...current,
+        username: redirectUsername,
+      }))
+    }
+
+    setError(redirectError)
+  }, [redirectError, redirectUsername])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -53,6 +67,7 @@ const LoginForm = ({ onSwitchToRegister }: LoginFormProps) => {
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setError('')
     setFormData((prev) => ({
       ...prev,
       [e.target.name]: e.target.value,
@@ -76,7 +91,13 @@ const LoginForm = ({ onSwitchToRegister }: LoginFormProps) => {
               </p>
             </div>
 
-            <form className="mt-8 space-y-6" onSubmit={handleSubmit} suppressHydrationWarning>
+            <form
+              className="mt-8 space-y-6"
+              action="/auth/login"
+              method="post"
+              onSubmit={handleSubmit}
+              suppressHydrationWarning
+            >
               {error ? (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
                   {error}
