@@ -16,6 +16,7 @@
 # next.js
 /.next/
 /.next-dev/
+/.next-prod/
 /out/
 
 # production
@@ -44,6 +45,8 @@ route_inventory.txt
 # Only allow example/template files
 !.env.example
 !.env.template
+!.env.production.template
+!.env.local.example
 
 # vercel
 .vercel
