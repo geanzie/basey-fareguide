@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { FarePolicySnapshotDto } from "@/lib/contracts";
-import type { RouteResult } from "@/lib/routing/types";
+import { RoutingServiceError, type RouteResult } from "@/lib/routing/types";
 
 vi.mock("@/lib/routing", () => ({
-  calculateRouteWithFallback: vi.fn(),
+  calculateShortestRoadRoute: vi.fn(),
 }));
 
 vi.mock("@/lib/fare/rateService", () => ({
@@ -32,9 +32,9 @@ vi.mock("@/lib/locations/plannerLocations", () => ({
 import { POST } from "@/app/api/routes/calculate/route";
 import { resolvePinLabel } from "@/lib/locations/pinLabelResolver";
 import { getResolvedFareRates } from "@/lib/fare/rateService";
-import { calculateRouteWithFallback } from "@/lib/routing";
+import { calculateShortestRoadRoute } from "@/lib/routing";
 
-const mockRouting = vi.mocked(calculateRouteWithFallback);
+const mockRouting = vi.mocked(calculateShortestRoadRoute);
 const mockFareRates = vi.mocked(getResolvedFareRates);
 
 const ACTIVE_FARE_POLICY: FarePolicySnapshotDto = {
@@ -50,6 +50,8 @@ const ORS_RESULT: RouteResult = {
   durationMin: 22,
   polyline: "encodedPolyline",
   method: "ors",
+  provider: "ors",
+  isEstimate: false,
   fallbackReason: null,
   snappedOrigin: null,
   snappedDestination: null,
@@ -78,6 +80,7 @@ describe("POST /api/routes/calculate - input validation", () => {
     const res = await POST(makeRequest({ destination: P("Anglit") }) as never);
     expect(res.status).toBe(400);
     const json = await res.json();
+    expect(json.code).toBe("INVALID_ROUTE_INPUT");
     expect(json.error).toMatch(/origin/i);
   });
 
@@ -85,17 +88,21 @@ describe("POST /api/routes/calculate - input validation", () => {
     const res = await POST(makeRequest({ origin: P("Amandayehan") }) as never);
     expect(res.status).toBe(400);
     const json = await res.json();
+    expect(json.code).toBe("INVALID_ROUTE_INPUT");
     expect(json.error).toMatch(/destination/i);
   });
 
-  it("returns 200 with minimum fare when origin and destination are the same point", async () => {
+  it("returns 200 with zero fare when origin and destination are the same point", async () => {
     const res = await POST(
       makeRequest({ origin: P("Amandayehan"), destination: P("Amandayehan") }) as never,
     );
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.distanceKm).toBe(0);
-    expect(json.fare).toBe(15);
+    expect(json.fare).toBe(0);
+    expect(json.method).toBeNull();
+    expect(json.provider).toBeNull();
+    expect(json.isEstimate).toBe(false);
     expect(json.farePolicy).toEqual(ACTIVE_FARE_POLICY);
   });
 
@@ -114,6 +121,7 @@ describe("POST /api/routes/calculate - input validation", () => {
     );
     expect(res.status).toBe(400);
     const json = await res.json();
+    expect(json.code).toBe("INVALID_ROUTE_INPUT");
     expect(json.error).toMatch(/origin/i);
   });
 
@@ -123,6 +131,7 @@ describe("POST /api/routes/calculate - input validation", () => {
     );
     expect(res.status).toBe(400);
     const json = await res.json();
+    expect(json.code).toBe("INVALID_ROUTE_INPUT");
     expect(json.error).toMatch(/NoSuchPlace/);
   });
 
@@ -132,6 +141,7 @@ describe("POST /api/routes/calculate - input validation", () => {
     );
     expect(res.status).toBe(400);
     const json = await res.json();
+    expect(json.code).toBe("INVALID_ROUTE_INPUT");
     expect(json.error).toMatch(/NoSuchPlace/);
   });
 
@@ -145,6 +155,7 @@ describe("POST /api/routes/calculate - input validation", () => {
     );
     expect(res.status).toBe(400);
     const json = await res.json();
+    expect(json.code).toBe("INVALID_ROUTE_INPUT");
     expect(json.error).toMatch(/CHILD/);
   });
 
@@ -168,6 +179,7 @@ describe("POST /api/routes/calculate - input validation", () => {
     );
     expect(res.status).toBe(400);
     const json = await res.json();
+    expect(json.code).toBe("INVALID_ROUTE_INPUT");
     expect(json.error).toMatch(/philippines/i);
   });
 
@@ -180,7 +192,45 @@ describe("POST /api/routes/calculate - input validation", () => {
     );
     expect(res.status).toBe(400);
     const json = await res.json();
+    expect(json.code).toBe("INVALID_ROUTE_INPUT");
     expect(json.error).toMatch(/basey service area/i);
+  });
+
+  it("returns 422 when no road route can be found", async () => {
+    mockRouting.mockRejectedValueOnce(
+      new RoutingServiceError(
+        "NO_ROAD_ROUTE_FOUND",
+        "No road route could be found between these points.",
+        { provider: "ors", reason: "no_route_found", status: 404 },
+      ),
+    );
+
+    const res = await POST(
+      makeRequest({ origin: P("Amandayehan"), destination: P("Anglit") }) as never,
+    );
+
+    expect(res.status).toBe(422);
+    const json = await res.json();
+    expect(json.code).toBe("NO_ROAD_ROUTE_FOUND");
+    expect(json.error).toMatch(/no road route/i);
+  });
+
+  it("returns 503 when shortest-road routing is unavailable", async () => {
+    mockRouting.mockRejectedValueOnce(
+      new RoutingServiceError(
+        "ROUTING_SERVICE_UNAVAILABLE",
+        "ORS request timed out after 3500ms",
+        { provider: "ors", reason: "timeout" },
+      ),
+    );
+
+    const res = await POST(
+      makeRequest({ origin: P("Amandayehan"), destination: P("Anglit") }) as never,
+    );
+
+    expect(res.status).toBe(503);
+    const json = await res.json();
+    expect(json.code).toBe("ROUTING_SERVICE_UNAVAILABLE");
   });
 });
 
@@ -198,6 +248,8 @@ describe("POST /api/routes/calculate - successful responses", () => {
     expect(typeof json.fare).toBe("number");
     expect(json.passengerType).toBe("REGULAR");
     expect(json.method).toBe("ors");
+    expect(json.provider).toBe("ors");
+    expect(json.isEstimate).toBe(false);
     expect(json.inputMode).toBe("preset");
     expect(json).toHaveProperty("fareBreakdown");
     expect(json).toHaveProperty("farePolicy");
@@ -279,6 +331,7 @@ describe("POST /api/routes/calculate - successful responses", () => {
 
     expect(res.status).toBe(503);
     const json = await res.json();
+    expect(json.code).toBe("ROUTING_SERVICE_UNAVAILABLE");
     expect(json.error).toMatch(/fare policy/i);
   });
 });
@@ -314,7 +367,7 @@ describe("POST /api/routes/calculate - pin mode", () => {
     expect(json.destinationResolved).toEqual(resolved);
   });
 
-  it("returns 200 with minimum fare when two pin points are the same", async () => {
+  it("returns 200 with zero fare when two pin points are the same", async () => {
     const res = await POST(
       makeRequest({
         origin: { type: "pin", lat: 11.278823, lng: 125.001194 },
@@ -324,7 +377,8 @@ describe("POST /api/routes/calculate - pin mode", () => {
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.distanceKm).toBe(0);
-    expect(json.fare).toBe(15);
+    expect(json.fare).toBe(0);
+    expect(json.method).toBeNull();
     expect(json.inputMode).toBe("pin");
   });
 
@@ -337,6 +391,7 @@ describe("POST /api/routes/calculate - pin mode", () => {
     );
     expect(res.status).toBe(400);
     const json = await res.json();
+    expect(json.code).toBe("INVALID_ROUTE_INPUT");
     expect(json.error).toMatch(/origin/i);
   });
 });

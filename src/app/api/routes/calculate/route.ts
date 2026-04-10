@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { FarePolicySnapshotDto } from "@/lib/contracts";
-import { calculateRouteWithFallback } from "@/lib/routing";
+import { calculateShortestRoadRoute } from "@/lib/routing";
 import { calculateFare, getFareBreakdown } from "@/lib/fare/calculator";
 import { getResolvedFareRates } from "@/lib/fare/rateService";
 import { resolvePinLabel, type ResolvedPinLabel } from "@/lib/locations/pinLabelResolver";
 import { resolvePlannerLocationByName } from "@/lib/locations/plannerLocations";
 import { serializePinLabel } from "@/lib/locations/pinSerializer";
-import type { PassengerType, LocationInput } from "@/lib/routing/types";
+import {
+  RoutingServiceError,
+  type CalculatedRouteResponse,
+  type LocationInput,
+  type PassengerType,
+} from "@/lib/routing/types";
 
 const VALID_PASSENGER_TYPES = new Set<PassengerType>([
   "REGULAR",
@@ -55,9 +60,18 @@ function approxMeters(
 
 const MAX_SNAP_DISTANCE_M = 200;
 
+type RouteApiErrorCode =
+  | "INVALID_ROUTE_INPUT"
+  | "NO_ROAD_ROUTE_FOUND"
+  | "ROUTING_SERVICE_UNAVAILABLE";
+
+function jsonError(status: number, code: RouteApiErrorCode, error: string) {
+  return NextResponse.json({ code, error }, { status });
+}
+
 /**
  * Returns true when two coordinate pairs refer to the same point
- * within 4 decimal places (~11 m) — triggers minimum-fare path.
+ * within 4 decimal places (~11 m) — triggers same-point handling.
  */
 function isSamePoint(
   a: { lat: number; lng: number },
@@ -98,23 +112,19 @@ export async function POST(request: NextRequest) {
   // --- Parse LocationInput objects ---
   const originInput = parseLocationInput(rawOrigin);
   if (!originInput) {
-    return NextResponse.json(
-      {
-        error:
-          'Invalid field: origin. Must be { type: "preset", name: string } or { type: "pin", lat: number, lng: number }',
-      },
-      { status: 400 },
+    return jsonError(
+      400,
+      "INVALID_ROUTE_INPUT",
+      'Invalid field: origin. Must be { type: "preset", name: string } or { type: "pin", lat: number, lng: number }',
     );
   }
 
   const destInput = parseLocationInput(rawDest);
   if (!destInput) {
-    return NextResponse.json(
-      {
-        error:
-          'Invalid field: destination. Must be { type: "preset", name: string } or { type: "pin", lat: number, lng: number }',
-      },
-      { status: 400 },
+    return jsonError(
+      400,
+      "INVALID_ROUTE_INPUT",
+      'Invalid field: destination. Must be { type: "preset", name: string } or { type: "pin", lat: number, lng: number }',
     );
   }
 
@@ -125,11 +135,10 @@ export async function POST(request: NextRequest) {
       : String(rawPassengerType).trim().toUpperCase();
 
   if (!VALID_PASSENGER_TYPES.has(passengerTypeUpper as PassengerType)) {
-    return NextResponse.json(
-      {
-        error: `Invalid passengerType "${passengerTypeUpper}". Must be one of: REGULAR, STUDENT, SENIOR, PWD`,
-      },
-      { status: 400 },
+    return jsonError(
+      400,
+      "INVALID_ROUTE_INPUT",
+      `Invalid passengerType "${passengerTypeUpper}". Must be one of: REGULAR, STUDENT, SENIOR, PWD`,
     );
   }
   const passengerType = passengerTypeUpper as PassengerType;
@@ -142,28 +151,31 @@ export async function POST(request: NextRequest) {
   if (originInput.type === "preset") {
     const resolved = await resolvePlannerLocationByName(originInput.name);
     if (!resolved) {
-      return NextResponse.json(
-        { error: `Unknown location: "${originInput.name}"` },
-        { status: 400 },
-      );
+      return jsonError(400, "INVALID_ROUTE_INPUT", `Unknown location: "${originInput.name}"`);
     }
     originCoords = resolved.coordinates;
     originLabel = resolved.name;
   } else {
     const { lat, lng } = originInput;
     if (!isInBounds(lat, lng, PH_BOUNDS)) {
-      console.info("[calculate] Origin pin rejected: outside Philippines", { lat, lng });
-      return NextResponse.json(
-        { error: "Origin pin is outside the Philippines" },
-        { status: 400 },
-      );
+      console.info("[/api/routes/calculate] validation-failure", {
+        code: "INVALID_ROUTE_INPUT",
+        reason: "outside_philippines",
+        field: "origin",
+        lat,
+        lng,
+      });
+      return jsonError(400, "INVALID_ROUTE_INPUT", "Origin pin is outside the Philippines");
     }
     if (!isInBounds(lat, lng, SERVICE_AREA)) {
-      console.info("[calculate] Origin pin rejected: outside Basey service area", { lat, lng });
-      return NextResponse.json(
-        { error: "Origin pin is outside the Basey service area" },
-        { status: 400 },
-      );
+      console.info("[/api/routes/calculate] validation-failure", {
+        code: "INVALID_ROUTE_INPUT",
+        reason: "outside_service_area",
+        field: "origin",
+        lat,
+        lng,
+      });
+      return jsonError(400, "INVALID_ROUTE_INPUT", "Origin pin is outside the Basey service area");
     }
     originCoords = { lat, lng };
     originResolved = resolvePinLabel(lat, lng);
@@ -178,28 +190,31 @@ export async function POST(request: NextRequest) {
   if (destInput.type === "preset") {
     const resolved = await resolvePlannerLocationByName(destInput.name);
     if (!resolved) {
-      return NextResponse.json(
-        { error: `Unknown location: "${destInput.name}"` },
-        { status: 400 },
-      );
+      return jsonError(400, "INVALID_ROUTE_INPUT", `Unknown location: "${destInput.name}"`);
     }
     destCoords = resolved.coordinates;
     destLabel = resolved.name;
   } else {
     const { lat, lng } = destInput;
     if (!isInBounds(lat, lng, PH_BOUNDS)) {
-      console.info("[calculate] Destination pin rejected: outside Philippines", { lat, lng });
-      return NextResponse.json(
-        { error: "Destination pin is outside the Philippines" },
-        { status: 400 },
-      );
+      console.info("[/api/routes/calculate] validation-failure", {
+        code: "INVALID_ROUTE_INPUT",
+        reason: "outside_philippines",
+        field: "destination",
+        lat,
+        lng,
+      });
+      return jsonError(400, "INVALID_ROUTE_INPUT", "Destination pin is outside the Philippines");
     }
     if (!isInBounds(lat, lng, SERVICE_AREA)) {
-      console.info("[calculate] Destination pin rejected: outside Basey service area", { lat, lng });
-      return NextResponse.json(
-        { error: "Destination pin is outside the Basey service area" },
-        { status: 400 },
-      );
+      console.info("[/api/routes/calculate] validation-failure", {
+        code: "INVALID_ROUTE_INPUT",
+        reason: "outside_service_area",
+        field: "destination",
+        lat,
+        lng,
+      });
+      return jsonError(400, "INVALID_ROUTE_INPUT", "Destination pin is outside the Basey service area");
     }
     destCoords = { lat, lng };
     destinationResolved = resolvePinLabel(lat, lng);
@@ -216,67 +231,104 @@ export async function POST(request: NextRequest) {
     activeFarePolicy = resolvedFareRates.current;
   } catch (error) {
     console.error("[/api/routes/calculate] Fare policy resolution failed:", error);
-    return NextResponse.json(
-      { error: "Fare policy is unavailable right now" },
-      { status: 503 },
-    );
+    return jsonError(503, "ROUTING_SERVICE_UNAVAILABLE", "Fare policy is unavailable right now");
   }
 
-  // --- Same-point guard: return minimum fare, not an error ---
+  // --- Same-point guard: successful zero-fare result with no road segment ---
   if (isSamePoint(originCoords, destCoords)) {
-    console.info("[calculate] Same-point guard triggered → minimum fare", { origin: originLabel, destination: destLabel });
-    const fare = calculateFare(0, passengerType, activeFarePolicy);
-    const fareBreakdown = getFareBreakdown(0, passengerType, activeFarePolicy);
-    return NextResponse.json({
+    console.info("[/api/routes/calculate] same-point-result", {
+      outcome: "same_point",
+      origin: originLabel,
+      destination: destLabel,
+    });
+
+    const samePointResponse: CalculatedRouteResponse = {
       origin: originLabel,
       destination: destLabel,
       originResolved,
       destinationResolved,
       distanceKm: 0,
       durationMin: 0,
-      fare,
+      fare: 0,
       passengerType,
-      fareBreakdown,
+      fareBreakdown: {
+        baseFare: 0,
+        additionalKm: 0,
+        additionalFare: 0,
+        discount: 0,
+        total: 0,
+      },
       farePolicy: activeFarePolicy,
       method: null,
+      provider: null,
+      isEstimate: false,
       fallbackReason: null,
       polyline: null,
       snappedOrigin: null,
       snappedDestination: null,
       inputMode,
-    });
+    };
+
+    return NextResponse.json(samePointResponse);
   }
 
-  // --- Route calculation (ORS → GPS fallback) ---
+  // --- Route calculation (ORS shortest road route only) ---
   let route;
   try {
-    route = await calculateRouteWithFallback(originCoords, destCoords);
+    route = await calculateShortestRoadRoute(originCoords, destCoords);
   } catch (err) {
+    if (err instanceof RoutingServiceError) {
+      const status = err.code === "NO_ROAD_ROUTE_FOUND" ? 422 : 503;
+      const errorMessage =
+        err.code === "NO_ROAD_ROUTE_FOUND"
+          ? "No road route could be found between these points."
+          : "Routing service unavailable right now.";
+
+      console.warn("[/api/routes/calculate] routing-failure", {
+        code: err.code,
+        provider: err.provider,
+        reason: err.reason,
+        status,
+        message: err.message,
+      });
+
+      return jsonError(status, err.code, errorMessage);
+    }
+
     console.error("[/api/routes/calculate] Routing failed:", err);
-    return NextResponse.json(
-      { error: "Routing service unavailable" },
-      { status: 503 },
-    );
+    return jsonError(503, "ROUTING_SERVICE_UNAVAILABLE", "Routing service unavailable right now.");
   }
 
-  // --- Snap-distance guard for pin inputs (ORS only; GPS returns null snapped coords) ---
+  // --- Snap-distance guard for pin inputs ---
   if (originInput.type === "pin" && route.snappedOrigin) {
     const snapDist = approxMeters(originCoords, route.snappedOrigin);
     if (snapDist > MAX_SNAP_DISTANCE_M) {
-      console.info("[calculate] Origin pin too far from road", { snapDist, originCoords });
-      return NextResponse.json(
-        { error: "Origin pin is too far from any road. Please move the pin closer to a road." },
-        { status: 400 },
+      console.info("[/api/routes/calculate] routing-failure", {
+        code: "NO_ROAD_ROUTE_FOUND",
+        reason: "origin_snap_too_far",
+        snapDist,
+        originCoords,
+      });
+      return jsonError(
+        422,
+        "NO_ROAD_ROUTE_FOUND",
+        "Origin pin is too far from any road. Please move the pin closer to a road.",
       );
     }
   }
   if (destInput.type === "pin" && route.snappedDestination) {
     const snapDist = approxMeters(destCoords, route.snappedDestination);
     if (snapDist > MAX_SNAP_DISTANCE_M) {
-      console.info("[calculate] Destination pin too far from road", { snapDist, destCoords });
-      return NextResponse.json(
-        { error: "Destination pin is too far from any road. Please move the pin closer to a road." },
-        { status: 400 },
+      console.info("[/api/routes/calculate] routing-failure", {
+        code: "NO_ROAD_ROUTE_FOUND",
+        reason: "destination_snap_too_far",
+        snapDist,
+        destCoords,
+      });
+      return jsonError(
+        422,
+        "NO_ROAD_ROUTE_FOUND",
+        "Destination pin is too far from any road. Please move the pin closer to a road.",
       );
     }
   }
@@ -285,7 +337,7 @@ export async function POST(request: NextRequest) {
   const fare = calculateFare(route.distanceKm, passengerType, activeFarePolicy);
   const fareBreakdown = getFareBreakdown(route.distanceKm, passengerType, activeFarePolicy);
 
-  return NextResponse.json({
+  const response: CalculatedRouteResponse = {
     origin: originLabel,
     destination: destLabel,
     originResolved,
@@ -297,10 +349,14 @@ export async function POST(request: NextRequest) {
     fareBreakdown,
     farePolicy: activeFarePolicy,
     method: route.method,
+    provider: route.provider,
+    isEstimate: route.isEstimate,
     fallbackReason: route.fallbackReason,
     polyline: route.polyline,
     snappedOrigin: route.snappedOrigin,
     snappedDestination: route.snappedDestination,
     inputMode,
-  });
+  };
+
+  return NextResponse.json(response);
 }

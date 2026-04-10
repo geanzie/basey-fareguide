@@ -287,11 +287,9 @@ export default function RoutePlannerMap({
           : 'Drag A or B to refine your route.'
 
   const toneClasses =
-    plannerState === 'fallback_estimate'
-      ? 'border-amber-200 bg-amber-50 text-amber-800'
-      : plannerState === 'network_error' || plannerState === 'out_of_service_area'
-        ? 'border-red-200 bg-red-50 text-red-800'
-        : 'border-blue-200 bg-blue-50 text-blue-800'
+    plannerState === 'network_error' || plannerState === 'out_of_service_area'
+      ? 'border-red-200 bg-red-50 text-red-800'
+      : 'border-blue-200 bg-blue-50 text-blue-800'
 
   return (
     <div className="relative">

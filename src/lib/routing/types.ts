@@ -22,17 +22,61 @@ export interface SnappedPoint {
   wasSnapped: boolean;
 }
 
+export type RouteProvider = "ors" | "gps";
+
+export type RoutingFailureCode =
+  | "NO_ROAD_ROUTE_FOUND"
+  | "ROUTING_SERVICE_UNAVAILABLE";
+
+export type RoutingFailureReason =
+  | "configuration_error"
+  | "no_route_found"
+  | "timeout"
+  | "upstream_error";
+
+export class RoutingServiceError extends Error {
+  readonly code: RoutingFailureCode;
+  readonly provider: "ors";
+  readonly reason: RoutingFailureReason;
+  readonly status: number | null;
+
+  constructor(
+    code: RoutingFailureCode,
+    message: string,
+    options: {
+      provider?: "ors";
+      reason: RoutingFailureReason;
+      status?: number | null;
+    },
+  ) {
+    super(message);
+    this.name = "RoutingServiceError";
+    this.code = code;
+    this.provider = options.provider ?? "ors";
+    this.reason = options.reason;
+    this.status = options.status ?? null;
+  }
+}
+
 export interface RouteResult {
   distanceKm: number;
   durationMin: number | null;
   /** Road polyline encoded string, or null when method is "gps" (estimate only). */
   polyline: string | null;
   method: "ors" | "gps";
+  provider: RouteProvider;
+  isEstimate: boolean;
   fallbackReason: string | null;
   /** Road-snapped origin returned by ORS. Null for GPS fallback routes. */
   snappedOrigin: SnappedPoint | null;
   /** Road-snapped destination returned by ORS. Null for GPS fallback routes. */
   snappedDestination: SnappedPoint | null;
+}
+
+export interface ShortestRoadRouteResult extends RouteResult {
+  method: "ors";
+  provider: "ors";
+  isEstimate: false;
 }
 
 export interface FareBreakdown {
@@ -54,7 +98,9 @@ export interface CalculatedRouteResponse {
   passengerType: PassengerType;
   fareBreakdown: FareBreakdown;
   farePolicy: FarePolicySnapshotDto;
-  method: "ors" | "gps" | null;
+  method: "ors" | null;
+  provider: "ors" | null;
+  isEstimate: boolean;
   fallbackReason: string | null;
   polyline: string | null;
   snappedOrigin: SnappedPoint | null;

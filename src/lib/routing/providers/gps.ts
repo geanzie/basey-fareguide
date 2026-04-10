@@ -29,6 +29,8 @@ export class GpsProvider implements RoutingProvider {
       /** GPS estimates have no road path — UI must render markers only. */
       polyline: null,
       method: "gps",
+      provider: "gps",
+      isEstimate: true,
       fallbackReason: null,
       snappedOrigin: null,
       snappedDestination: null,

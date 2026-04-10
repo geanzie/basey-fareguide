@@ -27,7 +27,7 @@ interface RouteResult {
     discount: number
     total: number
   }
-  method: 'ors' | 'gps'
+  method: 'ors' | null
 }
 
 const FareCalculator = () => {
@@ -222,7 +222,9 @@ const FareCalculator = () => {
                     {routeResult.distanceKm.toFixed(2)} km
                   </div>
                   <div className="text-sm text-gray-600">Total Distance</div>
-                  <div className="text-xs text-gray-500 mt-1">{routeResult.method === 'ors' ? 'OpenRouteService' : 'GPS Estimate'}</div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {routeResult.method === 'ors' ? 'OpenRouteService shortest route' : 'No road segment needed'}
+                  </div>
                 </div>
                 <div className="bg-white rounded-xl p-6 text-center shadow-sm">
                   <div className="text-3xl font-bold text-emerald-600 mb-2">

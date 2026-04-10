@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 
+import { RoutingServiceError } from "@/lib/routing/types";
+
 afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllEnvs();
@@ -9,7 +11,7 @@ afterEach(() => {
 const origin = { lat: 11.278823, lng: 125.001194 };
 const dest   = { lat: 11.304796, lng: 125.108990 };
 
-describe("calculateRouteWithFallback", () => {
+describe("routing orchestrators", () => {
   async function loadRouting() {
     return import("@/lib/routing");
   }
@@ -33,6 +35,8 @@ describe("calculateRouteWithFallback", () => {
     const result = await calculateRouteWithFallback(origin, dest);
 
     expect(result.method).toBe("ors");
+    expect(result.provider).toBe("ors");
+    expect(result.isEstimate).toBe(false);
     expect(result.polyline).toBe("encodedPolylineString");
     expect(result.fallbackReason).toBeNull();
   });
@@ -44,6 +48,8 @@ describe("calculateRouteWithFallback", () => {
     const result = await calculateRouteWithFallback(origin, dest);
 
     expect(result.method).toBe("gps");
+    expect(result.provider).toBe("gps");
+    expect(result.isEstimate).toBe(true);
     expect(result.polyline).toBeNull();
     expect(result.fallbackReason).toMatch(/OPENROUTESERVICE_API_KEY/);
   });
@@ -61,6 +67,7 @@ describe("calculateRouteWithFallback", () => {
     const result = await calculateRouteWithFallback(origin, dest);
 
     expect(result.method).toBe("gps");
+    expect(result.provider).toBe("gps");
     expect(result.polyline).toBeNull();
     expect(result.fallbackReason).toBeTruthy();
   });
@@ -115,5 +122,67 @@ describe("calculateRouteWithFallback", () => {
 
     expect(result.method).toBe("gps");
     expect(result.fallbackReason).toContain("4200");
+  });
+
+  it("returns exactly one ORS-backed shortest road route without estimate metadata", async () => {
+    vi.stubEnv("OPENROUTESERVICE_API_KEY", "test-key");
+
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        routes: [
+          {
+            summary: { distance: 14800, duration: 1320 },
+            geometry: "encodedPolylineString",
+          },
+        ],
+      }),
+    }));
+
+    const { calculateShortestRoadRoute } = await loadRouting();
+    const result = await calculateShortestRoadRoute(origin, dest);
+
+    expect(result.method).toBe("ors");
+    expect(result.provider).toBe("ors");
+    expect(result.isEstimate).toBe(false);
+    expect(result.fallbackReason).toBeNull();
+  });
+
+  it("does not downgrade to GPS when shortest-road routing fails", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.stubEnv("OPENROUTESERVICE_API_KEY", "");
+
+    const { calculateShortestRoadRoute } = await loadRouting();
+
+    await expect(calculateShortestRoadRoute(origin, dest)).rejects.toMatchObject({
+      code: "ROUTING_SERVICE_UNAVAILABLE",
+      provider: "ors",
+      reason: "configuration_error",
+    } satisfies Partial<RoutingServiceError>);
+  });
+
+  it("keeps shortest-route cache isolated from fallback cache entries", async () => {
+    vi.spyOn(console, "info").mockImplementation(() => {});
+    vi.stubEnv("OPENROUTESERVICE_API_KEY", "test-key");
+
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        routes: [
+          {
+            summary: { distance: 14800, duration: 1320 },
+            geometry: "encodedPolylineString",
+          },
+        ],
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { calculateRouteWithFallback, calculateShortestRoadRoute } = await loadRouting();
+
+    await calculateRouteWithFallback(origin, dest);
+    await calculateShortestRoadRoute(origin, dest);
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });

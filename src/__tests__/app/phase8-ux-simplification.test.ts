@@ -29,7 +29,7 @@ describe('Phase 8 UX simplification', () => {
     const incidentReporting = readFileSync(repoPath('src', 'components', 'IncidentReporting.tsx'), 'utf8')
     const adminReports = readFileSync(repoPath('src', 'app', 'admin', 'reports', 'page.tsx'), 'utf8')
 
-    expect(calculatorComponent).toContain('OpenRouteService is used first, with a GPS estimate shown only when road routing is unavailable.')
+    expect(calculatorComponent).toContain('OpenRouteService shortest-distance road routing is required for this planner.')
     expect(incidentReporting).toContain('Select Trip to Report')
     expect(incidentReporting).toContain('Evidence (Optional)')
     expect(adminReports).not.toContain('SummaryCard')

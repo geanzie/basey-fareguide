@@ -11,7 +11,6 @@ export type PlannerViewState =
   | 'placing_points'
   | 'calculating'
   | 'route_ready'
-  | 'fallback_estimate'
   | 'no_route_found'
   | 'network_error'
   | 'out_of_service_area'
@@ -56,7 +55,15 @@ export function routePairEffectivelyEqual(
   )
 }
 
-export function classifyPlannerError(message: string): PlannerViewState {
+export function classifyPlannerError(message: string, code?: string | null): PlannerViewState {
+  if (code === 'NO_ROAD_ROUTE_FOUND') {
+    return 'no_route_found'
+  }
+
+  if (code === 'ROUTING_SERVICE_UNAVAILABLE') {
+    return 'network_error'
+  }
+
   const normalized = message.toLowerCase()
 
   if (
@@ -79,7 +86,6 @@ export function classifyPlannerError(message: string): PlannerViewState {
 }
 
 export function getRouteSourceBadge(method: string | null, distanceKm: number): string {
-  if (method === 'gps') return 'GPS estimate'
-  if (distanceKm === 0) return 'Same-point fare'
+  if (method == null && distanceKm === 0) return 'Same-point result'
   return 'Road-aware route'
 }

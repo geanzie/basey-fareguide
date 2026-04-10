@@ -543,27 +543,16 @@ describe('RoutePlannerCalculator', () => {
     expect(container.textContent).toContain('fit:1')
   })
 
-  it('shows fallback and route failure states truthfully while keeping the current selections editable', async () => {
+  it('shows no-route and service-failure states truthfully while keeping the current selections editable', async () => {
     routeQueue.push(
-      makeResponse({
-        origin: 'Mercado',
-        destination: 'Amandayehan Wharf',
-        distanceKm: 7.8,
-        durationMin: 18,
-        fare: 30,
-        fareBreakdown: {
-          baseFare: 15,
-          additionalKm: 4.8,
-          additionalFare: 15,
-          discount: 0,
-        },
-        method: 'gps',
-        fallbackReason: 'ORS unavailable',
-        polyline: null,
-        inputMode: 'pin',
-      }),
+      makeResponse({ error: 'No road route could be found between these points.', code: 'NO_ROAD_ROUTE_FOUND' }, 422),
     )
-    routeQueue.push(makeResponse({ error: 'Destination pin is too far from any road' }, 400))
+    routeQueue.push(
+      makeResponse(
+        { error: 'Routing service unavailable right now.', code: 'ROUTING_SERVICE_UNAVAILABLE' },
+        503,
+      ),
+    )
 
     await act(async () => {
       root.render(React.createElement(RoutePlannerCalculator, { MapComponent: MockPlannerMap }))
@@ -582,8 +571,8 @@ describe('RoutePlannerCalculator', () => {
       await Promise.resolve()
     })
 
-    expect(container.textContent).toContain('GPS estimate')
-    expect(container.textContent).toContain('Lower-confidence estimate: road routing was unavailable for this request.')
+    expect(container.textContent).toContain('No road route could be found between these points.')
+    expect(container.textContent).not.toContain('Try again')
 
     await act(async () => {
       clickButton('Mock move B')
@@ -595,7 +584,7 @@ describe('RoutePlannerCalculator', () => {
       await Promise.resolve()
     })
 
-    expect(container.textContent).toContain('No route could be calculated from the current selections.')
+    expect(container.textContent).toContain('Routing service unavailable right now.')
     expect(container.textContent).toContain('origin:Mercado')
     expect(container.textContent).toContain('destination:Moved destination')
     expect(container.textContent).toContain('Try again')

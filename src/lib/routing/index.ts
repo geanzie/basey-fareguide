@@ -1,4 +1,8 @@
-import type { RouteResult } from "./types";
+import {
+  RoutingServiceError,
+  type RouteResult,
+  type ShortestRoadRouteResult,
+} from "./types";
 import type { Coordinates } from "./providers/base";
 import { OrsProvider } from "./providers/ors";
 import { GpsProvider } from "./providers/gps";
@@ -11,6 +15,8 @@ const ROUTE_CACHE_TTL_MS = 5 * 60 * 1000;
 const ROUTE_CACHE_MAX_ENTRIES = 200;
 const DEFAULT_ORS_TIMEOUT_MS = 3500;
 const ROUTE_CACHE_PRECISION = 4;
+
+type RouteCacheMode = "fallback" | "shortest-road";
 
 const orsRouteCache = new Map<string, { expiresAt: number; value: RouteResult }>();
 
@@ -26,8 +32,13 @@ function normalizeCoordinate(value: number): string {
   return value.toFixed(ROUTE_CACHE_PRECISION);
 }
 
-function buildRouteCacheKey(origin: Coordinates, destination: Coordinates): string {
+function buildRouteCacheKey(
+  origin: Coordinates,
+  destination: Coordinates,
+  mode: RouteCacheMode,
+): string {
   return [
+    mode,
     normalizeCoordinate(origin.lat),
     normalizeCoordinate(origin.lng),
     normalizeCoordinate(destination.lat),
@@ -82,6 +93,21 @@ function cacheRoute(cacheKey: string, route: RouteResult) {
   }
 }
 
+function toRoutingServiceError(error: unknown): RoutingServiceError {
+  if (error instanceof RoutingServiceError) {
+    return error;
+  }
+
+  return new RoutingServiceError(
+    "ROUTING_SERVICE_UNAVAILABLE",
+    error instanceof Error ? error.message : String(error),
+    {
+      provider: "ors",
+      reason: "upstream_error",
+    },
+  );
+}
+
 /**
  * Calculate a route between two coordinates.
  * Tries ORS first; falls back to GPS/Haversine if ORS is unavailable or errors.
@@ -91,7 +117,7 @@ export async function calculateRouteWithFallback(
   destination: Coordinates
 ): Promise<RouteResult> {
   const timeoutMs = getConfiguredOrsTimeoutMs();
-  const cacheKey = buildRouteCacheKey(origin, destination);
+  const cacheKey = buildRouteCacheKey(origin, destination, "fallback");
   const cachedRoute = getCachedRoute(cacheKey);
 
   if (cachedRoute) {
@@ -124,15 +150,18 @@ export async function calculateRouteWithFallback(
 
     return route;
   } catch (orsError) {
+    const typedError = toRoutingServiceError(orsError);
     const orsDurationMs = Date.now() - orsStartedAt;
-    const fallbackReason =
-      orsError instanceof Error ? orsError.message : String(orsError);
+    const fallbackReason = typedError.message;
 
     console.warn("[routing] ors-fallback", {
       cacheHit: false,
       orsDurationMs,
       timeoutMs,
       method: "gps",
+      provider: "ors",
+      outcome: typedError.code,
+      reason: typedError.reason,
       fallbackReason,
     });
 
@@ -141,5 +170,63 @@ export async function calculateRouteWithFallback(
       ...gpsResult,
       fallbackReason,
     };
+  }
+}
+
+export async function calculateShortestRoadRoute(
+  origin: Coordinates,
+  destination: Coordinates,
+): Promise<ShortestRoadRouteResult> {
+  const timeoutMs = getConfiguredOrsTimeoutMs();
+  const cacheKey = buildRouteCacheKey(origin, destination, "shortest-road");
+  const cachedRoute = getCachedRoute(cacheKey);
+
+  if (cachedRoute) {
+    console.info("[routing] shortest-road-cache-hit", {
+      cacheHit: true,
+      provider: cachedRoute.provider,
+      isEstimate: cachedRoute.isEstimate,
+      orsDurationMs: 0,
+      timeoutMs,
+    });
+
+    return cachedRoute as ShortestRoadRouteResult;
+  }
+
+  const orsStartedAt = Date.now();
+
+  try {
+    const ors = new OrsProvider(timeoutMs);
+    const route = await ors.calculateShortest(origin, destination);
+    const orsDurationMs = Date.now() - orsStartedAt;
+
+    cacheRoute(cacheKey, route);
+    console.info("[routing] shortest-road-success", {
+      cacheHit: false,
+      provider: route.provider,
+      isEstimate: route.isEstimate,
+      orsDurationMs,
+      timeoutMs,
+      outcome: "success",
+    });
+
+    return route;
+  } catch (orsError) {
+    const typedError = toRoutingServiceError(orsError);
+    const orsDurationMs = Date.now() - orsStartedAt;
+
+    console.warn("[routing] shortest-road-failure", {
+      cacheHit: false,
+      provider: typedError.provider,
+      isEstimate: false,
+      orsDurationMs,
+      timeoutMs,
+      outcome: typedError.code,
+      reason: typedError.reason,
+      status: typedError.status,
+      message: typedError.message,
+    });
+
+    throw typedError;
   }
 }

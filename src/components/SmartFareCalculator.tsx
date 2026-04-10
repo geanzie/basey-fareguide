@@ -160,14 +160,14 @@ const SmartFareCalculator = ({
             additionalFare: data.fareBreakdown.additionalFare,
           },
         },
-        source: data.method === 'ors' ? 'OpenRouteService' : 'GPS Estimate',
-        accuracy: data.method === 'ors' ? 'Road-based routing' : `GPS estimate${data.fallbackReason ? ' (ORS unavailable)' : ''}`,
+        source: data.method === 'ors' ? 'OpenRouteService' : 'Same-point result',
+        accuracy: data.method === 'ors' ? 'Shortest road routing' : 'No road segment required',
         barangayInfo: undefined,
       }
       setRouteResult(adaptedResult)
 
       if (onRouteCalculated) {
-        onRouteCalculated(adaptedResult, data.method === 'gps')
+        onRouteCalculated(adaptedResult, false)
       }
     } catch (caughtError) {
       const errorMessage = caughtError instanceof Error ? caughtError.message : 'Failed to calculate route'

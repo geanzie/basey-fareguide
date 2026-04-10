@@ -45,10 +45,10 @@ describe('planner route helpers', () => {
     expect(classifyPlannerError('Origin pin is outside the Basey service area')).toBe(
       'out_of_service_area',
     )
-    expect(classifyPlannerError('Destination pin is too far from any road')).toBe(
+    expect(classifyPlannerError('Destination pin is too far from any road', 'NO_ROAD_ROUTE_FOUND')).toBe(
       'no_route_found',
     )
-    expect(classifyPlannerError('Routing service unavailable')).toBe('network_error')
+    expect(classifyPlannerError('Routing service unavailable', 'ROUTING_SERVICE_UNAVAILABLE')).toBe('network_error')
   })
 
   it('keeps distance approximation stable enough for request dedupe', () => {

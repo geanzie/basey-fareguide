@@ -52,11 +52,18 @@ interface CalculateRouteResponse {
     additionalFare: number
     discount: number
   }
-  method: 'ors' | 'gps' | null
+  method: 'ors' | null
+  provider: 'ors' | null
+  isEstimate: boolean
   fallbackReason: string | null
   polyline: string | null
   inputMode: 'preset' | 'pin'
 }
+
+type CalculateRouteErrorCode =
+  | 'INVALID_ROUTE_INPUT'
+  | 'NO_ROAD_ROUTE_FOUND'
+  | 'ROUTING_SERVICE_UNAVAILABLE'
 
 interface RouteResult {
   fare: number
@@ -64,9 +71,10 @@ interface RouteResult {
   durationText: string
   durationMin: number
   polyline: string | null
-  method: 'ors' | 'gps' | null
+  method: 'ors' | null
+  provider: 'ors' | null
+  isEstimate: boolean
   sourceBadge: string
-  fallbackReason: string | null
   originalFare?: number
   discountApplied?: number
   discountCard?: DiscountCardDto | null
@@ -180,9 +188,10 @@ const RoutePlannerCalculator = ({
   const canSaveDisplayedRoute =
     Boolean(user) &&
     Boolean(routeResult) &&
+    routeResult?.method === 'ors' &&
     hasFreshDisplayedRoute &&
     !isCalculating &&
-    (plannerState === 'route_ready' || plannerState === 'fallback_estimate')
+    plannerState === 'route_ready'
 
   useEffect(() => {
     const fetchUserDiscountCard = async () => {
@@ -317,7 +326,10 @@ const RoutePlannerCalculator = ({
         }),
       })
 
-      const data = (await response.json()) as Partial<CalculateRouteResponse> & { error?: string }
+      const data = (await response.json()) as Partial<CalculateRouteResponse> & {
+        error?: string
+        code?: CalculateRouteErrorCode
+      }
 
       if (requestId !== requestSequenceRef.current) {
         return
@@ -325,14 +337,14 @@ const RoutePlannerCalculator = ({
 
       if (!response.ok) {
         const message = data.error || 'Unable to calculate this route right now.'
-        const nextState = classifyPlannerError(message)
+        const nextState = classifyPlannerError(message, data.code)
         setPlannerState(nextState)
         setRouteMessage(
           nextState === 'out_of_service_area'
             ? 'Pin outside the service area.'
             : nextState === 'no_route_found'
-              ? 'No route could be calculated from the current selections.'
-              : 'Route service unavailable right now.',
+              ? message
+              : 'Routing service unavailable right now.',
         )
         if (onError) onError(message)
         return
@@ -347,8 +359,9 @@ const RoutePlannerCalculator = ({
         durationText: buildDurationText(data.durationMin ?? null),
         polyline: data.polyline || null,
         method: data.method || null,
+        provider: data.provider || null,
+        isEstimate: data.isEstimate ?? false,
         sourceBadge: getRouteSourceBadge(data.method ?? null, data.distanceKm || 0),
-        fallbackReason: data.fallbackReason || null,
         originalFare: (data.fareBreakdown?.discount || 0) > 0 ? subtotal : undefined,
         discountApplied: (data.fareBreakdown?.discount || 0) > 0 ? data.fareBreakdown?.discount : undefined,
         discountCard: userDiscountCard,
@@ -366,10 +379,10 @@ const RoutePlannerCalculator = ({
       displayedRouteVersionRef.current += 1
       setDisplayedRoutePair(nextPair)
       setSaveStatus('idle')
-      setPlannerState(nextResult.method === 'gps' ? 'fallback_estimate' : 'route_ready')
+      setPlannerState('route_ready')
       setRouteMessage(
-        nextResult.method === 'gps'
-          ? 'Showing a lower-confidence GPS estimate because road routing is unavailable right now.'
+        nextResult.method == null && nextResult.distanceKm === 0
+          ? 'Origin and destination are the same point, so no road segment is needed.'
           : null,
       )
 
@@ -504,15 +517,15 @@ const RoutePlannerCalculator = ({
                         <div className="flex flex-wrap items-center gap-2">
                           <span
                             className={`rounded-full px-3 py-1 text-[11px] font-semibold ${
-                              routeResult.method === 'gps'
-                                ? 'border border-amber-200 bg-amber-50 text-amber-800'
+                              routeResult.method == null
+                                ? 'border border-slate-200 bg-slate-100 text-slate-700'
                                 : 'border border-violet-200 bg-violet-100 text-violet-800'
                             }`}
                           >
                             {routeResult.sourceBadge}
                           </span>
                           <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700">
-                            Road-aware route
+                            {routeResult.method === 'ors' ? 'Shortest road route' : 'No road segment needed'}
                           </span>
                           {selectedVehicle ? (
                             <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700">
@@ -527,12 +540,6 @@ const RoutePlannerCalculator = ({
                           <span>{routeResult.durationText}</span>
                           <span className="text-slate-300">•</span>
                           <span>{routeResult.distanceKm.toFixed(2)} km</span>
-                          {routeResult.fallbackReason ? (
-                            <>
-                              <span className="text-slate-300">•</span>
-                              <span>GPS fallback</span>
-                            </>
-                          ) : null}
                         </div>
                       </div>
 
@@ -562,20 +569,15 @@ const RoutePlannerCalculator = ({
                     ) : null}
                   </div>
 
-                  {routeResult.fallbackReason ? (
-                    <div className="border-t border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                      Lower-confidence estimate: road routing was unavailable for this request.
-                    </div>
-                  ) : null}
-
                   <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 px-4 py-3 sm:px-5">
                     <div className="text-xs text-slate-500">
                       {!user && 'Log in to save this route to your history.'}
                       {user && saveStatus === 'saved' && 'Saved to fare history.'}
                       {user && saveStatus === 'failed' && 'Unable to save this route right now.'}
                       {user && saveStatus === 'saving' && 'Saving to fare history...'}
+                      {user && saveStatus === 'idle' && routeResult.method == null && 'Same-point results are not saved.'}
                       {user && saveStatus === 'idle' && canSaveDisplayedRoute && 'This result is not yet saved.'}
-                      {user && saveStatus === 'idle' && !canSaveDisplayedRoute && 'Resolve the current route before saving.'}
+                      {user && saveStatus === 'idle' && !canSaveDisplayedRoute && routeResult.method === 'ors' && 'Resolve the current route before saving.'}
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                       <button
@@ -625,7 +627,7 @@ const RoutePlannerCalculator = ({
             ) : null}
 
             <span className="sr-only">
-              OpenRouteService is used first, with a GPS estimate shown only when road routing is unavailable.
+              OpenRouteService shortest-distance road routing is required for this planner.
             </span>
           </div>
         </section>
@@ -637,10 +639,10 @@ const RoutePlannerCalculator = ({
                 {plannerState === 'out_of_service_area'
                   ? 'Pin outside the service area.'
                   : plannerState === 'no_route_found'
-                    ? 'No route could be calculated from the current selections.'
-                    : 'Route service unavailable right now.'}
+                    ? routeMessage || 'No road route could be found between these points.'
+                    : 'Routing service unavailable right now.'}
               </p>
-              {hasTwoPoints ? (
+              {hasTwoPoints && plannerState === 'network_error' ? (
                 <button
                   type="button"
                   onClick={() => void calculateRoute(true)}

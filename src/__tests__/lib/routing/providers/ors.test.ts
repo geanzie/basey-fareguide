@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { OrsProvider } from "@/lib/routing/providers/ors";
+import { RoutingServiceError } from "@/lib/routing/types";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -43,6 +44,8 @@ describe("OrsProvider.calculate", () => {
     const result = await provider.calculate(origin, dest);
 
     expect(result.method).toBe("ors");
+    expect(result.provider).toBe("ors");
+    expect(result.isEstimate).toBe(false);
     expect(result.distanceKm).toBeCloseTo(14.8);
     expect(result.durationMin).toBeCloseTo(22);
     expect(result.polyline).toBe("encodedPolylineString");
@@ -70,6 +73,32 @@ describe("OrsProvider.calculate", () => {
     expect(capturedBody!.coordinates![1]).toEqual([dest.lng, dest.lat]);
   });
 
+  it("adds preference=shortest for shortest-road requests", async () => {
+    vi.stubEnv("OPENROUTESERVICE_API_KEY", "test-key");
+
+    let capturedBody:
+      | {
+          coordinates?: [number, number][];
+          preference?: string;
+        }
+      | undefined;
+
+    vi.stubGlobal("fetch", vi.fn().mockImplementation((_url: string, init: RequestInit) => {
+      capturedBody = JSON.parse(init.body as string);
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({
+          routes: [{ summary: { distance: 1000, duration: 60 }, geometry: null }],
+        }),
+      });
+    }));
+
+    const provider = new OrsProvider();
+    await provider.calculateShortest(origin, dest);
+
+    expect(capturedBody?.preference).toBe("shortest");
+  });
+
   it("throws on non-OK HTTP response", async () => {
     vi.stubEnv("OPENROUTESERVICE_API_KEY", "test-key");
 
@@ -95,5 +124,23 @@ describe("OrsProvider.calculate", () => {
     await expect(provider.calculate(origin, dest)).rejects.toThrow(
       "routes[0].summary"
     );
+  });
+
+  it("throws a typed no-route error when ORS reports no routable path", async () => {
+    vi.stubEnv("OPENROUTESERVICE_API_KEY", "test-key");
+
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: false,
+      status: 404,
+      text: () => Promise.resolve("Route could not be found between points"),
+    }));
+
+    const provider = new OrsProvider();
+
+    await expect(provider.calculateShortest(origin, dest)).rejects.toMatchObject({
+      code: "NO_ROAD_ROUTE_FOUND",
+      provider: "ors",
+      reason: "no_route_found",
+    } satisfies Partial<RoutingServiceError>);
   });
 });
