@@ -138,6 +138,64 @@ describe("public home page announcements", () => {
     expect(routerMock.replace).not.toHaveBeenCalled();
   });
 
+  it("renders the public landing page while auth is still resolving", async () => {
+    authMock.useAuth.mockReturnValue({ user: null, status: "loading" });
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo | URL) => {
+        const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+        if (url.includes("/api/announcements")) {
+          return Promise.resolve(
+            makeJsonResponse({
+              announcements: [],
+            }),
+          );
+        }
+
+        if (url.includes("/api/fare-rates")) {
+          return Promise.resolve(
+            makeJsonResponse({
+              current: {
+                versionId: "fare-live",
+                baseDistanceKm: 3,
+                baseFare: 15,
+                perKmRate: 3,
+                effectiveAt: "2026-04-01T00:00:00.000Z",
+              },
+              upcoming: null,
+            }),
+          );
+        }
+
+        throw new Error(`Unhandled fetch url: ${url}`);
+      }),
+    );
+
+    await act(async () => {
+      root.render(
+        React.createElement(
+          SWRConfig,
+          {
+            value: {
+              provider: () => new Map(),
+              dedupingInterval: 0,
+              fetcher: (url: string) => fetch(url).then((response) => response.json()),
+            },
+          },
+          React.createElement(HomePage),
+        ),
+      );
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(container.textContent).toContain("Public Announcements");
+    expect(container.textContent).toContain("Fare Announcement");
+    expect(container.textContent).not.toContain("Restoring session");
+    expect(routerMock.replace).not.toHaveBeenCalled();
+  });
+
   it("redirects authenticated users to their role home route instead of rendering the landing page", async () => {
     authMock.useAuth.mockReturnValue({
       user: {

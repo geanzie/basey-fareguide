@@ -21,7 +21,7 @@ import { PUBLIC_PENALTY_SCHEDULE } from '@/lib/incidents/penaltyRules'
 export default function HomePage() {
   const router = useRouter()
   const { user, status } = useAuth()
-  const isAuthenticated = !!user
+  const isAuthenticated = status === 'authenticated' && !!user
 
   useEffect(() => {
     if (status !== 'authenticated' || !user) {
@@ -30,17 +30,6 @@ export default function HomePage() {
 
     router.replace(getAuthenticatedHomeRoute(user.userType))
   }, [router, status, user])
-
-  if (status === 'loading') {
-    return (
-      <div className="app-page-bg min-h-screen">
-        <AuthStateShell
-          title="Restoring session"
-          message="Checking whether you already have access to a dashboard."
-        />
-      </div>
-    )
-  }
 
   if (status === 'authenticated' && user) {
     return (
