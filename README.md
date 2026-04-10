@@ -29,6 +29,8 @@ On Windows inside a OneDrive-synced directory, `prisma generate` can fail when P
 
 For Neon deployments, Prisma migrations should not run through the pooled `DATABASE_URL` host because advisory-lock acquisition can time out during deploys. `npm run db:migrate:deploy` now prefers `DIRECT_DATABASE_URL` when provided and otherwise derives a direct Neon host from the pooled URL before calling `prisma migrate deploy`.
 
+If another deploy is already holding Prisma's advisory lock, the wrapper retries `prisma migrate deploy` automatically. You can tune that behavior with `PRISMA_MIGRATE_DEPLOY_MAX_ATTEMPTS` and `PRISMA_MIGRATE_DEPLOY_RETRY_DELAY_MS`.
+
 ## Routing Configuration
 
 Official commuter fare calculation now uses verified road routes only.
