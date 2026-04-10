@@ -11,6 +11,7 @@ import type {
   DiscountCardMeResponseDto,
   FareCalculationMutationResponseDto,
   FarePolicySnapshotDto,
+  RoutingPrimaryProviderDto,
   VehicleLookupDto,
 } from '@/lib/contracts'
 import { resolveFarePolicySnapshot } from '@/lib/fare/policy'
@@ -26,6 +27,9 @@ import {
 import type { LocationInput } from '@/lib/routing/types'
 
 const DynamicRoutePlannerMap = dynamic(() => import('./RoutePlannerMap'), { ssr: false }) as ComponentType<RoutePlannerMapProps>
+const DynamicGoogleRoutePlannerMap = dynamic(() => import('./GoogleRoutePlannerMap'), {
+  ssr: false,
+}) as ComponentType<RoutePlannerMapProps>
 
 type PlannerSelection = {
   point: PlannerPoint
@@ -35,6 +39,7 @@ type PlannerSelection = {
 interface RoutePlannerCalculatorProps {
   onError?: (error: string) => void
   MapComponent?: ComponentType<RoutePlannerMapProps>
+  initialPrimaryProvider?: RoutingPrimaryProviderDto
 }
 
 interface CalculateRouteResponse {
@@ -156,8 +161,15 @@ function buildFareCalculationPayload(routeResult: RouteResult, vehicle: VehicleL
 
 const RoutePlannerCalculator = ({
   onError,
-  MapComponent = DynamicRoutePlannerMap,
+  MapComponent,
+  initialPrimaryProvider = 'ors',
 }: RoutePlannerCalculatorProps) => {
+  const ResolvedMapComponent =
+    MapComponent ??
+    (initialPrimaryProvider === 'google_routes'
+      ? DynamicGoogleRoutePlannerMap
+      : DynamicRoutePlannerMap)
+
   const [originSelection, setOriginSelection] = useState<PlannerSelection | null>(null)
   const [destinationSelection, setDestinationSelection] = useState<PlannerSelection | null>(null)
   const [routeResult, setRouteResult] = useState<RouteResult | null>(null)
@@ -507,7 +519,7 @@ const RoutePlannerCalculator = ({
 
         <section className="app-surface-card overflow-hidden rounded-[2rem] p-2 sm:p-3">
           <div className="relative">
-            <MapComponent
+            <ResolvedMapComponent
               origin={origin}
               destination={destination}
               polyline={routeResult?.polyline}
@@ -639,9 +651,7 @@ const RoutePlannerCalculator = ({
               </div>
             ) : null}
 
-            <span className="sr-only">
-              OpenRouteService shortest-distance road routing is required for this planner.
-            </span>
+            <span className="sr-only">Verified road routing is required for this planner.</span>
           </div>
         </section>
 

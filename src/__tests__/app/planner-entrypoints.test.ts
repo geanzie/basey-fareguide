@@ -10,11 +10,15 @@ describe('Planner-only calculator entrypoints', () => {
   it('renders the authenticated calculator through a guarded lazy wrapper and route loading skeleton', () => {
     const calculatorPage = readFileSync(repoPath('src', 'app', 'calculator', 'page.tsx'), 'utf8')
     const calculatorLoading = readFileSync(repoPath('src', 'app', 'calculator', 'loading.tsx'), 'utf8')
+    const lazyCalculator = readFileSync(repoPath('src', 'components', 'LazyRoutePlannerCalculator.tsx'), 'utf8')
 
     expect(calculatorPage).toContain("<RoleGuard allowedRoles={['PUBLIC']}>")
     expect(calculatorPage).toContain('PageWrapper')
     expect(calculatorPage).toContain('LazyRoutePlannerCalculator')
+    expect(calculatorPage).toContain('getResolvedRoutingSettings')
+    expect(calculatorPage).toContain('initialPrimaryProvider={routingSettings.primaryProvider}')
     expect(calculatorLoading).toContain('CalculatorPageSkeleton')
+    expect(lazyCalculator).toContain('initialPrimaryProvider')
     expect(calculatorPage).not.toContain('TripTrackerCalculator')
     expect(calculatorPage).not.toContain('Choose the right calculator for your needs')
     expect(calculatorPage).not.toContain('Start Tracking')
