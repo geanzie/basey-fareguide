@@ -24,6 +24,17 @@ Additional project scripts:
 
 On Windows inside a OneDrive-synced directory, `npm run build` can fail during `prisma generate` because Prisma cannot reliably rename its engine DLL. When validating the app itself, prefer `npx next build` as the cleaner signal for frontend build health.
 
+## Routing Configuration
+
+Official commuter fare calculation now uses verified road routes only.
+
+- Planner order is OpenRouteService first, Google Routes second.
+- If both providers fail, the planner returns `ROUTE_UNVERIFIED` instead of saving an estimated official fare.
+- `GOOGLE_ROUTES_API_KEY` is supported as a dedicated server-side key for `routes.googleapis.com`.
+- `GOOGLE_MAPS_SERVER_API_KEY` remains valid as the fallback key for server-side Google calls when a dedicated routes key is not supplied.
+- Do not apply HTTP referrer restrictions to the server-side Routes key, because the planner calls Google from the Next.js server.
+- Optional timeout knobs: `ROUTING_ORS_TIMEOUT_MS` and `ROUTING_GOOGLE_ROUTES_TIMEOUT_MS`.
+
 ## Docs In This Folder
 
 - `docs/mobile/` contains the current mobile manual verification checklist and validation log template.

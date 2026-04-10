@@ -72,6 +72,56 @@ describe("routing orchestrators", () => {
     expect(result.fallbackReason).toBeTruthy();
   });
 
+  it("falls back to Google Routes before GPS when ORS fails but Google succeeds", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.spyOn(console, "info").mockImplementation(() => {});
+    vi.stubEnv("OPENROUTESERVICE_API_KEY", "test-key");
+    vi.stubEnv("GOOGLE_ROUTES_API_KEY", "google-test-key");
+
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 500,
+          text: () => Promise.resolve("Internal Server Error"),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              routes: [
+                {
+                  distanceMeters: 15100,
+                  duration: "1380s",
+                  polyline: { encodedPolyline: "googleEncodedPolyline" },
+                  legs: [
+                    {
+                      startLocation: {
+                        latLng: { latitude: origin.lat, longitude: origin.lng },
+                      },
+                      endLocation: {
+                        latLng: { latitude: dest.lat, longitude: dest.lng },
+                      },
+                    },
+                  ],
+                },
+              ],
+            }),
+        }),
+    );
+
+    const { calculateRouteWithFallback } = await loadRouting();
+    const result = await calculateRouteWithFallback(origin, dest);
+
+    expect(result.method).toBe("google_routes");
+    expect(result.provider).toBe("google_routes");
+    expect(result.isEstimate).toBe(false);
+    expect(result.polyline).toBe("googleEncodedPolyline");
+    expect(result.fallbackReason).toContain("ORS request failed");
+  });
+
   it("GPS fallback still returns a positive distanceKm", async () => {
     vi.stubEnv("OPENROUTESERVICE_API_KEY", "");
 
@@ -155,8 +205,8 @@ describe("routing orchestrators", () => {
     const { calculateShortestRoadRoute } = await loadRouting();
 
     await expect(calculateShortestRoadRoute(origin, dest)).rejects.toMatchObject({
-      code: "ROUTING_SERVICE_UNAVAILABLE",
-      provider: "ors",
+      code: "ROUTE_UNVERIFIED",
+      provider: "google_routes",
       reason: "configuration_error",
     } satisfies Partial<RoutingServiceError>);
   });

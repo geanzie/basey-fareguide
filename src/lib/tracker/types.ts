@@ -18,7 +18,7 @@ export interface TrackerSegmentRecord {
   distanceKm: number;
   durationMin: number | null;
   confidence: "road_aware" | "gps_estimate";
-  method: "ors" | "gps";
+  method: "ors" | "gps" | "google_routes";
   fallbackReason: string | null;
   polyline: string | null;
 }

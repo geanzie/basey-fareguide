@@ -1,4 +1,4 @@
-import type { RouteResult } from "../types";
+import type { RouteResult, ShortestRoadRouteResult } from "../types";
 
 export interface Coordinates {
   lat: number;
@@ -11,4 +11,5 @@ export interface RoutingProvider {
    * Should throw if the provider fails so the caller can fall back.
    */
   calculate(origin: Coordinates, destination: Coordinates): Promise<RouteResult>;
+  calculateShortest?(origin: Coordinates, destination: Coordinates): Promise<ShortestRoadRouteResult>;
 }

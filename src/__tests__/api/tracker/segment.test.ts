@@ -21,6 +21,8 @@ const mockRouting = vi.mocked(calculateRouteWithFallback);
 const ORS_ROUTE: RouteResult = {
   distanceKm: 0.8,
   durationMin: 3,
+  distanceMeters: 800,
+  durationSeconds: 180,
   polyline: "encoded",
   method: "ors",
   provider: "ors",
@@ -28,6 +30,13 @@ const ORS_ROUTE: RouteResult = {
   fallbackReason: null,
   snappedOrigin: { lat: 11.27541, lng: 125.06891, wasSnapped: false },
   snappedDestination: { lat: 11.2762, lng: 125.0694, wasSnapped: true },
+  diagnostics: {
+    provider: "ors",
+    routeFound: true,
+    isEstimate: false,
+    errorCode: null,
+    errorMessage: null,
+  },
 };
 
 function makeBody(overrides?: Record<string, unknown>) {
@@ -84,6 +93,8 @@ describe("POST /api/tracker/segment", () => {
     mockRouting.mockResolvedValueOnce({
       distanceKm: 0.7,
       durationMin: null,
+      distanceMeters: 700,
+      durationSeconds: null,
       polyline: null,
       method: "gps",
       provider: "gps",
@@ -91,6 +102,13 @@ describe("POST /api/tracker/segment", () => {
       fallbackReason: "ORS unavailable",
       snappedOrigin: null,
       snappedDestination: null,
+      diagnostics: {
+        provider: "gps",
+        routeFound: false,
+        isEstimate: true,
+        errorCode: null,
+        errorMessage: "ORS unavailable",
+      },
     });
 
     const res = await POST(makeRequest(makeBody()) as never);

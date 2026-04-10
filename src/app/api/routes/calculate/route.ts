@@ -63,7 +63,8 @@ const MAX_SNAP_DISTANCE_M = 200;
 type RouteApiErrorCode =
   | "INVALID_ROUTE_INPUT"
   | "NO_ROAD_ROUTE_FOUND"
-  | "ROUTING_SERVICE_UNAVAILABLE";
+  | "ROUTING_SERVICE_UNAVAILABLE"
+  | "ROUTE_UNVERIFIED";
 
 function jsonError(status: number, code: RouteApiErrorCode, error: string) {
   return NextResponse.json({ code, error }, { status });
@@ -278,10 +279,17 @@ export async function POST(request: NextRequest) {
     route = await calculateShortestRoadRoute(originCoords, destCoords);
   } catch (err) {
     if (err instanceof RoutingServiceError) {
-      const status = err.code === "NO_ROAD_ROUTE_FOUND" ? 422 : 503;
+      const status =
+        err.code === "NO_ROAD_ROUTE_FOUND"
+          ? 422
+          : err.code === "ROUTE_UNVERIFIED"
+            ? err.status ?? 503
+            : err.status ?? 503;
       const errorMessage =
         err.code === "NO_ROAD_ROUTE_FOUND"
           ? "No road route could be found between these points."
+          : err.code === "ROUTE_UNVERIFIED"
+            ? "Route could not be verified right now. Official fare is unavailable."
           : "Routing service unavailable right now.";
 
       console.warn("[/api/routes/calculate] routing-failure", {
@@ -292,7 +300,7 @@ export async function POST(request: NextRequest) {
         message: err.message,
       });
 
-      return jsonError(status, err.code, errorMessage);
+      return jsonError(status, err.code as RouteApiErrorCode, errorMessage);
     }
 
     console.error("[/api/routes/calculate] Routing failed:", err);

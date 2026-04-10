@@ -301,6 +301,7 @@ describe('RoutePlannerCalculator', () => {
           discount: 0,
         },
         method: 'ors',
+        provider: 'ors',
         fallbackReason: null,
         polyline: 'encoded-ors',
         inputMode: 'pin',
@@ -332,11 +333,11 @@ describe('RoutePlannerCalculator', () => {
     expect(savedCalculationBodies).toHaveLength(0)
     expect(container.textContent).toContain('PHP 24.00')
     expect(container.textContent).toContain('polyline:encoded-ors')
-    expect(container.textContent).toContain('Road-aware route')
+    expect(container.textContent).toContain('Verified road route')
     expect(container.textContent).toContain('Log in to save this route to your history.')
   })
 
-  it('saves only after an authenticated rider clicks save and omits planner routeData from persistence', async () => {
+  it('saves only after an authenticated rider clicks save and persists planner routeData verification metadata', async () => {
     authState.user = { id: 'public-1' }
     authState.status = 'authenticated'
 
@@ -354,6 +355,7 @@ describe('RoutePlannerCalculator', () => {
           discount: 0,
         },
         method: 'ors',
+        provider: 'ors',
         fallbackReason: null,
         polyline: 'encoded-save',
         inputMode: 'pin',
@@ -393,8 +395,16 @@ describe('RoutePlannerCalculator', () => {
       distance: 5.4,
       calculatedFare: 24,
       calculationType: 'Road Route Planner',
+      routeData: {
+        method: 'ors',
+        providerUsed: 'ors',
+        routeVerified: true,
+        isEstimate: false,
+        failureCode: null,
+        fallbackReason: null,
+        polylinePresent: true,
+      },
     })
-    expect(savedCalculationBodies[0]).not.toHaveProperty('routeData')
     expect(container.textContent).toContain('Saved to fare history.')
   })
 
@@ -413,6 +423,7 @@ describe('RoutePlannerCalculator', () => {
           discount: 0,
         },
         method: 'ors',
+        provider: 'ors',
         fallbackReason: null,
         polyline: 'encoded-reset',
         inputMode: 'pin',

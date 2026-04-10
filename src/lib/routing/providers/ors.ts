@@ -263,6 +263,8 @@ export class OrsProvider implements RoutingProvider {
     return {
       distanceKm,
       durationMin,
+      distanceMeters: segment.distance,
+      durationSeconds: segment.duration,
       polyline,
       method: "ors",
       provider: "ors",
@@ -270,6 +272,13 @@ export class OrsProvider implements RoutingProvider {
       fallbackReason: null,
       snappedOrigin,
       snappedDestination,
+      diagnostics: {
+        provider: "ors",
+        routeFound: true,
+        isEstimate: false,
+        errorCode: null,
+        errorMessage: null,
+      },
     };
   }
 }

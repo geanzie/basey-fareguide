@@ -9,7 +9,7 @@ const client = new Client({});
  */
 export async function testCoordinates(coords: [number, number]): Promise<boolean> {
   try {
-    const apiKey = process.env.GOOGLE_MAPS_SERVER_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    const apiKey = process.env.GOOGLE_MAPS_SERVER_API_KEY;
     if (!apiKey) return false;
 
     const response = await client.reverseGeocode({

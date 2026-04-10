@@ -26,6 +26,8 @@ export class GpsProvider implements RoutingProvider {
     return {
       distanceKm,
       durationMin: null,
+      distanceMeters: distanceKm * 1000,
+      durationSeconds: null,
       /** GPS estimates have no road path — UI must render markers only. */
       polyline: null,
       method: "gps",
@@ -34,6 +36,13 @@ export class GpsProvider implements RoutingProvider {
       fallbackReason: null,
       snappedOrigin: null,
       snappedDestination: null,
+      diagnostics: {
+        provider: "gps",
+        routeFound: false,
+        isEstimate: true,
+        errorCode: null,
+        errorMessage: null,
+      },
     };
   }
 }

@@ -2,9 +2,11 @@ import {
   RoutingServiceError,
   type RouteResult,
   type ShortestRoadRouteResult,
+  type RoutingFailureReason,
 } from "./types";
 import type { Coordinates } from "./providers/base";
 import { OrsProvider } from "./providers/ors";
+import { GoogleRoutesProvider } from "./providers/googleRoutes";
 import { GpsProvider } from "./providers/gps";
 
 export type { RouteResult } from "./types";
@@ -14,6 +16,7 @@ const gps = new GpsProvider();
 const ROUTE_CACHE_TTL_MS = 5 * 60 * 1000;
 const ROUTE_CACHE_MAX_ENTRIES = 200;
 const DEFAULT_ORS_TIMEOUT_MS = 3500;
+const DEFAULT_GOOGLE_ROUTES_TIMEOUT_MS = 3500;
 const ROUTE_CACHE_PRECISION = 4;
 
 type RouteCacheMode = "fallback" | "shortest-road";
@@ -52,6 +55,17 @@ function getConfiguredOrsTimeoutMs(): number {
 
   if (!Number.isFinite(parsed) || parsed <= 0) {
     return DEFAULT_ORS_TIMEOUT_MS;
+  }
+
+  return parsed;
+}
+
+function getConfiguredGoogleRoutesTimeoutMs(): number {
+  const rawValue = process.env.ROUTING_GOOGLE_ROUTES_TIMEOUT_MS;
+  const parsed = Number.parseInt(rawValue ?? String(DEFAULT_GOOGLE_ROUTES_TIMEOUT_MS), 10);
+
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return DEFAULT_GOOGLE_ROUTES_TIMEOUT_MS;
   }
 
   return parsed;
@@ -108,6 +122,49 @@ function toRoutingServiceError(error: unknown): RoutingServiceError {
   );
 }
 
+function buildRouteVerificationFailure(
+  errors: RoutingServiceError[],
+): RoutingServiceError {
+  const verificationErrors = errors.filter(
+    (error) => error.code === "NO_ROAD_ROUTE_FOUND" || error.code === "ROUTE_UNVERIFIED",
+  );
+  const shouldUseNoRouteStatus = verificationErrors.length === errors.length;
+  const reason: RoutingFailureReason = shouldUseNoRouteStatus ? "no_route_found" : errors[errors.length - 1]?.reason ?? "upstream_error";
+  const detail = errors
+    .map((error) => `${error.provider}:${error.code}:${error.message}`)
+    .join(" | ");
+
+  return new RoutingServiceError(
+    "ROUTE_UNVERIFIED",
+    `Route could not be verified by the available road-routing providers. ${detail}`,
+    {
+      provider: errors[errors.length - 1]?.provider ?? "ors",
+      reason,
+      status: shouldUseNoRouteStatus ? 422 : 503,
+    },
+  );
+}
+
+function applyFallbackMetadata(route: RouteResult, fallbackReason: string): RouteResult {
+  return {
+    ...route,
+    fallbackReason,
+    diagnostics: {
+      ...route.diagnostics,
+      errorMessage: fallbackReason,
+    },
+  };
+}
+
+async function tryGoogleRoutes(
+  origin: Coordinates,
+  destination: Coordinates,
+  timeoutMs: number,
+): Promise<ShortestRoadRouteResult> {
+  const googleRoutes = new GoogleRoutesProvider(timeoutMs);
+  return googleRoutes.calculateShortest(origin, destination);
+}
+
 /**
  * Calculate a route between two coordinates.
  * Tries ORS first; falls back to GPS/Haversine if ORS is unavailable or errors.
@@ -117,6 +174,7 @@ export async function calculateRouteWithFallback(
   destination: Coordinates
 ): Promise<RouteResult> {
   const timeoutMs = getConfiguredOrsTimeoutMs();
+  const googleTimeoutMs = getConfiguredGoogleRoutesTimeoutMs();
   const cacheKey = buildRouteCacheKey(origin, destination, "fallback");
   const cachedRoute = getCachedRoute(cacheKey);
 
@@ -125,6 +183,7 @@ export async function calculateRouteWithFallback(
       cacheHit: true,
       orsDurationMs: 0,
       timeoutMs,
+      googleTimeoutMs,
       method: cachedRoute.method,
       fallbackReason: cachedRoute.fallbackReason,
     });
@@ -133,6 +192,7 @@ export async function calculateRouteWithFallback(
   }
 
   const orsStartedAt = Date.now();
+  const fallbackErrors: RoutingServiceError[] = [];
 
   try {
     const ors = new OrsProvider(timeoutMs);
@@ -151,25 +211,62 @@ export async function calculateRouteWithFallback(
     return route;
   } catch (orsError) {
     const typedError = toRoutingServiceError(orsError);
+    fallbackErrors.push(typedError);
     const orsDurationMs = Date.now() - orsStartedAt;
-    const fallbackReason = typedError.message;
 
-    console.warn("[routing] ors-fallback", {
+    console.warn("[routing] ors-google-fallback", {
       cacheHit: false,
       orsDurationMs,
       timeoutMs,
-      method: "gps",
+      googleTimeoutMs,
+      method: "google_routes",
       provider: "ors",
       outcome: typedError.code,
       reason: typedError.reason,
-      fallbackReason,
+      fallbackReason: typedError.message,
     });
 
-    const gpsResult = await gps.calculate(origin, destination);
-    return {
-      ...gpsResult,
-      fallbackReason,
-    };
+    const googleStartedAt = Date.now();
+
+    try {
+      const route = await tryGoogleRoutes(origin, destination, googleTimeoutMs);
+      const googleDurationMs = Date.now() - googleStartedAt;
+      const fallbackReason = `${typedError.provider} fallback: ${typedError.message}`;
+      const routeWithFallback = applyFallbackMetadata(route, fallbackReason);
+
+      cacheRoute(cacheKey, routeWithFallback);
+      console.info("[routing] google-routes-success", {
+        cacheHit: false,
+        orsDurationMs,
+        googleDurationMs,
+        timeoutMs,
+        googleTimeoutMs,
+        method: route.method,
+        fallbackReason,
+      });
+
+      return routeWithFallback;
+    } catch (googleError) {
+      const typedGoogleError = toRoutingServiceError(googleError);
+      fallbackErrors.push(typedGoogleError);
+      const fallbackReason = buildRouteVerificationFailure(fallbackErrors).message;
+
+      console.warn("[routing] google-gps-fallback", {
+        cacheHit: false,
+        orsDurationMs,
+        googleDurationMs: Date.now() - googleStartedAt,
+        timeoutMs,
+        googleTimeoutMs,
+        method: "gps",
+        provider: typedGoogleError.provider,
+        outcome: typedGoogleError.code,
+        reason: typedGoogleError.reason,
+        fallbackReason,
+      });
+
+      const gpsResult = await gps.calculate(origin, destination);
+      return applyFallbackMetadata(gpsResult, fallbackReason);
+    }
   }
 }
 
@@ -178,6 +275,7 @@ export async function calculateShortestRoadRoute(
   destination: Coordinates,
 ): Promise<ShortestRoadRouteResult> {
   const timeoutMs = getConfiguredOrsTimeoutMs();
+  const googleTimeoutMs = getConfiguredGoogleRoutesTimeoutMs();
   const cacheKey = buildRouteCacheKey(origin, destination, "shortest-road");
   const cachedRoute = getCachedRoute(cacheKey);
 
@@ -188,12 +286,14 @@ export async function calculateShortestRoadRoute(
       isEstimate: cachedRoute.isEstimate,
       orsDurationMs: 0,
       timeoutMs,
+      googleTimeoutMs,
     });
 
     return cachedRoute as ShortestRoadRouteResult;
   }
 
   const orsStartedAt = Date.now();
+  const verificationErrors: RoutingServiceError[] = [];
 
   try {
     const ors = new OrsProvider(timeoutMs);
@@ -213,20 +313,65 @@ export async function calculateShortestRoadRoute(
     return route;
   } catch (orsError) {
     const typedError = toRoutingServiceError(orsError);
+    verificationErrors.push(typedError);
     const orsDurationMs = Date.now() - orsStartedAt;
 
-    console.warn("[routing] shortest-road-failure", {
+    console.warn("[routing] shortest-road-ors-failure", {
       cacheHit: false,
       provider: typedError.provider,
       isEstimate: false,
       orsDurationMs,
       timeoutMs,
+      googleTimeoutMs,
       outcome: typedError.code,
       reason: typedError.reason,
       status: typedError.status,
       message: typedError.message,
     });
 
-    throw typedError;
+    const googleStartedAt = Date.now();
+
+    try {
+      const route = await tryGoogleRoutes(origin, destination, googleTimeoutMs);
+      const googleDurationMs = Date.now() - googleStartedAt;
+      const routeWithFallback = applyFallbackMetadata(
+        route,
+        `${typedError.provider} fallback: ${typedError.message}`,
+      );
+
+      cacheRoute(cacheKey, routeWithFallback);
+      console.info("[routing] shortest-road-google-success", {
+        cacheHit: false,
+        provider: route.provider,
+        isEstimate: route.isEstimate,
+        orsDurationMs,
+        googleDurationMs,
+        timeoutMs,
+        googleTimeoutMs,
+        outcome: "success",
+      });
+
+      return routeWithFallback as ShortestRoadRouteResult;
+    } catch (googleError) {
+      const typedGoogleError = toRoutingServiceError(googleError);
+      verificationErrors.push(typedGoogleError);
+      const routeVerificationError = buildRouteVerificationFailure(verificationErrors);
+
+      console.warn("[routing] shortest-road-route-unverified", {
+        cacheHit: false,
+        provider: typedGoogleError.provider,
+        isEstimate: false,
+        orsDurationMs,
+        googleDurationMs: Date.now() - googleStartedAt,
+        timeoutMs,
+        googleTimeoutMs,
+        outcome: routeVerificationError.code,
+        reason: routeVerificationError.reason,
+        status: routeVerificationError.status,
+        message: routeVerificationError.message,
+      });
+
+      throw routeVerificationError;
+    }
   }
 }

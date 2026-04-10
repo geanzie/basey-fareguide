@@ -22,11 +22,14 @@ export interface SnappedPoint {
   wasSnapped: boolean;
 }
 
-export type RouteProvider = "ors" | "gps";
+export type RouteProvider = "ors" | "gps" | "google_routes";
+
+export type RouteMethod = "ors" | "gps" | "google_routes";
 
 export type RoutingFailureCode =
   | "NO_ROAD_ROUTE_FOUND"
-  | "ROUTING_SERVICE_UNAVAILABLE";
+  | "ROUTING_SERVICE_UNAVAILABLE"
+  | "ROUTE_UNVERIFIED";
 
 export type RoutingFailureReason =
   | "configuration_error"
@@ -34,9 +37,17 @@ export type RoutingFailureReason =
   | "timeout"
   | "upstream_error";
 
+export interface RouteDiagnostics {
+  provider: RouteProvider | null;
+  routeFound: boolean;
+  isEstimate: boolean;
+  errorCode: RoutingFailureCode | null;
+  errorMessage: string | null;
+}
+
 export class RoutingServiceError extends Error {
   readonly code: RoutingFailureCode;
-  readonly provider: "ors";
+  readonly provider: Exclude<RouteProvider, "gps">;
   readonly reason: RoutingFailureReason;
   readonly status: number | null;
 
@@ -44,7 +55,7 @@ export class RoutingServiceError extends Error {
     code: RoutingFailureCode,
     message: string,
     options: {
-      provider?: "ors";
+      provider?: Exclude<RouteProvider, "gps">;
       reason: RoutingFailureReason;
       status?: number | null;
     },
@@ -61,9 +72,11 @@ export class RoutingServiceError extends Error {
 export interface RouteResult {
   distanceKm: number;
   durationMin: number | null;
+  distanceMeters: number;
+  durationSeconds: number | null;
   /** Road polyline encoded string, or null when method is "gps" (estimate only). */
   polyline: string | null;
-  method: "ors" | "gps";
+  method: RouteMethod;
   provider: RouteProvider;
   isEstimate: boolean;
   fallbackReason: string | null;
@@ -71,11 +84,12 @@ export interface RouteResult {
   snappedOrigin: SnappedPoint | null;
   /** Road-snapped destination returned by ORS. Null for GPS fallback routes. */
   snappedDestination: SnappedPoint | null;
+  diagnostics: RouteDiagnostics;
 }
 
 export interface ShortestRoadRouteResult extends RouteResult {
-  method: "ors";
-  provider: "ors";
+  method: "ors" | "google_routes";
+  provider: "ors" | "google_routes";
   isEstimate: false;
 }
 
@@ -98,8 +112,8 @@ export interface CalculatedRouteResponse {
   passengerType: PassengerType;
   fareBreakdown: FareBreakdown;
   farePolicy: FarePolicySnapshotDto;
-  method: "ors" | null;
-  provider: "ors" | null;
+  method: Exclude<RouteMethod, "gps"> | null;
+  provider: Exclude<RouteProvider, "gps"> | null;
   isEstimate: boolean;
   fallbackReason: string | null;
   polyline: string | null;

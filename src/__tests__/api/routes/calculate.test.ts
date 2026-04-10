@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { FarePolicySnapshotDto } from "@/lib/contracts";
-import { RoutingServiceError, type RouteResult } from "@/lib/routing/types";
+import {
+  RoutingServiceError,
+  type ShortestRoadRouteResult,
+} from "@/lib/routing/types";
 
 vi.mock("@/lib/routing", () => ({
   calculateShortestRoadRoute: vi.fn(),
@@ -45,9 +48,11 @@ const ACTIVE_FARE_POLICY: FarePolicySnapshotDto = {
   effectiveAt: "2026-04-01T00:00:00.000Z",
 };
 
-const ORS_RESULT: RouteResult = {
+const ORS_RESULT: ShortestRoadRouteResult = {
   distanceKm: 14.8,
   durationMin: 22,
+  distanceMeters: 14800,
+  durationSeconds: 1320,
   polyline: "encodedPolyline",
   method: "ors",
   provider: "ors",
@@ -55,6 +60,13 @@ const ORS_RESULT: RouteResult = {
   fallbackReason: null,
   snappedOrigin: null,
   snappedDestination: null,
+  diagnostics: {
+    provider: "ors",
+    routeFound: true,
+    isEstimate: false,
+    errorCode: null,
+    errorMessage: null,
+  },
 };
 
 function makeRequest(body: unknown): Request {
@@ -231,6 +243,25 @@ describe("POST /api/routes/calculate - input validation", () => {
     expect(res.status).toBe(503);
     const json = await res.json();
     expect(json.code).toBe("ROUTING_SERVICE_UNAVAILABLE");
+  });
+
+  it("returns route-unverified when both road providers fail verification", async () => {
+    mockRouting.mockRejectedValueOnce(
+      new RoutingServiceError(
+        "ROUTE_UNVERIFIED",
+        "Route could not be verified by the available road-routing providers.",
+        { provider: "google_routes", reason: "no_route_found", status: 422 },
+      ),
+    );
+
+    const res = await POST(
+      makeRequest({ origin: P("Amandayehan"), destination: P("Anglit") }) as never,
+    );
+
+    expect(res.status).toBe(422);
+    const json = await res.json();
+    expect(json.code).toBe("ROUTE_UNVERIFIED");
+    expect(json.error).toMatch(/official fare is unavailable/i);
   });
 });
 

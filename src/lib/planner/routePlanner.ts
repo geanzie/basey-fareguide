@@ -60,6 +60,10 @@ export function classifyPlannerError(message: string, code?: string | null): Pla
     return 'no_route_found'
   }
 
+  if (code === 'ROUTE_UNVERIFIED') {
+    return 'no_route_found'
+  }
+
   if (code === 'ROUTING_SERVICE_UNAVAILABLE') {
     return 'network_error'
   }
@@ -87,5 +91,5 @@ export function classifyPlannerError(message: string, code?: string | null): Pla
 
 export function getRouteSourceBadge(method: string | null, distanceKm: number): string {
   if (method == null && distanceKm === 0) return 'Same-point result'
-  return 'Road-aware route'
+  return 'Verified road route'
 }

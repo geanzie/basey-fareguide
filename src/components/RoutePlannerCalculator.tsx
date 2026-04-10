@@ -52,8 +52,8 @@ interface CalculateRouteResponse {
     additionalFare: number
     discount: number
   }
-  method: 'ors' | null
-  provider: 'ors' | null
+  method: 'ors' | 'google_routes' | null
+  provider: 'ors' | 'google_routes' | null
   isEstimate: boolean
   fallbackReason: string | null
   polyline: string | null
@@ -63,6 +63,7 @@ interface CalculateRouteResponse {
 type CalculateRouteErrorCode =
   | 'INVALID_ROUTE_INPUT'
   | 'NO_ROAD_ROUTE_FOUND'
+  | 'ROUTE_UNVERIFIED'
   | 'ROUTING_SERVICE_UNAVAILABLE'
 
 interface RouteResult {
@@ -71,9 +72,10 @@ interface RouteResult {
   durationText: string
   durationMin: number
   polyline: string | null
-  method: 'ors' | null
-  provider: 'ors' | null
+  method: 'ors' | 'google_routes' | null
+  provider: 'ors' | 'google_routes' | null
   isEstimate: boolean
+  fallbackReason: string | null
   sourceBadge: string
   originalFare?: number
   discountApplied?: number
@@ -135,6 +137,15 @@ function buildFareCalculationPayload(routeResult: RouteResult, vehicle: VehicleL
     distance: routeResult.distanceKm,
     calculatedFare: routeResult.fare,
     calculationType: 'Road Route Planner',
+    routeData: {
+      method: routeResult.method,
+      providerUsed: routeResult.provider,
+      routeVerified: routeResult.method != null && !routeResult.isEstimate,
+      isEstimate: routeResult.isEstimate,
+      failureCode: null,
+      fallbackReason: routeResult.fallbackReason,
+      polylinePresent: Boolean(routeResult.polyline),
+    },
     vehicleId: vehicle?.id || null,
     discountCardId: routeResult.discountCard?.id || null,
     originalFare: routeResult.originalFare || null,
@@ -188,7 +199,8 @@ const RoutePlannerCalculator = ({
   const canSaveDisplayedRoute =
     Boolean(user) &&
     Boolean(routeResult) &&
-    routeResult?.method === 'ors' &&
+    routeResult?.method != null &&
+    !routeResult?.isEstimate &&
     hasFreshDisplayedRoute &&
     !isCalculating &&
     plannerState === 'route_ready'
@@ -361,6 +373,7 @@ const RoutePlannerCalculator = ({
         method: data.method || null,
         provider: data.provider || null,
         isEstimate: data.isEstimate ?? false,
+        fallbackReason: data.fallbackReason ?? null,
         sourceBadge: getRouteSourceBadge(data.method ?? null, data.distanceKm || 0),
         originalFare: (data.fareBreakdown?.discount || 0) > 0 ? subtotal : undefined,
         discountApplied: (data.fareBreakdown?.discount || 0) > 0 ? data.fareBreakdown?.discount : undefined,
@@ -525,7 +538,7 @@ const RoutePlannerCalculator = ({
                             {routeResult.sourceBadge}
                           </span>
                           <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700">
-                            {routeResult.method === 'ors' ? 'Shortest road route' : 'No road segment needed'}
+                            {routeResult.method == null ? 'No road segment needed' : 'Shortest verified road route'}
                           </span>
                           {selectedVehicle ? (
                             <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700">
@@ -577,7 +590,7 @@ const RoutePlannerCalculator = ({
                       {user && saveStatus === 'saving' && 'Saving to fare history...'}
                       {user && saveStatus === 'idle' && routeResult.method == null && 'Same-point results are not saved.'}
                       {user && saveStatus === 'idle' && canSaveDisplayedRoute && 'This result is not yet saved.'}
-                      {user && saveStatus === 'idle' && !canSaveDisplayedRoute && routeResult.method === 'ors' && 'Resolve the current route before saving.'}
+                      {user && saveStatus === 'idle' && !canSaveDisplayedRoute && routeResult.method != null && 'Resolve the current verified route before saving.'}
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                       <button

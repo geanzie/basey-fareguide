@@ -15,13 +15,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const apiKey = process.env.GOOGLE_MAPS_SERVER_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-    
-    if (!apiKey) {      return NextResponse.json(
-        { error: 'Google Maps API not configured' },
+    const apiKey = process.env.GOOGLE_MAPS_SERVER_API_KEY;
+
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: 'Google Maps server API not configured' },
         { status: 500 }
       );
-    }    const params: any = {
+    }
+
+    const params: any = {
       address: query,
       key: apiKey,
     };
@@ -51,7 +54,8 @@ export async function POST(request: NextRequest) {
       results: response.data.results,
     });
 
-  } catch (error) {    return NextResponse.json(
+  } catch (error) {
+    return NextResponse.json(
       { 
         error: 'Internal server error during geocoding',
         details: error instanceof Error ? error.message : 'Unknown error'

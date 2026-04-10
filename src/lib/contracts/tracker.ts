@@ -25,7 +25,7 @@ export interface TrackerSegmentResponseDto {
   distanceKm: number;
   durationMin: number | null;
   confidence: TrackerConfidence;
-  method: "ors" | "gps";
+  method: "ors" | "gps" | "google_routes";
   fallbackReason: string | null;
   polyline: string | null;
   snappedFrom: TrackerSnappedPointDto | null;
