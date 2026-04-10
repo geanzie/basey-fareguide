@@ -1,0 +1,28 @@
+[tool.ruff]
+target-version = "py313"
+extend-exclude = [
+    ".next",
+    ".next-dev",
+    ".next-prod",
+    "node_modules",
+    "public/uploads",
+    "src/generated",
+    "src/components/_archived",
+]
+
+[tool.ruff.lint]
+select = ["F"]
+
+[tool.vulture]
+paths = ["scripts"]
+exclude = [
+    ".next/",
+    ".next-dev/",
+    ".next-prod/",
+    "node_modules/",
+    "public/uploads/",
+    "src/generated/",
+    "src/components/_archived/",
+]
+min_confidence = 90
+sort_by_size = true

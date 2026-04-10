@@ -1,0 +1,25 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "scripts/create-sample-incidents.js",
+    "scripts/seed-locations.js",
+    "scripts/seed-permits.js",
+    "scripts/setup-google-maps.js",
+    "scripts/test-discount-api.js",
+    "scripts/test-enforcer-incidents.js",
+    "scripts/test-id-validation.js",
+    "src/app/**/page.tsx",
+    "src/app/**/layout.tsx",
+    "src/app/**/loading.tsx",
+    "src/app/**/route.ts",
+    "src/__tests__/**/*.{ts,tsx}"
+  ],
+  "project": [
+    "src/**/*.{js,jsx,ts,tsx}",
+    "!src/generated/**",
+    "!src/components/_archived/**",
+    "scripts/**/*.{js,ts}",
+    "*.config.{js,mjs,ts}"
+  ],
+  "ignoreExportsUsedInFile": true
+}

@@ -6,8 +6,8 @@ Uses Google Maps API, OpenStreetMap, and PSA data to gather all known locations
 import json
 import time
 import requests  # type: ignore
-from typing import Dict, List, Set, Tuple, Optional
-from dataclasses import dataclass, asdict
+from typing import Dict, List, Optional
+from dataclasses import dataclass
 import os
 
 @dataclass
@@ -407,9 +407,6 @@ def main():
             print(f"📋 Found {len(existing_locations)} existing locations to skip")
     except FileNotFoundError:
         print("📋 No existing locations file found, will collect all locations")
-    
-    # Store existing count to track new additions
-    initial_count = len(collector.locations)
     
     # Load GeoJSON data (but only add if not in existing)
     geojson_path = os.path.join(os.path.dirname(__file__), '..', 'src', 'data', 'Barangay.shp.json')

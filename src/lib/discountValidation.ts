@@ -253,19 +253,3 @@ export function validateDiscountApplication(
   return { valid: allErrors.length === 0, errors: allErrors }
 }
 
-/**
- * Sanitize string input
- */
-export function sanitizeString(input: string | null | undefined): string | null {
-  if (!input) return null
-  return input.trim().substring(0, 500) // Limit length
-}
-
-/**
- * Format error messages for API response
- */
-export function formatValidationErrors(errors: string[]): string {
-  if (errors.length === 0) return ''
-  if (errors.length === 1) return errors[0]
-  return `Validation errors:\n${errors.map((e, i) => `${i + 1}. ${e}`).join('\n')}`
-}

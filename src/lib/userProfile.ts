@@ -1,7 +1,5 @@
 import type {
   SessionResponseDto,
-  SessionUserDto,
-  UserProfileDto,
   UserProfileResponseDto,
 } from "@/lib/contracts";
 import { AUTH_SESSION_BOOTSTRAP_TIMEOUT_MS } from "./authSession";
@@ -82,24 +80,4 @@ export async function fetchUserProfileResponse(): Promise<UserProfileResponseDto
   }
 
   return payload as UserProfileResponseDto;
-}
-
-export function buildOptimisticUserProfileResponse(
-  user: SessionUserDto,
-): UserProfileResponseDto {
-  const optimisticUser: UserProfileDto = {
-    ...user,
-    email: null,
-    phoneNumber: null,
-    dateOfBirth: null,
-    governmentId: null,
-    idType: null,
-    barangayResidence: null,
-    employeeId: null,
-    createdAt: new Date().toISOString(),
-  };
-
-  return {
-    user: optimisticUser,
-  };
 }

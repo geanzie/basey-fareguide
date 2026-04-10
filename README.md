@@ -17,6 +17,8 @@ Additional project scripts:
 - `npm run test` runs the Vitest suite
 - `npm run db:generate` regenerates the Prisma client
 - `npm run db:push` pushes the Prisma schema to the configured database
+- `npm run deadcode:py` runs the checked-in `ruff` and `vulture` pass for `scripts/*.py`
+- `npm run deadcode:ts` runs the checked-in `knip` pass for unused TS/JS files and exports
 
 ## Practical Build Note
 

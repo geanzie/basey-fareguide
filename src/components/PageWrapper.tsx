@@ -2,15 +2,6 @@
 
 import { ReactNode, useEffect } from 'react'
 
-import {
-  DASHBOARD_ICONS,
-  DASHBOARD_ICON_POLICY,
-  DashboardIconSlot,
-  getDashboardIconChipClasses,
-  type DashboardIcon,
-  type DashboardIconTone,
-} from '@/components/dashboardIcons'
-
 interface PageWrapperProps {
   children: ReactNode
   title?: string
@@ -86,87 +77,6 @@ export function PageSection({
         </div>
       )}
       <div className="p-6">{children}</div>
-    </div>
-  )
-}
-
-export function StatsGrid({
-  children,
-  className = '',
-}: {
-  children: ReactNode
-  className?: string
-}) {
-  return (
-    <div className={`grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 ${className}`}>
-      {children}
-    </div>
-  )
-}
-
-export function StatCard({
-  title,
-  value,
-  icon,
-  trend,
-  trendDirection,
-  color = 'emerald',
-}: {
-  title: string
-  value: string | number
-  icon: DashboardIcon
-  trend?: string
-  trendDirection?: 'up' | 'down' | 'neutral'
-  color?: 'emerald' | 'blue' | 'orange' | 'red' | 'purple'
-}) {
-  const colorClasses = {
-    emerald: 'border-emerald-200/80',
-    blue: 'border-blue-200/80',
-    orange: 'border-orange-200/80',
-    red: 'border-red-200/80',
-    purple: 'border-purple-200/80',
-  }
-  const colorTones: Record<typeof color, DashboardIconTone> = {
-    emerald: 'emerald',
-    blue: 'blue',
-    orange: 'amber',
-    red: 'red',
-    purple: 'purple',
-  }
-
-  const trendColors = {
-    up: 'text-green-600',
-    down: 'text-red-600',
-    neutral: 'text-gray-500',
-  }
-
-  const trendTransforms = {
-    up: '-rotate-45',
-    down: 'rotate-45',
-    neutral: 'rotate-0',
-  }
-
-  return (
-    <div className={`app-surface-card-strong rounded-2xl p-6 ${colorClasses[color]}`}>
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-slate-600">{title}</p>
-          <p className="mt-2 text-3xl font-bold text-slate-900">{value}</p>
-          {trend && trendDirection ? (
-            <p className={`inline-flex items-center gap-1 text-sm mt-1 ${trendColors[trendDirection]}`}>
-              <DashboardIconSlot
-                icon={DASHBOARD_ICONS.arrowRight}
-                size={DASHBOARD_ICON_POLICY.sizes.button}
-                className={trendTransforms[trendDirection]}
-              />
-              <span>{trend}</span>
-            </p>
-          ) : null}
-        </div>
-        <div className={getDashboardIconChipClasses(colorTones[color])}>
-          <DashboardIconSlot icon={icon} size={DASHBOARD_ICON_POLICY.sizes.card} />
-        </div>
-      </div>
     </div>
   )
 }

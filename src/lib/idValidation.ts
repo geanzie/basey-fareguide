@@ -31,60 +31,71 @@ export async function validateIDImage(
 ): Promise<IDValidationResult> {
   const reasons: string[] = [];
   let confidence = 0;
-  const detectedInfo: any = {};
+  const detectedInfo: NonNullable<IDValidationResult['detectedInfo']> = {};
 
   try {
-    // Step 1: Analyze image properties - CRITICAL CHECKS
     const imageAnalysis = await analyzeImageProperties(imageBuffer);
-    
-    // Image size is REQUIRED
+
     if (!imageAnalysis.isValidSize) {
       reasons.push('Image dimensions are too small for an ID card (minimum 200x200 pixels)');
       return {
         isValid: false,
         confidence: 0,
         reasons,
-        detectedInfo,
       };
     }
-    confidence += 15;
-    reasons.push('Image size is adequate');
 
-    // Text content is CRITICAL - IDs must have text
-    if (!imageAnalysis.hasEnoughText) {
-      reasons.push('Image lacks sufficient text content - does not appear to be an ID card');
-      reasons.push('IDs typically contain multiple text fields (name, number, dates, etc.)');
+    if (!imageAnalysis.hasContent) {
+      reasons.push('Image appears blank or unreadable');
       return {
         isValid: false,
-        confidence: Math.min(confidence, 15), // Cap at 15 if no text detected
+        confidence: 0,
         reasons,
-        detectedInfo,
       };
     }
-    confidence += 25;
-    reasons.push('Image contains sufficient text content');
 
-    // Step 2: Perform detailed image analysis
+    confidence += 20;
+
+    if (imageAnalysis.hasEnoughText) {
+      confidence += 15;
+      reasons.push('Image has enough visible structure for ID validation');
+    } else {
+      reasons.push('Image does not appear to contain enough text or structure for an ID');
+    }
+
     const ocrResult = await performOCR(imageBuffer);
-    
-    if (ocrResult.confidence < 50) {
-      reasons.push('Image quality is too low or does not appear to be an ID card');
-      return {
-        isValid: false,
-        confidence: Math.min(confidence, 25),
-        reasons,
-        detectedInfo,
-      };
+    const extractedText = ocrResult.text;
+    confidence += Math.round(ocrResult.confidence * 0.2);
+
+    const textValidation = validateExtractedText(extractedText, options);
+    detectedInfo.hasName = textValidation.hasName;
+    detectedInfo.hasIdNumber = textValidation.hasIdNumber;
+    detectedInfo.hasDate = textValidation.hasDate;
+
+    if (textValidation.hasName) {
+      confidence += 15;
+    } else {
+      reasons.push('Could not verify the account name from the ID image');
     }
 
-    // Award points for good image quality
-    confidence += Math.min(30, ocrResult.confidence * 0.5);
-    reasons.push('Image quality is acceptable for ID verification');
-    detectedInfo.hasName = true;
-    reasons.push('Image appears to contain ID card structure');
+    if (options.idNumber && textValidation.hasIdNumber) {
+      confidence += 10;
+    } else if (options.idNumber) {
+      reasons.push('Could not verify the ID number from the image');
+    }
 
-    // Step 3: Validate ID card characteristics
-    // Check aspect ratio (ID cards are typically rectangular)
+    if (textValidation.hasDate) {
+      confidence += 10;
+    }
+
+    const typeValidation = validateIDType(extractedText, options);
+    if (typeValidation.matchesType) {
+      confidence += 15;
+      reasons.push(`Detected ${options.discountType.toLowerCase().replace('_', ' ')} keywords in the ID image`);
+    } else {
+      reasons.push('Could not confirm that the ID matches the selected discount type');
+    }
+
     const imageMetadata = await sharp(imageBuffer).metadata();
     const width = imageMetadata.width || 0;
     const height = imageMetadata.height || 0;
@@ -128,11 +139,13 @@ export async function validateIDImage(
 
     return {
       isValid,
-      confidence,
+      confidence: Math.min(confidence, 100),
       reasons,
+      extractedText,
       detectedInfo,
     };
-  } catch (error) {    return {
+  } catch (error) {
+    return {
       isValid: false,
       confidence: 0,
       reasons: ['Failed to process image: ' + (error as Error).message],
@@ -184,7 +197,8 @@ async function analyzeImageProperties(imageBuffer: Buffer) {
       hasEnoughText,
       edgeDensity,
     };
-  } catch (error) {    return {
+  } catch (error) {
+    return {
       isValidSize: false,
       hasContent: false,
       hasEnoughText: false,
@@ -241,7 +255,8 @@ async function performOCR(imageBuffer: Buffer): Promise<{ text: string; confiden
       text,
       confidence: Math.min(confidence, 85), // Cap at 85 since we're not doing real OCR
     };
-  } catch (error) {    return { text: '', confidence: 0 };
+  } catch (error) {
+    return { text: '', confidence: 0 };
   }
 }
 
@@ -321,53 +336,3 @@ function validateIDType(
   return { matchesType, foundKeywords };
 }
 
-/**
- * Quick validation for client-side (checks basic image properties only)
- */
-export async function quickValidateIDImage(file: File): Promise<{
-  isValid: boolean;
-  message: string;
-}> {
-  try {
-    // Check file type
-    if (!file.type.startsWith('image/')) {
-      return { isValid: false, message: 'File must be an image' };
-    }
-
-    // Check file size
-    if (file.size > 5 * 1024 * 1024) {
-      return { isValid: false, message: 'Image must be less than 5MB' };
-    }
-
-    if (file.size < 10 * 1024) {
-      return { isValid: false, message: 'Image is too small (minimum 10KB)' };
-    }
-
-    // Check image dimensions
-    const buffer = await file.arrayBuffer();
-    const imageBuffer = Buffer.from(buffer);
-    const image = sharp(imageBuffer);
-    const metadata = await image.metadata();
-
-    if (!metadata.width || !metadata.height) {
-      return { isValid: false, message: 'Could not read image dimensions' };
-    }
-
-    if (metadata.width < 200 || metadata.height < 200) {
-      return { 
-        isValid: false, 
-        message: 'Image resolution is too low (minimum 200x200 pixels)' 
-      };
-    }
-
-    return { 
-      isValid: true, 
-      message: 'Image passes basic validation. Will be verified upon submission.' 
-    };
-  } catch (error) {
-    return { 
-      isValid: false, 
-      message: 'Failed to process image: ' + (error as Error).message 
-    };
-  }
-}

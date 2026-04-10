@@ -102,31 +102,3 @@ function getRoleGuardState(
   return 'authenticated'
 }
 
-export function useCurrentUser() {
-  const { user } = useAuth()
-  return user
-}
-
-export function usePermissions() {
-  const user = useCurrentUser()
-
-  const hasRole = (roles: readonly UserRole[]) => {
-    return user ? roles.includes(user.userType) : false
-  }
-
-  const isAdmin = () => hasRole(['ADMIN'])
-  const isEnforcer = () => hasRole(['ENFORCER'])
-  const isEncoder = () => hasRole(['DATA_ENCODER'])
-  const isPublic = () => hasRole(['PUBLIC'])
-  const isAuthority = () => hasRole(['ADMIN', 'DATA_ENCODER', 'ENFORCER'])
-
-  return {
-    user,
-    hasRole,
-    isAdmin,
-    isEnforcer,
-    isEncoder,
-    isPublic,
-    isAuthority,
-  }
-}

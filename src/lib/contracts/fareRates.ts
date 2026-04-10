@@ -35,16 +35,3 @@ export interface AdminFareRatesResponseDto extends FareRatesResponseDto {
   history: FareRateVersionDto[];
   warning?: string | null;
 }
-
-export interface FareRateMutationResponseDto {
-  success: boolean;
-  fareRateVersion: FareRateVersionDto;
-  replacedVersionId: string | null;
-  message: string;
-}
-
-export interface FareRateCancellationResponseDto {
-  success: boolean;
-  canceledVersionId: string;
-  message: string;
-}

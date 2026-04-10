@@ -39,9 +39,3 @@ export interface AdminAnnouncementsResponseDto {
   history: AdminAnnouncementDto[];
   warning?: string | null;
 }
-
-export interface AdminAnnouncementMutationResponseDto {
-  success: boolean;
-  announcement: AdminAnnouncementDto;
-  message: string;
-}

@@ -225,6 +225,6 @@ if new_locations:
         json.dump(existing_data, f, indent=2, ensure_ascii=False)
     
     print(f"✅ Success! Total locations now: {total}")
-    print(f"\n⚠️ Note: New locations from OSM should be verified for accuracy")
+    print("\n⚠️ Note: New locations from OSM should be verified for accuracy")
 else:
     print("✅ No new locations found")

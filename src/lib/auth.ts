@@ -25,7 +25,6 @@ const authUserSelect = {
 
 export const ADMIN_ONLY = [UserType.ADMIN] as const
 export const ENFORCER_ONLY = [UserType.ENFORCER] as const
-export const ENCODER_ONLY = [UserType.DATA_ENCODER] as const
 export const PUBLIC_ONLY = [UserType.PUBLIC] as const
 export const ADMIN_OR_ENCODER = [UserType.ADMIN, UserType.DATA_ENCODER] as const
 export const ADMIN_OR_ENFORCER = [UserType.ADMIN, UserType.ENFORCER] as const

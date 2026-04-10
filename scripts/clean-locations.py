@@ -106,7 +106,7 @@ def main():
     
     data, filepath = load_locations()
     
-    print(f"\n📊 Current Status:")
+    print("\n📊 Current Status:")
     print(f"  Total Locations: {data['metadata']['total_locations']}")
     
     total_verified = sum(
@@ -172,7 +172,7 @@ def main():
             print(f"    Unverified: {len(unverified)}")
             
             if unverified:
-                print(f"    Sources: ", end='')
+                print("    Sources: ", end='')
                 sources = {}
                 for loc in unverified:
                     source = loc.get('source', 'unknown')

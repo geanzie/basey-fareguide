@@ -93,7 +93,3 @@ export interface DashboardActivityItemDto {
   createdAt: string;
   ticketNumber: string | null;
 }
-
-export interface DashboardActivityResponseDto {
-  activity: DashboardActivityItemDto[];
-}
