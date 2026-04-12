@@ -164,29 +164,34 @@ const EvidenceManager = ({ incidentId, onClose }: EvidenceManagerProps) => {
   const formatDate = (dateString: string) => new Date(dateString).toLocaleString()
 
   return (
-    <div className="fixed inset-0 z-50 h-full w-full overflow-y-auto bg-slate-950/35 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[70] h-full w-full overflow-hidden bg-slate-950/35 backdrop-blur-sm">
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="evidence-manager-title"
-        className="app-surface-overlay app-mobile-sheet-safe relative top-4 mx-auto max-h-[calc(100vh-2rem)] w-[calc(100%-1rem)] max-w-6xl overflow-y-auto rounded-3xl p-4 sm:top-8 sm:w-11/12 sm:p-5"
+        className="app-surface-overlay app-mobile-sheet-safe flex h-full min-h-0 w-full flex-col overflow-hidden rounded-none sm:mx-auto sm:my-4 sm:h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-2rem)] sm:w-11/12 sm:max-w-6xl sm:rounded-3xl"
       >
-        <div className="space-y-6">
-          <div className="flex items-start justify-between gap-3">
-            <h3 id="evidence-manager-title" className="min-w-0 text-lg font-bold text-gray-900 sm:text-xl flex items-center gap-3">
-              <span className={getDashboardIconChipClasses('blue')}>
-                <DashboardIconSlot icon={DASHBOARD_ICONS.folder} size={DASHBOARD_ICON_POLICY.sizes.card} />
-              </span>
-              <span>Evidence Management</span>
-            </h3>
-            <button
-              onClick={onClose}
-              className="shrink-0 rounded-full p-2 text-gray-400 transition-colors hover:bg-white/80 hover:text-gray-600"
-              aria-label="Close evidence manager"
-            >
-              <DashboardIconSlot icon={DASHBOARD_ICONS.close} size={DASHBOARD_ICON_POLICY.sizes.card} />
-            </button>
-          </div>
+        <div className="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-slate-200/80 bg-white/95 px-4 py-4 backdrop-blur sm:px-5">
+          <h3 id="evidence-manager-title" className="min-w-0 text-lg font-bold text-gray-900 sm:text-xl flex items-center gap-3">
+            <span className={getDashboardIconChipClasses('blue')}>
+              <DashboardIconSlot icon={DASHBOARD_ICONS.folder} size={DASHBOARD_ICON_POLICY.sizes.card} />
+            </span>
+            <span>Evidence Management</span>
+          </h3>
+          <button
+            onClick={onClose}
+            className="shrink-0 rounded-full p-2 text-gray-400 transition-colors hover:bg-white/80 hover:text-gray-600"
+            aria-label="Close evidence manager"
+          >
+            <DashboardIconSlot icon={DASHBOARD_ICONS.close} size={DASHBOARD_ICON_POLICY.sizes.card} />
+          </button>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
+          <div className="space-y-6">
+            <div className="rounded-xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-sm text-blue-900">
+              Review uploaded evidence, open files, and submit verification without leaving the incident workflow.
+            </div>
 
           {error ? (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 flex items-center gap-2">
@@ -283,15 +288,15 @@ const EvidenceManager = ({ incidentId, onClose }: EvidenceManagerProps) => {
                         </div>
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-3 lg:justify-end">
+                      <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
                         <a
                           href={item.storageStatus === 'DELETED' ? undefined : item.fileUrl}
                           target={item.storageStatus === 'DELETED' ? undefined : '_blank'}
                           rel={item.storageStatus === 'DELETED' ? undefined : 'noopener noreferrer'}
-                          className={`text-sm font-medium inline-flex items-center gap-2 ${
+                          className={`inline-flex w-full items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium sm:w-auto ${
                             item.storageStatus === 'DELETED'
-                              ? 'text-gray-400 cursor-not-allowed pointer-events-none'
-                              : 'text-blue-600 hover:text-blue-800'
+                              ? 'border-gray-200 text-gray-400 cursor-not-allowed pointer-events-none'
+                              : 'border-blue-200 text-blue-600 hover:bg-blue-50 hover:text-blue-800'
                           }`}
                         >
                           <DashboardIconSlot icon={DASHBOARD_ICONS.view} size={DASHBOARD_ICON_POLICY.sizes.button} />
@@ -307,7 +312,7 @@ const EvidenceManager = ({ incidentId, onClose }: EvidenceManagerProps) => {
                         {item.status === 'PENDING_REVIEW' ? (
                           <button
                             onClick={() => setReviewingId(item.id)}
-                            className="text-green-600 hover:text-green-800 text-sm font-medium inline-flex items-center gap-2"
+                            className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-green-200 px-3 py-2 text-sm font-medium text-green-600 hover:bg-green-50 hover:text-green-800 sm:w-auto"
                           >
                             <DashboardIconSlot icon={DASHBOARD_ICONS.check} size={DASHBOARD_ICON_POLICY.sizes.button} />
                             <span>Review</span>
@@ -389,7 +394,7 @@ const EvidenceManager = ({ incidentId, onClose }: EvidenceManagerProps) => {
             )}
           </div>
 
-          <div className="flex flex-col-reverse gap-3 border-t pt-4 sm:flex-row sm:justify-end">
+          <div className="sticky bottom-0 z-10 flex flex-col-reverse gap-3 border-t border-slate-200/80 bg-white/95 px-4 py-4 backdrop-blur sm:flex-row sm:justify-end sm:px-5">
             <button
               onClick={onClose}
               className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-gray-300 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-400 sm:w-auto"
@@ -398,6 +403,7 @@ const EvidenceManager = ({ incidentId, onClose }: EvidenceManagerProps) => {
               <span>Close</span>
             </button>
           </div>
+        </div>
         </div>
       </div>
     </div>

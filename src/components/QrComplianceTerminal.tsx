@@ -10,6 +10,7 @@ import {
   DashboardIconSlot,
   getDashboardIconChipClasses,
 } from '@/components/dashboardIcons'
+import EnforcerIncidentsList from '@/components/EnforcerIncidentsList'
 import type {
   TerminalIncidentHandoffSnapshotDto,
   TerminalLookupResultDto,
@@ -20,7 +21,7 @@ import type {
 } from '@/lib/contracts'
 import { storeQrTerminalHandoff } from '@/lib/terminal/handoff'
 
-type TerminalView = 'locked' | 'unlocking' | 'camera-ready' | 'manual-entry' | 'result' | 'error'
+type TerminalView = 'locked' | 'unlocking' | 'camera-ready' | 'manual-entry' | 'result' | 'incident-queue' | 'error'
 
 type TerminalApiErrorResponse = {
   message?: string
@@ -54,6 +55,16 @@ function safelyDisposeScanner(scanner: ScannerHandle) {
   } catch {
     safelyClearScanner(scanner)
   }
+}
+
+function formatIncidentDate(value: string): string {
+  const parsed = new Date(value)
+
+  if (Number.isNaN(parsed.getTime())) {
+    return 'Unknown date'
+  }
+
+  return parsed.toLocaleDateString()
 }
 
 function ScannerPanel({
@@ -183,7 +194,7 @@ export default function QrComplianceTerminal() {
   const canRenderLauncher = pathname === '/' || isAuthenticated
   const shouldRenderHistoryPanel = showHistoryPanel && view !== 'result'
   const isCameraVisible = view === 'camera-ready' && !shouldRenderHistoryPanel
-  const shouldMaximizeTerminal = shouldRenderHistoryPanel
+  const shouldMaximizeTerminal = shouldRenderHistoryPanel || view === 'incident-queue'
   const incidentHandoffVehicle = result?.incidentHandoff?.vehicle ?? null
   const incidentActionDisabledReason = result && !incidentHandoffVehicle
     ? 'Incident reporting stays in the enforcer queue and requires a matched vehicle from the scan.'
@@ -391,8 +402,22 @@ export default function QrComplianceTerminal() {
     }
 
     storeQrTerminalHandoff(snapshot)
-    setOpen(false)
-    router.push('/enforcer/incidents?qrHandoff=1')
+    setShowHistoryPanel(false)
+    setView('incident-queue')
+  }
+
+  const handleReturnToResult = () => {
+    setView('result')
+  }
+
+  const handleEmbeddedWorkflowComplete = () => {
+    setResult(null)
+    setErrorMessage('')
+    setCameraMessage('')
+    setManualToken('')
+    setShowHistoryPanel(false)
+    setView('camera-ready')
+    void loadScanHistory()
   }
 
   return (
@@ -663,6 +688,48 @@ export default function QrComplianceTerminal() {
                         </div>
                       ) : null}
 
+                      {view === 'incident-queue' && result?.incidentHandoff ? (
+                        <div className="flex min-h-0 flex-1 flex-col gap-4">
+                          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                              <div>
+                                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">Enforcement workflow</div>
+                                <h3 className="mt-2 text-lg font-semibold text-emerald-950">
+                                  {result.incidentHandoff.vehicle?.plateNumber || 'Scanned vehicle'} incident review
+                                </h3>
+                                <p className="mt-1 text-sm text-emerald-900">
+                                  {result.violationSummary?.openIncidents ?? 0} matched incident{(result.violationSummary?.openIncidents ?? 0) === 1 ? '' : 's'} ready for action.
+                                </p>
+                              </div>
+                              <div className="flex flex-col gap-2 sm:flex-row">
+                                <button
+                                  type="button"
+                                  onClick={handleReturnToResult}
+                                  className="rounded-lg border border-emerald-300 px-4 py-2 text-sm font-medium text-emerald-900 transition-colors hover:bg-white/70"
+                                >
+                                  Back to Result
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={handleEmbeddedWorkflowComplete}
+                                  className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
+                                >
+                                  Finish and Scan Again
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="min-h-0 flex-1 overflow-y-auto pr-1 pb-2">
+                            <EnforcerIncidentsList
+                              mode="queue"
+                              embeddedQrHandoffSnapshot={result.incidentHandoff}
+                              onWorkflowComplete={handleEmbeddedWorkflowComplete}
+                            />
+                          </div>
+                        </div>
+                      ) : null}
+
                       {view === 'result' && result ? (
                         <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
                       <div className="flex flex-wrap items-center gap-3">
@@ -691,13 +758,33 @@ export default function QrComplianceTerminal() {
                           </div>
                           <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
                             <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Reported incidents</div>
-                            <div className="mt-1 font-semibold text-slate-900">{result.violationSummary?.totalViolations ?? 0}</div>
+                            <div className="mt-1 font-semibold text-slate-900">{result.violationSummary?.openIncidents ?? 0}</div>
                           </div>
                           <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
                             <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Outstanding penalties</div>
                             <div className="mt-1 font-semibold text-slate-900">PHP {(result.violationSummary?.outstandingPenalties ?? 0).toLocaleString()}</div>
                           </div>
                         </div>
+                        {result.violationSummary && result.violationSummary.openIncidents > 0 ? (
+                          <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+                            <div className="text-xs font-semibold uppercase tracking-wide text-amber-700">Matched reports</div>
+                            {result.violationSummary.recentViolations.length > 0 ? (
+                              <div className="mt-2 space-y-2">
+                                {result.violationSummary.recentViolations.slice(0, 3).map((incident) => (
+                                  <div key={incident.id} className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                                    <div>
+                                      <span className="font-medium text-slate-900">{incident.incidentTypeLabel}</span>
+                                      <span className="text-slate-600">{' '}• {incident.status.replace(/_/g, ' ')}</span>
+                                    </div>
+                                    <span className="text-xs text-slate-600">{formatIncidentDate(incident.incidentDate)}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="mt-2 text-slate-700">Unresolved matched incident reports are included in the count above.</p>
+                            )}
+                          </div>
+                        ) : null}
                       </div>
 
                         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
@@ -714,7 +801,7 @@ export default function QrComplianceTerminal() {
                             disabled={!incidentHandoffVehicle}
                             className="w-full rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                           >
-                            Open Incident Report
+                            Review Incident Queue
                           </button>
                         </div>
                         {incidentActionDisabledReason ? (

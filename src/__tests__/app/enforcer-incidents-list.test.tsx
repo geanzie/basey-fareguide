@@ -424,6 +424,64 @@ describe('EnforcerIncidentsList', () => {
     expect(container.textContent).toContain('Driver: Pedro Santos • Unpaid tickets: 1')
   })
 
+  it('optimizes the embedded terminal queue to the matched plate only', async () => {
+    await act(async () => {
+      root.render(
+        React.createElement(EnforcerIncidentsList, {
+          mode: 'queue',
+          embeddedQrHandoffSnapshot: {
+            permitId: 'permit-1',
+            vehicleId: 'vehicle-1',
+            operatorId: null,
+            scannedTokenFingerprint: 'sha256:demo-token-fingerprint',
+            permitStatusAtScan: 'ACTIVE',
+            complianceStatus: 'REVIEW_REQUIRED',
+            scanDispositionAtScan: 'FLAGGED',
+            complianceFlags: ['open-incidents'],
+            complianceChecklistAtScan: [],
+            violationSummary: {
+              totalViolations: 2,
+              openIncidents: 1,
+              unpaidTickets: 1,
+              outstandingPenalties: 350,
+            },
+            operator: {
+              operatorId: null,
+              operatorIdStatus: 'UNAVAILABLE',
+              driverFullName: 'Pedro Santos',
+              driverName: 'Pedro Santos',
+              ownerName: 'Juan Dela Cruz',
+              driverLicense: 'D-12345',
+            },
+            vehicle: {
+              id: 'vehicle-1',
+              plateNumber: 'ABC-123',
+              vehicleType: 'TRICYCLE',
+              make: 'Honda',
+              model: 'Wave',
+              color: 'Blue',
+              ownerName: 'Juan Dela Cruz',
+              driverName: 'Pedro Santos',
+              driverLicense: 'D-12345',
+              registrationExpiry: '2027-01-01T00:00:00.000Z',
+              insuranceExpiry: null,
+              isActive: true,
+            },
+          },
+        }),
+      )
+      await Promise.resolve()
+    })
+
+    expect(container.textContent).toContain('Matched incidents for ABC-123')
+    expect(container.textContent).toContain('1 unresolved incident matched to this plate number.')
+    expect(container.textContent).not.toContain('Unresolved work queue')
+    expect(container.textContent).not.toContain('incident awaiting response')
+    expect(container.textContent).not.toContain('Search incidents')
+    expect(container.textContent).toContain('ABC-123')
+    expect(container.textContent).not.toContain('XYZ-789')
+  })
+
   it('shows an explicit notice when queue handoff data is missing vehicle context', async () => {
     searchParamsState.qrHandoff = '1'
     sessionStorage.setItem('qr-terminal-handoff', JSON.stringify({

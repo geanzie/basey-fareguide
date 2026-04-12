@@ -75,6 +75,8 @@ const STATUS_TABS: Record<EnforcerIncidentsViewMode, Array<{ key: EnforcerStatus
 
 interface EnforcerIncidentsListProps {
   mode: EnforcerIncidentsViewMode
+  embeddedQrHandoffSnapshot?: TerminalIncidentHandoffSnapshotDto | null
+  onWorkflowComplete?: () => void
 }
 
 function ActionLabel({
@@ -98,7 +100,11 @@ function ActionLabel({
   )
 }
 
-export default function EnforcerIncidentsList({ mode }: EnforcerIncidentsListProps) {
+export default function EnforcerIncidentsList({
+  mode,
+  embeddedQrHandoffSnapshot,
+  onWorkflowComplete,
+}: EnforcerIncidentsListProps) {
   const searchParams = useSearchParams()
   const [statusFilter, setStatusFilter] = useState<EnforcerStatusFilter>('ALL')
   const [searchQuery, setSearchQuery] = useState('')
@@ -119,6 +125,7 @@ export default function EnforcerIncidentsList({ mode }: EnforcerIncidentsListPro
   })
 
   const isQueueMode = mode === 'queue'
+  const isEmbeddedQueueMode = isQueueMode && embeddedQrHandoffSnapshot !== undefined
   const requestScope: EnforcerIncidentScope = isQueueMode ? 'unresolved' : 'all'
   const swrKey = `/api/incidents/enforcer?scope=${requestScope}&mode=${mode}`
   const allowedStatusFilters = ALLOWED_STATUS_FILTERS[mode]
@@ -152,7 +159,29 @@ export default function EnforcerIncidentsList({ mode }: EnforcerIncidentsListPro
   }, [actionNotice])
 
   useEffect(() => {
-    if (mode !== 'queue' || searchParams.get('qrHandoff') !== '1') {
+    if (mode !== 'queue') {
+      return
+    }
+
+    if (embeddedQrHandoffSnapshot !== undefined) {
+      if (!embeddedQrHandoffSnapshot) {
+        setQrHandoffSnapshot(null)
+        setQrHandoffNotice('QR handoff data was not available. Return to the QR terminal result and retry the enforcement workflow.')
+        return
+      }
+
+      if (!embeddedQrHandoffSnapshot.vehicle) {
+        setQrHandoffSnapshot(null)
+        setQrHandoffNotice('QR handoff did not include a vehicle. Return to the QR terminal result and re-scan before continuing.')
+        return
+      }
+
+      setQrHandoffNotice(null)
+      setQrHandoffSnapshot(embeddedQrHandoffSnapshot)
+      return
+    }
+
+    if (searchParams.get('qrHandoff') !== '1') {
       return
     }
 
@@ -177,7 +206,7 @@ export default function EnforcerIncidentsList({ mode }: EnforcerIncidentsListPro
     setQrHandoffNotice(null)
     setQrHandoffSnapshot(snapshot)
     setSearchQuery((current) => current || handoffVehicle.plateNumber || '')
-  }, [mode, searchParams])
+  }, [embeddedQrHandoffSnapshot, mode, searchParams])
 
   const showActionNotice = (tone: ActionNotice['tone'], title: string, message: string) => {
     setActionNotice({ tone, title, message })
@@ -193,9 +222,16 @@ export default function EnforcerIncidentsList({ mode }: EnforcerIncidentsListPro
     )
   }, [incidents, isQueueMode])
 
+  const embeddedPlateNumber = isEmbeddedQueueMode ? qrHandoffSnapshot?.vehicle?.plateNumber?.trim().toLowerCase() || '' : ''
+
   const filteredIncidents = useMemo(() => {
     return scopedIncidents.filter((incident) => {
       const matchesStatus = statusFilter === 'ALL' || incident.status === statusFilter
+
+      if (isEmbeddedQueueMode) {
+        const incidentPlateNumber = incident.plateNumber?.trim().toLowerCase() || ''
+        return Boolean(matchesStatus && embeddedPlateNumber && incidentPlateNumber === embeddedPlateNumber)
+      }
 
       if (!searchQuery.trim()) {
         return matchesStatus
@@ -213,7 +249,7 @@ export default function EnforcerIncidentsList({ mode }: EnforcerIncidentsListPro
 
       return Boolean(matchesStatus && matchesSearch)
     })
-  }, [scopedIncidents, searchQuery, statusFilter])
+  }, [embeddedPlateNumber, isEmbeddedQueueMode, scopedIncidents, searchQuery, statusFilter])
 
   const stats = useMemo(
     () => ({
@@ -330,6 +366,7 @@ export default function EnforcerIncidentsList({ mode }: EnforcerIncidentsListPro
         closeIncidentDetails()
       }
       await mutate()
+      onWorkflowComplete?.()
     } catch (_error) {
       showActionNotice('error', 'Unable to resolve incident', 'Error resolving incident. Please try again.')
     }
@@ -370,6 +407,7 @@ export default function EnforcerIncidentsList({ mode }: EnforcerIncidentsListPro
       closeTicketModal()
       closeIncidentDetails()
       await mutate()
+      onWorkflowComplete?.()
     } catch (_error) {
       showActionNotice('error', 'Unable to issue ticket', 'Error issuing ticket. Please try again.')
     }
@@ -512,7 +550,7 @@ export default function EnforcerIncidentsList({ mode }: EnforcerIncidentsListPro
         </div>
       ) : null}
       <div className="space-y-6 sm:space-y-8">
-        {stats.pending > 0 ? (
+        {!isEmbeddedQueueMode && stats.pending > 0 ? (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <div className="flex items-start gap-3">
               <DashboardIconSlot
@@ -562,20 +600,28 @@ export default function EnforcerIncidentsList({ mode }: EnforcerIncidentsListPro
                   <span>QR Handoff</span>
                 </div>
                 <h3 className="mt-2 text-lg font-semibold text-emerald-950">
-                  {qrHandoffSnapshot.vehicle?.plateNumber || qrHandoffSnapshot.vehicle?.id || 'Matched vehicle'} is loaded into the queue
+                  {isEmbeddedQueueMode
+                    ? `Matched incidents for ${qrHandoffSnapshot.vehicle?.plateNumber || qrHandoffSnapshot.vehicle?.id || 'the scanned vehicle'}`
+                    : `${qrHandoffSnapshot.vehicle?.plateNumber || qrHandoffSnapshot.vehicle?.id || 'Matched vehicle'} is loaded into the queue`}
                 </h3>
                 <p className="mt-1 text-sm text-emerald-900">
-                  Permit status: {qrHandoffSnapshot.permitStatusAtScan}. Compliance: {qrHandoffSnapshot.complianceStatus.replace('_', ' ')}.
+                  {isEmbeddedQueueMode
+                    ? `${filteredIncidents.length} unresolved incident${filteredIncidents.length === 1 ? '' : 's'} matched to this plate number.`
+                    : `Permit status: ${qrHandoffSnapshot.permitStatusAtScan}. Compliance: ${qrHandoffSnapshot.complianceStatus.replace('_', ' ')}.`}
                 </p>
-                <p className="mt-1 text-sm text-emerald-900">
-                  Driver: {qrHandoffSnapshot.operator.driverFullName || qrHandoffSnapshot.operator.driverName || 'Unspecified'}
-                  {' '}• Unpaid tickets: {qrHandoffSnapshot.violationSummary.unpaidTickets}
-                </p>
+                {!isEmbeddedQueueMode ? (
+                  <p className="mt-1 text-sm text-emerald-900">
+                    Driver: {qrHandoffSnapshot.operator.driverFullName || qrHandoffSnapshot.operator.driverName || 'Unspecified'}
+                    {' '}• Unpaid tickets: {qrHandoffSnapshot.violationSummary.unpaidTickets}
+                  </p>
+                ) : null}
               </div>
               <button
                 type="button"
                 onClick={() => {
-                  clearQrTerminalHandoff()
+                  if (embeddedQrHandoffSnapshot === undefined) {
+                    clearQrTerminalHandoff()
+                  }
                   setQrHandoffSnapshot(null)
                 }}
                 className="rounded-lg border border-emerald-300 px-4 py-2 text-sm font-medium text-emerald-900 transition-colors hover:bg-white/70"
@@ -615,6 +661,7 @@ export default function EnforcerIncidentsList({ mode }: EnforcerIncidentsListPro
           </div>
         ) : null}
 
+        {!isEmbeddedQueueMode ? (
         <div className="app-surface-card rounded-2xl p-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-sm font-medium text-gray-700">
@@ -637,7 +684,9 @@ export default function EnforcerIncidentsList({ mode }: EnforcerIncidentsListPro
             </span>
           </div>
         </div>
+        ) : null}
 
+        {!isEmbeddedQueueMode ? (
         <div className="app-surface-card rounded-2xl p-4 flex flex-col gap-4 lg:flex-row lg:items-end">
           <div className="flex-1">
             <label htmlFor="incident-search" className="mb-2 inline-flex items-center gap-2 text-sm font-medium text-gray-700">
@@ -682,6 +731,7 @@ export default function EnforcerIncidentsList({ mode }: EnforcerIncidentsListPro
             ))}
           </div>
         </div>
+        ) : null}
 
         <div className="app-surface-card rounded-2xl">
           <div className="p-6">
@@ -807,7 +857,11 @@ export default function EnforcerIncidentsList({ mode }: EnforcerIncidentsListPro
               ]}
               data={filteredIncidents}
               loading={isLoading}
-              emptyMessage={isQueueMode ? 'No unresolved incidents found for the selected filters.' : 'No incidents found for the selected filters.'}
+              emptyMessage={isEmbeddedQueueMode
+                ? 'No unresolved incidents matched this plate number.'
+                : isQueueMode
+                  ? 'No unresolved incidents found for the selected filters.'
+                  : 'No incidents found for the selected filters.'}
               className="rounded-lg"
             />
           </div>

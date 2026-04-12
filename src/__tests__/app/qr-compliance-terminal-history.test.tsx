@@ -12,6 +12,10 @@ const scannerState = vi.hoisted(() => ({
 
 const routerPush = vi.hoisted(() => vi.fn())
 
+const embeddedQueueMockState = vi.hoisted(() => ({
+  snapshots: [] as Array<Record<string, unknown> | null | undefined>,
+}))
+
 vi.mock('@/components/AuthProvider', () => ({
   useAuth: () => ({
     user: {
@@ -54,6 +58,38 @@ vi.mock('html5-qrcode', () => ({
     clear = scannerState.clear
   },
 }))
+
+vi.mock('@/components/EnforcerIncidentsList', async () => {
+  const React = await import('react')
+
+  return {
+    __esModule: true,
+    default: ({
+      embeddedQrHandoffSnapshot,
+      onWorkflowComplete,
+    }: {
+      embeddedQrHandoffSnapshot?: Record<string, unknown> | null
+      onWorkflowComplete?: () => void
+    }) => {
+      embeddedQueueMockState.snapshots.push(embeddedQrHandoffSnapshot)
+
+      return React.createElement(
+        'div',
+        { 'data-testid': 'embedded-enforcer-queue' },
+        React.createElement('div', null, 'Embedded Enforcer Queue'),
+        React.createElement('div', null, String(embeddedQrHandoffSnapshot?.vehicle ? 'vehicle-loaded' : 'vehicle-missing')),
+        React.createElement(
+          'button',
+          {
+            type: 'button',
+            onClick: () => onWorkflowComplete?.(),
+          },
+          'Complete Embedded Workflow',
+        ),
+      )
+    },
+  }
+})
 
 import QrComplianceTerminal from '@/components/QrComplianceTerminal'
 
@@ -244,6 +280,7 @@ describe('QrComplianceTerminal history', () => {
     document.body.appendChild(container)
     root = createRoot(container)
     sessionStorage.clear()
+    embeddedQueueMockState.snapshots = []
 
     scannerState.clear.mockReset()
     scannerState.start.mockReset()
@@ -493,7 +530,7 @@ describe('QrComplianceTerminal history', () => {
     root = createRoot(container)
   })
 
-  it('routes the incident action to the enforcer queue and stores the resolved vehicle handoff', async () => {
+  it('opens the embedded enforcement queue without leaving the terminal', async () => {
     lookupResponseBody = makeLookupResult()
 
     await act(async () => {
@@ -509,7 +546,7 @@ describe('QrComplianceTerminal history', () => {
     expect(container.textContent).toContain('Outstanding penalties')
 
     const incidentButton = Array.from(container.querySelectorAll('button')).find((button) =>
-      button.textContent?.includes('Open Incident Report'),
+      button.textContent?.includes('Review Incident Queue'),
     ) as HTMLButtonElement | undefined
 
     expect(incidentButton).toBeTruthy()
@@ -520,17 +557,55 @@ describe('QrComplianceTerminal history', () => {
       await Promise.resolve()
     })
 
-    expect(routerPush).toHaveBeenCalledWith('/enforcer/incidents?qrHandoff=1')
-    expect(routerPush).not.toHaveBeenCalledWith('/report?qrHandoff=1')
-
-    const storedSnapshot = sessionStorage.getItem('qr-terminal-handoff')
-    expect(storedSnapshot).not.toBeNull()
-    expect(JSON.parse(storedSnapshot || '{}')).toMatchObject({
+    expect(routerPush).not.toHaveBeenCalled()
+    expect(container.textContent).toContain('ABC-123 incident review')
+    expect(container.textContent).toContain('1 matched incident ready for action.')
+    expect(container.querySelector('[data-testid="embedded-enforcer-queue"]')).not.toBeNull()
+    expect(embeddedQueueMockState.snapshots.at(-1)).toMatchObject({
       vehicleId: 'vehicle-1',
       vehicle: {
         plateNumber: 'ABC-123',
       },
     })
+  })
+
+  it('shows recent scan history while the embedded enforcement workflow is active', async () => {
+    lookupResponseBody = makeLookupResult()
+
+    await act(async () => {
+      root.render(React.createElement(QrComplianceTerminal))
+      await Promise.resolve()
+    })
+
+    await openAndUnlockTerminal(container)
+    await showLookupResult(container, 'qr-token-history-during-workflow')
+
+    const openQueueButton = Array.from(container.querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('Review Incident Queue'),
+    ) as HTMLButtonElement | undefined
+
+    await act(async () => {
+      openQueueButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await Promise.resolve()
+    })
+
+    expect(container.querySelector('[data-testid="embedded-enforcer-queue"]')).not.toBeNull()
+
+    const showHistoryButton = Array.from(container.querySelectorAll('button')).find((button) =>
+      button.getAttribute('aria-label') === 'Show History',
+    ) as HTMLButtonElement | undefined
+
+    expect(showHistoryButton).toBeTruthy()
+
+    await act(async () => {
+      showHistoryButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await Promise.resolve()
+    })
+
+    expect(container.textContent).toContain('Recent Scan History')
+    expect(container.textContent).toContain('ABC-123')
+    expect(container.textContent).toContain('qr-token-1')
+    expect(container.querySelector('[data-testid="embedded-enforcer-queue"]')).toBeNull()
   })
 
   it('disables the incident action and shows an explicit enforcer-safe reason when vehicle context is missing', async () => {
@@ -579,18 +654,36 @@ describe('QrComplianceTerminal history', () => {
     await showLookupResult(container, 'qr-token-missing-vehicle')
 
     const incidentButton = Array.from(container.querySelectorAll('button')).find((button) =>
-      button.textContent?.includes('Open Incident Report'),
+      button.textContent?.includes('Review Incident Queue'),
     ) as HTMLButtonElement | undefined
 
     expect(incidentButton).toBeTruthy()
     expect(incidentButton?.disabled).toBe(true)
     expect(container.textContent).toContain('Incident reporting stays in the enforcer queue and requires a matched vehicle from the scan.')
-    expect(routerPush).not.toHaveBeenCalledWith('/report?qrHandoff=1')
-    expect(routerPush).not.toHaveBeenCalledWith('/enforcer/incidents?qrHandoff=1')
+    expect(routerPush).not.toHaveBeenCalled()
   })
 
   it('keeps only the compact compliance summary fields in the terminal result view', async () => {
-    lookupResponseBody = makeLookupResult()
+    lookupResponseBody = makeLookupResult({
+      violationSummary: {
+        totalViolations: 7,
+        openIncidents: 2,
+        unpaidTickets: 1,
+        outstandingPenalties: 1234,
+        recentViolations: [
+          {
+            id: 'incident-1',
+            incidentType: 'FARE_OVERCHARGE',
+            incidentTypeLabel: 'Fare Overcharge',
+            status: 'PENDING',
+            ticketNumber: null,
+            paymentStatus: 'NOT_APPLICABLE',
+            penaltyAmount: null,
+            incidentDate: '2026-04-12T08:00:00.000Z',
+          },
+        ],
+      },
+    })
 
     await act(async () => {
       root.render(React.createElement(QrComplianceTerminal))
@@ -603,11 +696,54 @@ describe('QrComplianceTerminal history', () => {
     expect(container.textContent).toContain('Permit validity')
     expect(container.textContent).toContain('Reported incidents')
     expect(container.textContent).toContain('Outstanding penalties')
+    expect(container.textContent).toContain('2')
+    expect(container.textContent).toContain('PHP 1,234')
+    expect(container.textContent).toContain('Matched reports')
+    expect(container.textContent).toContain('Fare Overcharge')
+    expect(container.textContent).toContain('PENDING')
     expect(container.textContent).not.toContain('Compliance Summary')
     expect(container.textContent).not.toContain('Vehicle registry status')
     expect(container.textContent).not.toContain('Registration expiry')
     expect(container.textContent).not.toContain('Insurance coverage')
     expect(container.textContent).not.toContain('Unpaid tickets')
     expect(container.textContent).not.toContain('Owner:')
+  })
+
+  it('returns to scan-ready without requiring another unlock after the embedded workflow completes', async () => {
+    lookupResponseBody = makeLookupResult()
+
+    await act(async () => {
+      root.render(React.createElement(QrComplianceTerminal))
+      await Promise.resolve()
+    })
+
+    await openAndUnlockTerminal(container)
+    await showLookupResult(container, 'qr-token-embedded-complete')
+
+    const openQueueButton = Array.from(container.querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('Review Incident Queue'),
+    ) as HTMLButtonElement | undefined
+
+    await act(async () => {
+      openQueueButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await Promise.resolve()
+    })
+
+    const completeWorkflowButton = Array.from(container.querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('Complete Embedded Workflow'),
+    ) as HTMLButtonElement | undefined
+
+    expect(completeWorkflowButton).toBeTruthy()
+
+    await act(async () => {
+      completeWorkflowButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(container.querySelector('#terminal-password')).toBeNull()
+    expect(container.querySelector('[data-testid="embedded-enforcer-queue"]')).toBeNull()
+    expect(container.textContent).toContain('Point the camera at a permit QR.')
+    expect(routerPush).not.toHaveBeenCalled()
   })
 })

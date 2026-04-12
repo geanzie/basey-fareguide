@@ -35,6 +35,46 @@ function humanizeEnum(value: string): string {
     .join(' ')
 }
 
+function uniqueCandidates(...values: Array<string | null | undefined>): string[] {
+  return [...new Set(values.filter((value): value is string => Boolean(value && value.length > 0)))]
+}
+
+function buildIncidentLookupWhere(input: {
+  vehicleId: string | null
+  plateNumber: string | null
+  permitPlateNumber: string | null
+  driverLicense: string | null
+}) {
+  const plateCandidates = uniqueCandidates(
+    input.plateNumber,
+    normalizePlateNumber(input.plateNumber),
+  )
+  const permitPlateCandidates = uniqueCandidates(
+    input.permitPlateNumber,
+    normalizePlateNumber(input.permitPlateNumber),
+  )
+  const whereClauses: Array<Record<string, unknown>> = []
+
+  if (input.vehicleId) {
+    whereClauses.push({ vehicleId: input.vehicleId })
+  }
+
+  if (plateCandidates.length > 0) {
+    whereClauses.push({ plateNumber: { in: plateCandidates } })
+    whereClauses.push({ tripPlateNumber: { in: plateCandidates } })
+  }
+
+  if (permitPlateCandidates.length > 0) {
+    whereClauses.push({ tripPermitPlateNumber: { in: permitPlateCandidates } })
+  }
+
+  if (input.driverLicense) {
+    whereClauses.push({ driverLicense: input.driverLicense })
+  }
+
+  return whereClauses.length === 1 ? whereClauses[0] : { OR: whereClauses }
+}
+
 function resolvePermitStatus(status: string, expiryDate: Date): TerminalPermitStatus {
   if (status === 'SUSPENDED' || status === 'REVOKED') {
     return status
@@ -219,17 +259,12 @@ export async function lookupQrToken(scannedToken: string): Promise<{
     }
   }
 
-  const plateCandidates = [...new Set([
-    permit.vehicle.plateNumber,
-    normalizePlateNumber(permit.vehicle.plateNumber),
-  ].filter((value): value is string => Boolean(value)))]
-
-  const incidentWhere = {
-    OR: [
-      { vehicleId: permit.vehicleId },
-      { plateNumber: { in: plateCandidates } },
-    ],
-  }
+  const incidentWhere = buildIncidentLookupWhere({
+    vehicleId: permit.vehicleId,
+    plateNumber: permit.vehicle.plateNumber,
+    permitPlateNumber: permit.permitPlateNumber,
+    driverLicense: permit.vehicle.driverLicense,
+  })
 
   const [
     totalViolations,
@@ -263,7 +298,10 @@ export async function lookupQrToken(scannedToken: string): Promise<{
       },
     }),
     prisma.incident.findMany({
-      where: incidentWhere,
+      where: {
+        ...incidentWhere,
+        status: { in: ['PENDING', 'INVESTIGATING'] },
+      },
       orderBy: [{ incidentDate: 'desc' }, { id: 'desc' }],
       take: 5,
       select: {

@@ -49,12 +49,18 @@ describe('EvidenceManager', () => {
     })
 
     const dialog = container.querySelector('[role="dialog"]')
+    const overlay = dialog?.parentElement as HTMLDivElement | null
 
     expect(dialog).not.toBeNull()
     expect(dialog?.className).toContain('app-mobile-sheet-safe')
-    expect(dialog?.className).toContain('w-[calc(100%-1rem)]')
+    expect(dialog?.className).toContain('h-full')
+    expect(dialog?.className).toContain('w-full')
+    expect(dialog?.className).toContain('rounded-none')
     expect(dialog?.className).toContain('sm:w-11/12')
-    expect(dialog?.className).toContain('max-h-[calc(100vh-2rem)]')
+    expect(dialog?.className).toContain('sm:max-h-[calc(100vh-2rem)]')
+    expect(overlay).not.toBeNull()
+    expect(overlay?.className).toContain('z-[70]')
+    expect(overlay?.className).toContain('overflow-hidden')
 
     const uploadHeading = Array.from(container.querySelectorAll('h4')).find(
       (element) => element.textContent === 'Upload Evidence',
@@ -68,6 +74,8 @@ describe('EvidenceManager', () => {
     expect(uploadControls?.className).toContain('flex-col')
     expect(uploadControls?.className).toContain('sm:flex-row')
 
+    expect(container.textContent).toContain('Review uploaded evidence, open files, and submit verification without leaving the incident workflow.')
+
     const closeButton = Array.from(container.querySelectorAll('button')).find(
       (element) => (element.textContent || '').trim() === 'Close',
     )
@@ -76,6 +84,7 @@ describe('EvidenceManager', () => {
     expect(footer).not.toBeNull()
     expect(footer?.className).toContain('flex-col-reverse')
     expect(footer?.className).toContain('sm:flex-row')
+    expect(footer?.className).toContain('sticky')
   })
 
   it('lets long filenames wrap without pushing the mobile layout wide', async () => {
@@ -129,5 +138,21 @@ describe('EvidenceManager', () => {
     expect(statusBadge).not.toBeNull()
     expect(statusBadge?.className).toContain('shrink-0')
     expect(statusBadge?.className).toContain('self-start')
+
+    const viewLink = Array.from(container.querySelectorAll('a')).find((element) =>
+      (element.textContent || '').includes('View'),
+    ) as HTMLAnchorElement | undefined
+
+    expect(viewLink).toBeTruthy()
+    expect(viewLink?.className).toContain('w-full')
+    expect(viewLink?.className).toContain('sm:w-auto')
+
+    const reviewButton = Array.from(container.querySelectorAll('button')).find((element) =>
+      (element.textContent || '').trim() === 'Review',
+    ) as HTMLButtonElement | undefined
+
+    expect(reviewButton).toBeTruthy()
+    expect(reviewButton?.className).toContain('w-full')
+    expect(reviewButton?.className).toContain('sm:w-auto')
   })
 })
