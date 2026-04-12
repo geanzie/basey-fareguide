@@ -1,7 +1,5 @@
+import { put, del } from "@vercel/blob";
 import { EvidenceType, Prisma } from "@prisma/client";
-import { existsSync } from "fs";
-import { mkdir, unlink, writeFile } from "fs/promises";
-import { join } from "path";
 import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
 
@@ -52,6 +50,8 @@ const evidenceInclude = {
   },
 } as const;
 
+const VERCEL_BLOB_EVIDENCE_PREFIX = "evidence";
+
 type UploadedEvidenceRecord = Prisma.EvidenceGetPayload<{
   include: typeof evidenceInclude;
 }>;
@@ -64,8 +64,22 @@ function getEvidenceFileType(mimeType: string): EvidenceType {
   return "OTHER";
 }
 
-function getUploadDirectory() {
-  return join(process.cwd(), "public", "uploads", "evidence");
+function getEvidenceBlobPathname(fileName: string) {
+  return `${VERCEL_BLOB_EVIDENCE_PREFIX}/${fileName}`;
+}
+
+function ensureEvidenceBlobConfigured() {
+  if (process.env.NODE_ENV === "test") {
+    return;
+  }
+
+  if (process.env.BLOB_READ_WRITE_TOKEN) {
+    return;
+  }
+
+  throw new Error(
+    "Evidence storage is not configured. Connect Vercel Blob to this project or set BLOB_READ_WRITE_TOKEN.",
+  );
 }
 
 function validateEvidenceFile(file: File) {
@@ -90,40 +104,31 @@ function validateEvidenceFile(file: File) {
   return fileExtension;
 }
 
-async function ensureUploadDirectory() {
-  await mkdir(getUploadDirectory(), { recursive: true });
-}
-
-async function removeStoredFile(fileName: string) {
-  const filePath = join(getUploadDirectory(), fileName);
-  if (!existsSync(filePath)) {
+async function removeStoredFile(fileUrl: string) {
+  if (!fileUrl) {
     return;
   }
 
-  await unlink(filePath);
+  ensureEvidenceBlobConfigured();
+  await del(fileUrl);
 }
 
 async function storeEvidenceFile(incidentId: string, file: File) {
   const fileExtension = validateEvidenceFile(file);
-  await ensureUploadDirectory();
+  ensureEvidenceBlobConfigured();
 
   const randomBytes = crypto.randomBytes(16).toString("hex");
   const timestamp = Date.now();
   const fileName = `evidence_${incidentId}_${timestamp}_${randomBytes}.${fileExtension}`.replace(/[\\/]/g, "");
-  const filePath = join(getUploadDirectory(), fileName);
-
-  if (!filePath.startsWith(getUploadDirectory())) {
-    throw new Error("Invalid file path");
-  }
-
-  const bytes = await file.arrayBuffer();
-  const buffer = Buffer.from(bytes);
-
-  await writeFile(filePath, buffer);
+  const blob = await put(getEvidenceBlobPathname(fileName), file, {
+    access: "public",
+    addRandomSuffix: false,
+    contentType: file.type,
+  });
 
   return {
     fileName,
-    fileUrl: `/uploads/evidence/${fileName}`,
+    fileUrl: blob.url,
     fileType: getEvidenceFileType(file.type),
     fileSize: file.size,
   };
@@ -141,7 +146,7 @@ export async function uploadEvidenceFiles(options: {
   uploadedBy: string;
 }) {
   const { incidentId, files, uploadedBy } = options;
-  const createdEvidence: Array<{ id: string; fileName: string }> = [];
+  const createdEvidence: Array<{ id: string; fileUrl: string }> = [];
   const evidenceRecords: UploadedEvidenceRecord[] = [];
 
   try {
@@ -163,10 +168,10 @@ export async function uploadEvidenceFiles(options: {
           include: evidenceInclude,
         });
 
-        createdEvidence.push({ id: evidence.id, fileName: evidence.fileName });
+        createdEvidence.push({ id: evidence.id, fileUrl: evidence.fileUrl });
         evidenceRecords.push(evidence);
       } catch (error) {
-        await removeStoredFile(storedFile.fileName).catch(() => {});
+        await removeStoredFile(storedFile.fileUrl).catch(() => {});
         throw error;
       }
     }
@@ -182,7 +187,7 @@ export async function uploadEvidenceFiles(options: {
 
       await Promise.all(
         createdEvidence.map((evidence) =>
-          removeStoredFile(evidence.fileName).catch(() => {}),
+          removeStoredFile(evidence.fileUrl).catch(() => {}),
         ),
       );
     }

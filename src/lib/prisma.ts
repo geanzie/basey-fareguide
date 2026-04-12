@@ -5,7 +5,7 @@ import { PrismaPg } from '@prisma/adapter-pg'
 import type { PrismaClient as PrismaClientType } from '@prisma/client'
 import { Pool } from 'pg'
 
-import { getPgConnectionTimeoutMs } from '@/lib/databaseConfig'
+import { getPgConnectionTimeoutMs, normalizePgConnectionUrlForNodePostgres } from '@/lib/databaseConfig'
 
 const requireForPrisma = createRequire(import.meta.url)
 const prismaClientModulePath = requireForPrisma.resolve('@prisma/client')
@@ -43,6 +43,8 @@ function createPrismaAdapter() {
   if (schema) {
     parsedDatabaseUrl.searchParams.delete('schema')
   }
+
+  normalizePgConnectionUrlForNodePostgres(parsedDatabaseUrl)
 
   const pool =
     globalForPrisma.prismaPool ??

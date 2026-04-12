@@ -5,9 +5,21 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
 import useSWR from 'swr'
 
+const searchParamsState = vi.hoisted(() => ({
+  qrHandoff: null as string | null,
+}))
+
+const searchParamsMock = vi.hoisted(() => ({
+  get: (key: string) => (key === 'qrHandoff' ? searchParamsState.qrHandoff : null),
+}))
+
 vi.mock('swr', () => ({
   __esModule: true,
   default: vi.fn(),
+}))
+
+vi.mock('next/navigation', () => ({
+  useSearchParams: () => searchParamsMock,
 }))
 
 vi.mock('@/components/ResponsiveTable', () => ({
@@ -76,6 +88,8 @@ describe('EnforcerIncidentsList', () => {
     container = document.createElement('div')
     document.body.appendChild(container)
     root = createRoot(container)
+    sessionStorage.clear()
+    searchParamsState.qrHandoff = null
     mutateMock = vi.fn(() => Promise.resolve())
     fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
@@ -355,5 +369,97 @@ describe('EnforcerIncidentsList', () => {
     expect(buttons).toContain('All (2)')
     expect(buttons).toContain('Pending (1)')
     expect(buttons).toContain('Investigating (1)')
+  })
+
+  it('loads the QR handoff snapshot into the enforcer queue banner', async () => {
+    searchParamsState.qrHandoff = '1'
+    sessionStorage.setItem('qr-terminal-handoff', JSON.stringify({
+      permitId: 'permit-1',
+      vehicleId: 'vehicle-1',
+      operatorId: null,
+      scannedTokenFingerprint: 'sha256:demo-token-fingerprint',
+      permitStatusAtScan: 'ACTIVE',
+      complianceStatus: 'REVIEW_REQUIRED',
+      scanDispositionAtScan: 'FLAGGED',
+      complianceFlags: ['open-incidents'],
+      complianceChecklistAtScan: [],
+      violationSummary: {
+        totalViolations: 2,
+        openIncidents: 1,
+        unpaidTickets: 1,
+        outstandingPenalties: 350,
+      },
+      operator: {
+        operatorId: null,
+        operatorIdStatus: 'UNAVAILABLE',
+        driverFullName: 'Pedro Santos',
+        driverName: 'Pedro Santos',
+        ownerName: 'Juan Dela Cruz',
+        driverLicense: 'D-12345',
+      },
+      vehicle: {
+        id: 'vehicle-1',
+        plateNumber: 'ABC-123',
+        vehicleType: 'TRICYCLE',
+        make: 'Honda',
+        model: 'Wave',
+        color: 'Blue',
+        ownerName: 'Juan Dela Cruz',
+        driverName: 'Pedro Santos',
+        driverLicense: 'D-12345',
+        registrationExpiry: '2027-01-01T00:00:00.000Z',
+        insuranceExpiry: null,
+        isActive: true,
+      },
+    }))
+
+    await act(async () => {
+      root.render(React.createElement(EnforcerIncidentsList, { mode: 'queue' }))
+      await Promise.resolve()
+    })
+
+    expect(container.textContent).toContain('QR Handoff')
+    expect(container.textContent).toContain('ABC-123 is loaded into the queue')
+    expect(container.textContent).toContain('Permit status: ACTIVE. Compliance: REVIEW REQUIRED.')
+    expect(container.textContent).toContain('Driver: Pedro Santos • Unpaid tickets: 1')
+  })
+
+  it('shows an explicit notice when queue handoff data is missing vehicle context', async () => {
+    searchParamsState.qrHandoff = '1'
+    sessionStorage.setItem('qr-terminal-handoff', JSON.stringify({
+      permitId: 'permit-1',
+      vehicleId: null,
+      operatorId: null,
+      scannedTokenFingerprint: 'sha256:demo-token-fingerprint',
+      permitStatusAtScan: 'ACTIVE',
+      complianceStatus: 'COMPLIANT',
+      scanDispositionAtScan: 'CLEAR',
+      complianceFlags: [],
+      complianceChecklistAtScan: [],
+      violationSummary: {
+        totalViolations: 0,
+        openIncidents: 0,
+        unpaidTickets: 0,
+        outstandingPenalties: 0,
+      },
+      operator: {
+        operatorId: null,
+        operatorIdStatus: 'UNAVAILABLE',
+        driverFullName: 'Pedro Santos',
+        driverName: 'Pedro Santos',
+        ownerName: 'Juan Dela Cruz',
+        driverLicense: 'D-12345',
+      },
+      vehicle: null,
+    }))
+
+    await act(async () => {
+      root.render(React.createElement(EnforcerIncidentsList, { mode: 'queue' }))
+      await Promise.resolve()
+    })
+
+    expect(container.textContent).toContain('QR handoff did not include a vehicle. Re-scan the permit in the QR terminal before opening the queue.')
+    expect(container.textContent).not.toContain('is loaded into the queue')
+    expect(sessionStorage.getItem('qr-terminal-handoff')).toBeNull()
   })
 })

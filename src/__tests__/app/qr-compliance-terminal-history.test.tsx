@@ -10,6 +10,8 @@ const scannerState = vi.hoisted(() => ({
   stop: vi.fn(),
 }))
 
+const routerPush = vi.hoisted(() => vi.fn())
+
 vi.mock('@/components/AuthProvider', () => ({
   useAuth: () => ({
     user: {
@@ -23,7 +25,7 @@ vi.mock('@/components/AuthProvider', () => ({
 vi.mock('next/navigation', () => ({
   usePathname: () => '/',
   useRouter: () => ({
-    push: vi.fn(),
+    push: routerPush,
   }),
 }))
 
@@ -76,16 +78,172 @@ function getTerminalShell(container: HTMLDivElement) {
   return container.querySelector('.app-surface-overlay') as HTMLDivElement | null
 }
 
+function makeLookupResult(overrides?: {
+  incidentHandoff?: Record<string, unknown> | null
+  vehicle?: Record<string, unknown> | null
+  violationSummary?: Record<string, unknown>
+}) {
+  const vehicle = overrides?.vehicle ?? {
+    id: 'vehicle-1',
+    plateNumber: 'ABC-123',
+    vehicleType: 'TRICYCLE',
+    make: 'Honda',
+    model: 'Wave',
+    color: 'Blue',
+    ownerName: 'Juan Dela Cruz',
+    driverName: 'Pedro Santos',
+    driverLicense: 'D-12345',
+    registrationExpiry: '2027-01-01T00:00:00.000Z',
+    insuranceExpiry: null,
+    isActive: true,
+  }
+
+  const violationSummary = {
+    totalViolations: 2,
+    openIncidents: 1,
+    unpaidTickets: 1,
+    outstandingPenalties: 350,
+    recentViolations: [],
+    ...(overrides?.violationSummary ?? {}),
+  }
+
+  const incidentHandoff = overrides?.incidentHandoff === undefined
+    ? {
+        permitId: 'permit-1',
+        vehicleId: vehicle ? 'vehicle-1' : null,
+        operatorId: null,
+        scannedTokenFingerprint: 'sha256:terminal-token',
+        permitStatusAtScan: 'ACTIVE',
+        complianceStatus: 'COMPLIANT',
+        scanDispositionAtScan: 'CLEAR',
+        complianceFlags: [],
+        complianceChecklistAtScan: [],
+        violationSummary: {
+          totalViolations: violationSummary.totalViolations,
+          openIncidents: violationSummary.openIncidents,
+          unpaidTickets: violationSummary.unpaidTickets,
+          outstandingPenalties: violationSummary.outstandingPenalties,
+        },
+        operator: {
+          operatorId: null,
+          operatorIdStatus: 'UNAVAILABLE',
+          driverFullName: 'Pedro Santos',
+          driverName: 'Pedro Santos',
+          ownerName: 'Juan Dela Cruz',
+          driverLicense: 'D-12345',
+        },
+        vehicle,
+      }
+    : overrides.incidentHandoff
+
+  return {
+    scannedToken: 'qr-token-lookup',
+    matchFound: true,
+    permitStatus: 'ACTIVE',
+    complianceStatus: 'COMPLIANT',
+    scanDisposition: 'CLEAR',
+    permit: null,
+    vehicle,
+    operator: {
+      operatorId: null,
+      operatorIdStatus: 'UNAVAILABLE',
+      driverFullName: 'Pedro Santos',
+      driverName: 'Pedro Santos',
+      ownerName: 'Juan Dela Cruz',
+      driverLicense: 'D-12345',
+    },
+    complianceChecklist: [
+      {
+        key: 'permit-valid',
+        label: 'Permit validity',
+        status: 'PASS',
+        detail: 'Permit is active for field validation.',
+      },
+      {
+        key: 'open-incidents',
+        label: 'Open incidents',
+        status: 'REVIEW',
+        detail: '1 open incident still needs review.',
+      },
+    ],
+    violationSummary,
+    incidentHandoff,
+    message: 'Permit is clear for compliance validation.',
+  }
+}
+
+async function openAndUnlockTerminal(container: HTMLDivElement) {
+  const openButton = container.querySelector('button[aria-label="Open QR compliance terminal"]') as HTMLButtonElement | null
+  expect(openButton).not.toBeNull()
+
+  await act(async () => {
+    openButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await Promise.resolve()
+  })
+
+  const passwordInput = container.querySelector('#terminal-password') as HTMLInputElement | null
+  expect(passwordInput).not.toBeNull()
+
+  await act(async () => {
+    setInputValue(passwordInput!, 'correct-password')
+    await Promise.resolve()
+  })
+
+  const unlockButton = Array.from(container.querySelectorAll('button')).find((button) =>
+    button.textContent?.includes('Unlock Terminal'),
+  )
+
+  expect(unlockButton).toBeTruthy()
+
+  await act(async () => {
+    unlockButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await Promise.resolve()
+    await Promise.resolve()
+  })
+}
+
+async function showLookupResult(container: HTMLDivElement, token: string) {
+  const manualEntryButton = container.querySelector('button[aria-label="Manual Entry"]') as HTMLButtonElement | null
+  expect(manualEntryButton).not.toBeNull()
+
+  await act(async () => {
+    manualEntryButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await Promise.resolve()
+  })
+
+  const manualInput = container.querySelector('#manual-qr-token') as HTMLInputElement | null
+  expect(manualInput).not.toBeNull()
+
+  await act(async () => {
+    setInputValue(manualInput!, token)
+    await Promise.resolve()
+  })
+
+  const checkButton = Array.from(container.querySelectorAll('button')).find((button) =>
+    button.textContent?.includes('Check Permit'),
+  )
+
+  expect(checkButton).toBeTruthy()
+
+  await act(async () => {
+    checkButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await Promise.resolve()
+    await Promise.resolve()
+  })
+}
+
 describe('QrComplianceTerminal history', () => {
   let container: HTMLDivElement
   let root: Root
   let fetchMock: ReturnType<typeof vi.fn>
+  let lookupResponseBody: unknown | null
 
   beforeEach(() => {
     ;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
     container = document.createElement('div')
     document.body.appendChild(container)
     root = createRoot(container)
+    sessionStorage.clear()
 
     scannerState.clear.mockReset()
     scannerState.start.mockReset()
@@ -101,6 +259,9 @@ describe('QrComplianceTerminal history', () => {
         getUserMedia: vi.fn(),
       },
     })
+
+    routerPush.mockReset()
+    lookupResponseBody = null
 
     fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
@@ -132,6 +293,18 @@ describe('QrComplianceTerminal history', () => {
         }, {
           headers: {
             'X-Terminal-Unlock-Expires-At': '2026-04-12T10:35:00.000Z',
+          },
+        }))
+      }
+
+      if (url === '/api/terminal/lookup') {
+        if (!lookupResponseBody) {
+          throw new Error('Lookup response not configured for this test.')
+        }
+
+        return Promise.resolve(makeJsonResponse(lookupResponseBody, {
+          headers: {
+            'X-Terminal-Unlock-Expires-At': '2026-04-12T10:40:00.000Z',
           },
         }))
       }
@@ -318,5 +491,123 @@ describe('QrComplianceTerminal history', () => {
     expect(scannerState.clear).toHaveBeenCalled()
 
     root = createRoot(container)
+  })
+
+  it('routes the incident action to the enforcer queue and stores the resolved vehicle handoff', async () => {
+    lookupResponseBody = makeLookupResult()
+
+    await act(async () => {
+      root.render(React.createElement(QrComplianceTerminal))
+      await Promise.resolve()
+    })
+
+    await openAndUnlockTerminal(container)
+    await showLookupResult(container, 'qr-token-lookup')
+
+    expect(container.textContent).toContain('Permit validity')
+    expect(container.textContent).toContain('Reported incidents')
+    expect(container.textContent).toContain('Outstanding penalties')
+
+    const incidentButton = Array.from(container.querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('Open Incident Report'),
+    ) as HTMLButtonElement | undefined
+
+    expect(incidentButton).toBeTruthy()
+    expect(incidentButton?.disabled).toBe(false)
+
+    await act(async () => {
+      incidentButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await Promise.resolve()
+    })
+
+    expect(routerPush).toHaveBeenCalledWith('/enforcer/incidents?qrHandoff=1')
+    expect(routerPush).not.toHaveBeenCalledWith('/report?qrHandoff=1')
+
+    const storedSnapshot = sessionStorage.getItem('qr-terminal-handoff')
+    expect(storedSnapshot).not.toBeNull()
+    expect(JSON.parse(storedSnapshot || '{}')).toMatchObject({
+      vehicleId: 'vehicle-1',
+      vehicle: {
+        plateNumber: 'ABC-123',
+      },
+    })
+  })
+
+  it('disables the incident action and shows an explicit enforcer-safe reason when vehicle context is missing', async () => {
+    lookupResponseBody = makeLookupResult({
+      vehicle: null,
+      incidentHandoff: {
+        permitId: 'permit-1',
+        vehicleId: null,
+        operatorId: null,
+        scannedTokenFingerprint: 'sha256:terminal-token',
+        permitStatusAtScan: 'ACTIVE',
+        complianceStatus: 'COMPLIANT',
+        scanDispositionAtScan: 'CLEAR',
+        complianceFlags: [],
+        complianceChecklistAtScan: [],
+        violationSummary: {
+          totalViolations: 0,
+          openIncidents: 0,
+          unpaidTickets: 0,
+          outstandingPenalties: 0,
+        },
+        operator: {
+          operatorId: null,
+          operatorIdStatus: 'UNAVAILABLE',
+          driverFullName: 'Pedro Santos',
+          driverName: 'Pedro Santos',
+          ownerName: 'Juan Dela Cruz',
+          driverLicense: 'D-12345',
+        },
+        vehicle: null,
+      },
+      violationSummary: {
+        totalViolations: 0,
+        openIncidents: 0,
+        unpaidTickets: 0,
+        outstandingPenalties: 0,
+      },
+    })
+
+    await act(async () => {
+      root.render(React.createElement(QrComplianceTerminal))
+      await Promise.resolve()
+    })
+
+    await openAndUnlockTerminal(container)
+    await showLookupResult(container, 'qr-token-missing-vehicle')
+
+    const incidentButton = Array.from(container.querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('Open Incident Report'),
+    ) as HTMLButtonElement | undefined
+
+    expect(incidentButton).toBeTruthy()
+    expect(incidentButton?.disabled).toBe(true)
+    expect(container.textContent).toContain('Incident reporting stays in the enforcer queue and requires a matched vehicle from the scan.')
+    expect(routerPush).not.toHaveBeenCalledWith('/report?qrHandoff=1')
+    expect(routerPush).not.toHaveBeenCalledWith('/enforcer/incidents?qrHandoff=1')
+  })
+
+  it('keeps only the compact compliance summary fields in the terminal result view', async () => {
+    lookupResponseBody = makeLookupResult()
+
+    await act(async () => {
+      root.render(React.createElement(QrComplianceTerminal))
+      await Promise.resolve()
+    })
+
+    await openAndUnlockTerminal(container)
+    await showLookupResult(container, 'qr-token-compact-view')
+
+    expect(container.textContent).toContain('Permit validity')
+    expect(container.textContent).toContain('Reported incidents')
+    expect(container.textContent).toContain('Outstanding penalties')
+    expect(container.textContent).not.toContain('Compliance Summary')
+    expect(container.textContent).not.toContain('Vehicle registry status')
+    expect(container.textContent).not.toContain('Registration expiry')
+    expect(container.textContent).not.toContain('Insurance coverage')
+    expect(container.textContent).not.toContain('Unpaid tickets')
+    expect(container.textContent).not.toContain('Owner:')
   })
 })

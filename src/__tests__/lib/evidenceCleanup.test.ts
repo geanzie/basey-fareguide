@@ -13,26 +13,17 @@ const prismaMock = vi.hoisted(() => ({
   },
 }));
 
-const unlinkMock = vi.hoisted(() => vi.fn());
-const existsSyncMock = vi.hoisted(() => vi.fn());
+const delMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/prisma", () => ({
   prisma: prismaMock,
 }));
 
-vi.mock("fs/promises", async () => {
-  const actual = await vi.importActual<typeof import("fs/promises")>("fs/promises");
+vi.mock("@vercel/blob", async () => {
+  const actual = await vi.importActual<typeof import("@vercel/blob")>("@vercel/blob");
   return {
     ...actual,
-    unlink: unlinkMock,
-  };
-});
-
-vi.mock("fs", async () => {
-  const actual = await vi.importActual<typeof import("fs")>("fs");
-  return {
-    ...actual,
-    existsSync: existsSyncMock,
+    del: delMock,
   };
 });
 
@@ -58,12 +49,11 @@ describe("evidence cleanup", () => {
         fileType: "IMAGE",
       },
     ]);
-    existsSyncMock.mockReturnValue(true);
     prismaMock.evidence.updateMany.mockResolvedValueOnce({ count: 1 });
 
     await cleanupEvidenceFiles("inc-1");
 
-    expect(unlinkMock).toHaveBeenCalledTimes(1);
+    expect(delMock).toHaveBeenCalledWith("/uploads/evidence/evidence_1.jpg");
     expect(prismaMock.evidence.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
@@ -130,8 +120,6 @@ describe("evidence cleanup", () => {
     prismaMock.evidence.updateMany
       .mockResolvedValueOnce({ count: 1 })
       .mockResolvedValueOnce({ count: 1 });
-    existsSyncMock.mockReturnValue(true);
-
     const result = await cleanupOldEvidenceFiles(30, 2);
 
     expect(prismaMock.incident.findMany).toHaveBeenCalledWith(

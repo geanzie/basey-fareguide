@@ -103,6 +103,7 @@ export default function EnforcerIncidentsList({ mode }: EnforcerIncidentsListPro
   const [statusFilter, setStatusFilter] = useState<EnforcerStatusFilter>('ALL')
   const [searchQuery, setSearchQuery] = useState('')
   const [qrHandoffSnapshot, setQrHandoffSnapshot] = useState<TerminalIncidentHandoffSnapshotDto | null>(null)
+  const [qrHandoffNotice, setQrHandoffNotice] = useState<string | null>(null)
   const [selectedIncident, setSelectedIncident] = useState<IncidentListItemDto | null>(null)
   const [showIncidentDetails, setShowIncidentDetails] = useState(false)
   const [evidenceIncidentId, setEvidenceIncidentId] = useState<string | null>(null)
@@ -158,11 +159,24 @@ export default function EnforcerIncidentsList({ mode }: EnforcerIncidentsListPro
     const snapshot = readQrTerminalHandoff()
 
     if (!snapshot) {
+      clearQrTerminalHandoff()
+      setQrHandoffSnapshot(null)
+      setQrHandoffNotice('QR handoff data was not available. Return to the QR terminal and retry the incident handoff.')
       return
     }
 
+    if (!snapshot.vehicle) {
+      clearQrTerminalHandoff()
+      setQrHandoffSnapshot(null)
+      setQrHandoffNotice('QR handoff did not include a vehicle. Re-scan the permit in the QR terminal before opening the queue.')
+      return
+    }
+
+    const handoffVehicle = snapshot.vehicle
+
+    setQrHandoffNotice(null)
     setQrHandoffSnapshot(snapshot)
-    setSearchQuery((current) => current || snapshot.vehicle?.plateNumber || '')
+    setSearchQuery((current) => current || handoffVehicle.plateNumber || '')
   }, [mode, searchParams])
 
   const showActionNotice = (tone: ActionNotice['tone'], title: string, message: string) => {
@@ -514,6 +528,27 @@ export default function EnforcerIncidentsList({ mode }: EnforcerIncidentsListPro
                   Use the pending filter to take the next case into the investigation workflow.
                 </p>
               </div>
+            </div>
+          </div>
+        ) : null}
+
+        {isQueueMode && qrHandoffNotice ? (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-amber-700">
+                  <DashboardIconSlot icon={DASHBOARD_ICONS.camera} size={16} />
+                  <span>QR Handoff</span>
+                </div>
+                <p className="mt-2">{qrHandoffNotice}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setQrHandoffNotice(null)}
+                className="rounded-lg border border-amber-300 px-4 py-2 text-sm font-medium text-amber-900 transition-colors hover:bg-white/70"
+              >
+                Dismiss Notice
+              </button>
             </div>
           </div>
         ) : null}

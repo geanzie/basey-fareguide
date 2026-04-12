@@ -4,6 +4,8 @@ import React, { act } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
 
+const routerReplace = vi.hoisted(() => vi.fn())
+
 const searchParamsMock = {
   get: (key: string) => (key === 'qrHandoff' ? '1' : null),
 }
@@ -20,6 +22,9 @@ vi.mock('@/components/AuthProvider', () => ({
 
 vi.mock('next/navigation', () => ({
   useSearchParams: () => searchParamsMock,
+  useRouter: () => ({
+    replace: routerReplace,
+  }),
 }))
 
 vi.mock('@/components/LoadingSpinner', () => ({
@@ -70,7 +75,7 @@ function makeJsonResponse(body: unknown) {
   })
 }
 
-describe('IncidentReporting QR handoff', () => {
+describe('IncidentReporting public QR boundary', () => {
   let container: HTMLDivElement
   let root: Root
   let fetchMock: ReturnType<typeof vi.fn>
@@ -80,6 +85,7 @@ describe('IncidentReporting QR handoff', () => {
     container = document.createElement('div')
     document.body.appendChild(container)
     root = createRoot(container)
+    routerReplace.mockReset()
 
     sessionStorage.clear()
     sessionStorage.setItem(
@@ -163,35 +169,17 @@ describe('IncidentReporting QR handoff', () => {
     ;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false
   })
 
-  it('preloads QR handoff vehicle context into the incident workflow and restores manual lookup after clearing', async () => {
+  it('redirects terminal-origin QR handoff away from the public incident workflow', async () => {
     await act(async () => {
       root.render(React.createElement(IncidentReporting))
       await Promise.resolve()
       await Promise.resolve()
     })
 
-    expect(container.textContent).toContain('QR terminal handoff')
-    expect(container.textContent).toContain('Vehicle ABC-123 is ready for incident reporting')
-    expect(container.textContent).toContain('Compliance: REVIEW REQUIRED')
-    expect(container.textContent).toContain('Token fingerprint: sha256:demo-token-fingerprint')
-    expect(container.textContent).toContain('Scan disposition: FLAGGED')
-    expect(container.textContent).toContain('Operator ID is not linked yet; the handoff uses the scan-time driver and vehicle snapshot only.')
-    expect(container.textContent).toContain('Plate Number: ABC-123')
-    expect(container.textContent).toContain('Driver License: D-12345')
+    expect(routerReplace).toHaveBeenCalledWith('/enforcer/incidents?qrHandoff=1')
+    expect(container.textContent).toContain('Redirecting to the correct incident workflow...')
+    expect(container.textContent).not.toContain('QR terminal handoff')
     expect(container.querySelector('[data-testid="vehicle-lookup-field"]')).toBeNull()
-
-    const clearButton = Array.from(container.querySelectorAll('button')).find((button) =>
-      button.textContent?.includes('Clear Handoff'),
-    )
-
-    expect(clearButton).toBeTruthy()
-
-    await act(async () => {
-      clearButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      await Promise.resolve()
-    })
-
-    expect(sessionStorage.getItem('qr-terminal-handoff')).toBeNull()
-    expect(container.querySelector('[data-testid="vehicle-lookup-field"]')).not.toBeNull()
+    expect(sessionStorage.getItem('qr-terminal-handoff')).not.toBeNull()
   })
 })

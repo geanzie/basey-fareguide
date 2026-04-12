@@ -183,7 +183,11 @@ export default function QrComplianceTerminal() {
   const canRenderLauncher = pathname === '/' || isAuthenticated
   const shouldRenderHistoryPanel = showHistoryPanel && view !== 'result'
   const isCameraVisible = view === 'camera-ready' && !shouldRenderHistoryPanel
-  const shouldMaximizeTerminal = shouldRenderHistoryPanel || (view === 'result' && (result?.complianceChecklist.length ?? 0) > 0)
+  const shouldMaximizeTerminal = shouldRenderHistoryPanel
+  const incidentHandoffVehicle = result?.incidentHandoff?.vehicle ?? null
+  const incidentActionDisabledReason = result && !incidentHandoffVehicle
+    ? 'Incident reporting stays in the enforcer queue and requires a matched vehicle from the scan.'
+    : null
 
   useEffect(() => {
     if (!open) {
@@ -388,7 +392,7 @@ export default function QrComplianceTerminal() {
 
     storeQrTerminalHandoff(snapshot)
     setOpen(false)
-    router.push('/report?qrHandoff=1')
+    router.push('/enforcer/incidents?qrHandoff=1')
   }
 
   return (
@@ -665,16 +669,6 @@ export default function QrComplianceTerminal() {
                         <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${result.scanDisposition === 'CLEAR' ? 'bg-emerald-100 text-emerald-800' : result.scanDisposition === 'BLOCKED' ? 'bg-red-100 text-red-800' : result.scanDisposition === 'NOT_FOUND' ? 'bg-slate-200 text-slate-700' : 'bg-amber-100 text-amber-800'}`}>
                           {result.scanDisposition}
                         </span>
-                        {result.permitStatus ? (
-                          <span className="inline-flex rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-800">
-                            Permit {result.permitStatus}
-                          </span>
-                        ) : null}
-                        {result.complianceStatus ? (
-                          <span className="inline-flex rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-800">
-                            {result.complianceStatus.replace('_', ' ')}
-                          </span>
-                        ) : null}
                       </div>
 
                       <div>
@@ -682,41 +676,29 @@ export default function QrComplianceTerminal() {
                         <p className="text-sm text-slate-600">Scanned token: <span className="font-mono">{result.scannedToken}</span></p>
                       </div>
 
-                      {result.vehicle ? (
-                        <div className="grid gap-4 md:grid-cols-2">
-                          <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700">
-                            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Vehicle</div>
-                            <div className="mt-2 font-semibold text-slate-900">{result.vehicle.plateNumber}</div>
-                            <div>{result.vehicle.vehicleType.replace('_', '-')}</div>
-                            <div>{result.vehicle.make} {result.vehicle.model}</div>
-                            <div>Owner: {result.vehicle.ownerName}</div>
-                            <div>Driver: {result.operator?.driverFullName || result.vehicle.driverName || 'Unspecified'}</div>
-                          </div>
-                          <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700">
-                            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Compliance Summary</div>
-                            <div className="mt-2">Violations: {result.violationSummary?.totalViolations ?? 0}</div>
-                            <div>Open incidents: {result.violationSummary?.openIncidents ?? 0}</div>
-                            <div>Unpaid tickets: {result.violationSummary?.unpaidTickets ?? 0}</div>
-                            <div>Outstanding penalties: PHP {(result.violationSummary?.outstandingPenalties ?? 0).toLocaleString()}</div>
-                          </div>
-                        </div>
-                      ) : null}
-
-                      {result.complianceChecklist.length > 0 ? (
-                        <div className="space-y-2">
-                          {result.complianceChecklist.map((item) => (
-                            <div key={item.key} className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700">
-                              <div className="flex items-center justify-between gap-3">
-                                <span className="font-medium text-slate-900">{item.label}</span>
-                                <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${item.status === 'PASS' ? 'bg-emerald-100 text-emerald-800' : item.status === 'FAIL' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'}`}>
-                                  {item.status}
-                                </span>
-                              </div>
-                              <p className="mt-1 text-slate-600">{item.detail}</p>
+                      <div className="rounded-xl border border-slate-200 bg-white p-4">
+                        <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Compliance summary</div>
+                        <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                          <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Permit validity</div>
+                            <div className="mt-1 font-semibold text-slate-900">
+                              {result.permitStatus === 'ACTIVE'
+                                ? 'Valid'
+                                : result.permitStatus
+                                  ? result.permitStatus.replace(/_/g, ' ')
+                                  : 'Unavailable'}
                             </div>
-                          ))}
+                          </div>
+                          <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Reported incidents</div>
+                            <div className="mt-1 font-semibold text-slate-900">{result.violationSummary?.totalViolations ?? 0}</div>
+                          </div>
+                          <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Outstanding penalties</div>
+                            <div className="mt-1 font-semibold text-slate-900">PHP {(result.violationSummary?.outstandingPenalties ?? 0).toLocaleString()}</div>
+                          </div>
                         </div>
-                      ) : null}
+                      </div>
 
                         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                           <button
@@ -729,12 +711,15 @@ export default function QrComplianceTerminal() {
                           <button
                             type="button"
                             onClick={() => handleIncidentHandoff(result.incidentHandoff)}
-                            disabled={!result.incidentHandoff}
+                            disabled={!incidentHandoffVehicle}
                             className="w-full rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                           >
                             Open Incident Report
                           </button>
                         </div>
+                        {incidentActionDisabledReason ? (
+                          <p className="text-sm text-amber-700">{incidentActionDisabledReason}</p>
+                        ) : null}
                       </div>
                       ) : null}
 

@@ -39,7 +39,7 @@ vi.mock('@/components/ResponsiveTable', () => ({
       data.map((row, index) =>
         React.createElement(
           'div',
-          { key: row.id ?? index },
+          { key: String(row.id ?? index) },
           columns.map((column) =>
             React.createElement(
               'div',

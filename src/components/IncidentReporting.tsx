@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 import { useAuth } from '@/components/AuthProvider'
 import {
@@ -14,7 +14,6 @@ import LoadingSpinner from '@/components/LoadingSpinner'
 import type {
   FareCalculationDto,
   FareCalculationsResponseDto,
-  TerminalIncidentHandoffSnapshotDto,
   VehicleLookupDto,
 } from '@/lib/contracts'
 import {
@@ -24,7 +23,6 @@ import {
   formatVehicleIdentity,
 } from '@/lib/incidents/reportTripSelection'
 import { resolvePinLabel } from '@/lib/locations/pinLabelResolver'
-import { clearQrTerminalHandoff, readQrTerminalHandoff } from '@/lib/terminal/handoff'
 
 import VehicleLookupField from './VehicleLookupField'
 
@@ -136,6 +134,7 @@ function buildTripPickerLabel(trip: FareCalculationDto): string {
 }
 
 const IncidentReporting = () => {
+  const router = useRouter()
   const searchParams = useSearchParams()
   const qrHandoffParam = searchParams.get('qrHandoff')
   const auth = useAuth()
@@ -143,7 +142,6 @@ const IncidentReporting = () => {
   const [formData, setFormData] = useState<IncidentFormState>(getDefaultFormState())
   const [currentLocation, setCurrentLocation] = useState<GPSPosition | null>(null)
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleLookupDto | null>(null)
-  const [qrHandoffSnapshot, setQrHandoffSnapshot] = useState<TerminalIncidentHandoffSnapshotDto | null>(null)
   const [recentTrips, setRecentTrips] = useState<FareCalculationDto[]>([])
   const [selectedTripId, setSelectedTripId] = useState('')
   const [historyLoading, setHistoryLoading] = useState(false)
@@ -209,43 +207,17 @@ const IncidentReporting = () => {
   }, [auth.user?.id, authStatus])
 
   useEffect(() => {
-    if (authStatus === 'loading' || qrHandoffParam !== '1') {
+    if (qrHandoffParam !== '1' || authStatus === 'loading') {
       return
     }
 
-    const snapshot = readQrTerminalHandoff()
-
-    if (!snapshot?.vehicle) {
+    if (auth.user?.userType === 'ENFORCER') {
+      router.replace('/enforcer/incidents?qrHandoff=1')
       return
     }
 
-    const preloadedVehicle: VehicleLookupDto = {
-      id: snapshot.vehicle.id,
-      plateNumber: snapshot.vehicle.plateNumber,
-      permitPlateNumber: null,
-      vehicleType: snapshot.vehicle.vehicleType,
-      make: snapshot.vehicle.make,
-      model: snapshot.vehicle.model,
-      color: snapshot.vehicle.color,
-      ownerName: snapshot.vehicle.ownerName,
-      driverName: snapshot.operator.driverFullName || snapshot.operator.driverName,
-      driverLicense: snapshot.vehicle.driverLicense,
-    }
-
-    setQrHandoffSnapshot(snapshot)
-    setSelectedTripId('')
-    setCurrentLocation(null)
-    setSelectedVehicle(preloadedVehicle)
-    setError('')
-    setSuccess('')
-    setFormData((prev) => ({
-      ...prev,
-      vehicleId: snapshot.vehicle?.id ?? '',
-      plateNumber: snapshot.vehicle?.plateNumber ?? '',
-      driverLicense: snapshot.vehicle?.driverLicense ?? '',
-      vehicleType: snapshot.vehicle?.vehicleType ?? '',
-    }))
-  }, [authStatus, qrHandoffParam])
+    router.replace('/report')
+  }, [auth.user?.userType, authStatus, qrHandoffParam, router])
 
   const handleTripSelect = (trip: FareCalculationDto) => {
     setSelectedTripId(trip.id)
@@ -313,12 +285,6 @@ const IncidentReporting = () => {
       vehicleType: '',
       driverLicense: '',
     }))
-  }
-
-  const clearQrHandoff = () => {
-    clearQrTerminalHandoff()
-    setQrHandoffSnapshot(null)
-    clearSelectedVehicle()
   }
 
   const getCurrentLocation = () => {
@@ -442,8 +408,6 @@ const IncidentReporting = () => {
         ? ` ${data.evidenceCount} evidence file(s) saved.`
         : ''
       setSuccess(`Incident report submitted successfully. Reference number: ${data.referenceNumber}.${evidenceSummary}`)
-      clearQrTerminalHandoff()
-      setQrHandoffSnapshot(null)
       setFormData(getDefaultFormState())
       setCurrentLocation(null)
       setSelectedVehicle(null)
@@ -463,6 +427,19 @@ const IncidentReporting = () => {
           <div className="text-center">
             <LoadingSpinner className="justify-center text-red-600" size={28} />
             <p className="mt-3 text-gray-600">Loading incident reporting...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (qrHandoffParam === '1') {
+    return (
+      <div className="app-surface-card mx-auto max-w-4xl rounded-3xl p-8">
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <LoadingSpinner className="justify-center text-red-600" size={28} />
+            <p className="mt-3 text-gray-600">Redirecting to the correct incident workflow...</p>
           </div>
         </div>
       </div>
@@ -609,43 +586,6 @@ const IncidentReporting = () => {
 
       {shouldShowIncidentDetails ? (
         <form onSubmit={handleSubmit} className="space-y-6">
-          {qrHandoffSnapshot ? (
-            <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.16em] text-emerald-700">QR terminal handoff</p>
-                  <h3 className="mt-1 text-xl font-semibold text-slate-900">
-                    Vehicle {qrHandoffSnapshot.vehicle?.plateNumber || 'context loaded'} is ready for incident reporting
-                  </h3>
-                  <div className="mt-3 space-y-1 text-sm text-emerald-950">
-                    <p>Permit status: {qrHandoffSnapshot.permitStatusAtScan}</p>
-                    <p>Compliance: {qrHandoffSnapshot.complianceStatus.replace(/_/g, ' ')}</p>
-                    <p>
-                      Driver: {qrHandoffSnapshot.operator.driverFullName || qrHandoffSnapshot.operator.driverName || 'Unspecified'}
-                    </p>
-                    <p>
-                      Token fingerprint: <span className="font-mono">{qrHandoffSnapshot.scannedTokenFingerprint}</span>
-                    </p>
-                    <p>Scan disposition: {qrHandoffSnapshot.scanDispositionAtScan}</p>
-                    {qrHandoffSnapshot.operator.operatorIdStatus === 'UNAVAILABLE' ? (
-                      <p>Operator ID is not linked yet; the handoff uses the scan-time driver and vehicle snapshot only.</p>
-                    ) : null}
-                    <p>
-                      Open incidents: {qrHandoffSnapshot.violationSummary.openIncidents} • Unpaid tickets: {qrHandoffSnapshot.violationSummary.unpaidTickets}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={clearQrHandoff}
-                  className="rounded-lg border border-emerald-300 bg-white px-4 py-2 text-sm font-medium text-emerald-900 transition-colors hover:bg-emerald-50"
-                >
-                  Clear Handoff
-                </button>
-              </div>
-            </section>
-          ) : null}
-
           <section className="rounded-2xl border border-slate-200 bg-white p-5">
             <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Step 2</p>
             <h3 className="mt-1 text-xl font-semibold text-slate-900">Describe the Incident</h3>
@@ -782,22 +722,15 @@ const IncidentReporting = () => {
                     {usingManualFallback ? 'Select Vehicle to Report *' : 'Confirm Vehicle for This Trip *'}
                   </label>
 
-                  {qrHandoffSnapshot ? (
-                    <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
-                      <p className="font-medium">Vehicle context loaded from QR compliance terminal.</p>
-                      <p className="mt-1">No additional vehicle search is required unless you clear the handoff.</p>
-                    </div>
-                  ) : (
-                    <VehicleLookupField
-                      label="Vehicle Search"
-                      placeholder="Type at least 2 characters to search matching vehicles"
-                      selectedVehicle={selectedVehicle}
-                      onSelect={handleVehicleSelect}
-                      onClearSelection={clearSelectedVehicle}
-                      requireActivePermit
-                      noResultsText="No active permitted vehicles matched your search."
-                    />
-                  )}
+                  <VehicleLookupField
+                    label="Vehicle Search"
+                    placeholder="Type at least 2 characters to search matching vehicles"
+                    selectedVehicle={selectedVehicle}
+                    onSelect={handleVehicleSelect}
+                    onClearSelection={clearSelectedVehicle}
+                    requireActivePermit
+                    noResultsText="No active permitted vehicles matched your search."
+                  />
 
                   {formData.vehicleId && selectedVehicle ? (
                     <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">

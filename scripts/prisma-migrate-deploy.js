@@ -3,9 +3,27 @@ const path = require('node:path')
 
 const DEFAULT_MAX_ATTEMPTS = 4
 const DEFAULT_INITIAL_RETRY_DELAY_MS = 5000
+const PG_SSLMODE_VERIFY_FULL_ALIASES = new Set(['prefer', 'require', 'verify-ca'])
+
+function normalizePgConnectionStringForNodePostgres(parsedUrl) {
+  const sslmode = parsedUrl.searchParams.get('sslmode')
+
+  if (!sslmode) {
+    return
+  }
+
+  if (parsedUrl.searchParams.get('uselibpqcompat') === 'true') {
+    return
+  }
+
+  if (PG_SSLMODE_VERIFY_FULL_ALIASES.has(sslmode)) {
+    parsedUrl.searchParams.set('sslmode', 'verify-full')
+  }
+}
 
 function normalizeDatabaseUrl(rawUrl, source) {
   const parsedUrl = new URL(rawUrl)
+  normalizePgConnectionStringForNodePostgres(parsedUrl)
   const originalHostname = parsedUrl.hostname
 
   if (originalHostname.includes('-pooler')) {
@@ -19,7 +37,7 @@ function normalizeDatabaseUrl(rawUrl, source) {
   }
 
   return {
-    connectionString: rawUrl,
+    connectionString: parsedUrl.toString(),
     source,
     derived: false,
   }

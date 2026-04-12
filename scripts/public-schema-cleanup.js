@@ -4,6 +4,18 @@ const path = require('path')
 const { Client } = require('pg')
 
 const DEFAULT_SCHEMA = 'public'
+const PG_SSLMODE_VERIFY_FULL_ALIASES = new Set(['prefer', 'require', 'verify-ca'])
+
+function normalizeDatabaseUrlForNodePostgres(rawUrl) {
+  const parsedUrl = new URL(rawUrl)
+  const sslmode = parsedUrl.searchParams.get('sslmode')
+
+  if (sslmode && parsedUrl.searchParams.get('uselibpqcompat') !== 'true' && PG_SSLMODE_VERIFY_FULL_ALIASES.has(sslmode)) {
+    parsedUrl.searchParams.set('sslmode', 'verify-full')
+  }
+
+  return parsedUrl.toString()
+}
 
 const SLICES = {
   'legacy-shells-1': {
@@ -382,7 +394,7 @@ async function buildReport(client, args) {
 
 async function main() {
   const args = parseArgs(process.argv)
-  const client = new Client({ connectionString: process.env.DATABASE_URL })
+  const client = new Client({ connectionString: normalizeDatabaseUrlForNodePostgres(process.env.DATABASE_URL) })
 
   await client.connect()
 

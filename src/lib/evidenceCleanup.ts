@@ -1,7 +1,5 @@
+import { del } from '@vercel/blob'
 import { prisma } from '@/lib/prisma'
-import { unlink } from 'fs/promises'
-import { join } from 'path'
-import { existsSync } from 'fs'
 
 export const DEFAULT_EVIDENCE_CLEANUP_BATCH_SIZE = 100
 export const MAX_EVIDENCE_CLEANUP_BATCH_SIZE = 500
@@ -123,8 +121,7 @@ async function listOldEvidenceCleanupCandidates(
 }
 
 /**
- * Delete evidence files from filesystem when an incident is resolved
- * This helps manage storage space on free hosting tiers
+ * Delete stored evidence blobs when an incident is resolved.
  */
 export async function cleanupEvidenceFiles(incidentId: string): Promise<EvidenceCleanupFileResult> {
   try {    // Get all evidence for this incident
@@ -152,15 +149,11 @@ export async function cleanupEvidenceFiles(incidentId: string): Promise<Evidence
     let deletedCount = 0
     let errorCount = 0
 
-    // Delete each evidence file from filesystem
+    // Delete each evidence blob from persistent storage
     for (const evidence of evidenceList) {
       try {
-        // Construct file path
-        const filePath = join(process.cwd(), 'public', 'uploads', 'evidence', evidence.fileName)
-        
-        // Check if file exists before trying to delete
-        if (existsSync(filePath)) {
-          await unlink(filePath)
+        if (evidence.fileUrl) {
+          await del(evidence.fileUrl)
           deletedCount++        } else {        }
       } catch (fileError) {
         errorCount++      }
@@ -298,7 +291,7 @@ export async function cleanupOldEvidenceFiles(
 }
 
 /**
- * Get storage statistics for evidence files
+ * Get storage statistics for evidence records.
  */
 export async function getEvidenceStorageStats() {
   try {
