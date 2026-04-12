@@ -258,7 +258,7 @@ export function AuthProvider({
 export function AuthAwareLayout({ children }: { children: React.ReactNode }) {
   const { user, status } = useAuth()
   const pathname = usePathname()
-  const shouldShowTerminal = pathname === '/' || status === 'authenticated'
+  const shouldShowTerminal = user?.userType === 'ENFORCER'
 
   if (isAuthRoute(pathname)) {
     return <main className="app-page-bg flex-1">{children}</main>
