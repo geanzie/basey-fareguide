@@ -118,6 +118,8 @@ function makeLookupResult(overrides?: {
   incidentHandoff?: Record<string, unknown> | null
   vehicle?: Record<string, unknown> | null
   violationSummary?: Record<string, unknown>
+  scanDisposition?: 'CLEAR' | 'FLAGGED' | 'BLOCKED' | 'NOT_FOUND'
+  message?: string
 }) {
   const vehicle = overrides?.vehicle ?? {
     id: 'vehicle-1',
@@ -177,7 +179,7 @@ function makeLookupResult(overrides?: {
     matchFound: true,
     permitStatus: 'ACTIVE',
     complianceStatus: 'COMPLIANT',
-    scanDisposition: 'CLEAR',
+    scanDisposition: overrides?.scanDisposition ?? 'CLEAR',
     permit: null,
     vehicle,
     operator: {
@@ -204,7 +206,7 @@ function makeLookupResult(overrides?: {
     ],
     violationSummary,
     incidentHandoff,
-    message: 'Permit is clear for compliance validation.',
+    message: overrides?.message ?? 'Permit is clear for compliance validation.',
   }
 }
 
@@ -707,6 +709,31 @@ describe('QrComplianceTerminal history', () => {
     expect(container.textContent).not.toContain('Insurance coverage')
     expect(container.textContent).not.toContain('Unpaid tickets')
     expect(container.textContent).not.toContain('Owner:')
+  })
+
+  it('shows a short flagged helper message in the terminal result view', async () => {
+    lookupResponseBody = makeLookupResult({
+      scanDisposition: 'FLAGGED',
+      message: 'This permit was flagged because compliance review and incident follow-up are still required before field clearance.',
+      violationSummary: {
+        totalViolations: 3,
+        openIncidents: 1,
+        unpaidTickets: 1,
+        outstandingPenalties: 350,
+      },
+    })
+
+    await act(async () => {
+      root.render(React.createElement(QrComplianceTerminal))
+      await Promise.resolve()
+    })
+
+    await openAndUnlockTerminal(container)
+    await showLookupResult(container, 'qr-token-flagged-short-copy')
+
+    expect(container.textContent).toContain('FLAGGED')
+    expect(container.textContent).toContain('Review required.')
+    expect(container.textContent).not.toContain('This permit was flagged because compliance review and incident follow-up are still required before field clearance.')
   })
 
   it('returns to scan-ready without requiring another unlock after the embedded workflow completes', async () => {

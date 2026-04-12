@@ -67,6 +67,14 @@ function formatIncidentDate(value: string): string {
   return parsed.toLocaleDateString()
 }
 
+function getResultHeadline(result: TerminalLookupResultDto): string {
+  if (result.scanDisposition === 'FLAGGED') {
+    return 'Review required.'
+  }
+
+  return result.message
+}
+
 function ScannerPanel({
   active,
   onDetected,
@@ -739,7 +747,7 @@ export default function QrComplianceTerminal() {
                       </div>
 
                       <div>
-                        <h3 className="text-lg font-semibold text-slate-900">{result.message}</h3>
+                        <h3 className="text-lg font-semibold text-slate-900">{getResultHeadline(result)}</h3>
                         <p className="text-sm text-slate-600">Scanned token: <span className="font-mono">{result.scannedToken}</span></p>
                       </div>
 
