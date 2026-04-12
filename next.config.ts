@@ -13,6 +13,9 @@ const distDir = isNextDevCommand && !isVercelBuild ? '.next-dev' : '.next';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
+  },
   // Keep production builds deployable while the repo-wide ESLint backlog is
   // addressed separately. Local linting still works via `npm run lint`.
   eslint: {
@@ -40,21 +43,6 @@ const nextConfig: NextConfig = {
       },
       type: 'javascript/auto'
     });
-
-    // Remove console logs in production
-    if (!dev) {
-      config.optimization.minimizer.forEach((plugin: any) => {
-        if (plugin.constructor.name === 'TerserPlugin') {
-          plugin.options.terserOptions = {
-            ...plugin.options.terserOptions,
-            compress: {
-              ...plugin.options.terserOptions?.compress,
-              drop_console: true,
-            },
-          };
-        }
-      });
-    }
 
     return config;
   },
