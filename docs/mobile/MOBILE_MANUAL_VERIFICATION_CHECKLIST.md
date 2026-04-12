@@ -1,6 +1,6 @@
 # Mobile Manual Verification Checklist
 
-Updated: 2026-04-08
+Updated: 2026-04-12
 
 ## Goal
 
@@ -138,6 +138,20 @@ Route: `/enforcer`
 5. Ticket modal respects bottom safe-area spacing.
 6. Modal action buttons stack well and do not sit behind the gesture bar.
 7. Closing a modal returns the page to a normal scroll state.
+
+### QR Compliance Terminal
+
+Launcher surface available from authenticated enforcer routes.
+
+1. The floating QR launcher stays above the mobile safe area and does not collide with bottom navigation.
+2. Password-entry state stays content-sized and does not jump immediately to a full-height shell.
+3. Camera state stays content-sized while the live scanner is active.
+4. No duplicate camera preview surface appears when the scanner starts.
+5. Manual-entry content can scroll to the final action without clipping.
+6. Result content can scroll when vehicle/compliance details are taller than the viewport.
+7. Opening `History` replaces the active content pane instead of overlaying the camera surface.
+8. The history list scrolls cleanly to the last visible entry without clipping the final card.
+9. On the smallest mobile widths, the top control row remains reachable and does not wrap awkwardly.
 
 ## Desktop Regression Checks
 

@@ -25,6 +25,10 @@ export type LoginAttemptResult =
       error: LoginAttemptError
     }
 
+export async function verifyPassword(password: string, passwordHash: string): Promise<boolean> {
+  return bcrypt.compare(password, passwordHash)
+}
+
 export async function authenticateLoginAttempt(
   request: NextRequest,
   credentials: { username: string; password: string },
@@ -78,7 +82,7 @@ export async function authenticateLoginAttempt(
     }
   }
 
-  const validPassword = await bcrypt.compare(password, user.password)
+  const validPassword = await verifyPassword(password, user.password)
 
   if (!validPassword) {
     return {

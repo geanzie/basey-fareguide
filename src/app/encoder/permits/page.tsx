@@ -1,7 +1,8 @@
 'use client'
 
 import RoleGuard from '@/components/RoleGuard'
-import PermitsList from '@/components/PermitsList'
+import PermitManagement from '@/components/PermitManagement'
+import PermitStatistics from '@/components/PermitStatistics'
 import PageWrapper from '@/components/PageWrapper'
 
 export default function PermitsListPage() {
@@ -16,9 +17,12 @@ function PermitsListContent() {
   return (
     <PageWrapper 
       title="All Permits"
-      subtitle="Browse and manage all driver and vehicle permits"
+      subtitle="Manage driver and vehicle permits with the full encoder action set"
     >
-      <PermitsList />
+      <div className="space-y-8">
+        <PermitStatistics />
+        <PermitManagement />
+      </div>
     </PageWrapper>
   )
 }

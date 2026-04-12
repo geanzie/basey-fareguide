@@ -1,4 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
+import {
+  clearTerminalUnlockCookie,
+  invalidateTerminalUnlockSession,
+} from '@/lib/terminal/session'
 
 /**
  * POST /api/auth/logout
@@ -6,6 +10,8 @@ import { NextRequest, NextResponse } from 'next/server'
  */
 export async function POST(request: NextRequest) {
   try {
+    await invalidateTerminalUnlockSession(request)
+
     // Create response
     const response = NextResponse.json({
       message: 'Logged out successfully'
@@ -19,6 +25,7 @@ export async function POST(request: NextRequest) {
       maxAge: 0, // Expire immediately
       path: '/'
     })
+    clearTerminalUnlockCookie(response)
 
     return response
   } catch (error) {

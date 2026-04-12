@@ -1,24 +1,11 @@
 const { spawnSync } = require('node:child_process')
+const path = require('node:path')
 
 const DEFAULT_MAX_ATTEMPTS = 4
 const DEFAULT_INITIAL_RETRY_DELAY_MS = 5000
 
-function resolveMigrationDatabaseUrl() {
-  const directDatabaseUrl = process.env.DIRECT_DATABASE_URL?.trim()
-  if (directDatabaseUrl) {
-    return {
-      connectionString: directDatabaseUrl,
-      source: 'DIRECT_DATABASE_URL',
-      derived: false,
-    }
-  }
-
-  const databaseUrl = process.env.DATABASE_URL?.trim()
-  if (!databaseUrl) {
-    throw new Error('DATABASE_URL is not configured.')
-  }
-
-  const parsedUrl = new URL(databaseUrl)
+function normalizeDatabaseUrl(rawUrl, source) {
+  const parsedUrl = new URL(rawUrl)
   const originalHostname = parsedUrl.hostname
 
   if (originalHostname.includes('-pooler')) {
@@ -26,20 +13,46 @@ function resolveMigrationDatabaseUrl() {
 
     return {
       connectionString: parsedUrl.toString(),
-      source: 'DATABASE_URL',
+      source,
       derived: true,
     }
   }
 
   return {
-    connectionString: databaseUrl,
-    source: 'DATABASE_URL',
+    connectionString: rawUrl,
+    source,
     derived: false,
   }
 }
 
-function getCommand() {
-  return process.platform === 'win32' ? 'npx.cmd' : 'npx'
+function resolveMigrationDatabaseUrl() {
+  const directDatabaseUrl = process.env.DIRECT_DATABASE_URL?.trim()
+  if (directDatabaseUrl) {
+    return normalizeDatabaseUrl(directDatabaseUrl, 'DIRECT_DATABASE_URL')
+  }
+
+  const databaseUrl = process.env.DATABASE_URL?.trim()
+  if (!databaseUrl) {
+    throw new Error('DATABASE_URL is not configured.')
+  }
+
+  return normalizeDatabaseUrl(databaseUrl, 'DATABASE_URL')
+}
+
+function getPrismaCommand() {
+  const prismaEntrypoint = path.join(
+    __dirname,
+    '..',
+    'node_modules',
+    'prisma',
+    'build',
+    'index.js',
+  )
+
+  return {
+    command: process.execPath,
+    args: [prismaEntrypoint, 'migrate', 'deploy'],
+  }
 }
 
 function getMaxAttempts() {
@@ -80,7 +93,9 @@ function isRetryableAdvisoryLockFailure(output) {
 function runPrismaMigrateDeploy(databaseUrl, attemptNumber, maxAttempts) {
   console.log(`[db:migrate:deploy] Attempt ${attemptNumber}/${maxAttempts}.`)
 
-  const result = spawnSync(getCommand(), ['prisma', 'migrate', 'deploy'], {
+  const prismaCommand = getPrismaCommand()
+
+  const result = spawnSync(prismaCommand.command, prismaCommand.args, {
     stdio: 'pipe',
     encoding: 'utf8',
     env: {

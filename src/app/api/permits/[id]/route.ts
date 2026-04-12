@@ -37,7 +37,7 @@ export async function GET(
       )
     }
 
-    return NextResponse.json(permit)
+    return NextResponse.json(serializePermit(permit))
   } catch (error) {
     return createAuthErrorResponse(error)
   }

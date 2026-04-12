@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useAuth } from '@/components/AuthProvider'
+import PermitQrCard from '@/components/PermitQrCard'
 import { VehicleType, PermitStatus } from '@prisma/client'
 import ResponsiveTable, { StatusBadge, ActionButton } from './ResponsiveTable'
 import VehicleLookupField from './VehicleLookupField'
@@ -12,6 +13,15 @@ import type {
   VehicleLookupDto,
 } from '@/lib/contracts'
 
+interface PermitQrLifecycleResponse {
+  permit: PermitDto
+  action: 'issued' | 'rotated'
+}
+
+interface PermitQrReadResponse {
+  permit: PermitDto
+}
+
 export default function PermitManagement() {
   const { user } = useAuth()
   const searchParams = useSearchParams()
@@ -20,6 +30,9 @@ export default function PermitManagement() {
   const [showAddForm, setShowAddForm] = useState(false)
   const [editingPermit, setEditingPermit] = useState<PermitDto | null>(null)
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleLookupDto | null>(null)
+  const [lastCreatedPermit, setLastCreatedPermit] = useState<PermitDto | null>(null)
+  const [selectedQrPermit, setSelectedQrPermit] = useState<PermitDto | null>(null)
+  const [loadingQrPermitId, setLoadingQrPermitId] = useState<string | null>(null)
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -139,6 +152,11 @@ export default function PermitManagement() {
       })
 
       if (response.ok) {
+        const savedPermit: PermitDto = await response.json()
+        if (!editingPermit) {
+          setLastCreatedPermit(savedPermit)
+          setSelectedQrPermit(savedPermit)
+        }
         resetForm()
         fetchPermits()
       } else {
@@ -189,6 +207,72 @@ export default function PermitManagement() {
         alert(`Error: ${errorData.error}`)
       }
     } catch (error) {      alert('Error updating permit status')
+    }
+  }
+
+  const handlePermitQrAction = async (permit: PermitDto, action: 'issue' | 'rotate') => {
+    if (
+      action === 'rotate' &&
+      !window.confirm(`Rotate the QR token for permit ${permit.permitPlateNumber}? Existing printed QR copies will stop working.`)
+    ) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/permits/${permit.id}/qr`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+
+      const payload = (await response.json()) as PermitQrLifecycleResponse | { error?: string }
+
+      if (!response.ok || !('permit' in payload)) {
+        alert(`Error: ${'error' in payload ? payload.error : 'Unable to update permit QR'}`)
+        return
+      }
+
+      const updatedPermit = payload.permit
+      setSelectedQrPermit(updatedPermit)
+      setLastCreatedPermit((current) => (current?.id === updatedPermit.id ? updatedPermit : current))
+      fetchPermits()
+
+      alert(
+        payload.action === 'issued'
+          ? `QR token issued for permit ${updatedPermit.permitPlateNumber}`
+          : `QR token rotated for permit ${updatedPermit.permitPlateNumber}`,
+      )
+    } catch (error) {
+      alert('Error updating permit QR')
+    }
+  }
+
+  const handleViewPermitQr = async (permit: PermitDto) => {
+    if (!permit.hasQrToken) {
+      alert(`Permit ${permit.permitPlateNumber} does not have an issued QR token yet`)
+      return
+    }
+
+    if (permit.qrToken) {
+      setSelectedQrPermit(permit)
+      return
+    }
+
+    try {
+      setLoadingQrPermitId(permit.id)
+      const response = await fetch(`/api/permits/${permit.id}/qr`)
+      const payload = (await response.json()) as PermitQrReadResponse | { error?: string }
+
+      if (!response.ok || !('permit' in payload)) {
+        alert(`Error: ${'error' in payload ? payload.error : 'Unable to load permit QR'}`)
+        return
+      }
+
+      setSelectedQrPermit(payload.permit)
+      setLastCreatedPermit((current) => (current?.id === payload.permit.id ? payload.permit : current))
+    } catch (error) {
+      alert('Error loading permit QR')
+    } finally {
+      setLoadingQrPermitId(null)
     }
   }
 
@@ -251,6 +335,31 @@ export default function PermitManagement() {
           Add New Permit
         </button>
       </div>
+
+      {lastCreatedPermit?.qrToken ? (
+        <div className="app-surface-card rounded-2xl p-4">
+          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Latest QR-issued permit</h3>
+              <p className="text-sm text-gray-600">
+                Permit {lastCreatedPermit.permitPlateNumber} received a stored QR token at creation time.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => void handleViewPermitQr(lastCreatedPermit)}
+              className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
+            >
+              View QR
+            </button>
+          </div>
+          <PermitQrCard
+            permitPlateNumber={lastCreatedPermit.permitPlateNumber}
+            qrToken={lastCreatedPermit.qrToken}
+            driverFullName={lastCreatedPermit.driverFullName}
+          />
+        </div>
+      ) : null}
 
       {/* Filters */}
       <div className="app-surface-card rounded-2xl p-4">
@@ -438,6 +547,25 @@ export default function PermitManagement() {
               )
             },
             {
+              key: 'hasQrToken',
+              label: 'QR Status',
+              mobileLabel: 'QR',
+              render: (hasQrToken, permit) => (
+                <div>
+                  <div className="text-xs font-medium text-gray-900">
+                    {hasQrToken ? 'Issued securely' : 'Not issued'}
+                  </div>
+                  {permit.qrIssuedAt ? (
+                    <div className="text-xs text-gray-500">
+                      Issued {new Date(permit.qrIssuedAt).toLocaleDateString()}
+                    </div>
+                  ) : (
+                    <div className="text-xs text-gray-500">Legacy permit without QR</div>
+                  )}
+                </div>
+              )
+            },
+            {
               key: 'vehicle',
               label: 'Vehicle Info',
               render: (vehicle, permit) => {
@@ -519,6 +647,32 @@ export default function PermitManagement() {
                   >
                     Renew
                   </ActionButton>
+                  {permit.hasQrToken ? (
+                    <>
+                      <ActionButton
+                        onClick={() => void handleViewPermitQr(permit)}
+                        variant="secondary"
+                        size="xs"
+                      >
+                        {loadingQrPermitId === permit.id ? 'Loading QR...' : 'View QR'}
+                      </ActionButton>
+                      <ActionButton
+                        onClick={() => handlePermitQrAction(permit, 'rotate')}
+                        variant="secondary"
+                        size="xs"
+                      >
+                        Rotate QR
+                      </ActionButton>
+                    </>
+                  ) : (
+                    <ActionButton
+                      onClick={() => handlePermitQrAction(permit, 'issue')}
+                      variant="primary"
+                      size="xs"
+                    >
+                      Issue QR
+                    </ActionButton>
+                  )}
                   {permit.status === PermitStatus.ACTIVE && (
                     <ActionButton
                       onClick={() => handleStatusChange(permit.id, PermitStatus.SUSPENDED)}
@@ -617,6 +771,34 @@ export default function PermitManagement() {
               </div>
             )}
       </div>
+
+      {selectedQrPermit?.qrToken ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="app-surface-overlay mx-4 w-full max-w-lg rounded-2xl p-6">
+            <div className="mb-4 flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Permit QR</h3>
+                <p className="text-sm text-gray-600">
+                  Reuse the stored QR token for display and printing. No regeneration happens here.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedQrPermit(null)}
+                className="text-2xl leading-none text-gray-400 transition-colors hover:text-gray-600"
+                aria-label="Close QR preview"
+              >
+                ×
+              </button>
+            </div>
+            <PermitQrCard
+              permitPlateNumber={selectedQrPermit.permitPlateNumber}
+              qrToken={selectedQrPermit.qrToken}
+              driverFullName={selectedQrPermit.driverFullName}
+            />
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }

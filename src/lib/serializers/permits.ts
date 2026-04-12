@@ -1,5 +1,9 @@
 import type { PermitDto } from "@/lib/contracts";
 
+interface SerializePermitOptions {
+  includeQrToken?: boolean;
+}
+
 function toIsoString(value: Date | string | null | undefined): string | null {
   if (!value) {
     return null;
@@ -12,6 +16,9 @@ function toIsoString(value: Date | string | null | undefined): string | null {
 export function serializePermit(record: {
   id: string;
   permitPlateNumber: string;
+  qrToken?: string | null;
+  qrIssuedAt?: Date | string | null;
+  qrIssuedBy?: string | null;
   driverFullName: string;
   vehicleType: string;
   issuedDate: Date | string;
@@ -38,10 +45,16 @@ export function serializePermit(record: {
     ownerName: string;
     vehicleType: string;
   } | null;
-}): PermitDto {
+}, options: SerializePermitOptions = {}): PermitDto {
+  const hasQrToken = Boolean(record.qrToken);
+
   return {
     id: record.id,
     permitPlateNumber: record.permitPlateNumber,
+    hasQrToken,
+    qrToken: options.includeQrToken ? record.qrToken ?? null : null,
+    qrIssuedAt: toIsoString(record.qrIssuedAt),
+    qrIssuedBy: record.qrIssuedBy ?? null,
     driverFullName: record.driverFullName,
     vehicleType: record.vehicleType,
     issuedDate: toIsoString(record.issuedDate) ?? new Date(0).toISOString(),

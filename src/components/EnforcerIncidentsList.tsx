@@ -2,6 +2,7 @@
 
 import type { FormEvent, ReactNode } from 'react'
 import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import useSWR from 'swr'
 import ResponsiveTable, { ActionButton, StatusBadge } from './ResponsiveTable'
 import EvidenceManager from './EvidenceManager'
@@ -10,7 +11,9 @@ import type {
   EnforcerIncidentsViewMode,
   IncidentListItemDto,
   IncidentsResponseDto,
+  TerminalIncidentHandoffSnapshotDto,
 } from '@/lib/contracts'
+import { clearQrTerminalHandoff, readQrTerminalHandoff } from '@/lib/terminal/handoff'
 import {
   DASHBOARD_ICONS,
   DASHBOARD_ICON_POLICY,
@@ -96,8 +99,10 @@ function ActionLabel({
 }
 
 export default function EnforcerIncidentsList({ mode }: EnforcerIncidentsListProps) {
+  const searchParams = useSearchParams()
   const [statusFilter, setStatusFilter] = useState<EnforcerStatusFilter>('ALL')
   const [searchQuery, setSearchQuery] = useState('')
+  const [qrHandoffSnapshot, setQrHandoffSnapshot] = useState<TerminalIncidentHandoffSnapshotDto | null>(null)
   const [selectedIncident, setSelectedIncident] = useState<IncidentListItemDto | null>(null)
   const [showIncidentDetails, setShowIncidentDetails] = useState(false)
   const [evidenceIncidentId, setEvidenceIncidentId] = useState<string | null>(null)
@@ -144,6 +149,21 @@ export default function EnforcerIncidentsList({ mode }: EnforcerIncidentsListPro
       window.clearTimeout(timeoutId)
     }
   }, [actionNotice])
+
+  useEffect(() => {
+    if (mode !== 'queue' || searchParams.get('qrHandoff') !== '1') {
+      return
+    }
+
+    const snapshot = readQrTerminalHandoff()
+
+    if (!snapshot) {
+      return
+    }
+
+    setQrHandoffSnapshot(snapshot)
+    setSearchQuery((current) => current || snapshot.vehicle?.plateNumber || '')
+  }, [mode, searchParams])
 
   const showActionNotice = (tone: ActionNotice['tone'], title: string, message: string) => {
     setActionNotice({ tone, title, message })
@@ -494,6 +514,39 @@ export default function EnforcerIncidentsList({ mode }: EnforcerIncidentsListPro
                   Use the pending filter to take the next case into the investigation workflow.
                 </p>
               </div>
+            </div>
+          </div>
+        ) : null}
+
+        {isQueueMode && qrHandoffSnapshot ? (
+          <div className="app-surface-card rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
+                  <DashboardIconSlot icon={DASHBOARD_ICONS.camera} size={16} />
+                  <span>QR Handoff</span>
+                </div>
+                <h3 className="mt-2 text-lg font-semibold text-emerald-950">
+                  {qrHandoffSnapshot.vehicle?.plateNumber || qrHandoffSnapshot.vehicle?.id || 'Matched vehicle'} is loaded into the queue
+                </h3>
+                <p className="mt-1 text-sm text-emerald-900">
+                  Permit status: {qrHandoffSnapshot.permitStatusAtScan}. Compliance: {qrHandoffSnapshot.complianceStatus.replace('_', ' ')}.
+                </p>
+                <p className="mt-1 text-sm text-emerald-900">
+                  Driver: {qrHandoffSnapshot.operator.driverFullName || qrHandoffSnapshot.operator.driverName || 'Unspecified'}
+                  {' '}• Unpaid tickets: {qrHandoffSnapshot.violationSummary.unpaidTickets}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  clearQrTerminalHandoff()
+                  setQrHandoffSnapshot(null)
+                }}
+                className="rounded-lg border border-emerald-300 px-4 py-2 text-sm font-medium text-emerald-900 transition-colors hover:bg-white/70"
+              >
+                Dismiss Handoff
+              </button>
             </div>
           </div>
         ) : null}

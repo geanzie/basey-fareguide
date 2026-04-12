@@ -160,6 +160,9 @@ describe("normalized serializers", () => {
     const permit = serializePermit({
       id: "permit-1",
       permitPlateNumber: "BP-1001",
+      qrToken: "qr-token-1",
+      qrIssuedAt: new Date("2026-01-01T00:00:00.000Z"),
+      qrIssuedBy: "encoder-1",
       driverFullName: "Driver Name",
       vehicleType: "TRICYCLE",
       issuedDate: new Date("2026-01-01T00:00:00.000Z"),
@@ -179,10 +182,36 @@ describe("normalized serializers", () => {
         ownerName: "Owner Name",
         vehicleType: "TRICYCLE",
       },
+    }, { includeQrToken: true });
+
+    const redactedPermit = serializePermit({
+      id: "permit-2",
+      permitPlateNumber: "BP-2002",
+      qrToken: "qr-token-2",
+      qrIssuedAt: new Date("2026-01-01T00:00:00.000Z"),
+      qrIssuedBy: "encoder-1",
+      driverFullName: "Driver Name",
+      vehicleType: "TRICYCLE",
+      issuedDate: new Date("2026-01-01T00:00:00.000Z"),
+      expiryDate: new Date("2027-01-01T00:00:00.000Z"),
+      status: "ACTIVE",
+      remarks: null,
+      encodedBy: "encoder-1",
+      encodedAt: new Date("2026-01-01T00:00:00.000Z"),
+      lastUpdatedBy: null,
+      lastUpdatedAt: null,
+      renewalHistory: [],
+      vehicle: null,
     });
 
     expect(vehicle.registrationExpiry).toBe("2026-12-31T00:00:00.000Z");
+    expect(permit.hasQrToken).toBe(true);
+    expect(permit.qrToken).toBe("qr-token-1");
+    expect(permit.qrIssuedAt).toBe("2026-01-01T00:00:00.000Z");
+    expect(permit.qrIssuedBy).toBe("encoder-1");
     expect(permit.issuedDate).toBe("2026-01-01T00:00:00.000Z");
     expect(permit.vehicle?.plateNumber).toBe("ABC-1234");
+    expect(redactedPermit.hasQrToken).toBe(true);
+    expect(redactedPermit.qrToken).toBeNull();
   });
 });

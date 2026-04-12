@@ -43,6 +43,11 @@ const serializersMock = vi.hoisted(() => ({
   })),
 }))
 
+const permitQrMock = vi.hoisted(() => ({
+  createPermitWithQr: vi.fn(),
+  issuePermitQrToken: vi.fn(),
+}))
+
 vi.mock('@/lib/auth', () => ({
   ADMIN_OR_ENCODER: ['ADMIN', 'DATA_ENCODER'],
   requireRequestRole: authMock.requireRequestRole,
@@ -57,9 +62,15 @@ vi.mock('@/lib/serializers', () => ({
   serializePermit: serializersMock.serializePermit,
 }))
 
+vi.mock('@/lib/permits/qr', () => ({
+  createPermitWithQr: permitQrMock.createPermitWithQr,
+  issuePermitQrToken: permitQrMock.issuePermitQrToken,
+}))
+
 import { POST as createPermit } from '@/app/api/permits/route'
 import { PUT as updatePermit, DELETE as deletePermit } from '@/app/api/permits/[id]/route'
 import { POST as renewPermit } from '@/app/api/permits/[id]/renew/route'
+import { GET as getPermitQr, POST as issuePermitQr } from '@/app/api/permits/[id]/qr/route'
 
 function makeJsonRequest(url: string, body: unknown, method: 'POST' | 'PUT' | 'DELETE') {
   return new Request(url, {
@@ -74,6 +85,21 @@ function makeJsonRequest(url: string, body: unknown, method: 'POST' | 'PUT' | 'D
 beforeEach(() => {
   vi.clearAllMocks()
   authMock.requireRequestRole.mockResolvedValue({ id: 'encoder-1', userType: 'DATA_ENCODER' })
+  permitQrMock.createPermitWithQr.mockImplementation(async (payload: Record<string, unknown>) =>
+    prismaMock.permit.create({
+      data: payload,
+    }),
+  )
+  permitQrMock.issuePermitQrToken.mockImplementation(async ({ permitId, issuedBy }: { permitId: string; issuedBy: string }) =>
+    prismaMock.permit.update({
+      where: { id: permitId },
+      data: {
+        qrToken: 'rotated-qr-token',
+        qrIssuedAt: new Date('2026-04-12T09:00:00.000Z'),
+        qrIssuedBy: issuedBy,
+      },
+    }),
+  )
 })
 
 describe('permit route regression coverage', () => {
@@ -106,6 +132,9 @@ describe('permit route regression coverage', () => {
     prismaMock.permit.create.mockResolvedValueOnce({
       id: 'permit-1',
       permitPlateNumber: 'PERM-100',
+      qrToken: 'qr-token-1',
+      qrIssuedAt: new Date('2026-04-12T08:00:00.000Z'),
+      qrIssuedBy: 'encoder-1',
       vehicleId: 'vehicle-1',
       status: 'ACTIVE',
     })
@@ -118,7 +147,7 @@ describe('permit route regression coverage', () => {
           permitPlateNumber: 'perm-100',
           driverFullName: 'Driver Name',
           vehicleType: 'JEEPNEY',
-          encodedBy: 'encoder-1',
+          encodedBy: 'spoofed-encoder',
           remarks: 'Initial permit',
         },
         'POST',
@@ -127,16 +156,124 @@ describe('permit route regression coverage', () => {
     const json = await response.json()
 
     expect(response.status).toBe(201)
-    expect(prismaMock.permit.create).toHaveBeenCalledWith(
+    expect(permitQrMock.createPermitWithQr).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
-          permitPlateNumber: 'PERM-100',
-          encodedBy: 'encoder-1',
-          status: 'ACTIVE',
-        }),
+        vehicleId: 'vehicle-1',
+        permitPlateNumber: 'perm-100',
+        driverFullName: 'Driver Name',
+        vehicleType: 'JEEPNEY',
+        encodedBy: 'encoder-1',
+        remarks: 'Initial permit',
       }),
     )
     expect(json.serialized).toBe(true)
+  })
+
+  it('issues a QR token for a legacy permit that does not have one yet', async () => {
+    prismaMock.permit.findUnique.mockResolvedValueOnce({
+      id: 'permit-legacy',
+      qrToken: null,
+    })
+    prismaMock.permit.update.mockResolvedValueOnce({
+      id: 'permit-legacy',
+      permitPlateNumber: 'PERM-LEGACY',
+      qrToken: 'issued-qr-token',
+      qrIssuedAt: new Date('2026-04-12T09:00:00.000Z'),
+      qrIssuedBy: 'encoder-1',
+    })
+
+    const response = await issuePermitQr(
+      makeJsonRequest('http://localhost/api/permits/permit-legacy/qr', {}, 'POST') as never,
+      { params: Promise.resolve({ id: 'permit-legacy' }) },
+    )
+    const json = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(permitQrMock.issuePermitQrToken).toHaveBeenCalledWith({
+      permitId: 'permit-legacy',
+      issuedBy: 'encoder-1',
+    })
+    expect(json.action).toBe('issued')
+    expect(json.permit.serialized).toBe(true)
+  })
+
+  it('rejects wrong-role QR issue and rotation attempts', async () => {
+    authMock.requireRequestRole.mockRejectedValueOnce(new Error('Forbidden'))
+
+    const response = await issuePermitQr(
+      makeJsonRequest('http://localhost/api/permits/permit-1/qr', {}, 'POST') as never,
+      { params: Promise.resolve({ id: 'permit-1' }) },
+    )
+
+    expect(response.status).toBe(403)
+    expect(permitQrMock.issuePermitQrToken).not.toHaveBeenCalled()
+  })
+
+  it('returns stored QR details only from the dedicated QR read route', async () => {
+    prismaMock.permit.findUnique.mockResolvedValueOnce({
+      id: 'permit-1',
+      permitPlateNumber: 'PERM-100',
+      qrToken: 'stored-qr-token',
+      qrIssuedAt: new Date('2026-04-12T09:00:00.000Z'),
+      qrIssuedBy: 'encoder-1',
+      driverFullName: 'Driver Name',
+      vehicleType: 'TRICYCLE',
+      issuedDate: new Date('2026-01-01T00:00:00.000Z'),
+      expiryDate: new Date('2027-01-01T00:00:00.000Z'),
+      status: 'ACTIVE',
+      remarks: null,
+      encodedBy: 'encoder-1',
+      encodedAt: new Date('2026-01-01T00:00:00.000Z'),
+      lastUpdatedBy: null,
+      lastUpdatedAt: null,
+      renewalHistory: [],
+      vehicle: null,
+    })
+
+    const response = await getPermitQr(
+      new Request('http://localhost/api/permits/permit-1/qr') as never,
+      { params: Promise.resolve({ id: 'permit-1' }) },
+    )
+    const json = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(json.permit.serialized).toBe(true)
+  })
+
+  it('rejects wrong-role QR detail reads', async () => {
+    authMock.requireRequestRole.mockRejectedValueOnce(new Error('Forbidden'))
+
+    const response = await getPermitQr(
+      new Request('http://localhost/api/permits/permit-1/qr') as never,
+      { params: Promise.resolve({ id: 'permit-1' }) },
+    )
+
+    expect(response.status).toBe(403)
+    expect(prismaMock.permit.findUnique).not.toHaveBeenCalled()
+  })
+
+  it('rotates the QR token for an existing permit without changing the rest of the permit update path', async () => {
+    prismaMock.permit.findUnique.mockResolvedValueOnce({
+      id: 'permit-1',
+      qrToken: 'old-qr-token',
+    })
+    prismaMock.permit.update.mockResolvedValueOnce({
+      id: 'permit-1',
+      permitPlateNumber: 'PERM-100',
+      qrToken: 'rotated-qr-token',
+      qrIssuedAt: new Date('2026-04-12T09:00:00.000Z'),
+      qrIssuedBy: 'encoder-1',
+    })
+
+    const response = await issuePermitQr(
+      makeJsonRequest('http://localhost/api/permits/permit-1/qr', {}, 'POST') as never,
+      { params: Promise.resolve({ id: 'permit-1' }) },
+    )
+    const json = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(json.action).toBe('rotated')
+    expect(json.permit.qrToken).toBe('rotated-qr-token')
   })
 
   it('rejects wrong-role permit updates', async () => {
@@ -243,6 +380,9 @@ describe('permit route regression coverage', () => {
         }),
       }),
     )
+    expect(transactionState.txPermitUpdate.mock.calls[0]?.[0]?.data).not.toHaveProperty('qrToken')
+    expect(transactionState.txPermitUpdate.mock.calls[0]?.[0]?.data).not.toHaveProperty('qrIssuedAt')
+    expect(transactionState.txPermitUpdate.mock.calls[0]?.[0]?.data).not.toHaveProperty('qrIssuedBy')
     expect(json.serialized).toBe(true)
   })
 

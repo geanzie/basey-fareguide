@@ -427,22 +427,22 @@ export default function PermitsList() {
                   <div className="space-y-3">
                     {selectedPermit.renewalHistory.map((renewal) => (
                       <div key={renewal.id} className="app-surface-inner rounded-lg p-3">
-                        <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
                           <div>
                             <span className="text-gray-500">Previous Expiry:</span>
-                            <div>{new Date(renewal.previousExpiry).toLocaleDateString()}</div>
+                            <div className="break-words">{new Date(renewal.previousExpiry).toLocaleDateString()}</div>
                           </div>
                           <div>
                             <span className="text-gray-500">New Expiry:</span>
-                            <div>{new Date(renewal.newExpiry).toLocaleDateString()}</div>
+                            <div className="break-words">{new Date(renewal.newExpiry).toLocaleDateString()}</div>
                           </div>
                           <div>
                             <span className="text-gray-500">Renewed By:</span>
-                            <div>{renewal.renewedBy}</div>
+                            <div className="break-words">{renewal.renewedBy}</div>
                           </div>
                           <div>
                             <span className="text-gray-500">Renewed At:</span>
-                            <div>{new Date(renewal.renewedAt).toLocaleString()}</div>
+                            <div className="break-words">{new Date(renewal.renewedAt).toLocaleString()}</div>
                           </div>
                         </div>
                         {renewal.notes && (

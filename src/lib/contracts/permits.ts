@@ -22,6 +22,10 @@ export interface PermitVehicleSummaryDto {
 export interface PermitDto {
   id: string;
   permitPlateNumber: string;
+  hasQrToken: boolean;
+  qrToken: string | null;
+  qrIssuedAt: string | null;
+  qrIssuedBy: string | null;
   driverFullName: string;
   vehicleType: VehicleType | string;
   issuedDate: string;

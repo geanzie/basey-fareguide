@@ -59,6 +59,7 @@ model User {
   archivedAnnouncements Announcement[]        @relation("AnnouncementArchiver")
   updatedRoutingSettings RoutingSettings[]    @relation("RoutingSettingsUpdater")
   routingSettingsAuditEntries RoutingSettingsAudit[] @relation("RoutingSettingsAuditActor")
+  permitQrAuditEntries  PermitQrAudit[]       @relation("PermitQrAuditActor")
 
   @@index([username])
   @@index([userType])
@@ -410,6 +411,9 @@ model Permit {
   id                 String       @id @default(cuid())
   vehicleId          String       @unique
   permitPlateNumber  String       @unique
+  qrToken            String?      @unique
+  qrIssuedAt         DateTime?
+  qrIssuedBy         String?
   driverFullName     String
   vehicleType        VehicleType
   issuedDate         DateTime     @default(now())
@@ -421,14 +425,34 @@ model Permit {
   lastUpdatedBy      String?
   lastUpdatedAt      DateTime?
   renewalHistory     PermitRenewal[]
+  qrAuditEntries     PermitQrAudit[]
   vehicle            Vehicle      @relation(fields: [vehicleId], references: [id])
   
   @@index([status])
   @@index([vehicleType])
   @@index([permitPlateNumber])
   @@index([expiryDate])
+  @@index([qrIssuedAt])
   @@index([status, vehicleType])
   @@map("permits")
+}
+
+model PermitQrAudit {
+  id                       String              @id @default(cuid())
+  permitId                 String
+  permitPlateNumber        String
+  action                   PermitQrAuditAction
+  actedBy                  String?
+  actedAt                  DateTime            @default(now())
+  previousTokenFingerprint String?
+  currentTokenFingerprint  String
+  permit                   Permit              @relation(fields: [permitId], references: [id], onDelete: Cascade)
+  actedByUser              User?               @relation("PermitQrAuditActor", fields: [actedBy], references: [id])
+
+  @@index([permitId, actedAt])
+  @@index([actedBy, actedAt])
+  @@index([action, actedAt])
+  @@map("permit_qr_audit")
 }
 
 model PermitRenewal {
@@ -443,6 +467,37 @@ model PermitRenewal {
   
   @@map("permit_renewals")
 }
+
+  model TerminalUnlockSession {
+    id             String   @id @default(cuid())
+    userId         String
+    tokenHash      String   @unique
+    expiresAt      DateTime
+    lastActivityAt DateTime
+    createdAt      DateTime @default(now())
+    updatedAt      DateTime @updatedAt
+
+    @@index([userId])
+    @@index([expiresAt])
+    @@index([lastActivityAt])
+    @@map("terminal_unlock_sessions")
+  }
+
+  model QrScanAudit {
+    id                 String            @id @default(cuid())
+    scannerUserId      String?
+    scannedAt          DateTime          @default(now())
+    submittedToken     String
+    matchedPermitId    String?
+    resultType         QrScanResultType
+    scanSource         QrScanSource
+    disposition        ScanDisposition?
+
+    @@index([scannerUserId, scannedAt])
+    @@index([matchedPermitId, scannedAt])
+    @@index([resultType, scannedAt])
+    @@map("qr_scan_audit")
+  }
 
 enum UserType {
   ADMIN
@@ -520,6 +575,35 @@ enum PermitStatus {
   EXPIRED
   SUSPENDED
   REVOKED
+}
+
+enum ComplianceStatus {
+  COMPLIANT
+  NON_COMPLIANT
+  REVIEW_REQUIRED
+}
+
+enum ScanDisposition {
+  CLEAR
+  FLAGGED
+  BLOCKED
+}
+
+enum QrScanResultType {
+  MATCHED
+  NOT_FOUND
+  ERROR
+  UNAUTHORIZED
+}
+
+enum QrScanSource {
+  CAMERA
+  MANUAL
+}
+
+enum PermitQrAuditAction {
+  ISSUE_QR
+  ROTATE_QR
 }
 
 enum EvidenceType {

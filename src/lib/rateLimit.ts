@@ -110,6 +110,11 @@ export const RATE_LIMITS = {
     windowMs: 15 * 60 * 1000, // 15 minutes
     maxAttempts: 5 // 5 attempts per 15 minutes
   },
+  // Strict for privileged terminal activation attempts
+  TERMINAL_UNLOCK: {
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    maxAttempts: 5 // 5 failed unlock attempts per 15 minutes
+  },
   // Moderate for password reset requests
   AUTH_RESET: {
     windowMs: 60 * 60 * 1000, // 1 hour

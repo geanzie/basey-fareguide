@@ -167,6 +167,8 @@ describe('vehicle loading behavior', () => {
       rawCoordinates: '11.278823, 125.001194',
       isFallback: false,
     })
+
+    sessionStorage.clear()
   })
 
   afterEach(async () => {

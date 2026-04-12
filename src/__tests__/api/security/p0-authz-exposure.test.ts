@@ -53,6 +53,7 @@ vi.mock('@/lib/serializers', () => ({
 
 import { GET as getPermitList } from '@/app/api/permits/route'
 import { GET as getPermitDetail } from '@/app/api/permits/[id]/route'
+import { GET as getPermitQrDetail } from '@/app/api/permits/[id]/qr/route'
 import { GET as getVehicleDetail } from '@/app/api/vehicles/[id]/route'
 import { GET as getVehicleOptions } from '@/app/api/vehicles/options/route'
 import { GET as getUsers } from '@/app/api/users/route'
@@ -91,6 +92,18 @@ describe('P0 authorization exposure validation', () => {
 
     const response = await getPermitDetail(
       makeRequest('http://localhost/api/permits/permit-1') as never,
+      { params: Promise.resolve({ id: 'permit-1' }) },
+    )
+
+    expect(response.status).toBe(401)
+    expect(prismaMock.permit.findUnique).not.toHaveBeenCalled()
+  })
+
+  it('rejects anonymous QR detail reads by permit id', async () => {
+    authMock.requireRequestRole.mockRejectedValueOnce(new Error('Unauthorized'))
+
+    const response = await getPermitQrDetail(
+      makeRequest('http://localhost/api/permits/permit-1/qr') as never,
       { params: Promise.resolve({ id: 'permit-1' }) },
     )
 

@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import useSWR, { useSWRConfig } from 'swr'
 
 import AuthStateShell from './AuthStateShell'
+import QrComplianceTerminal from './QrComplianceTerminal'
 import UnifiedLayout from './UnifiedLayout'
 import type { SessionResponseDto, SessionUserDto } from '@/lib/contracts'
 import { isAuthRoute, POST_LOGOUT_ROUTE } from '@/lib/authRoutes'
@@ -257,6 +258,7 @@ export function AuthProvider({
 export function AuthAwareLayout({ children }: { children: React.ReactNode }) {
   const { user, status } = useAuth()
   const pathname = usePathname()
+  const shouldShowTerminal = pathname === '/' || status === 'authenticated'
 
   if (isAuthRoute(pathname)) {
     return <main className="app-page-bg flex-1">{children}</main>
@@ -274,12 +276,20 @@ export function AuthAwareLayout({ children }: { children: React.ReactNode }) {
   }
 
   if (status === 'loading' || !user) {
-    return <main className="app-page-bg flex-1">{children}</main>
+    return (
+      <>
+        <main className="app-page-bg flex-1">{children}</main>
+        {shouldShowTerminal ? <QrComplianceTerminal /> : null}
+      </>
+    )
   }
 
   return (
-    <UnifiedLayout user={user}>
-      {children}
-    </UnifiedLayout>
+    <>
+      <UnifiedLayout user={user}>
+        {children}
+      </UnifiedLayout>
+      {shouldShowTerminal ? <QrComplianceTerminal /> : null}
+    </>
   )
 }

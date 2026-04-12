@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { buildPaginationMetadata, parsePaginationParams } from '@/lib/api/pagination'
 import { VehicleType, PermitStatus } from '@prisma/client'
 import { ADMIN_OR_ENCODER, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
+import { createPermitWithQr } from '@/lib/permits/qr'
 import { serializePermit } from '@/lib/serializers'
 
 export async function GET(request: NextRequest) {
@@ -65,12 +66,12 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    await requireRequestRole(request, [...ADMIN_OR_ENCODER])
+    const actor = await requireRequestRole(request, [...ADMIN_OR_ENCODER])
     const body = await request.json()
-    const { vehicleId, permitPlateNumber, driverFullName, vehicleType, encodedBy, remarks } = body
+    const { vehicleId, permitPlateNumber, driverFullName, vehicleType, remarks } = body
 
     // Validate required fields
-    if (!vehicleId || !permitPlateNumber || !driverFullName || !vehicleType || !encodedBy) {
+    if (!vehicleId || !permitPlateNumber || !driverFullName || !vehicleType) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -113,37 +114,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Calculate expiry date (1 year from now)
-    const expiryDate = new Date()
-    expiryDate.setFullYear(expiryDate.getFullYear() + 1)
-
-    const permit = await prisma.permit.create({
-      data: {
-        vehicleId,
-        permitPlateNumber: permitPlateNumber.toUpperCase(),
-        driverFullName,
-        vehicleType,
-        expiryDate,
-        encodedBy,
-        remarks,
-        status: PermitStatus.ACTIVE
-      },
-      include: {
-        renewalHistory: true,
-        vehicle: {
-          select: {
-            id: true,
-            plateNumber: true,
-            make: true,
-            model: true,
-            ownerName: true,
-            vehicleType: true
-          }
-        }
-      }
+    const permit = await createPermitWithQr({
+      vehicleId,
+      permitPlateNumber,
+      driverFullName,
+      vehicleType,
+      encodedBy: actor.id,
+      remarks,
     })
 
-    return NextResponse.json(serializePermit(permit), { status: 201 })
+    return NextResponse.json(serializePermit(permit, { includeQrToken: true }), { status: 201 })
   } catch (error) {
     return createAuthErrorResponse(error)
   }
