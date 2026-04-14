@@ -32,7 +32,7 @@ export default async function RootLayout({
   const initialSession = authUser ? { user: serializeSessionUser(authUser) } : null
 
   return (
-    <html lang="en">
+    <html lang="en" data-scroll-behavior="smooth">
       <head>
         <meta name="theme-color" content="#16a34a" />
         <link rel="icon" href="/favicon.ico" />

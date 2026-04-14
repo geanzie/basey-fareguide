@@ -35,6 +35,11 @@ const nextConfig: NextConfig = {
   
   // Webpack configuration to handle special file types
   webpack: (config, { buildId, dev, isServer, defaultLoaders, nextRuntime, webpack }) => {
+    config.resolve.alias = {
+      ...(config.resolve.alias ?? {}),
+      canvas: false,
+    }
+
     // Handle GeoJSON files as JSON
     config.module.rules.push({
       test: /\.geojson$/,

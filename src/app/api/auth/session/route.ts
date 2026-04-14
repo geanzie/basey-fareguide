@@ -9,6 +9,12 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ user: serializeSessionUser(user) })
   } catch (error) {
-    return createAuthErrorResponse(error)
+    const authErrorResponse = createAuthErrorResponse(error)
+
+    if (authErrorResponse.status === 401) {
+      return NextResponse.json({ user: null })
+    }
+
+    return authErrorResponse
   }
 }

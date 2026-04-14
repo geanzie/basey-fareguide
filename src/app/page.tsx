@@ -17,6 +17,7 @@ import FareRateBanner from '@/components/FareRateBanner'
 import TrafficAnnouncementsFeed from '@/components/TrafficAnnouncementsFeed'
 import { getAuthenticatedHomeRoute } from '@/lib/authRoutes'
 import { PUBLIC_PENALTY_SCHEDULE } from '@/lib/incidents/penaltyRules'
+import { ordinanceResource } from '@/lib/ordinanceResource'
 
 export default function HomePage() {
   const router = useRouter()
@@ -160,6 +161,62 @@ export default function HomePage() {
                       </div>
                     </div>
                   ))}
+                </div>
+              </div>
+
+              <div className="app-surface-card rounded-2xl border border-slate-200 p-5 shadow-sm lg:p-6">
+                <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="max-w-3xl">
+                    <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700">
+                      <DashboardIconSlot icon={DASHBOARD_ICONS.fileText} size={16} />
+                      <p>Official Ordinance</p>
+                    </div>
+                    <h3 className="mt-2 text-2xl font-bold text-slate-900">
+                      {ordinanceResource.shortTitle}
+                    </h3>
+                    <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+                      {ordinanceResource.summary}
+                    </p>
+                    <div className="mt-4 flex flex-wrap gap-2 text-xs font-medium text-slate-600">
+                      <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5">
+                        <DashboardIconSlot icon={DASHBOARD_ICONS.info} size={14} />
+                        <span>{ordinanceResource.effectiveLabel}</span>
+                      </span>
+                      <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5">
+                        <DashboardIconSlot icon={DASHBOARD_ICONS.file} size={14} />
+                        <span>PDF document</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex w-full max-w-sm flex-col gap-3 lg:w-72">
+                    <Link
+                      href="/ordinance"
+                      aria-label={`Read ${ordinanceResource.shortTitle} details and preview page`}
+                      className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+                    >
+                      <DashboardIconSlot
+                        icon={DASHBOARD_ICONS.fileText}
+                        size={DASHBOARD_ICON_POLICY.sizes.button}
+                        className="mr-2"
+                      />
+                      Read Ordinance
+                    </Link>
+                    <a
+                      href={ordinanceResource.pdfUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label={`Open ${ordinanceResource.shortTitle} PDF in a new tab`}
+                      className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                    >
+                      <DashboardIconSlot
+                        icon={DASHBOARD_ICONS.view}
+                        size={DASHBOARD_ICON_POLICY.sizes.button}
+                        className="mr-2"
+                      />
+                      Open PDF
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>
