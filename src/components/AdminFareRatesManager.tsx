@@ -11,11 +11,34 @@ function formatCurrency(value: number) {
   return `PHP ${value.toFixed(2)}`
 }
 
+function findPreviousEligibleVersion(data: AdminFareRatesResponseDto | null) {
+  if (!data?.currentVersion) {
+    return null
+  }
+
+  const currentEffectiveAt = new Date(data.currentVersion.effectiveAt).getTime()
+
+  return (
+    [...data.history]
+      .filter((version) => !version.canceledAt && new Date(version.effectiveAt).getTime() < currentEffectiveAt)
+      .sort((left, right) => {
+        const effectiveAtDiff = new Date(right.effectiveAt).getTime() - new Date(left.effectiveAt).getTime()
+        if (effectiveAtDiff !== 0) {
+          return effectiveAtDiff
+        }
+
+        return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime()
+      })[0] ?? null
+  )
+}
+
 export default function AdminFareRatesManager() {
   const [data, setData] = useState<AdminFareRatesResponseDto | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [canceling, setCanceling] = useState(false)
+  const [reverting, setReverting] = useState(false)
+  const [deletingVersionId, setDeletingVersionId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [mode, setMode] = useState<PublishMode>('immediate')
@@ -24,7 +47,9 @@ export default function AdminFareRatesManager() {
   const [effectiveAt, setEffectiveAt] = useState('')
   const [notes, setNotes] = useState('')
   const [cancelReason, setCancelReason] = useState('')
+  const [revertReason, setRevertReason] = useState('')
   const setupRequired = Boolean(data?.warning)
+  const previousEligibleVersion = findPreviousEligibleVersion(data)
 
   useEffect(() => {
     void fetchFareRates()
@@ -125,6 +150,85 @@ export default function AdminFareRatesManager() {
       setError(cancelError instanceof Error ? cancelError.message : 'Failed to cancel scheduled fare rate')
     } finally {
       setCanceling(false)
+    }
+  }
+
+  async function handleRevertCurrentFare() {
+    if (!previousEligibleVersion) {
+      return
+    }
+
+    const confirmed = window.confirm(
+      `Revert the current live fare to ${formatCurrency(previousEligibleVersion.baseFare)} base and ${formatCurrency(previousEligibleVersion.perKmRate)} per km?`,
+    )
+    if (!confirmed) {
+      return
+    }
+
+    setReverting(true)
+    setError(null)
+    setSuccess(null)
+
+    try {
+      const response = await fetch('/api/admin/fare-rates/revert', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          reason: revertReason,
+        }),
+      })
+
+      const payload = await response.json()
+      if (!response.ok) {
+        throw new Error(payload.message || payload.error || 'Failed to revert fare rate')
+      }
+
+      setSuccess(payload.message || 'Fare rate reverted successfully.')
+      setRevertReason('')
+      await fetchFareRates()
+    } catch (revertError) {
+      setError(revertError instanceof Error ? revertError.message : 'Failed to revert fare rate')
+    } finally {
+      setReverting(false)
+    }
+  }
+
+  async function handleDeleteVersion(versionId: string, isUpcoming: boolean) {
+    const confirmed = window.confirm('Delete this fare version permanently? This cannot be undone.')
+    if (!confirmed) {
+      return
+    }
+
+    setDeletingVersionId(versionId)
+    setError(null)
+    setSuccess(null)
+
+    try {
+      const response = await fetch(`/api/admin/fare-rates/${versionId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          reason: isUpcoming
+            ? 'Deleted upcoming mistaken fare adjustment.'
+            : 'Deleted historical mistaken fare adjustment.',
+        }),
+      })
+
+      const payload = await response.json()
+      if (!response.ok) {
+        throw new Error(payload.message || payload.error || 'Failed to delete fare rate version')
+      }
+
+      setSuccess(payload.message || 'Fare rate version deleted permanently.')
+      await fetchFareRates()
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : 'Failed to delete fare rate version')
+    } finally {
+      setDeletingVersionId(null)
     }
   }
 
@@ -355,11 +459,53 @@ export default function AdminFareRatesManager() {
         </section>
       )}
 
+      {previousEligibleVersion && data?.currentVersion && (
+        <section className="rounded-2xl border border-rose-200 bg-rose-50 p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-rose-900">Revert the Current Fare Rate</h2>
+          <p className="mt-1 text-sm text-rose-800">
+            This rolls the live fare back to the previous eligible version and records the current fare as reverted.
+          </p>
+
+          <div className="mt-4 rounded-2xl border border-rose-200 bg-white/80 p-4 text-sm text-rose-900">
+            <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+              <span>
+                Target rollback fare: {formatCurrency(previousEligibleVersion.baseFare)} base, {formatCurrency(previousEligibleVersion.perKmRate)} per km
+              </span>
+              <span className="text-xs font-medium uppercase tracking-wide text-rose-700">
+                Effective {formatManilaDateTimeLabel(previousEligibleVersion.effectiveAt)}
+              </span>
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-4 md:grid-cols-[1fr_auto]">
+            <textarea
+              id="admin-fare-revert-reason"
+              name="revertReason"
+              autoComplete="off"
+              value={revertReason}
+              onChange={(event) => setRevertReason(event.target.value)}
+              rows={3}
+              placeholder="Optional rollback reason"
+              className="w-full rounded-xl border border-rose-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-100"
+            />
+            <button
+              id="admin-fare-revert-current"
+              type="button"
+              onClick={handleRevertCurrentFare}
+              disabled={reverting || setupRequired}
+              className="rounded-xl bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-rose-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+            >
+              {reverting ? 'Reverting fare...' : 'Revert to previous fare'}
+            </button>
+          </div>
+        </section>
+      )}
+
       <section className="app-surface-card rounded-2xl p-6">
         <div className="mb-5">
           <h2 className="text-xl font-semibold text-slate-900">Fare Rate History</h2>
           <p className="mt-1 text-sm text-slate-600">
-            Every fare change is versioned. Scheduled cancellations remain visible for audit review.
+            Every fare change is versioned. Scheduled cancellations remain visible for audit review, and mistaken non-live entries can be deleted permanently.
           </p>
         </div>
 
@@ -394,6 +540,18 @@ export default function AdminFareRatesManager() {
                       </p>
                     )}
                   </div>
+                  {!version.isActive && (
+                    <div className="flex shrink-0 items-start justify-end">
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteVersion(version.id, version.isUpcoming)}
+                        disabled={deletingVersionId === version.id || setupRequired}
+                        className="rounded-xl border border-rose-300 bg-white px-4 py-2 text-sm font-semibold text-rose-700 hover:border-rose-400 hover:text-rose-800 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400"
+                      >
+                        {deletingVersionId === version.id ? 'Deleting...' : 'Delete permanently'}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </article>
             ))

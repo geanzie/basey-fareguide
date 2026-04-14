@@ -10,7 +10,9 @@ import { DEFAULT_FARE_POLICY, FARE_BASE_DISTANCE_KM } from "@/lib/fare/policy";
 export const FARE_RATE_MIGRATION_REQUIRED_MESSAGE =
   "Fare rate management is waiting on database migrations. Run `npx prisma migrate deploy` against the active database to enable version history and admin updates.";
 
-const fareRateVersionInclude = {
+type FareRateVersionClient = Pick<typeof prisma, "fareRateVersion">;
+
+export const fareRateVersionInclude = {
   createdByUser: {
     select: {
       firstName: true,
@@ -36,7 +38,7 @@ let resolvedFareRatesCache:
     }
   | null = null;
 
-function isFareRateTableMissingError(error: unknown): boolean {
+export function isFareRateStorageMissingError(error: unknown): boolean {
   if (!(error instanceof Error)) {
     return false;
   }
@@ -45,8 +47,98 @@ function isFareRateTableMissingError(error: unknown): boolean {
   return (
     message.includes("p2021") ||
     message.includes("fare_rate_versions") ||
-    message.includes("farerateversion")
+    message.includes("farerateversion") ||
+    message.includes("fare_rate_deletion_audit") ||
+    message.includes("fareratedeletionaudit")
   );
+}
+
+export function isCurrentLiveFareRateVersion(
+  version:
+    | {
+        effectiveAt: Date | string;
+        canceledAt?: Date | string | null;
+      }
+    | null,
+  now: Date = new Date(),
+): boolean {
+  if (!version || version.canceledAt) {
+    return false;
+  }
+
+  return new Date(version.effectiveAt) <= now;
+}
+
+export function isDeletableFareRateVersion(
+  version:
+    | {
+        effectiveAt: Date | string;
+        canceledAt?: Date | string | null;
+      }
+    | null,
+  now: Date = new Date(),
+): boolean {
+  return Boolean(version) && !isCurrentLiveFareRateVersion(version, now);
+}
+
+export async function getCurrentLiveFareRateVersion(
+  client: FareRateVersionClient = prisma,
+  now: Date = new Date(),
+) {
+  return client.fareRateVersion.findFirst({
+    where: {
+      canceledAt: null,
+      effectiveAt: {
+        lte: now,
+      },
+    },
+    orderBy: [{ effectiveAt: "desc" }, { createdAt: "desc" }],
+    include: fareRateVersionInclude,
+  });
+}
+
+export async function getUpcomingFareRateVersion(
+  client: FareRateVersionClient = prisma,
+  now: Date = new Date(),
+) {
+  return client.fareRateVersion.findFirst({
+    where: {
+      canceledAt: null,
+      effectiveAt: {
+        gt: now,
+      },
+    },
+    orderBy: [{ effectiveAt: "asc" }, { createdAt: "asc" }],
+    include: fareRateVersionInclude,
+  });
+}
+
+export async function getPreviousEligibleFareRateVersion(
+  currentVersion: {
+    effectiveAt: Date | string;
+  },
+  client: FareRateVersionClient = prisma,
+) {
+  return client.fareRateVersion.findFirst({
+    where: {
+      canceledAt: null,
+      effectiveAt: {
+        lt: new Date(currentVersion.effectiveAt),
+      },
+    },
+    orderBy: [{ effectiveAt: "desc" }, { createdAt: "desc" }],
+    include: fareRateVersionInclude,
+  });
+}
+
+export async function getFareRateVersionById(
+  id: string,
+  client: FareRateVersionClient = prisma,
+) {
+  return client.fareRateVersion.findUnique({
+    where: { id },
+    include: fareRateVersionInclude,
+  });
 }
 
 function buildFarePolicySnapshot(
@@ -82,27 +174,11 @@ export async function getResolvedFareRates(now: Date = new Date()): Promise<Fare
 
   try {
     [currentVersion, upcomingVersion] = await Promise.all([
-      prisma.fareRateVersion.findFirst({
-        where: {
-          canceledAt: null,
-          effectiveAt: {
-            lte: now,
-          },
-        },
-        orderBy: [{ effectiveAt: "desc" }, { createdAt: "desc" }],
-      }),
-      prisma.fareRateVersion.findFirst({
-        where: {
-          canceledAt: null,
-          effectiveAt: {
-            gt: now,
-          },
-        },
-        orderBy: [{ effectiveAt: "asc" }, { createdAt: "asc" }],
-      }),
+      getCurrentLiveFareRateVersion(prisma, now),
+      getUpcomingFareRateVersion(prisma, now),
     ]);
   } catch (error) {
-    if (isFareRateTableMissingError(error)) {
+    if (isFareRateStorageMissingError(error)) {
       const fallbackValue = {
         current: DEFAULT_FARE_POLICY,
         upcoming: null,
@@ -145,33 +221,15 @@ export async function getAdminFareRates(now: Date = new Date()): Promise<AdminFa
   try {
     [resolved, currentVersion, upcomingVersion, history] = await Promise.all([
       getResolvedFareRates(now),
-      prisma.fareRateVersion.findFirst({
-        where: {
-          canceledAt: null,
-          effectiveAt: {
-            lte: now,
-          },
-        },
-        orderBy: [{ effectiveAt: "desc" }, { createdAt: "desc" }],
-        include: fareRateVersionInclude,
-      }),
-      prisma.fareRateVersion.findFirst({
-        where: {
-          canceledAt: null,
-          effectiveAt: {
-            gt: now,
-          },
-        },
-        orderBy: [{ effectiveAt: "asc" }, { createdAt: "asc" }],
-        include: fareRateVersionInclude,
-      }),
+      getCurrentLiveFareRateVersion(prisma, now),
+      getUpcomingFareRateVersion(prisma, now),
       prisma.fareRateVersion.findMany({
         orderBy: [{ effectiveAt: "desc" }, { createdAt: "desc" }],
         include: fareRateVersionInclude,
       }),
     ]);
   } catch (error) {
-    if (isFareRateTableMissingError(error)) {
+    if (isFareRateStorageMissingError(error)) {
       return {
         current: DEFAULT_FARE_POLICY,
         upcoming: null,

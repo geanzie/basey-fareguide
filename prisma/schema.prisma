@@ -60,6 +60,7 @@ model User {
   updatedRoutingSettings RoutingSettings[]    @relation("RoutingSettingsUpdater")
   routingSettingsAuditEntries RoutingSettingsAudit[] @relation("RoutingSettingsAuditActor")
   permitQrAuditEntries  PermitQrAudit[]       @relation("PermitQrAuditActor")
+  fareRateDeletionAuditEntries FareRateDeletionAudit[] @relation("FareRateDeletionAuditActor")
 
   @@index([username])
   @@index([userType])
@@ -89,6 +90,20 @@ model FareRateVersion {
   @@index([canceledAt])
   @@index([effectiveAt, canceledAt])
   @@map("fare_rate_versions")
+}
+
+model FareRateDeletionAudit {
+  id                String   @id @default(cuid())
+  fareRateVersionId String
+  action            String
+  reason            String?
+  deletedAt         DateTime @default(now())
+  deletedBy         String?
+  deletedByUser     User?    @relation("FareRateDeletionAuditActor", fields: [deletedBy], references: [id])
+
+  @@index([fareRateVersionId, deletedAt])
+  @@index([deletedAt])
+  @@map("fare_rate_deletion_audit")
 }
 
 model RoutingSettings {
