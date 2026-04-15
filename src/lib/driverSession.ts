@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server'
 
 import {
+  DiscountType,
   DriverTripSessionRiderAction,
   DriverTripSessionRiderStatus,
   DriverTripSessionStatus,
@@ -19,12 +20,39 @@ import type {
 import { verifyAuthWithSelect } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
-const ACTIVE_SESSION_STATUSES = [DriverTripSessionStatus.OPEN, DriverTripSessionStatus.IN_PROGRESS] as const
-const CLOSURE_BLOCKING_RIDER_STATUSES = [
+const ACTIVE_SESSION_STATUSES: readonly DriverTripSessionStatus[] = [
+  DriverTripSessionStatus.OPEN,
+  DriverTripSessionStatus.IN_PROGRESS,
+]
+const CLOSURE_BLOCKING_RIDER_STATUSES: readonly DriverTripSessionRiderStatus[] = [
   DriverTripSessionRiderStatus.PENDING,
   DriverTripSessionRiderStatus.ACCEPTED,
   DriverTripSessionRiderStatus.BOARDED,
-] as const
+]
+const PENDING_SECTION_RIDER_STATUSES: readonly DriverTripSessionRiderStatus[] = [
+  DriverTripSessionRiderStatus.PENDING,
+  DriverTripSessionRiderStatus.ACCEPTED,
+]
+const ARCHIVED_RIDER_STATUSES: readonly DriverTripSessionRiderStatus[] = [
+  DriverTripSessionRiderStatus.REJECTED_NOT_HERE,
+  DriverTripSessionRiderStatus.REJECTED_FULL,
+  DriverTripSessionRiderStatus.REJECTED_WRONG_TRIP,
+  DriverTripSessionRiderStatus.CANCELLED,
+]
+const FINALIZED_RIDER_STATUSES: readonly DriverTripSessionRiderStatus[] = [
+  DriverTripSessionRiderStatus.COMPLETED,
+  DriverTripSessionRiderStatus.REJECTED_NOT_HERE,
+  DriverTripSessionRiderStatus.REJECTED_FULL,
+  DriverTripSessionRiderStatus.REJECTED_WRONG_TRIP,
+  DriverTripSessionRiderStatus.CANCELLED,
+]
+const PENDING_SECTION_CARD_STATUSES: readonly DriverSessionRiderCardDto['status'][] = ['PENDING', 'ACCEPTED']
+const ARCHIVED_CARD_STATUSES: readonly DriverSessionRiderCardDto['status'][] = [
+  'REJECTED_NOT_HERE',
+  'REJECTED_FULL',
+  'REJECTED_WRONG_TRIP',
+  'CANCELLED',
+]
 
 const riderActionConfig: Record<
   DriverTripSessionRiderAction,
@@ -141,7 +169,7 @@ type FareCalculationJoinCandidate = {
   fromLocation: string
   toLocation: string
   calculatedFare: Prisma.Decimal | number | string
-  discountType: string | null
+  discountType: DiscountType | null
   createdAt: Date
 }
 
@@ -216,19 +244,10 @@ function buildSessionSummary(session: DriverSessionRecord | null): DriverSession
     }
   }
 
-  const pendingCount = session.riders.filter((rider) =>
-    [DriverTripSessionRiderStatus.PENDING, DriverTripSessionRiderStatus.ACCEPTED].includes(rider.status),
-  ).length
+  const pendingCount = session.riders.filter((rider) => PENDING_SECTION_RIDER_STATUSES.includes(rider.status)).length
   const boardedCount = session.riders.filter((rider) => rider.status === DriverTripSessionRiderStatus.BOARDED).length
   const completedCount = session.riders.filter((rider) => rider.status === DriverTripSessionRiderStatus.COMPLETED).length
-  const archivedCount = session.riders.filter((rider) =>
-    [
-      DriverTripSessionRiderStatus.REJECTED_NOT_HERE,
-      DriverTripSessionRiderStatus.REJECTED_FULL,
-      DriverTripSessionRiderStatus.REJECTED_WRONG_TRIP,
-      DriverTripSessionRiderStatus.CANCELLED,
-    ].includes(rider.status),
-  ).length
+  const archivedCount = session.riders.filter((rider) => ARCHIVED_RIDER_STATUSES.includes(rider.status)).length
 
   return {
     id: session.id,
@@ -255,7 +274,7 @@ function groupSessionRiders(session: DriverSessionRecord | null) {
     {
       key: 'pending' as const,
       label: 'Pending',
-      riders: riders.filter((rider) => ['PENDING', 'ACCEPTED'].includes(rider.status)),
+      riders: riders.filter((rider) => PENDING_SECTION_CARD_STATUSES.includes(rider.status)),
     },
     {
       key: 'boarded' as const,
@@ -270,9 +289,7 @@ function groupSessionRiders(session: DriverSessionRecord | null) {
     {
       key: 'archived' as const,
       label: 'Archived',
-      riders: riders.filter((rider) =>
-        ['REJECTED_NOT_HERE', 'REJECTED_FULL', 'REJECTED_WRONG_TRIP', 'CANCELLED'].includes(rider.status),
-      ),
+      riders: riders.filter((rider) => ARCHIVED_CARD_STATUSES.includes(rider.status)),
     },
   ]
 }
@@ -459,13 +476,7 @@ export async function applyDriverSessionAction(
         acceptedAt: action === DriverTripSessionRiderAction.ACCEPT ? now : undefined,
         boardedAt: action === DriverTripSessionRiderAction.BOARDED ? now : undefined,
         completedAt: action === DriverTripSessionRiderAction.DROPPED_OFF ? now : undefined,
-        finalisedAt: [
-          DriverTripSessionRiderStatus.COMPLETED,
-          DriverTripSessionRiderStatus.REJECTED_NOT_HERE,
-          DriverTripSessionRiderStatus.REJECTED_FULL,
-          DriverTripSessionRiderStatus.REJECTED_WRONG_TRIP,
-          DriverTripSessionRiderStatus.CANCELLED,
-        ].includes(actionConfig.to)
+        finalisedAt: FINALIZED_RIDER_STATUSES.includes(actionConfig.to)
           ? now
           : undefined,
       },
