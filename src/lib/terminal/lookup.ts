@@ -6,6 +6,7 @@ import type {
 } from '@prisma/client'
 
 import { prisma } from '@/lib/prisma'
+import { lookupPermitQrIdentity } from '@/lib/permits/qrIdentity'
 import type {
   TerminalComplianceChecklistItemDto,
   TerminalComplianceStatus,
@@ -16,7 +17,6 @@ import type {
   TerminalViolationSummaryDto,
 } from '@/lib/contracts'
 import { normalizePlateNumber } from '@/lib/incidents/penaltyRules'
-import { fingerprintQrToken } from '@/lib/permits/qrToken'
 
 function toIsoString(value: Date | string | null | undefined): string | null {
   if (!value) {
@@ -73,18 +73,6 @@ function buildIncidentLookupWhere(input: {
   }
 
   return whereClauses.length === 1 ? whereClauses[0] : { OR: whereClauses }
-}
-
-function resolvePermitStatus(status: string, expiryDate: Date): TerminalPermitStatus {
-  if (status === 'SUSPENDED' || status === 'REVOKED') {
-    return status
-  }
-
-  if (expiryDate.getTime() < Date.now()) {
-    return 'EXPIRED'
-  }
-
-  return 'ACTIVE'
 }
 
 function buildComplianceChecklist(input: {
@@ -226,19 +214,12 @@ export async function lookupQrToken(scannedToken: string): Promise<{
     disposition: ScanDisposition | null
   }
 }> {
-  const normalizedToken = scannedToken.trim()
+  const identity = await lookupPermitQrIdentity(scannedToken)
 
-  const permit = await prisma.permit.findUnique({
-    where: { qrToken: normalizedToken },
-    include: {
-      vehicle: true,
-    },
-  })
-
-  if (!permit || !permit.vehicle) {
+  if (!identity.matchFound) {
     return {
       result: {
-        scannedToken: normalizedToken,
+        scannedToken: identity.normalizedToken,
         matchFound: false,
         permitStatus: null,
         complianceStatus: null,
@@ -260,10 +241,10 @@ export async function lookupQrToken(scannedToken: string): Promise<{
   }
 
   const incidentWhere = buildIncidentLookupWhere({
-    vehicleId: permit.vehicleId,
-    plateNumber: permit.vehicle.plateNumber,
-    permitPlateNumber: permit.permitPlateNumber,
-    driverLicense: permit.vehicle.driverLicense,
+    vehicleId: identity.vehicle.id,
+    plateNumber: identity.vehicle.plateNumber,
+    permitPlateNumber: identity.permit.permitPlateNumber,
+    driverLicense: identity.vehicle.driverLicense,
   })
 
   const [
@@ -316,17 +297,16 @@ export async function lookupQrToken(scannedToken: string): Promise<{
     }),
   ])
 
-  const permitStatus = resolvePermitStatus(permit.status, permit.expiryDate)
   const complianceChecklist = buildComplianceChecklist({
-    permitStatus,
-    vehicleActive: permit.vehicle.isActive,
-    registrationExpiry: permit.vehicle.registrationExpiry,
-    insuranceExpiry: permit.vehicle.insuranceExpiry,
+    permitStatus: identity.permitStatus,
+    vehicleActive: identity.vehicle.isActive,
+    registrationExpiry: identity.vehicle.registrationExpiry,
+    insuranceExpiry: identity.vehicle.insuranceExpiry,
     unpaidTickets,
     openIncidents,
   })
   const complianceStatus = resolveComplianceStatus(complianceChecklist)
-  const scanDisposition = resolveScanDisposition(permitStatus, complianceStatus)
+  const scanDisposition = resolveScanDisposition(identity.permitStatus, complianceStatus)
 
   const violationSummary: TerminalViolationSummaryDto = {
     totalViolations,
@@ -350,11 +330,11 @@ export async function lookupQrToken(scannedToken: string): Promise<{
     .map((item) => item.key)
 
   const incidentHandoff: TerminalIncidentHandoffSnapshotDto = {
-    permitId: permit.id,
-    vehicleId: permit.vehicle.id,
+    permitId: identity.permit.id,
+    vehicleId: identity.vehicle.id,
     operatorId: null,
-    scannedTokenFingerprint: fingerprintQrToken(normalizedToken),
-    permitStatusAtScan: permitStatus,
+    scannedTokenFingerprint: identity.scannedTokenFingerprint,
+    permitStatusAtScan: identity.permitStatus,
     complianceStatus,
     scanDispositionAtScan: scanDisposition,
     complianceFlags,
@@ -369,43 +349,43 @@ export async function lookupQrToken(scannedToken: string): Promise<{
       // Operator IDs are not yet first-class permit relations, so handoff stays snapshot-only.
       operatorId: null,
       operatorIdStatus: 'UNAVAILABLE',
-      driverFullName: permit.driverFullName,
-      driverName: permit.vehicle.driverName,
-      ownerName: permit.vehicle.ownerName,
-      driverLicense: permit.vehicle.driverLicense,
+      driverFullName: identity.operator.driverFullName,
+      driverName: identity.operator.driverName,
+      ownerName: identity.operator.ownerName,
+      driverLicense: identity.operator.driverLicense,
     },
     vehicle: {
-      id: permit.vehicle.id,
-      plateNumber: permit.vehicle.plateNumber,
-      vehicleType: permit.vehicle.vehicleType,
-      make: permit.vehicle.make,
-      model: permit.vehicle.model,
-      color: permit.vehicle.color,
-      ownerName: permit.vehicle.ownerName,
-      driverName: permit.vehicle.driverName,
-      driverLicense: permit.vehicle.driverLicense,
-      registrationExpiry: toIsoString(permit.vehicle.registrationExpiry) ?? new Date(0).toISOString(),
-      insuranceExpiry: toIsoString(permit.vehicle.insuranceExpiry),
-      isActive: permit.vehicle.isActive,
+      id: identity.vehicle.id,
+      plateNumber: identity.vehicle.plateNumber,
+      vehicleType: identity.vehicle.vehicleType,
+      make: identity.vehicle.make,
+      model: identity.vehicle.model,
+      color: identity.vehicle.color,
+      ownerName: identity.vehicle.ownerName,
+      driverName: identity.vehicle.driverName,
+      driverLicense: identity.vehicle.driverLicense,
+      registrationExpiry: toIsoString(identity.vehicle.registrationExpiry) ?? new Date(0).toISOString(),
+      insuranceExpiry: toIsoString(identity.vehicle.insuranceExpiry),
+      isActive: identity.vehicle.isActive,
     },
   }
 
   return {
     result: {
-      scannedToken: normalizedToken,
+      scannedToken: identity.normalizedToken,
       matchFound: true,
-      permitStatus,
+      permitStatus: identity.permitStatus,
       complianceStatus,
       scanDisposition,
       permit: {
-        id: permit.id,
-        permitPlateNumber: permit.permitPlateNumber,
-        qrToken: permit.qrToken ?? normalizedToken,
-        qrIssuedAt: toIsoString(permit.qrIssuedAt),
-        qrIssuedBy: permit.qrIssuedBy ?? null,
-        driverFullName: permit.driverFullName,
-        issuedDate: toIsoString(permit.issuedDate) ?? new Date(0).toISOString(),
-        expiryDate: toIsoString(permit.expiryDate) ?? new Date(0).toISOString(),
+        id: identity.permit.id,
+        permitPlateNumber: identity.permit.permitPlateNumber,
+        qrToken: identity.permit.qrToken ?? identity.normalizedToken,
+        qrIssuedAt: toIsoString(identity.permit.qrIssuedAt),
+        qrIssuedBy: identity.permit.qrIssuedBy ?? null,
+        driverFullName: identity.permit.driverFullName,
+        issuedDate: toIsoString(identity.permit.issuedDate) ?? new Date(0).toISOString(),
+        expiryDate: toIsoString(identity.permit.expiryDate) ?? new Date(0).toISOString(),
       },
       vehicle: incidentHandoff.vehicle,
       operator: incidentHandoff.operator,
@@ -420,7 +400,7 @@ export async function lookupQrToken(scannedToken: string): Promise<{
             : 'Permit matched, but compliance review is required before clearing the operator.',
     },
     audit: {
-      matchedPermitId: permit.id,
+      matchedPermitId: identity.permit.id,
       resultType: 'MATCHED',
       disposition: toAuditDisposition(scanDisposition),
     },

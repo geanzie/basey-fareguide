@@ -1,3 +1,8 @@
+vi.mock('@/components/PublicRideTagScanner', () => ({
+  __esModule: true,
+  default: ({ autoStart }: { autoStart?: boolean }) =>
+    React.createElement('div', null, autoStart ? 'Mock scanner active' : 'Mock scanner idle'),
+}))
 // @vitest-environment jsdom
 
 import { readFileSync } from 'node:fs'
@@ -260,8 +265,13 @@ describe('RoutePlannerCalculator', () => {
 
     it('replaces the old split-mode planner copy with a pin-only route surface and optional vehicle support', () => {
     const planner = readFileSync(repoPath('src', 'components', 'RoutePlannerCalculator.tsx'), 'utf8')
+    const rideTagScanner = readFileSync(repoPath('src', 'components', 'PublicRideTagScanner.tsx'), 'utf8')
 
-    expect(planner).toContain('Search by plate number')
+    expect(planner).toContain('Scan operator QR')
+    expect(planner).toContain("Can't scan? Search manually")
+      expect(rideTagScanner).toContain('Recommended for faster and more accurate trip identification.')
+      expect(rideTagScanner).not.toContain('Tag this ride by scanning the operator QR')
+    expect(planner).not.toContain('Optional: Search by plate number (BPLO-issued)')
       expect(planner).not.toContain('Set Origin')
       expect(planner).not.toContain('Set Destination')
       expect(planner).not.toContain('Calculate route')
@@ -285,6 +295,52 @@ describe('RoutePlannerCalculator', () => {
       expect(container.textContent).not.toContain('Swap origin and destination')
       expect(container.textContent).not.toContain('Reset planner')
     })
+
+  it('keeps scan and manual identity options on one row and only shows the active pane', async () => {
+    authState.user = { id: 'public-1' }
+    authState.status = 'authenticated'
+
+    await act(async () => {
+      root.render(React.createElement(RoutePlannerCalculator, { MapComponent: MockPlannerMap }))
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(container.textContent).toContain('Scan operator QR')
+    expect(container.textContent).toContain("Can't scan? Search manually")
+    expect(container.textContent).not.toContain('Mock scanner active')
+    expect(container.textContent).not.toContain('Search manually by plate number')
+
+    await act(async () => {
+      clickButton('Scan operator QR')
+      await Promise.resolve()
+    })
+
+    expect(container.textContent).not.toContain('Scan operator QR')
+    expect(container.textContent).not.toContain("Can't scan? Search manually")
+    expect(container.textContent).toContain('Mock scanner active')
+    expect(container.textContent).not.toContain('Search manually by plate number')
+
+    await act(async () => {
+      clickButton('Choose another option')
+      await Promise.resolve()
+    })
+
+    expect(container.textContent).toContain('Scan operator QR')
+    expect(container.textContent).toContain("Can't scan? Search manually")
+    expect(container.textContent).not.toContain('Mock scanner active')
+    expect(container.textContent).not.toContain('Search manually by plate number')
+
+    await act(async () => {
+      clickButton("Can't scan? Search manually")
+      await Promise.resolve()
+    })
+
+    expect(container.textContent).not.toContain('Scan operator QR')
+    expect(container.textContent).not.toContain("Can't scan? Search manually")
+    expect(container.textContent).not.toContain('Mock scanner active')
+    expect(container.textContent).toContain('Search manually by plate number')
+  })
 
   it('auto-calculates after placing two pins without saving until the rider explicitly confirms', async () => {
     routeQueue.push(

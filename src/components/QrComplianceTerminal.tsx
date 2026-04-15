@@ -11,6 +11,7 @@ import {
   getDashboardIconChipClasses,
 } from '@/components/dashboardIcons'
 import EnforcerIncidentsList from '@/components/EnforcerIncidentsList'
+import QrTokenScannerPanel from '@/components/QrTokenScannerPanel'
 import type {
   TerminalIncidentHandoffSnapshotDto,
   TerminalLookupResultDto,
@@ -33,30 +34,6 @@ type ScannerHandle = {
   clear: () => void | Promise<void>
 }
 
-function safelyClearScanner(scanner: ScannerHandle) {
-  try {
-    const clearResult = scanner.clear()
-    if (clearResult && typeof clearResult === 'object' && 'catch' in clearResult) {
-      void clearResult.catch(() => {})
-    }
-  } catch {}
-}
-
-function safelyDisposeScanner(scanner: ScannerHandle) {
-  if (!scanner.isScanning) {
-    safelyClearScanner(scanner)
-    return
-  }
-
-  try {
-    void scanner.stop().catch(() => {}).finally(() => {
-      safelyClearScanner(scanner)
-    })
-  } catch {
-    safelyClearScanner(scanner)
-  }
-}
-
 function formatIncidentDate(value: string): string {
   const parsed = new Date(value)
 
@@ -73,110 +50,6 @@ function getResultHeadline(result: TerminalLookupResultDto): string {
   }
 
   return result.message
-}
-
-function ScannerPanel({
-  active,
-  onDetected,
-  onCameraNotice,
-}: {
-  active: boolean
-  onDetected: (token: string) => void
-  onCameraNotice: (message: string, fallbackView?: TerminalView) => void
-}) {
-  const readerId = useId().replace(/:/g, '-')
-  const scannerRef = useRef<ScannerHandle | null>(null)
-  const isSettledRef = useRef(false)
-  const onDetectedRef = useRef(onDetected)
-  const onCameraNoticeRef = useRef(onCameraNotice)
-
-  useEffect(() => {
-    onDetectedRef.current = onDetected
-  }, [onDetected])
-
-  useEffect(() => {
-    onCameraNoticeRef.current = onCameraNotice
-  }, [onCameraNotice])
-
-  useEffect(() => {
-    if (!active) {
-      return
-    }
-
-    const readerElement = document.getElementById(readerId)
-
-    if (!readerElement) {
-      return
-    }
-
-    readerElement.replaceChildren()
-
-    if (!navigator.mediaDevices?.getUserMedia) {
-      onCameraNoticeRef.current('Camera scanning is not supported by this browser. Use manual entry instead.', 'manual-entry')
-      return
-    }
-
-    let disposed = false
-
-    void (async () => {
-      try {
-        const { Html5Qrcode } = await import('html5-qrcode')
-
-        if (disposed) {
-          return
-        }
-
-        const scanner = new Html5Qrcode(readerId, { verbose: false })
-        scannerRef.current = scanner
-
-        await scanner.start(
-          { facingMode: 'environment' },
-          {
-            fps: 10,
-            qrbox: { width: 220, height: 220 },
-          },
-          (decodedText: string) => {
-            if (disposed || isSettledRef.current) {
-              return
-            }
-
-            isSettledRef.current = true
-            onDetectedRef.current(decodedText)
-          },
-          () => {},
-        )
-      } catch (error) {
-        const message = error instanceof Error ? error.message : 'Unable to access the device camera.'
-
-        if (message.includes('NotAllowedError') || message.toLowerCase().includes('permission')) {
-          onCameraNoticeRef.current('Camera permission was denied. You can continue with manual QR entry.', 'manual-entry')
-          return
-        }
-
-        if (message.includes('NotFoundError') || message.toLowerCase().includes('camera')) {
-          onCameraNoticeRef.current('No camera was found on this device. You can continue with manual QR entry.', 'manual-entry')
-          return
-        }
-
-        onCameraNoticeRef.current('Camera scanning is unavailable right now. Use manual QR entry instead.', 'manual-entry')
-      }
-    })()
-
-    return () => {
-      disposed = true
-      isSettledRef.current = false
-
-      if (scannerRef.current) {
-        const currentScanner = scannerRef.current
-        scannerRef.current = null
-        safelyDisposeScanner(currentScanner)
-      }
-
-      readerElement.replaceChildren()
-    }
-  }, [active, readerId])
-
-  return <div id={readerId} className="min-h-[220px] overflow-hidden rounded-2xl bg-black sm:min-h-[260px]" />
 }
 
 export default function QrComplianceTerminal() {
@@ -651,10 +524,10 @@ export default function QrComplianceTerminal() {
 
                       {isCameraVisible ? (
                         <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                          <ScannerPanel
+                          <QrTokenScannerPanel
                             active={!isSubmittingLookup && !shouldRenderHistoryPanel}
                             onDetected={(token) => void handleLookup(token, 'CAMERA')}
-                            onCameraNotice={handleCameraNotice}
+                            onCameraNotice={(message) => handleCameraNotice(message, 'manual-entry')}
                           />
                           <p className="text-sm text-slate-600">
                             Point the camera at a permit QR. If camera access is denied or unavailable, switch to manual entry.

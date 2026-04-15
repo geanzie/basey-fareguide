@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type ComponentType } from 'react'
 import dynamic from 'next/dynamic'
 
 import { useAuth } from './AuthProvider'
+import PublicRideTagScanner from './PublicRideTagScanner'
 import type { RoutePlannerMapProps } from './RoutePlannerMap'
 import VehicleLookupField from './VehicleLookupField'
 import type {
@@ -95,6 +96,8 @@ interface RouteResult {
   destinationLabel: string
 }
 
+type IdentityInputMode = 'idle' | 'scan' | 'manual'
+
 function formatCurrency(value: number): string {
   return `PHP ${value.toFixed(2)}`
 }
@@ -180,6 +183,7 @@ const RoutePlannerCalculator = ({
   const [userDiscountCard, setUserDiscountCard] = useState<DiscountCardDto | null>(null)
   const [fitBoundsToken, setFitBoundsToken] = useState(0)
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleLookupDto | null>(null)
+  const [identityInputMode, setIdentityInputMode] = useState<IdentityInputMode>('idle')
   const [displayedRoutePair, setDisplayedRoutePair] = useState<{
     origin: PlannerPoint
     destination: PlannerPoint
@@ -501,19 +505,86 @@ const RoutePlannerCalculator = ({
       <div className="space-y-4 sm:space-y-5">
         {user ? (
           <section className="app-surface-card-strong rounded-[2rem] border border-slate-200/80 p-3 sm:p-4">
-            <div className="max-w-md rounded-[1.5rem] border border-slate-200 bg-white p-2 shadow-sm">
-              <VehicleLookupField
-                label="Optional: Search by plate number (BPLO-issued)"
-                placeholder="Search"
-                selectedVehicle={selectedVehicle}
-                onSelect={(vehicle) => setSelectedVehicle(vehicle)}
-                onClearSelection={() => setSelectedVehicle(null)}
-                requireActivePermit={false}
-              />
-              <p className="mt-2 px-1 text-xs leading-5 text-slate-600 sm:text-sm">
-                If you select a plate number, the vehicle is saved with the trip for easier incident reporting.
-              </p>
-            </div>
+            {identityInputMode === 'idle' ? (
+              <div className="grid gap-2 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => setIdentityInputMode('scan')}
+                  className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
+                >
+                  Scan operator QR
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIdentityInputMode('manual')}
+                  className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-100"
+                >
+                  Can't scan? Search manually
+                </button>
+              </div>
+            ) : null}
+
+            {identityInputMode === 'scan' ? (
+              <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">Operator QR scanner</p>
+                    <p className="mt-1 text-xs leading-5 text-slate-600 sm:text-sm">
+                      Scan and confirm the operator details here without pushing the rest of the planner down.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIdentityInputMode('idle')}
+                    className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                  >
+                    Choose another option
+                  </button>
+                </div>
+
+                <div className="mt-4">
+                  <PublicRideTagScanner
+                    autoStart
+                    embedded
+                    selectedVehicle={selectedVehicle}
+                    onUseVehicle={(vehicle) => setSelectedVehicle(vehicle)}
+                    onClearVehicle={() => setSelectedVehicle(null)}
+                  />
+                </div>
+              </div>
+            ) : null}
+
+            {identityInputMode === 'manual' ? (
+              <div className="space-y-3 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">Manual vehicle lookup</p>
+                    <p className="mt-1 text-xs leading-5 text-slate-600 sm:text-sm">
+                      Use manual search for damaged stickers, older vehicles, or camera issues.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIdentityInputMode('idle')}
+                    className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                  >
+                    Choose another option
+                  </button>
+                </div>
+
+                <VehicleLookupField
+                  label="Search manually by plate number"
+                  placeholder="Search"
+                  selectedVehicle={selectedVehicle}
+                  onSelect={(vehicle) => setSelectedVehicle(vehicle)}
+                  onClearSelection={() => setSelectedVehicle(null)}
+                  requireActivePermit={false}
+                />
+                <p className="px-1 text-xs leading-5 text-slate-600 sm:text-sm">
+                  If you select a plate number, the vehicle is saved with the trip for easier incident reporting.
+                </p>
+              </div>
+            ) : null}
           </section>
         ) : null}
 
@@ -548,9 +619,6 @@ const RoutePlannerCalculator = ({
                             }`}
                           >
                             {routeResult.sourceBadge}
-                          </span>
-                          <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700">
-                            {routeResult.method == null ? 'No road segment needed' : 'Shortest verified road route'}
                           </span>
                           {selectedVehicle ? (
                             <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700">
