@@ -27,6 +27,9 @@ model User {
   emergencyContact      String?
   emergencyContactPhone String?
   reasonForRegistration String?
+  assignedVehicleId     String?               @unique
+  assignedVehicleAssignedAt DateTime?
+  assignedVehicleAssignedBy String?
   isVerified            Boolean               @default(false)
   verificationToken     String?
   verificationExpiry    DateTime?
@@ -61,6 +64,8 @@ model User {
   routingSettingsAuditEntries RoutingSettingsAudit[] @relation("RoutingSettingsAuditActor")
   permitQrAuditEntries  PermitQrAudit[]       @relation("PermitQrAuditActor")
   fareRateDeletionAuditEntries FareRateDeletionAudit[] @relation("FareRateDeletionAuditActor")
+  assignedVehicle       Vehicle?              @relation("DriverAssignedVehicle", fields: [assignedVehicleId], references: [id])
+  driverAssignmentHistory DriverVehicleAssignmentHistory[] @relation("DriverAssignmentHistoryUser")
 
   @@index([username])
   @@index([userType])
@@ -177,6 +182,8 @@ model Vehicle {
   fareCalculations   FareCalculation[]
   incidents          Incident[]
   permit             Permit?
+  assignedDriver     User?             @relation("DriverAssignedVehicle")
+  driverAssignmentHistory DriverVehicleAssignmentHistory[] @relation("DriverAssignmentHistoryVehicle")
 
   @@index([plateNumber])
   @@index([vehicleType])
@@ -409,6 +416,7 @@ model AdminUserCreation {
   firstName     String
   lastName      String
   phoneNumber   String
+  assignedVehicleId String?
   department    String?
   position      String?
   employeeId    String?
@@ -420,6 +428,25 @@ model AdminUserCreation {
   createdAt     DateTime  @default(now())
 
   @@map("admin_user_creations")
+}
+
+model DriverVehicleAssignmentHistory {
+  id         String   @id @default(cuid())
+  userId     String
+  vehicleId  String
+  assignedBy String?
+  assignedAt DateTime @default(now())
+  endedBy    String?
+  endedAt    DateTime?
+  reason     String?
+  isActive   Boolean  @default(true)
+  user       User     @relation("DriverAssignmentHistoryUser", fields: [userId], references: [id], onDelete: Cascade)
+  vehicle    Vehicle  @relation("DriverAssignmentHistoryVehicle", fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([userId, assignedAt])
+  @@index([vehicleId, assignedAt])
+  @@index([isActive, assignedAt])
+  @@map("driver_vehicle_assignment_history")
 }
 
 model Permit {
@@ -518,6 +545,7 @@ enum UserType {
   ADMIN
   DATA_ENCODER
   ENFORCER
+  DRIVER
   PUBLIC
 }
 

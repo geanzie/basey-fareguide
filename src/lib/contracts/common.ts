@@ -1,4 +1,4 @@
-export type UserRole = "ADMIN" | "DATA_ENCODER" | "ENFORCER" | "PUBLIC";
+export type UserRole = "ADMIN" | "DATA_ENCODER" | "ENFORCER" | "DRIVER" | "PUBLIC";
 
 export interface PaginationDto {
   page: number;

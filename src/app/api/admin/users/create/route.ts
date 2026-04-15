@@ -3,11 +3,13 @@ import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import { UserType } from '@prisma/client'
 import { ADMIN_ONLY, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
+import { normalizePlateNumber } from '@/lib/incidents/penaltyRules'
 
 const ALLOWED_OFFICIAL_USER_TYPES = new Set<UserType>([
   UserType.ADMIN,
   UserType.DATA_ENCODER,
   UserType.ENFORCER,
+  UserType.DRIVER,
 ])
 
 export async function POST(request: NextRequest) {
@@ -27,27 +29,65 @@ export async function POST(request: NextRequest) {
       notes,
     } = body
 
+    const requestedUserType = userType as UserType
+    const normalizedUsername =
+      requestedUserType === UserType.DRIVER
+        ? normalizePlateNumber(username)
+        : typeof username === 'string'
+          ? username.trim()
+          : ''
+
     // Validate required fields
-    if (!firstName || !lastName || !username || !phoneNumber || !userType) {
+    if (!firstName || !lastName || !normalizedUsername || !phoneNumber || !userType) {
       return NextResponse.json(
         { success: false, error: 'Missing required fields' },
         { status: 400 }
       )
     }
 
-    if (!ALLOWED_OFFICIAL_USER_TYPES.has(userType as UserType)) {
+    if (!ALLOWED_OFFICIAL_USER_TYPES.has(requestedUserType)) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Only administrator, enforcer, and data encoder accounts can be created here',
+          error: 'Only administrator, enforcer, data encoder, and driver accounts can be created here',
         },
         { status: 400 }
       )
     }
 
+    let assignedVehicleId: string | null = null
+
+    if (requestedUserType === UserType.DRIVER) {
+      const assignedVehicle = await prisma.vehicle.findUnique({
+        where: { plateNumber: normalizedUsername },
+        select: { id: true },
+      })
+
+      if (!assignedVehicle) {
+        return NextResponse.json(
+          { success: false, error: 'Driver usernames must match an existing BPLO-issued plate number' },
+          { status: 404 }
+        )
+      }
+
+      const existingAssignedDriver = await prisma.user.findFirst({
+        where: { assignedVehicleId: assignedVehicle.id },
+        select: { id: true, username: true },
+      })
+
+      if (existingAssignedDriver) {
+        return NextResponse.json(
+          { success: false, error: 'That vehicle already has an active driver account assigned' },
+          { status: 409 }
+        )
+      }
+
+      assignedVehicleId = assignedVehicle.id
+    }
+
     // Check if username already exists
     const existingUser = await prisma.user.findUnique({
-      where: { username }
+      where: { username: normalizedUsername }
     })
 
     if (existingUser) {
@@ -66,10 +106,13 @@ export async function POST(request: NextRequest) {
       data: {
         firstName,
         lastName,
-        username,
+        username: normalizedUsername,
         password: hashedPassword,
         phoneNumber,
-        userType: userType as UserType,
+        userType: requestedUserType,
+        assignedVehicleId,
+        assignedVehicleAssignedAt: assignedVehicleId ? new Date() : null,
+        assignedVehicleAssignedBy: assignedVehicleId ? adminUser.id : null,
         isActive: true,
         isVerified: true, // Authority users are pre-verified
         verifiedAt: new Date()
@@ -80,10 +123,11 @@ export async function POST(request: NextRequest) {
     await prisma.adminUserCreation.create({
       data: {
         requestedBy: adminUser.id,
-        userType: userType as UserType,
+        userType: requestedUserType,
         firstName,
         lastName,
         phoneNumber,
+        assignedVehicleId,
         department,
         position,
         employeeId,
@@ -95,6 +139,17 @@ export async function POST(request: NextRequest) {
       }
     })
 
+    if (assignedVehicleId) {
+      await prisma.driverVehicleAssignmentHistory.create({
+        data: {
+          userId: user.id,
+          vehicleId: assignedVehicleId,
+          assignedBy: adminUser.id,
+          reason: 'Initial driver account provisioning',
+        },
+      })
+    }
+
     return NextResponse.json({
       success: true,
       message: 'User created successfully',
@@ -103,7 +158,8 @@ export async function POST(request: NextRequest) {
         firstName: user.firstName,
         lastName: user.lastName,
         username: user.username,
-        userType: user.userType
+        userType: user.userType,
+        assignedVehicleId,
       },
       tempPassword // In a real app, you'd send this securely instead
     })

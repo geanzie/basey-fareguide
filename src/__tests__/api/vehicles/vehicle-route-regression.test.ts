@@ -30,6 +30,17 @@ vi.mock('@/lib/auth', () => ({
   createAuthErrorResponse: authMock.createAuthErrorResponse,
 }))
 
+vi.mock('@/lib/incidents/penaltyRules', () => ({
+  normalizePlateNumber: (plateNumber: string | null | undefined) => {
+    if (!plateNumber) {
+      return null
+    }
+
+    const normalized = plateNumber.trim().toUpperCase()
+    return normalized.length > 0 ? normalized : null
+  },
+}))
+
 vi.mock('@/lib/prisma', () => ({
   prisma: prismaMock,
 }))
@@ -122,6 +133,27 @@ describe('vehicle route regression coverage', () => {
     )
 
     expect(response.status).toBe(403)
+    expect(prismaMock.vehicle.update).not.toHaveBeenCalled()
+  })
+
+  it('blocks plate changes when a vehicle has an active driver assignment', async () => {
+    prismaMock.vehicle.findUnique.mockResolvedValueOnce({
+      id: 'vehicle-1',
+      plateNumber: 'ABC123',
+      assignedDriver: {
+        id: 'driver-1',
+        username: 'ABC123',
+      },
+    })
+
+    const response = await updateVehicle(
+      makeJsonRequest('http://localhost/api/vehicles/vehicle-1', { plateNumber: 'XYZ789' }, 'PATCH') as never,
+      { params: Promise.resolve({ id: 'vehicle-1' }) },
+    )
+    const json = await response.json()
+
+    expect(response.status).toBe(409)
+    expect(json.error).toMatch(/active driver assignment/i)
     expect(prismaMock.vehicle.update).not.toHaveBeenCalled()
   })
 

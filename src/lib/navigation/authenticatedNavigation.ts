@@ -256,6 +256,28 @@ const authenticatedNavigationRegistry: Record<UserRole, AuthenticatedNavigationC
       },
     ],
   },
+  DRIVER: {
+    tabs: [
+      {
+        id: 'dashboard',
+        label: 'Driver Portal',
+        shortLabel: 'Home',
+        icon: DASHBOARD_ICONS.dashboard,
+        href: '/driver',
+        matchers: [exact('/driver')],
+      },
+    ],
+    secondaryActions: [
+      {
+        id: 'profile',
+        label: 'My Profile',
+        shortLabel: 'Profile',
+        icon: DASHBOARD_ICONS.user,
+        href: '/profile',
+        matchers: [exact('/profile')],
+      },
+    ],
+  },
 }
 
 function normalizePathname(pathname: string): string {

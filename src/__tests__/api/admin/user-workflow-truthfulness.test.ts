@@ -12,10 +12,17 @@ const authMock = vi.hoisted(() => ({
 const prismaMock = vi.hoisted(() => ({
   user: {
     findUnique: vi.fn(),
+    findFirst: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
   },
+  vehicle: {
+    findUnique: vi.fn(),
+  },
   adminUserCreation: {
+    create: vi.fn(),
+  },
+  driverVehicleAssignmentHistory: {
     create: vi.fn(),
   },
   userVerificationLog: {
@@ -78,7 +85,7 @@ describe('admin user workflow truthfulness', () => {
     const json = await response.json()
 
     expect(response.status).toBe(400)
-    expect(json.error).toMatch(/administrator, enforcer, and data encoder/i)
+    expect(json.error).toMatch(/administrator, enforcer, data encoder, and driver/i)
     expect(prismaMock.user.findUnique).not.toHaveBeenCalled()
     expect(prismaMock.user.create).not.toHaveBeenCalled()
   })
@@ -118,6 +125,59 @@ describe('admin user workflow truthfulness', () => {
         }),
       }),
     )
+  })
+
+  it('creates driver accounts from an existing BPLO plate and records the initial assignment', async () => {
+    prismaMock.vehicle.findUnique.mockResolvedValueOnce({ id: 'vehicle-1' })
+    prismaMock.user.findFirst.mockResolvedValueOnce(null)
+    prismaMock.user.findUnique.mockResolvedValueOnce(null)
+    prismaMock.user.create.mockResolvedValueOnce({
+      id: 'driver-1',
+      firstName: 'Driver',
+      lastName: 'One',
+      username: 'ABC-123',
+      userType: 'DRIVER',
+    })
+    prismaMock.adminUserCreation.create.mockResolvedValueOnce({ id: 'audit-2' })
+    prismaMock.driverVehicleAssignmentHistory.create.mockResolvedValueOnce({ id: 'assignment-1' })
+
+    const response = await createOfficialUser(
+      makeJsonRequest('http://localhost/api/admin/users/create', {
+        username: ' abc-123 ',
+        firstName: 'Driver',
+        lastName: 'One',
+        phoneNumber: '09123456789',
+        userType: 'DRIVER',
+      }) as never,
+    )
+    const json = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(prismaMock.vehicle.findUnique).toHaveBeenCalledWith({
+      where: { plateNumber: 'ABC-123' },
+      select: { id: true },
+    })
+    expect(prismaMock.user.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          username: 'ABC-123',
+          userType: 'DRIVER',
+          assignedVehicleId: 'vehicle-1',
+          assignedVehicleAssignedBy: 'admin-1',
+        }),
+      }),
+    )
+    expect(prismaMock.driverVehicleAssignmentHistory.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          userId: 'driver-1',
+          vehicleId: 'vehicle-1',
+          assignedBy: 'admin-1',
+          reason: 'Initial driver account provisioning',
+        }),
+      }),
+    )
+    expect(json.user.assignedVehicleId).toBe('vehicle-1')
   })
 
   it('records the provided rejection reason when a public registration is rejected', async () => {

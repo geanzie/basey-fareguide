@@ -9,6 +9,7 @@ enum UserType {
   ADMIN = 'ADMIN',
   DATA_ENCODER = 'DATA_ENCODER',
   ENFORCER = 'ENFORCER',
+  DRIVER = 'DRIVER',
   PUBLIC = 'PUBLIC',
 }
 
@@ -288,8 +289,11 @@ export default function AdminUserManagement() {
               <h3 className="text-sm font-medium text-blue-800">Creating Official User Account</h3>
               <div className="mt-2 text-sm text-blue-700">
                 <p>
-                  Only administrators can create administrator, enforcer, and data encoder accounts here. These
-                  accounts are activated immediately.
+                  Only administrators can create administrator, enforcer, data encoder, and driver accounts here.
+                  These accounts are activated immediately.
+                </p>
+                <p className="mt-2">
+                  Driver accounts must use an existing BPLO-issued plate number as the permanent username.
                 </p>
               </div>
             </div>
@@ -297,7 +301,10 @@ export default function AdminUserManagement() {
         </div>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <LabeledInput label="Username *" fieldId="admin-user-username">
+          <LabeledInput
+            label={newUser.userType === UserType.DRIVER ? 'BPLO Plate Username *' : 'Username *'}
+            fieldId="admin-user-username"
+          >
             <input
               id="admin-user-username"
               name="username"
@@ -306,8 +313,14 @@ export default function AdminUserManagement() {
               required
               value={newUser.username}
               onChange={(event) => setNewUser({ ...newUser, username: event.target.value })}
+              placeholder={newUser.userType === UserType.DRIVER ? 'Enter existing BPLO-issued plate number' : undefined}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
+            {newUser.userType === UserType.DRIVER ? (
+              <p className="mt-2 text-sm text-gray-500">
+                The driver account will be linked to the existing vehicle record that matches this normalized plate number.
+              </p>
+            ) : null}
           </LabeledInput>
 
           <LabeledInput label="First Name *" fieldId="admin-user-first-name">
@@ -361,6 +374,7 @@ export default function AdminUserManagement() {
             >
               <option value={UserType.DATA_ENCODER}>Data Encoder</option>
               <option value={UserType.ENFORCER}>Enforcer</option>
+              <option value={UserType.DRIVER}>Driver</option>
               <option value={UserType.ADMIN}>Administrator</option>
             </select>
           </LabeledInput>
@@ -536,6 +550,7 @@ export default function AdminUserManagement() {
                 <option value="ADMIN">Administrator</option>
                 <option value="ENFORCER">Enforcer</option>
                 <option value="DATA_ENCODER">Data Encoder</option>
+                <option value="DRIVER">Driver</option>
                 <option value="PUBLIC">Public</option>
               </select>
             </div>
@@ -614,6 +629,8 @@ export default function AdminUserManagement() {
                       ? 'bg-purple-100 text-purple-800'
                       : userType === 'ENFORCER'
                         ? 'bg-red-100 text-red-800'
+                        : userType === 'DRIVER'
+                          ? 'bg-emerald-100 text-emerald-800'
                         : userType === 'DATA_ENCODER'
                           ? 'bg-blue-100 text-blue-800'
                           : 'bg-gray-100 text-gray-800'

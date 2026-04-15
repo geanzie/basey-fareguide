@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { ADMIN_OR_ENCODER, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
+import { normalizePlateNumber } from '@/lib/incidents/penaltyRules'
 import { serializeVehicle } from '@/lib/serializers'
 
 export async function GET(
@@ -50,7 +51,15 @@ export async function PATCH(
 
     // Check if vehicle exists
     const existingVehicle = await prisma.vehicle.findUnique({
-      where: { id }
+      where: { id },
+      include: {
+        assignedDriver: {
+          select: {
+            id: true,
+            username: true,
+          },
+        },
+      },
     })
 
     if (!existingVehicle) {
@@ -58,6 +67,33 @@ export async function PATCH(
         { error: 'Vehicle not found' },
         { status: 404 }
       )
+    }
+
+    if (typeof updateData.plateNumber === 'string') {
+      const normalizedPlateNumber = normalizePlateNumber(updateData.plateNumber)
+
+      if (!normalizedPlateNumber) {
+        return NextResponse.json(
+          { error: 'Plate number must be a non-empty string when provided' },
+          { status: 400 }
+        )
+      }
+
+      const existingNormalizedPlateNumber = normalizePlateNumber(existingVehicle.plateNumber)
+      const isChangingAssignedPlate =
+        existingVehicle.assignedDriver != null && normalizedPlateNumber !== existingNormalizedPlateNumber
+
+      if (isChangingAssignedPlate) {
+        return NextResponse.json(
+          {
+            error:
+              'Plate number cannot be changed while this vehicle has an active driver assignment. Reassign or retire the driver account first.',
+          },
+          { status: 409 }
+        )
+      }
+
+      updateData.plateNumber = normalizedPlateNumber
     }
 
     // Update the vehicle

@@ -7,6 +7,7 @@ export const AUTHENTICATED_ROLES = [
   "ADMIN",
   "DATA_ENCODER",
   "ENFORCER",
+  "DRIVER",
   "PUBLIC",
 ] as const satisfies readonly UserRole[];
 
@@ -31,6 +32,8 @@ export function getAuthenticatedHomeRoute(userType: UserRole | null | undefined)
       return "/encoder";
     case "ENFORCER":
       return "/enforcer";
+    case "DRIVER":
+      return "/driver";
     case "PUBLIC":
     default:
       return "/dashboard";
