@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { cleanupEvidenceFiles } from '@/lib/evidenceCleanup'
+import { RESOLVED_EVIDENCE_RETENTION_DAYS } from '@/lib/evidenceCleanup'
 import { ENFORCER_ONLY, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
 import {
   buildOffensePenaltyDecision,
@@ -229,16 +229,15 @@ export async function PATCH(
       }
     })
 
-    cleanupEvidenceFiles(incidentId).catch(() => {})
-
     return NextResponse.json({
       incident: updatedIncident,
       penalty: {
         ...penaltyDecision,
         offenseTierLabel: getOffenseTierLabel(penaltyDecision.offenseTier),
       },
-      message: `Ticket ${ticketNumber} issued successfully. Incident marked as resolved and evidence cleanup initiated.`,
-      evidenceCleanupInitiated: true
+      message: `Ticket ${ticketNumber} issued successfully. Incident marked as resolved. Evidence remains available for ${RESOLVED_EVIDENCE_RETENTION_DAYS} days before scheduled cleanup removes stored files.`,
+      evidenceRetainedUntilCleanup: true,
+      evidenceRetentionDays: RESOLVED_EVIDENCE_RETENTION_DAYS,
     })
 
   } catch (error) {

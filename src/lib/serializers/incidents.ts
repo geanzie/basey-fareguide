@@ -142,6 +142,7 @@ export function serializeIncident(record: {
   remarks?: string | null;
   createdAt: Date | string;
   updatedAt: Date | string;
+  handledById?: string | null;
   reportedBy?: {
     firstName: string;
     lastName: string;
@@ -174,6 +175,7 @@ export function serializeIncident(record: {
     remarks: toNullableString(record.remarks),
     createdAt: toIsoString(record.createdAt),
     updatedAt: toIsoString(record.updatedAt),
+    handledById: toNullableString(record.handledById),
     reportedBy: serializeIncidentPerson(record.reportedBy),
     handledBy: serializeIncidentPerson(record.handledBy),
     trip: serializeIncidentTrip(record),

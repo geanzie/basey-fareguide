@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { ADMIN_OR_ENFORCER, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
+import {
+  canReviewIncidentEvidence,
+  INCIDENT_EVIDENCE_REVIEW_ACCESS_DENIED_MESSAGE,
+} from '@/lib/incidents/evidenceAuthorization'
 
 export async function PATCH(
   request: NextRequest,
@@ -37,6 +41,13 @@ export async function PATCH(
 
     if (!evidence) {
       return NextResponse.json({ message: 'Evidence not found' }, { status: 404 })
+    }
+
+    if (!canReviewIncidentEvidence(evidence.incident, user)) {
+      return NextResponse.json(
+        { message: INCIDENT_EVIDENCE_REVIEW_ACCESS_DENIED_MESSAGE },
+        { status: 403 },
+      )
     }
 
     // Update evidence status

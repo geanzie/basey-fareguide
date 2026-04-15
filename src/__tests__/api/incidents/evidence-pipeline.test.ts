@@ -308,4 +308,28 @@ describe("incident evidence pipeline", () => {
     });
     expect(json.evidenceCount).toBe(1);
   });
+
+  it("blocks assigned enforcers from uploading follow-up evidence through the incident route", async () => {
+    const file = new File(["clip"], "clip.mp4", { type: "video/mp4" });
+    authMock.requireRequestUser.mockResolvedValueOnce({
+      id: "enforcer-1",
+      userType: "ENFORCER",
+    });
+    prismaMock.incident.findUnique.mockResolvedValueOnce({
+      id: "inc-1",
+      reportedById: "public-1",
+      handledById: "enforcer-1",
+    });
+    evidenceStorageMock.extractEvidenceFiles.mockReturnValueOnce([file]);
+
+    const res = await uploadIncidentEvidence(
+      makeEvidenceUploadRequest(file),
+      { params: Promise.resolve({ incidentId: "inc-1" }) },
+    );
+    const json = await res.json();
+
+    expect(res.status).toBe(403);
+    expect(json.message).toBe("Only the incident reporter or an admin can upload evidence.");
+    expect(evidenceStorageMock.uploadEvidenceFiles).not.toHaveBeenCalled();
+  });
 });

@@ -3,7 +3,19 @@
 import React, { act } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
-import useSWR from 'swr'
+import useSWR, { useSWRConfig } from 'swr'
+
+import { QR_TERMINAL_HANDOFF_STORAGE_KEY, storeQrTerminalHandoff } from '@/lib/terminal/handoff'
+
+vi.mock('@/components/AuthProvider', () => ({
+  useAuth: () => ({
+    user: {
+      id: 'enforcer-1',
+      userType: 'ENFORCER',
+    },
+    status: 'authenticated',
+  }),
+}))
 
 const searchParamsState = vi.hoisted(() => ({
   qrHandoff: null as string | null,
@@ -16,6 +28,7 @@ const searchParamsMock = vi.hoisted(() => ({
 vi.mock('swr', () => ({
   __esModule: true,
   default: vi.fn(),
+  useSWRConfig: vi.fn(),
 }))
 
 vi.mock('next/navigation', () => ({
@@ -82,6 +95,7 @@ describe('EnforcerIncidentsList', () => {
   let root: Root
   let fetchMock: ReturnType<typeof vi.fn>
   let mutateMock: ReturnType<typeof vi.fn>
+  let mutateCacheMock: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
     ;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
@@ -89,8 +103,14 @@ describe('EnforcerIncidentsList', () => {
     document.body.appendChild(container)
     root = createRoot(container)
     sessionStorage.clear()
+    localStorage.clear()
     searchParamsState.qrHandoff = null
     mutateMock = vi.fn(() => Promise.resolve())
+    mutateCacheMock = vi.fn(() => Promise.resolve())
+    vi.mocked(useSWRConfig).mockReturnValue({
+      mutate: mutateCacheMock,
+      cache: new Map(),
+    } as never)
     fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
       const method = init?.method || 'GET'
@@ -123,7 +143,8 @@ describe('EnforcerIncidentsList', () => {
         return Promise.resolve(
           new Response(
             JSON.stringify({
-              message: 'Ticket T-202 issued successfully. Incident marked as resolved and evidence cleanup initiated.',
+              message:
+                'Ticket T-202 issued successfully. Incident marked as resolved. Evidence remains available for 30 days before scheduled cleanup removes stored files.',
             }),
             {
               status: 200,
@@ -157,6 +178,7 @@ describe('EnforcerIncidentsList', () => {
             paymentStatus: null,
             paidAt: null,
             penaltyAmount: null,
+            handledById: null,
             reportedBy: {
               firstName: 'Juan',
               lastName: 'Dela Cruz',
@@ -178,6 +200,7 @@ describe('EnforcerIncidentsList', () => {
             paymentStatus: null,
             paidAt: null,
             penaltyAmount: 500,
+            handledById: 'enforcer-1',
             reportedBy: {
               firstName: 'Maria',
               lastName: 'Santos',
@@ -199,6 +222,7 @@ describe('EnforcerIncidentsList', () => {
             paymentStatus: 'PAID',
             paidAt: '2026-03-30T10:00:00.000Z',
             penaltyAmount: 750,
+            handledById: 'enforcer-2',
             reportedBy: {
               firstName: 'Carlos',
               lastName: 'Reyes',
@@ -220,6 +244,7 @@ describe('EnforcerIncidentsList', () => {
             paymentStatus: null,
             paidAt: null,
             penaltyAmount: null,
+            handledById: null,
             reportedBy: {
               firstName: 'Andrea',
               lastName: 'Lopez',
@@ -263,6 +288,51 @@ describe('EnforcerIncidentsList', () => {
 
     expect(controls.length).toBeGreaterThan(0)
     expect(controls.every((button) => (button.textContent || '').trim().length > 0)).toBe(true)
+  })
+
+  it('keeps evidence management behind assignment and shows a truthful notice for unassigned incidents', async () => {
+    await act(async () => {
+      root.render(React.createElement(EnforcerIncidentsList, { mode: 'dashboard' }))
+      await Promise.resolve()
+    })
+
+    const viewDetailButtons = Array.from(container.querySelectorAll('button')).filter(
+      (button) => (button.textContent || '').trim() === 'View Details',
+    )
+
+    expect(viewDetailButtons.length).toBeGreaterThan(0)
+
+    await act(async () => {
+      viewDetailButtons[0]?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await Promise.resolve()
+    })
+
+    expect(container.textContent).toContain('Take ownership of this incident before managing its evidence.')
+    expect(container.textContent).not.toContain('Manage Evidence')
+    expect(container.textContent).not.toContain('EvidenceManager')
+  })
+
+  it('renders incident details in a compact case snapshot layout', async () => {
+    await act(async () => {
+      root.render(React.createElement(EnforcerIncidentsList, { mode: 'dashboard' }))
+      await Promise.resolve()
+    })
+
+    const viewDetailButtons = Array.from(container.querySelectorAll('button')).filter(
+      (button) => (button.textContent || '').trim() === 'View Details',
+    )
+
+    await act(async () => {
+      viewDetailButtons[1]?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await Promise.resolve()
+    })
+
+    expect(container.textContent).toContain('Incident Details')
+    expect(container.textContent).toContain('Case Snapshot')
+    expect(container.textContent).toContain('Type')
+    expect(container.textContent).toContain('Reporter')
+    expect(container.textContent).toContain('Penalty')
+    expect(container.textContent).toContain('Manage Evidence')
   })
 
   it('renders the enforced penalty preview as read-only in the ticket modal', async () => {
@@ -342,8 +412,12 @@ describe('EnforcerIncidentsList', () => {
       expect.objectContaining({ method: 'PATCH' }),
     )
     expect(mutateMock).toHaveBeenCalled()
+    expect(mutateCacheMock).toHaveBeenCalledWith('/api/incidents/enforcer?scope=all&mode=dashboard')
+    expect(mutateCacheMock).toHaveBeenCalledWith('/api/incidents/enforcer?scope=unresolved&mode=queue')
     expect(container.textContent).toContain('Ticket issued')
-    expect(container.textContent).toContain('Ticket T-202 issued successfully. Incident marked as resolved and evidence cleanup initiated.')
+    expect(container.textContent).toContain(
+      'Ticket T-202 issued successfully. Incident marked as resolved. Evidence remains available for 30 days before scheduled cleanup removes stored files.',
+    )
     expect(container.querySelector('[role="status"]')).not.toBeNull()
     expect(vi.mocked(globalThis.alert)).not.toHaveBeenCalled()
   })
@@ -422,6 +496,60 @@ describe('EnforcerIncidentsList', () => {
     expect(container.textContent).toContain('ABC-123 is loaded into the queue')
     expect(container.textContent).toContain('Permit status: ACTIVE. Compliance: REVIEW REQUIRED.')
     expect(container.textContent).toContain('Driver: Pedro Santos • Unpaid tickets: 1')
+  })
+
+  it('restores the queue handoff from durable storage after session storage is cleared', async () => {
+    searchParamsState.qrHandoff = '1'
+    storeQrTerminalHandoff({
+      permitId: 'permit-1',
+      vehicleId: 'vehicle-1',
+      operatorId: null,
+      scannedTokenFingerprint: 'sha256:demo-token-fingerprint',
+      permitStatusAtScan: 'ACTIVE',
+      complianceStatus: 'REVIEW_REQUIRED',
+      scanDispositionAtScan: 'FLAGGED',
+      complianceFlags: ['open-incidents'],
+      complianceChecklistAtScan: [],
+      violationSummary: {
+        totalViolations: 2,
+        openIncidents: 1,
+        unpaidTickets: 1,
+        outstandingPenalties: 350,
+      },
+      operator: {
+        operatorId: null,
+        operatorIdStatus: 'UNAVAILABLE',
+        driverFullName: 'Pedro Santos',
+        driverName: 'Pedro Santos',
+        ownerName: 'Juan Dela Cruz',
+        driverLicense: 'D-12345',
+      },
+      vehicle: {
+        id: 'vehicle-1',
+        plateNumber: 'ABC-123',
+        vehicleType: 'TRICYCLE',
+        make: 'Honda',
+        model: 'Wave',
+        color: 'Blue',
+        ownerName: 'Juan Dela Cruz',
+        driverName: 'Pedro Santos',
+        driverLicense: 'D-12345',
+        registrationExpiry: '2027-01-01T00:00:00.000Z',
+        insuranceExpiry: null,
+        isActive: true,
+      },
+    })
+    sessionStorage.removeItem(QR_TERMINAL_HANDOFF_STORAGE_KEY)
+
+    await act(async () => {
+      root.render(React.createElement(EnforcerIncidentsList, { mode: 'queue' }))
+      await Promise.resolve()
+    })
+
+    expect(container.textContent).toContain('QR Handoff')
+    expect(container.textContent).toContain('ABC-123 is loaded into the queue')
+    expect(container.textContent).toContain('Driver: Pedro Santos • Unpaid tickets: 1')
+    expect(sessionStorage.getItem(QR_TERMINAL_HANDOFF_STORAGE_KEY)).not.toBeNull()
   })
 
   it('optimizes the embedded terminal queue to the matched plate only', async () => {
@@ -519,5 +647,6 @@ describe('EnforcerIncidentsList', () => {
     expect(container.textContent).toContain('QR handoff did not include a vehicle. Re-scan the permit in the QR terminal before opening the queue.')
     expect(container.textContent).not.toContain('is loaded into the queue')
     expect(sessionStorage.getItem('qr-terminal-handoff')).toBeNull()
+    expect(localStorage.getItem('qr-terminal-handoff')).toBeNull()
   })
 })

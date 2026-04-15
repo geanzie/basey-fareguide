@@ -63,6 +63,7 @@ export interface IncidentListItemDto {
   remarks: string | null;
   createdAt: string;
   updatedAt: string;
+  handledById: string | null;
   reportedBy: IncidentPersonDto | null;
   handledBy: IncidentPersonDto | null;
   trip: IncidentTripSummaryDto | null;

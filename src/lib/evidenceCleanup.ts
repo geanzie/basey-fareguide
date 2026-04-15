@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 
 export const DEFAULT_EVIDENCE_CLEANUP_BATCH_SIZE = 100
 export const MAX_EVIDENCE_CLEANUP_BATCH_SIZE = 500
+export const RESOLVED_EVIDENCE_RETENTION_DAYS = 30
 
 const EVIDENCE_CLEANUP_ELIGIBLE_INCIDENT_STATUSES = ['RESOLVED', 'DISMISSED'] as const
 
@@ -69,7 +70,9 @@ export function clampEvidenceCleanupBatchSize(value: unknown): number {
 
 function buildCleanupCutoffDate(daysOld: number): Date {
   const cutoffDate = new Date()
-  cutoffDate.setDate(cutoffDate.getDate() - coercePositiveInteger(daysOld, 30))
+  cutoffDate.setDate(
+    cutoffDate.getDate() - coercePositiveInteger(daysOld, RESOLVED_EVIDENCE_RETENTION_DAYS),
+  )
   return cutoffDate
 }
 
@@ -121,7 +124,11 @@ async function listOldEvidenceCleanupCandidates(
 }
 
 /**
- * Delete stored evidence blobs when an incident is resolved.
+ * Delete stored evidence blobs for incidents that have already passed the retention window.
+ *
+ * Resolved incidents keep their evidence blobs available for operational review during the
+ * retention period. After that TTL expires, scheduled cleanup removes blob storage while the
+ * evidence rows continue to preserve review remarks and deletion metadata for audit purposes.
  */
 export async function cleanupEvidenceFiles(incidentId: string): Promise<EvidenceCleanupFileResult> {
   try {    // Get all evidence for this incident
@@ -183,11 +190,10 @@ export async function cleanupEvidenceFiles(incidentId: string): Promise<Evidence
 }
 
 /**
- * Cleanup evidence files older than specified days (for maintenance)
- * This can be run as a scheduled job to clean up old resolved incidents
+ * Preview the resolved incidents whose evidence blobs are old enough for scheduled cleanup.
  */
 export async function previewOldEvidenceCleanup(
-  daysOld: number = 30,
+  daysOld: number = RESOLVED_EVIDENCE_RETENTION_DAYS,
   batchSize: number = DEFAULT_EVIDENCE_CLEANUP_BATCH_SIZE,
 ): Promise<EvidenceCleanupPreviewResult> {
   try {
@@ -245,7 +251,7 @@ export async function previewOldEvidenceCleanup(
 }
 
 export async function cleanupOldEvidenceFiles(
-  daysOld: number = 30,
+  daysOld: number = RESOLVED_EVIDENCE_RETENTION_DAYS,
   batchSize: number = DEFAULT_EVIDENCE_CLEANUP_BATCH_SIZE,
 ): Promise<EvidenceCleanupExecutionResult> {
   try {

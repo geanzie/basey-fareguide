@@ -237,11 +237,11 @@ describe("privileged route authorization", () => {
       expect(prismaMock.evidence.findUnique).not.toHaveBeenCalled();
     });
 
-    it("allows admins or enforcers through the success path", async () => {
-      authMocks.requireRequestRole.mockResolvedValueOnce({ id: "admin-1" });
+    it("allows the assigned enforcer through the success path", async () => {
+      authMocks.requireRequestRole.mockResolvedValueOnce({ id: "enforcer-1", userType: "ENFORCER" });
       prismaMock.evidence.findUnique.mockResolvedValueOnce({
         id: "e1",
-        incident: { id: "incident-1" },
+        incident: { id: "incident-1", handledById: "enforcer-1", reportedById: "public-1" },
         uploader: { firstName: "Test", lastName: "User", username: "test" },
       });
       prismaMock.evidence.update.mockResolvedValueOnce({ id: "e1", status: "VERIFIED" });
@@ -259,7 +259,7 @@ describe("privileged route authorization", () => {
       expect(prismaMock.evidence.update).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
-            reviewedBy: "admin-1",
+            reviewedBy: "enforcer-1",
             status: "VERIFIED",
           }),
         })

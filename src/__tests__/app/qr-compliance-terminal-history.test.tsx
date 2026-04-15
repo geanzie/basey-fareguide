@@ -4,6 +4,8 @@ import React, { act } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
 
+import { QR_TERMINAL_HANDOFF_STORAGE_KEY } from '@/lib/terminal/handoff'
+
 const scannerState = vi.hoisted(() => ({
   clear: vi.fn(),
   start: vi.fn(),
@@ -569,6 +571,26 @@ describe('QrComplianceTerminal history', () => {
         plateNumber: 'ABC-123',
       },
     })
+
+    const persistedSessionValue = sessionStorage.getItem(QR_TERMINAL_HANDOFF_STORAGE_KEY)
+    const persistedLocalValue = localStorage.getItem(QR_TERMINAL_HANDOFF_STORAGE_KEY)
+
+    expect(persistedSessionValue).not.toBeNull()
+    expect(persistedLocalValue).not.toBeNull()
+
+    const persistedSessionRecord = JSON.parse(persistedSessionValue!)
+    const persistedLocalRecord = JSON.parse(persistedLocalValue!)
+
+    expect(persistedSessionRecord.snapshot).toMatchObject({
+      permitId: 'permit-1',
+      vehicleId: 'vehicle-1',
+      vehicle: {
+        plateNumber: 'ABC-123',
+      },
+    })
+    expect(persistedSessionRecord.storedAt).toBeTruthy()
+    expect(persistedSessionRecord.expiresAt).toBeTruthy()
+    expect(persistedLocalRecord.snapshot).toEqual(persistedSessionRecord.snapshot)
   })
 
   it('shows recent scan history while the embedded enforcement workflow is active', async () => {

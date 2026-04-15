@@ -3,8 +3,9 @@
 import type { FormEvent, ReactNode } from 'react'
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import useSWR from 'swr'
+import useSWR, { useSWRConfig } from 'swr'
 import ResponsiveTable, { ActionButton, StatusBadge } from './ResponsiveTable'
+import { useAuth } from '@/components/AuthProvider'
 import EvidenceManager from './EvidenceManager'
 import type {
   EnforcerIncidentScope,
@@ -53,6 +54,11 @@ const QUEUE_STATUS_FILTERS = ['ALL', 'PENDING', 'INVESTIGATING'] as const satisf
 const DASHBOARD_STATUS_FILTERS = ['ALL', 'PENDING', 'INVESTIGATING', 'RESOLVED'] as const satisfies readonly EnforcerStatusFilter[]
 
 const UNRESOLVED_INCIDENT_STATUSES = ['PENDING', 'INVESTIGATING'] as const
+const EVIDENCE_ASSIGNMENT_NOTICE = 'Take ownership of this incident before managing its evidence.'
+const INCIDENT_LIST_CACHE_KEYS = [
+  '/api/incidents/enforcer?scope=all&mode=dashboard',
+  '/api/incidents/enforcer?scope=unresolved&mode=queue',
+] as const
 
 const ALLOWED_STATUS_FILTERS: Record<EnforcerIncidentsViewMode, readonly EnforcerStatusFilter[]> = {
   dashboard: DASHBOARD_STATUS_FILTERS,
@@ -100,12 +106,33 @@ function ActionLabel({
   )
 }
 
+function DetailField({
+  label,
+  value,
+  fullWidth = false,
+  valueClassName = '',
+}: {
+  label: string
+  value: ReactNode
+  fullWidth?: boolean
+  valueClassName?: string
+}) {
+  return (
+    <div className={fullWidth ? 'sm:col-span-2 xl:col-span-4' : ''}>
+      <dt className="text-xs font-semibold uppercase tracking-[0.16em] text-gray-500">{label}</dt>
+      <dd className={`mt-1 text-sm font-medium leading-relaxed text-gray-900 ${valueClassName}`.trim()}>{value}</dd>
+    </div>
+  )
+}
+
 export default function EnforcerIncidentsList({
   mode,
   embeddedQrHandoffSnapshot,
   onWorkflowComplete,
 }: EnforcerIncidentsListProps) {
   const searchParams = useSearchParams()
+  const { mutate: mutateCache } = useSWRConfig()
+  const { user } = useAuth()
   const [statusFilter, setStatusFilter] = useState<EnforcerStatusFilter>('ALL')
   const [searchQuery, setSearchQuery] = useState('')
   const [qrHandoffSnapshot, setQrHandoffSnapshot] = useState<TerminalIncidentHandoffSnapshotDto | null>(null)
@@ -133,6 +160,13 @@ export default function EnforcerIncidentsList({
 
   const { data, error, isLoading, mutate } = useSWR<IncidentsResponseDto>(swrKey)
   const incidents = data?.incidents || []
+
+  const revalidateIncidentLists = async () => {
+    await Promise.all([
+      mutate(),
+      ...INCIDENT_LIST_CACHE_KEYS.map((cacheKey) => mutateCache(cacheKey)),
+    ])
+  }
 
   useEffect(() => {
     if (!isQueueMode) {
@@ -328,7 +362,7 @@ export default function EnforcerIncidentsList({
         return
       }
 
-      await mutate()
+      await revalidateIncidentLists()
       await openTicketModal({ ...incident, status: 'INVESTIGATING' })
     } catch (_error) {
       showActionNotice('error', 'Unable to take incident', 'Error taking incident. Please try again.')
@@ -365,7 +399,7 @@ export default function EnforcerIncidentsList({
       if (selectedIncident?.id === incident.id) {
         closeIncidentDetails()
       }
-      await mutate()
+      await revalidateIncidentLists()
       onWorkflowComplete?.()
     } catch (_error) {
       showActionNotice('error', 'Unable to resolve incident', 'Error resolving incident. Please try again.')
@@ -406,7 +440,7 @@ export default function EnforcerIncidentsList({
       showActionNotice('success', 'Ticket issued', payload.message || 'Ticket issued successfully.')
       closeTicketModal()
       closeIncidentDetails()
-      await mutate()
+      await revalidateIncidentLists()
       onWorkflowComplete?.()
     } catch (_error) {
       showActionNotice('error', 'Unable to issue ticket', 'Error issuing ticket. Please try again.')
@@ -423,8 +457,16 @@ export default function EnforcerIncidentsList({
     setEvidenceIncidentId(null)
   }
 
-  const openEvidenceManager = (incidentId: string) => {
-    setEvidenceIncidentId(incidentId)
+  const canAccessIncidentEvidence = (incident: IncidentListItemDto) =>
+    user?.userType === 'ADMIN' || incident.handledById === user?.id
+
+  const openEvidenceManager = (incident: IncidentListItemDto) => {
+    if (!canAccessIncidentEvidence(incident)) {
+      showActionNotice('error', 'Evidence unavailable', EVIDENCE_ASSIGNMENT_NOTICE)
+      return
+    }
+
+    setEvidenceIncidentId(incident.id)
     setShowEvidenceManager(true)
   }
 
@@ -813,11 +855,13 @@ export default function EnforcerIncidentsList({
                           View Details
                         </ActionLabel>
                       </ActionButton>
-                      <ActionButton onClick={() => openEvidenceManager(incident.id)} variant="secondary" size="xs">
-                        <ActionLabel icon={DASHBOARD_ICONS.evidence} iconClassName="text-gray-500">
-                          Evidence
-                        </ActionLabel>
-                      </ActionButton>
+                      {canAccessIncidentEvidence(incident) ? (
+                        <ActionButton onClick={() => openEvidenceManager(incident)} variant="secondary" size="xs">
+                          <ActionLabel icon={DASHBOARD_ICONS.evidence} iconClassName="text-gray-500">
+                            Evidence
+                          </ActionLabel>
+                        </ActionButton>
+                      ) : null}
                       {incident.status === 'PENDING' ? (
                         <ActionButton
                           onClick={() => handleTakeAndIssueTicket(incident)}
@@ -869,98 +913,117 @@ export default function EnforcerIncidentsList({
       </div>
 
       {showIncidentDetails && selectedIncident ? (
-        <div className="fixed inset-0 z-50 h-full w-full overflow-y-auto bg-slate-950/35 backdrop-blur-sm">
-          <div className="app-surface-overlay app-mobile-sheet-safe relative top-4 mx-auto w-[calc(100%-1.5rem)] max-h-[calc(100vh-2rem)] max-w-4xl overflow-y-auto rounded-3xl p-4 sm:top-12 sm:w-11/12 sm:p-5">
-            <div className="mt-3">
-              <div className="mb-6 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <DashboardIconSlot
-                    icon={DASHBOARD_ICONS.list}
-                    size={DASHBOARD_ICON_POLICY.sizes.section}
-                    className="text-slate-600"
-                  />
-                  <h3 className="text-xl font-bold text-gray-900">Incident Details</h3>
-                </div>
-                <button onClick={closeIncidentDetails} className="text-gray-400 hover:text-gray-600">
-                  <span className="text-2xl">x</span>
-                </button>
-              </div>
-
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-2">Incident Information</h4>
-                    <div className="space-y-2 text-sm">
-                      <p><span className="font-medium">Type:</span> {selectedIncident.typeLabel}</p>
-                      <p>
-                        <span className="font-medium">Status:</span>{' '}
-                        <StatusBadge
-                          status={selectedIncident.status.toLowerCase()}
-                          className={getStatusColor(selectedIncident.status)}
-                        />
-                      </p>
-                      <p><span className="font-medium">Location:</span> {selectedIncident.location}</p>
-                      <p><span className="font-medium">Date:</span> {formatDate(selectedIncident.date)}</p>
-                      {selectedIncident.ticketNumber ? (
-                        <p><span className="font-medium">Ticket Number:</span> {selectedIncident.ticketNumber}</p>
-                      ) : null}
-                      {selectedIncident.ticketNumber ? (
-                        <p><span className="font-medium">Payment Status:</span> {(selectedIncident.paymentStatus || 'NOT_APPLICABLE').replace('_', ' ')}</p>
-                      ) : null}
-                      {selectedIncident.paidAt ? (
-                        <p><span className="font-medium">Paid At:</span> {formatDate(selectedIncident.paidAt)}</p>
-                      ) : null}
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 p-3 backdrop-blur-sm sm:p-5">
+          <div className="app-surface-overlay app-mobile-sheet-safe relative w-full max-w-5xl overflow-hidden rounded-3xl p-4 sm:max-h-[calc(100vh-2rem)] sm:p-5">
+            <button
+              onClick={closeIncidentDetails}
+              className="absolute right-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-white/80 hover:text-gray-600"
+              aria-label="Close incident details"
+            >
+              <DashboardIconSlot icon={DASHBOARD_ICONS.close} size={DASHBOARD_ICON_POLICY.sizes.card} />
+            </button>
+            <div className="space-y-3">
+              <div className="flex flex-col gap-2 border-b border-slate-200/80 pb-3 pr-12">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-3">
+                    <span className={getDashboardIconChipClasses('slate')}>
+                      <DashboardIconSlot
+                        icon={DASHBOARD_ICONS.list}
+                        size={DASHBOARD_ICON_POLICY.sizes.section}
+                      />
+                    </span>
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900">Incident Details</h3>
                     </div>
                   </div>
-
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-2">Vehicle Information</h4>
-                    <div className="space-y-2 text-sm">
-                      <p><span className="font-medium">Plate Number:</span> {selectedIncident.plateNumber || 'N/A'}</p>
-                      <p><span className="font-medium">Driver License:</span> {selectedIncident.driverLicense || 'N/A'}</p>
-                      <p>
-                        <span className="font-medium">Reported By:</span>{' '}
-                        {selectedIncident.reportedBy
-                          ? `${selectedIncident.reportedBy.firstName} ${selectedIncident.reportedBy.lastName}`
-                          : 'Unknown'}
-                      </p>
-                      {selectedIncident.evidenceCount !== undefined ? (
-                        <p><span className="font-medium">Evidence Files:</span> {selectedIncident.evidenceCount}</p>
-                      ) : null}
-                    </div>
-                  </div>
-                </div>
-
-                {selectedIncident.description ? (
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-2">Description</h4>
-                    <p className="app-surface-inner rounded-lg p-3 text-sm text-gray-700">{selectedIncident.description}</p>
-                  </div>
-                ) : null}
-
-                {selectedIncident.penaltyAmount != null ? (
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-2">Penalty Information</h4>
-                    <p className="text-sm text-gray-700">
-                      Amount: PHP {selectedIncident.penaltyAmount.toLocaleString()}
-                    </p>
-                  </div>
-                ) : null}
-              </div>
-
-              <div className="mt-6 flex flex-col gap-4 border-t border-slate-200/80 pt-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex flex-wrap gap-3">
-                  <button
-                    onClick={() => openEvidenceManager(selectedIncident.id)}
-                    className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    <DashboardIconSlot
-                      icon={DASHBOARD_ICONS.evidence}
-                      size={DASHBOARD_ICON_POLICY.sizes.button}
-                      className="text-white"
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-700">
+                      {selectedIncident.typeLabel}
+                    </span>
+                    <StatusBadge
+                      status={selectedIncident.status.toLowerCase()}
+                      className={getStatusColor(selectedIncident.status)}
                     />
-                    <span>Manage Evidence</span>
-                  </button>
+                    {selectedIncident.ticketNumber ? (
+                      <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-green-800">
+                        Ticket {selectedIncident.ticketNumber}
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+
+              <section className="app-surface-inner rounded-2xl p-3 sm:p-4">
+                <h4 className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-gray-600">Case Snapshot</h4>
+                <dl className="grid grid-cols-2 gap-x-4 gap-y-3 xl:grid-cols-4">
+                  <DetailField label="Type" value={selectedIncident.typeLabel} />
+                  <DetailField
+                    label="Status"
+                    value={(
+                      <StatusBadge
+                        status={selectedIncident.status.toLowerCase()}
+                        className={getStatusColor(selectedIncident.status)}
+                      />
+                    )}
+                  />
+                  <DetailField label="Evidence" value={selectedIncident.evidenceCount ?? 0} />
+                  <DetailField label="Plate" value={selectedIncident.plateNumber || 'N/A'} />
+                  <DetailField label="Date" value={formatDate(selectedIncident.date)} />
+                  <DetailField label="Reported" value={formatDate(selectedIncident.createdAt)} />
+                  <DetailField label="License" value={selectedIncident.driverLicense || 'N/A'} />
+                  <DetailField
+                    label="Reporter"
+                    value={selectedIncident.reportedBy
+                      ? `${selectedIncident.reportedBy.firstName} ${selectedIncident.reportedBy.lastName}`
+                      : 'Unknown'}
+                  />
+                  <DetailField label="Location" value={selectedIncident.location} fullWidth valueClassName="truncate" />
+                  {selectedIncident.ticketNumber ? (
+                    <DetailField label="Ticket" value={selectedIncident.ticketNumber} />
+                  ) : null}
+                  {selectedIncident.ticketNumber ? (
+                    <DetailField
+                      label="Payment"
+                      value={(selectedIncident.paymentStatus || 'NOT_APPLICABLE').replace('_', ' ')}
+                    />
+                  ) : null}
+                  {selectedIncident.paidAt ? (
+                    <DetailField label="Paid" value={formatDate(selectedIncident.paidAt)} />
+                  ) : null}
+                  {selectedIncident.penaltyAmount != null ? (
+                    <DetailField
+                      label="Penalty"
+                      value={`PHP ${selectedIncident.penaltyAmount.toLocaleString()}`}
+                    />
+                  ) : null}
+                  {selectedIncident.description ? (
+                    <DetailField
+                      label="Description"
+                      value={selectedIncident.description}
+                      fullWidth
+                      valueClassName="overflow-hidden text-ellipsis [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
+                    />
+                  ) : null}
+                </dl>
+              </section>
+
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200/80 pt-3">
+                <div className="flex flex-wrap gap-2">
+                  {canAccessIncidentEvidence(selectedIncident) ? (
+                    <button
+                      onClick={() => openEvidenceManager(selectedIncident)}
+                      className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm text-white transition-colors hover:bg-blue-700"
+                    >
+                      <DashboardIconSlot
+                        icon={DASHBOARD_ICONS.evidence}
+                        size={DASHBOARD_ICON_POLICY.sizes.button}
+                        className="text-white"
+                      />
+                      <span>Manage Evidence</span>
+                    </button>
+                  ) : (
+                    <p className="text-sm text-gray-600">{EVIDENCE_ASSIGNMENT_NOTICE}</p>
+                  )}
 
                   {selectedIncident.status === 'PENDING' ? (
                     <button
@@ -968,7 +1031,7 @@ export default function EnforcerIncidentsList({
                         closeIncidentDetails()
                         handleTakeAndIssueTicket(selectedIncident)
                       }}
-                      className="inline-flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors font-semibold"
+                      className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700"
                     >
                       <DashboardIconSlot
                         icon={DASHBOARD_ICONS.ticket}
@@ -986,7 +1049,7 @@ export default function EnforcerIncidentsList({
                           closeIncidentDetails()
                           void openTicketModal(selectedIncident)
                         }}
-                        className="inline-flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors font-semibold"
+                        className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700"
                       >
                         <DashboardIconSlot
                           icon={DASHBOARD_ICONS.ticket}
@@ -997,7 +1060,7 @@ export default function EnforcerIncidentsList({
                       </button>
                       <button
                         onClick={() => handleResolveIncident(selectedIncident)}
-                        className="inline-flex items-center gap-2 bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors font-semibold"
+                        className="inline-flex items-center gap-2 rounded-lg bg-gray-700 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-gray-800"
                       >
                         <DashboardIconSlot
                           icon={DASHBOARD_ICONS.check}
@@ -1010,18 +1073,11 @@ export default function EnforcerIncidentsList({
                   ) : null}
 
                   {selectedIncident.ticketNumber ? (
-                    <div className="app-surface-inner rounded-lg border border-green-200 px-4 py-2 font-semibold text-green-800">
+                    <div className="app-surface-inner rounded-lg border border-green-200 px-3 py-2 text-sm font-semibold text-green-800">
                       Ticket Issued: {selectedIncident.ticketNumber}
                     </div>
                   ) : null}
                 </div>
-
-                <button
-                  onClick={closeIncidentDetails}
-                  className="app-surface-inner px-4 py-2 rounded-lg text-gray-700 hover:bg-white/80 transition-colors"
-                >
-                  Close
-                </button>
               </div>
             </div>
           </div>

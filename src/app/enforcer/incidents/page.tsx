@@ -9,7 +9,7 @@ export default function EnforcerIncidentsPage() {
     <RoleGuard allowedRoles={['ENFORCER']}>
       <PageWrapper 
         title="Incident Queue"
-        subtitle="Respond to and manage traffic violations in priority order"
+        subtitle="Work unresolved incidents in priority order using the shared incident workflow"
       >
         <EnforcerIncidentsList mode="queue" />
       </PageWrapper>

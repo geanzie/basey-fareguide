@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { createAuthErrorResponse, requireRequestUser } from '@/lib/auth'
+import {
+  canReadIncidentEvidence,
+  INCIDENT_EVIDENCE_READ_ACCESS_DENIED_MESSAGE,
+} from '@/lib/incidents/evidenceAuthorization'
 import { extractEvidenceFiles, uploadEvidenceFiles } from '@/lib/evidenceStorage'
 
 export async function POST(
@@ -19,14 +23,12 @@ export async function POST(
       return NextResponse.json({ message: 'Incident not found' }, { status: 404 })
     }
 
-    // Check if user can upload evidence (reporter or enforcer handling the case)
-    const canUpload = incident.reportedById === user.id || 
-                     incident.handledById === user.id || 
-                     user.userType === 'ADMIN'
+    // Only the original reporter or an admin can append follow-up evidence.
+    const canUpload = incident.reportedById === user.id || user.userType === 'ADMIN'
 
     if (!canUpload) {
       return NextResponse.json({ 
-        message: 'You can only upload evidence for incidents you reported or are handling' 
+        message: 'Only the incident reporter or an admin can upload evidence.' 
       }, { status: 403 })
     }
 
@@ -77,14 +79,11 @@ export async function GET(
       return NextResponse.json({ message: 'Incident not found' }, { status: 404 })
     }
 
-    // Check if user can view evidence
-    const canView = incident.reportedById === user.id || 
-                   incident.handledById === user.id || 
-                   ['ADMIN', 'ENFORCER'].includes(user.userType)
+    const canView = canReadIncidentEvidence(incident, user)
 
     if (!canView) {
-      return NextResponse.json({ 
-        message: 'You can only view evidence for incidents you are involved with' 
+      return NextResponse.json({
+        message: INCIDENT_EVIDENCE_READ_ACCESS_DENIED_MESSAGE,
       }, { status: 403 })
     }
 

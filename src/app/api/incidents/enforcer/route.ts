@@ -104,6 +104,7 @@ export async function GET(request: NextRequest) {
         remarks: incident.remarks,
         createdAt: incident.createdAt,
         updatedAt: incident.updatedAt,
+        handledById: incident.handledById,
         reportedBy: incident.reportedBy,
         handledBy: incident.handledBy,
         evidenceCount: incident.evidence?.length || 0,

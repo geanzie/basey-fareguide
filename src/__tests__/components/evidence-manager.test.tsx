@@ -52,29 +52,16 @@ describe('EvidenceManager', () => {
     const overlay = dialog?.parentElement as HTMLDivElement | null
 
     expect(dialog).not.toBeNull()
-    expect(dialog?.className).toContain('app-mobile-sheet-safe')
-    expect(dialog?.className).toContain('h-full')
-    expect(dialog?.className).toContain('w-full')
-    expect(dialog?.className).toContain('rounded-none')
-    expect(dialog?.className).toContain('sm:w-11/12')
-    expect(dialog?.className).toContain('sm:max-h-[calc(100vh-2rem)]')
+    expect(dialog?.className).toContain('max-w-4xl')
+    expect(dialog?.className).toContain('rounded-3xl')
+    expect(dialog?.className).toContain('sm:max-h-[calc(100vh-5rem)]')
     expect(overlay).not.toBeNull()
     expect(overlay?.className).toContain('z-[70]')
-    expect(overlay?.className).toContain('overflow-hidden')
+    expect(overlay?.className).toContain('overflow-y-auto')
 
-    const uploadHeading = Array.from(container.querySelectorAll('h4')).find(
-      (element) => element.textContent === 'Upload Evidence',
-    )
-    const uploadInput = container.querySelector('#evidence-upload') as HTMLInputElement | null
-    const uploadControls = uploadInput?.parentElement as HTMLDivElement | null
-
-    expect(uploadHeading).not.toBeNull()
-    expect(uploadInput).not.toBeNull()
-    expect(uploadControls).not.toBeNull()
-    expect(uploadControls?.className).toContain('flex-col')
-    expect(uploadControls?.className).toContain('sm:flex-row')
-
-    expect(container.textContent).toContain('Review uploaded evidence, open files, and submit verification without leaving the incident workflow.')
+    expect(container.textContent).toContain('Review submitted evidence, open files, and submit verification without leaving the incident workflow.')
+    expect(container.textContent).not.toContain('Evidence Submission')
+    expect(container.querySelector('#evidence-upload')).toBeNull()
 
     const closeButton = Array.from(container.querySelectorAll('button')).find(
       (element) => (element.textContent || '').trim() === 'Close',
@@ -84,7 +71,7 @@ describe('EvidenceManager', () => {
     expect(footer).not.toBeNull()
     expect(footer?.className).toContain('flex-col-reverse')
     expect(footer?.className).toContain('sm:flex-row')
-    expect(footer?.className).toContain('sticky')
+    expect(footer?.className).not.toContain('sticky')
   })
 
   it('lets long filenames wrap without pushing the mobile layout wide', async () => {
@@ -154,5 +141,85 @@ describe('EvidenceManager', () => {
     expect(reviewButton).toBeTruthy()
     expect(reviewButton?.className).toContain('w-full')
     expect(reviewButton?.className).toContain('sm:w-auto')
+  })
+
+  it('shows deleted evidence truthfully and disables the file action', async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          evidence: [
+            {
+              id: 'ev-deleted',
+              fileName: 'resolved-proof.pdf',
+              fileUrl: '/uploads/resolved-proof.pdf',
+              fileType: 'DOCUMENT',
+              fileSize: 4096,
+              status: 'VERIFIED',
+              storageStatus: 'DELETED',
+              fileDeletedAt: '2026-04-10T11:30:00.000Z',
+              createdAt: '2026-04-09T10:00:00.000Z',
+              reviewedAt: '2026-04-09T12:00:00.000Z',
+              uploader: {
+                firstName: 'Ana',
+                lastName: 'Dela Cruz',
+                email: 'ana@example.com',
+              },
+              reviewer: {
+                firstName: 'Marco',
+                lastName: 'Reyes',
+                email: 'marco@example.com',
+              },
+            },
+          ],
+        }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      ),
+    )
+
+    await act(async () => {
+      root.render(React.createElement(EvidenceManager, { incidentId: 'incident-deleted', onClose: vi.fn() }))
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(container.textContent).toContain('File removed from storage on')
+
+    const removedLink = Array.from(container.querySelectorAll('a')).find((element) =>
+      (element.textContent || '').includes('Removed from storage'),
+    ) as HTMLAnchorElement | undefined
+
+    expect(removedLink).toBeTruthy()
+    expect(removedLink?.getAttribute('href')).toBeNull()
+    expect(removedLink?.getAttribute('target')).toBeNull()
+    expect(removedLink?.className).toContain('pointer-events-none')
+    expect(removedLink?.className).toContain('cursor-not-allowed')
+    expect(removedLink?.className).toContain('text-gray-400')
+  })
+
+  it('surfaces the API denial message when evidence cannot be loaded', async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          message: 'You can only view evidence for incidents you reported or incidents assigned to you.',
+        }),
+        {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      ),
+    )
+
+    await act(async () => {
+      root.render(React.createElement(EvidenceManager, { incidentId: 'incident-denied', onClose: vi.fn() }))
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(container.textContent).toContain(
+      'You can only view evidence for incidents you reported or incidents assigned to you.',
+    )
   })
 })

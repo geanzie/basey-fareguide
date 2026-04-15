@@ -8,8 +8,8 @@ export default function EnforcerPage() {
   return (
     <RoleGuard allowedRoles={['ENFORCER']}>
       <PageWrapper
-        title="Traffic Enforcement Center"
-        subtitle="Queue, evidence, and resolution work for the active enforcement team"
+        title="Incident Operations"
+        subtitle="Review the shared incident list, manage evidence, and complete incident resolution work"
       >
         <EnforcerIncidentsList mode="dashboard" />
       </PageWrapper>

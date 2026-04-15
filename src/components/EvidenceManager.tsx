@@ -44,8 +44,6 @@ const EvidenceManager = ({ incidentId, onClose }: EvidenceManagerProps) => {
   const [evidence, setEvidence] = useState<Evidence[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [uploading, setUploading] = useState(false)
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [reviewingId, setReviewingId] = useState<string | null>(null)
   const [reviewStatus, setReviewStatus] = useState('')
   const [reviewRemarks, setReviewRemarks] = useState('')
@@ -57,45 +55,20 @@ const EvidenceManager = ({ incidentId, onClose }: EvidenceManagerProps) => {
   const fetchEvidence = async () => {
     try {
       setLoading(true)
+      setError('')
       const response = await fetch(`/api/incidents/${incidentId}/evidence`)
 
       if (response.ok) {
         const data = await response.json()
         setEvidence(data.evidence)
       } else {
-        setError('Failed to load evidence')
+        const errorData = await response.json().catch(() => null)
+        setError(errorData?.message || 'Failed to load evidence')
       }
     } catch {
       setError('Failed to load evidence')
     } finally {
       setLoading(false)
-    }
-  }
-
-  const handleFileUpload = async () => {
-    if (!selectedFile) return
-
-    try {
-      setUploading(true)
-      const formData = new FormData()
-      formData.append('file', selectedFile)
-
-      const response = await fetch(`/api/incidents/${incidentId}/evidence`, {
-        method: 'POST',
-        body: formData,
-      })
-
-      if (response.ok) {
-        setSelectedFile(null)
-        await fetchEvidence()
-      } else {
-        const errorData = await response.json()
-        setError(errorData.message || 'Failed to upload evidence')
-      }
-    } catch {
-      setError('Failed to upload evidence')
-    } finally {
-      setUploading(false)
     }
   }
 
@@ -164,12 +137,12 @@ const EvidenceManager = ({ incidentId, onClose }: EvidenceManagerProps) => {
   const formatDate = (dateString: string) => new Date(dateString).toLocaleString()
 
   return (
-    <div className="fixed inset-0 z-[70] h-full w-full overflow-hidden bg-slate-950/35 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[70] overflow-y-auto bg-slate-950/35 p-4 backdrop-blur-sm sm:p-6">
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="evidence-manager-title"
-        className="app-surface-overlay app-mobile-sheet-safe flex h-full min-h-0 w-full flex-col overflow-hidden rounded-none sm:mx-auto sm:my-4 sm:h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-2rem)] sm:w-11/12 sm:max-w-6xl sm:rounded-3xl"
+        className="app-surface-overlay mx-auto flex min-h-0 w-full max-w-4xl flex-col overflow-hidden rounded-3xl sm:max-h-[calc(100vh-5rem)]"
       >
         <div className="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-slate-200/80 bg-white/95 px-4 py-4 backdrop-blur sm:px-5">
           <h3 id="evidence-manager-title" className="min-w-0 text-lg font-bold text-gray-900 sm:text-xl flex items-center gap-3">
@@ -190,7 +163,7 @@ const EvidenceManager = ({ incidentId, onClose }: EvidenceManagerProps) => {
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
           <div className="space-y-6">
             <div className="rounded-xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-sm text-blue-900">
-              Review uploaded evidence, open files, and submit verification without leaving the incident workflow.
+              Review submitted evidence, open files, and submit verification without leaving the incident workflow.
             </div>
 
           {error ? (
@@ -199,46 +172,6 @@ const EvidenceManager = ({ incidentId, onClose }: EvidenceManagerProps) => {
               <span>{error}</span>
             </div>
           ) : null}
-
-          <div className="app-surface-inner rounded-2xl p-4">
-            <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-              <DashboardIconSlot icon={DASHBOARD_ICONS.upload} size={DASHBOARD_ICON_POLICY.sizes.button} className="text-blue-600" />
-              <span>Upload Evidence</span>
-            </h4>
-            <label htmlFor="evidence-upload" className="sr-only">Choose evidence file to upload</label>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <input
-                id="evidence-upload"
-                name="evidenceUpload"
-                type="file"
-                accept="image/*,video/*,audio/*,.pdf"
-                onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-                aria-label="Choose evidence file to upload"
-                className="min-w-0 flex-1 text-sm text-gray-700 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-2 file:font-medium file:text-blue-700 hover:file:bg-blue-100"
-                disabled={uploading}
-              />
-              <button
-                onClick={handleFileUpload}
-                disabled={!selectedFile || uploading}
-                className="inline-flex w-full items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
-              >
-                {uploading ? (
-                  <>
-                    <LoadingSpinner size={16} className="mr-2 text-white" />
-                    Uploading...
-                  </>
-                ) : (
-                  <>
-                    <DashboardIconSlot icon={DASHBOARD_ICONS.upload} size={DASHBOARD_ICON_POLICY.sizes.button} className="mr-2" />
-                    Upload File
-                  </>
-                )}
-              </button>
-            </div>
-            <p className="text-xs text-gray-500 mt-2">
-              Supported formats: Images, videos, audio, and PDF. Images, audio, and PDFs can be up to 10MB; videos can be up to 50MB.
-            </p>
-          </div>
 
           <div className="space-y-4">
             <h4 className="font-semibold text-gray-900">Evidence Files ({evidence.length})</h4>
@@ -394,7 +327,7 @@ const EvidenceManager = ({ incidentId, onClose }: EvidenceManagerProps) => {
             )}
           </div>
 
-          <div className="sticky bottom-0 z-10 flex flex-col-reverse gap-3 border-t border-slate-200/80 bg-white/95 px-4 py-4 backdrop-blur sm:flex-row sm:justify-end sm:px-5">
+          <div className="flex flex-col-reverse gap-3 border-t border-slate-200/80 bg-white/95 px-4 py-4 sm:flex-row sm:justify-end sm:px-5">
             <button
               onClick={onClose}
               className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-gray-300 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-400 sm:w-auto"

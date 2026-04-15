@@ -6,7 +6,7 @@ function repoPath(...parts: string[]) {
   return path.join(process.cwd(), ...parts)
 }
 
-describe('Phase 7 workflow truthfulness messaging', () => {
+describe('workflow truthfulness messaging', () => {
   it('keeps incident reporting focused on the on-screen reference number instead of an email promise', () => {
     const incidentReporting = readFileSync(repoPath('src', 'components', 'IncidentReporting.tsx'), 'utf8')
 
@@ -27,5 +27,15 @@ describe('Phase 7 workflow truthfulness messaging', () => {
 
     expect(enforcerIncidentsList).toContain('Take and Issue Ticket')
     expect(enforcerIncidentsList).toContain('Resolve Only')
+  })
+
+  it('keeps enforcer page labels aligned with the shared incident workflow', () => {
+    const enforcerPage = readFileSync(repoPath('src', 'app', 'enforcer', 'page.tsx'), 'utf8')
+    const incidentQueuePage = readFileSync(repoPath('src', 'app', 'enforcer', 'incidents', 'page.tsx'), 'utf8')
+
+    expect(enforcerPage).toContain('Incident Operations')
+    expect(enforcerPage).not.toContain('Traffic Enforcement Center')
+    expect(incidentQueuePage).toContain('Incident Queue')
+    expect(incidentQueuePage).toContain('Work unresolved incidents in priority order using the shared incident workflow')
   })
 })

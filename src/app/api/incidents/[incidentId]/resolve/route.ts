@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { cleanupEvidenceFiles } from '@/lib/evidenceCleanup'
+import { RESOLVED_EVIDENCE_RETENTION_DAYS } from '@/lib/evidenceCleanup'
 import { ENFORCER_ONLY, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
 
 export async function PATCH(
@@ -75,26 +75,11 @@ export async function PATCH(
       }
     })
 
-    // **AUTOMATIC EVIDENCE CLEANUP** when incident is resolved
-    try {
-      
-      // Clean up evidence files in background (don't wait for completion)
-      cleanupEvidenceFiles(incidentId)
-        .then(() => {
-        })
-        .catch((error) => {
-          // Don't fail the request if cleanup fails - just log the error
-        })
-      
-      
-    } catch (cleanupError) {
-      // Don't fail the request if cleanup fails
-    }
-
     return NextResponse.json({
       incident: updatedIncident,
-      message: 'Incident resolved without issuing a ticket. Evidence cleanup has been initiated.',
-      evidenceCleanupInitiated: true
+      message: `Incident resolved without issuing a ticket. Evidence remains available for ${RESOLVED_EVIDENCE_RETENTION_DAYS} days before scheduled cleanup removes stored files.`,
+      evidenceRetainedUntilCleanup: true,
+      evidenceRetentionDays: RESOLVED_EVIDENCE_RETENTION_DAYS,
     })
 
   } catch (error) {
