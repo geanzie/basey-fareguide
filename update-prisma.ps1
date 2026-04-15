@@ -37,11 +37,12 @@ Write-Host ""
 # Step 3: Create migration
 Write-Host "Step 3: Creating database migration..." -ForegroundColor Yellow
 try {
-    npx prisma migrate dev --name add_email_field
+    npm run db:migrate:dev -- --name add_email_field
     Write-Host "✓ Migration created and applied successfully" -ForegroundColor Green
 } catch {
     Write-Host "✗ Failed to create migration" -ForegroundColor Red
     Write-Host $_.Exception.Message -ForegroundColor Red
+    Write-Host "Use a disposable local database by default. Remote databases require PRISMA_MIGRATE_DEV_ALLOW_REMOTE=1 and SHADOW_DATABASE_URL." -ForegroundColor Yellow
     Read-Host "Press Enter to exit"
     exit 1
 }

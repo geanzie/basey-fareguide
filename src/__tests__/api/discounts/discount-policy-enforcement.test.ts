@@ -13,6 +13,13 @@ const prismaMock = vi.hoisted(() => ({
     findFirst: vi.fn(),
     create: vi.fn(),
   },
+  vehicleTripSession: {
+    findFirst: vi.fn(),
+  },
+  vehicleTripSessionRider: {
+    findUnique: vi.fn(),
+    create: vi.fn(),
+  },
   discountUsageLog: {
     create: vi.fn(),
   },
@@ -104,6 +111,12 @@ beforeEach(() => {
   });
   prismaMock.fareCalculation.findFirst.mockResolvedValue(null);
   prismaMock.vehicle.findUnique.mockReset();
+  prismaMock.vehicleTripSession.findFirst.mockResolvedValue(null);
+  prismaMock.vehicleTripSessionRider.findUnique.mockResolvedValue(null);
+  prismaMock.vehicleTripSessionRider.create.mockResolvedValue({
+    id: "session-rider-1",
+    sessionId: "session-1",
+  });
 });
 
 describe("discount policy enforcement", () => {
@@ -297,5 +310,51 @@ describe("discount policy enforcement", () => {
       }),
     );
     expect(prismaMock.discountUsageLog.create).not.toHaveBeenCalled();
+  });
+
+  it("joins the active vehicle trip session when a tagged rider saves a trip", async () => {
+    prismaMock.vehicle.findUnique.mockResolvedValueOnce({
+      id: "vehicle-1",
+      isActive: true,
+    });
+    prismaMock.vehicleTripSession.findFirst.mockResolvedValueOnce({
+      id: "session-1",
+    });
+    prismaMock.fareCalculation.create.mockResolvedValueOnce(
+      makeStoredFareCalculation({
+        id: "calc-3",
+        vehicle: {
+          id: "vehicle-1",
+          plateNumber: "ABC-1234",
+          vehicleType: "JEEPNEY",
+        },
+        createdAt: new Date("2026-04-15T08:00:00.000Z"),
+      }),
+    );
+
+    const res = await saveFareCalculation(
+      makeFareSaveRequest({
+        discountCardId: null,
+        originalFare: null,
+        discountApplied: null,
+        discountType: null,
+        vehicleId: "vehicle-1",
+      }),
+    );
+
+    expect(res.status).toBe(201);
+    expect(prismaMock.vehicleTripSessionRider.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          sessionId: "session-1",
+          fareCalculationId: "calc-3",
+          riderUserId: "public-1",
+          status: "PENDING",
+          originSnapshot: "Amandayehan",
+          destinationSnapshot: "Anglit",
+          fareSnapshot: 24,
+        }),
+      }),
+    );
   });
 });

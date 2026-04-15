@@ -260,8 +260,8 @@ const authenticatedNavigationRegistry: Record<UserRole, AuthenticatedNavigationC
     tabs: [
       {
         id: 'dashboard',
-        label: 'Driver Portal',
-        shortLabel: 'Home',
+        label: 'Trip Session',
+        shortLabel: 'Trip',
         icon: DASHBOARD_ICONS.dashboard,
         href: '/driver',
         matchers: [exact('/driver')],

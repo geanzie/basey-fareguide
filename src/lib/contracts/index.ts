@@ -7,6 +7,7 @@ export * from "./incidents";
 export * from "./locations";
 export * from "./permits";
 export * from "./rideTag";
+export * from "./driverSession";
 export * from "./session";
 export * from "./terminal";
 export * from "./tracker";

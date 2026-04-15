@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { buildPaginationMetadata, parsePaginationParams } from '@/lib/api/pagination'
 import { verifyAuth } from '@/lib/auth'
 import { evaluateDiscountCardPolicy } from '@/lib/discountCardPolicy'
+import { attachFareCalculationToActiveDriverSession } from '@/lib/driverSession'
 import { serializeFareCalculation } from '@/lib/serializers'
 
 const RECENT_DUPLICATE_SAVE_WINDOW_MS = 60_000
@@ -321,6 +322,20 @@ export async function POST(request: NextRequest) {
     })
 
     if (existingCalculation) {
+      await attachFareCalculationToActiveDriverSession(
+        {
+          id: existingCalculation.id,
+          userId,
+          vehicleId: resolvedVehicleId,
+          fromLocation: existingCalculation.fromLocation,
+          toLocation: existingCalculation.toLocation,
+          calculatedFare: existingCalculation.calculatedFare,
+          discountType: existingCalculation.discountType,
+          createdAt: existingCalculation.createdAt,
+        },
+        user.userType,
+      )
+
       return NextResponse.json({
         success: true,
         calculation: serializeFareCalculation(existingCalculation),
@@ -347,6 +362,20 @@ export async function POST(request: NextRequest) {
       },
       select: fareCalculationSerializeSelect,
     })
+
+    await attachFareCalculationToActiveDriverSession(
+      {
+        id: fareCalculation.id,
+        userId,
+        vehicleId: resolvedVehicleId,
+        fromLocation: fareCalculation.fromLocation,
+        toLocation: fareCalculation.toLocation,
+        calculatedFare: fareCalculation.calculatedFare,
+        discountType: fareCalculation.discountType,
+        createdAt: fareCalculation.createdAt,
+      },
+      user.userType,
+    )
 
     // Create discount usage log if discount was applied
     if (discountCardId && parsedDiscountApplied && parsedDiscountApplied > 0 && parsedOriginalFare) {

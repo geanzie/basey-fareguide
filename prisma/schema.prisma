@@ -66,6 +66,9 @@ model User {
   fareRateDeletionAuditEntries FareRateDeletionAudit[] @relation("FareRateDeletionAuditActor")
   assignedVehicle       Vehicle?              @relation("DriverAssignedVehicle", fields: [assignedVehicleId], references: [id])
   driverAssignmentHistory DriverVehicleAssignmentHistory[] @relation("DriverAssignmentHistoryUser")
+  driverTripSessions    VehicleTripSession[]  @relation("DriverTripSessions")
+  riderTripSessionEntries VehicleTripSessionRider[] @relation("RiderTripSessionEntries")
+  driverTripSessionEvents VehicleTripSessionRiderEvent[] @relation("DriverTripSessionEvents")
 
   @@index([username])
   @@index([userType])
@@ -184,6 +187,7 @@ model Vehicle {
   permit             Permit?
   assignedDriver     User?             @relation("DriverAssignedVehicle")
   driverAssignmentHistory DriverVehicleAssignmentHistory[] @relation("DriverAssignmentHistoryVehicle")
+  tripSessions       VehicleTripSession[]
 
   @@index([plateNumber])
   @@index([vehicleType])
@@ -297,6 +301,7 @@ model FareCalculation {
   user            User?             @relation(fields: [userId], references: [id])
   vehicle         Vehicle?          @relation(fields: [vehicleId], references: [id])
   discountCard    DiscountCard?     @relation("DiscountedCalculations", fields: [discountCardId], references: [id])
+  sessionRider    VehicleTripSessionRider? @relation("FareCalculationSessionRider")
   usageLog        DiscountUsageLog?
 
   @@index([userId])
@@ -305,6 +310,69 @@ model FareCalculation {
   @@index([calculationType])
   @@index([discountCardId])
   @@map("fare_calculations")
+}
+
+model VehicleTripSession {
+  id         String                   @id @default(cuid())
+  vehicleId  String
+  driverUserId String
+  status     DriverTripSessionStatus  @default(OPEN)
+  openedAt   DateTime                 @default(now())
+  closedAt   DateTime?
+  createdAt  DateTime                 @default(now())
+  updatedAt  DateTime                 @updatedAt
+  vehicle    Vehicle                  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  driverUser User                     @relation("DriverTripSessions", fields: [driverUserId], references: [id], onDelete: Cascade)
+  riders     VehicleTripSessionRider[]
+
+  @@index([vehicleId, status])
+  @@index([driverUserId, status])
+  @@index([openedAt])
+  @@map("vehicle_trip_sessions")
+}
+
+model VehicleTripSessionRider {
+  id                   String                      @id @default(cuid())
+  sessionId            String
+  fareCalculationId    String                      @unique
+  riderUserId          String
+  status               DriverTripSessionRiderStatus @default(PENDING)
+  originSnapshot       String
+  destinationSnapshot  String
+  fareSnapshot         Decimal                     @db.Decimal(10, 2)
+  discountTypeSnapshot DiscountType?
+  joinedAt             DateTime                    @default(now())
+  acceptedAt           DateTime?
+  boardedAt            DateTime?
+  completedAt          DateTime?
+  finalisedAt          DateTime?
+  createdAt            DateTime                    @default(now())
+  updatedAt            DateTime                    @updatedAt
+  session              VehicleTripSession          @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  fareCalculation      FareCalculation             @relation("FareCalculationSessionRider", fields: [fareCalculationId], references: [id], onDelete: Cascade)
+  riderUser            User                        @relation("RiderTripSessionEntries", fields: [riderUserId], references: [id], onDelete: Cascade)
+  events               VehicleTripSessionRiderEvent[]
+
+  @@index([sessionId, status])
+  @@index([riderUserId, status])
+  @@index([joinedAt])
+  @@map("vehicle_trip_session_riders")
+}
+
+model VehicleTripSessionRiderEvent {
+  id             String                      @id @default(cuid())
+  sessionRiderId String
+  action         DriverTripSessionRiderAction
+  fromStatus     DriverTripSessionRiderStatus
+  toStatus       DriverTripSessionRiderStatus
+  actedByUserId  String
+  createdAt      DateTime                    @default(now())
+  sessionRider   VehicleTripSessionRider     @relation(fields: [sessionRiderId], references: [id], onDelete: Cascade)
+  actedByUser    User                        @relation("DriverTripSessionEvents", fields: [actedByUserId], references: [id], onDelete: Cascade)
+
+  @@index([sessionRiderId, createdAt])
+  @@index([actedByUserId, createdAt])
+  @@map("vehicle_trip_session_rider_events")
 }
 
 model Route {
@@ -584,6 +652,33 @@ enum IncidentStatus {
   INVESTIGATING
   RESOLVED
   DISMISSED
+}
+
+enum DriverTripSessionStatus {
+  OPEN
+  IN_PROGRESS
+  CLOSED
+}
+
+enum DriverTripSessionRiderStatus {
+  PENDING
+  ACCEPTED
+  BOARDED
+  COMPLETED
+  REJECTED_NOT_HERE
+  REJECTED_FULL
+  REJECTED_WRONG_TRIP
+  CANCELLED
+}
+
+enum DriverTripSessionRiderAction {
+  ACCEPT
+  BOARDED
+  DROPPED_OFF
+  NOT_HERE
+  FULL
+  WRONG_TRIP
+  CANCELLED
 }
 
 enum OffenseTier {

@@ -8,8 +8,8 @@ export default function DriverPage() {
   return (
     <RoleGuard allowedRoles={['DRIVER']}>
       <PageWrapper
-        title="Driver Portal"
-        subtitle="Read-only access to your assigned vehicle identity, compliance status, and account details"
+        title="Trip Session"
+        subtitle="Manage one active trip for your assigned vehicle with quick rider actions"
       >
         <DriverDashboard />
       </PageWrapper>

@@ -15,6 +15,7 @@ Additional project scripts:
 
 - `npm run build` runs the deployment build: `npm run db:migrate:deploy`, then `next build`
 - `npm run build:app` runs `next build` without applying migrations
+- `npm run db:migrate:dev -- --name <migration_name>` runs Prisma `migrate dev` only for local databases by default; remote databases require explicit opt-in plus `SHADOW_DATABASE_URL`
 - `npm run db:migrate:deploy` applies Prisma migrations using a direct database connection for Neon/Vercel deploys
 - `npm run db:generate` refreshes Prisma client code explicitly when schema changes require it
 - `npm run test` runs the Vitest suite
@@ -30,6 +31,8 @@ On Windows inside a OneDrive-synced directory, `prisma generate` can fail when P
 For Neon deployments, Prisma migrations should not run through the pooled `DATABASE_URL` host because advisory-lock acquisition can time out during deploys. `npm run db:migrate:deploy` now prefers `DIRECT_DATABASE_URL` when provided and otherwise derives a direct Neon host from the pooled URL before calling `prisma migrate deploy`.
 
 If another deploy is already holding Prisma's advisory lock, the wrapper retries `prisma migrate deploy` automatically. You can tune that behavior with `PRISMA_MIGRATE_DEPLOY_MAX_ATTEMPTS` and `PRISMA_MIGRATE_DEPLOY_RETRY_DELAY_MS`.
+
+`npm run db:migrate:dev` is intentionally stricter: it refuses to run against remote databases unless you explicitly set `PRISMA_MIGRATE_DEV_ALLOW_REMOTE=1` and provide `SHADOW_DATABASE_URL`. Use that only for disposable remote branches. Do not run `migrate dev` against the live/shared Neon schema; use `npm run db:migrate:deploy` there.
 
 ## Routing Configuration
 

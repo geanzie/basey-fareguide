@@ -54,9 +54,11 @@ Valid for: 10 minutes
 ```powershell
 # Stop dev server (Ctrl+C)
 npx prisma generate
-npx prisma migrate dev
+npm run db:migrate:dev -- --name email_reset_fix
 npm run dev
 ```
+
+`npm run db:migrate:dev` is guarded on purpose. Use a disposable local database by default. If you intentionally target a disposable remote branch, set `PRISMA_MIGRATE_DEV_ALLOW_REMOTE=1` and `SHADOW_DATABASE_URL` first.
 
 ### Problem: User has no email
 **Solution:** Add email to existing users:

@@ -17,6 +17,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "type-check": "tsc -p tsconfig.json --noEmit",
+    "db:migrate:dev": "node scripts/prisma-migrate-dev.js",
     "db:migrate:deploy": "node scripts/prisma-migrate-deploy.js",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
