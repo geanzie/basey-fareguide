@@ -18,6 +18,7 @@ vi.mock('@/components/AuthProvider', () => ({
 }))
 
 vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }),
   useSearchParams: () => ({
     get: () => null,
   }),

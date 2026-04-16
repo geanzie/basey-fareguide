@@ -2,6 +2,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { TerminalIncidentHandoffSnapshotDto } from '@/lib/contracts'
 import {
   clearQrTerminalHandoff,
   QR_TERMINAL_HANDOFF_STORAGE_KEY,
@@ -10,7 +11,7 @@ import {
   storeQrTerminalHandoff,
 } from '@/lib/terminal/handoff'
 
-const snapshot = {
+const snapshot: TerminalIncidentHandoffSnapshotDto = {
   permitId: 'permit-1',
   vehicleId: 'vehicle-1',
   operatorId: null,

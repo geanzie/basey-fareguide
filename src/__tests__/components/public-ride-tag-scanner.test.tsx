@@ -4,6 +4,8 @@ import React, { act } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
 
+import type { VehicleLookupDto } from '@/lib/contracts'
+
 vi.mock('@/components/QrTokenScannerPanel', () => ({
   __esModule: true,
   default: ({ onDetected }: { onDetected: (token: string) => void }) =>
@@ -29,8 +31,8 @@ describe('PublicRideTagScanner', () => {
   let container: HTMLDivElement
   let root: Root
   let fetchMock: ReturnType<typeof vi.fn>
-  let useVehicleMock: ReturnType<typeof vi.fn>
-  let clearVehicleMock: ReturnType<typeof vi.fn>
+  let useVehicleMock: (vehicle: VehicleLookupDto) => void
+  let clearVehicleMock: () => void
 
   beforeEach(() => {
     ;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true

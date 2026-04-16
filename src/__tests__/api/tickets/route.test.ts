@@ -18,16 +18,7 @@ beforeEach(() => {
 
 describe('direct ticket creation route', () => {
   it('returns gone because ticket issuance must use the assigned incident workflow', async () => {
-    const response = await createTicket(
-      makeJsonRequest({
-        incidentType: 'FARE_OVERCHARGE',
-        description: 'Fare mismatch',
-        location: 'Amandayehan',
-        plateNumber: 'ABC-123',
-        penaltyAmount: 500,
-        requiresPayment: false,
-      }) as never,
-    )
+    const response = await createTicket()
     const json = await response.json()
 
     expect(response.status).toBe(410)

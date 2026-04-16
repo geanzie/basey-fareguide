@@ -13,6 +13,7 @@ export type DriverSessionRiderStatusDto =
 
 export type DriverSessionActionDto =
   | "ACCEPT"
+  | "BOARDED"
   | "DROPPED_OFF"
   | "NOT_HERE"
   | "FULL"

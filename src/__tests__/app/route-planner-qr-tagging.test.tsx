@@ -189,7 +189,7 @@ describe('RoutePlannerCalculator QR tagging integration', () => {
     })
 
     const saveButton = Array.from(container.querySelectorAll('button')).find((button) =>
-      button.textContent?.includes('Save to history'),
+      button.textContent?.includes('Send trip request'),
     )
 
     await act(async () => {

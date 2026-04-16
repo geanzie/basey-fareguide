@@ -213,7 +213,7 @@ describe('RiderTripStatusPanel', () => {
     } as never)
 
     await act(async () => {
-      root.render(React.createElement(RiderTripStatusPanel, { fareCalculationId: 'calc-1' }))
+      root.render(React.createElement(RiderTripStatusPanel, { tripRequestId: 'sr-1' }))
       await Promise.resolve()
     })
 

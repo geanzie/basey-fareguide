@@ -794,7 +794,7 @@ export async function getDriverSessionHistoryResponse(request: NextRequest): Pro
   const page = parseDriverHistoryPage(request)
   const search = parseDriverHistorySearch(request)
 
-  const baseWhere: Parameters<typeof prisma.vehicleTripSession.findMany>[0]['where'] = {
+  const baseWhere: Prisma.VehicleTripSessionWhereInput = {
     driverUserId: driverContext.id,
     status: DriverTripSessionStatus.CLOSED,
     closedAt: { not: null },

@@ -30,6 +30,7 @@ const prismaMock = vi.hoisted(() => ({
     findUnique: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
+    count: vi.fn(),
   },
   vehicleTripSessionRider: {
     findUnique: vi.fn(),
@@ -38,7 +39,10 @@ const prismaMock = vi.hoisted(() => ({
   vehicleTripSessionRiderEvent: {
     create: vi.fn(),
   },
-  $transaction: vi.fn(async (callback: (tx: typeof transactionMock) => Promise<unknown>) => callback(transactionMock)),
+  $transaction: vi.fn(async (callbackOrArray: ((tx: typeof transactionMock) => Promise<unknown>) | Promise<unknown>[]) => {
+    if (Array.isArray(callbackOrArray)) return Promise.all(callbackOrArray)
+    return callbackOrArray(transactionMock)
+  }),
 }))
 
 vi.mock('@/lib/auth', () => ({
@@ -105,6 +109,7 @@ beforeEach(() => {
   prismaMock.vehicleTripSession.findMany.mockResolvedValue([])
   prismaMock.vehicleTripSession.findUnique.mockResolvedValue(makeSession())
   prismaMock.vehicleTripSession.create.mockResolvedValue({ id: 'session-1' })
+  prismaMock.vehicleTripSession.count.mockResolvedValue(0)
   transactionMock.vehicleTripSessionRider.updateMany.mockResolvedValue({ count: 1 })
   transactionMock.fareCalculation.create.mockResolvedValue({ id: 'calc-new-1' })
 })
@@ -141,7 +146,7 @@ describe('driver session service', () => {
           {
             id: 'session-rider-1',
             fareCalculationId: 'calc-1',
-            status: 'BOARDED',
+            status: 'ACCEPTED',
             originSnapshot: 'Mercado',
             destinationSnapshot: 'Terminal',
             fareSnapshot: 35,
@@ -162,7 +167,7 @@ describe('driver session service', () => {
     expect(transactionMock.vehicleTripSessionRider.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({ id: 'session-rider-1' }),
-        data: expect.objectContaining({ status: 'BOARDED' }),
+        data: expect.objectContaining({ status: 'ACCEPTED' }),
       }),
     )
     expect(transactionMock.vehicleTripSessionRiderEvent.create).toHaveBeenCalledWith(
@@ -170,12 +175,12 @@ describe('driver session service', () => {
         data: expect.objectContaining({
           action: 'ACCEPT',
           fromStatus: 'PENDING',
-          toStatus: 'BOARDED',
+          toStatus: 'ACCEPTED',
           actedByUserId: 'driver-1',
         }),
       }),
     )
-    expect(response.rider.status).toBe('BOARDED')
+    expect(response.rider.status).toBe('ACCEPTED')
   })
 
   it('rejects invalid rider state transitions', async () => {
@@ -198,7 +203,7 @@ describe('driver session service', () => {
 
     await expect(
       applyDriverSessionAction(makeDriverRequest(), 'session-1', 'session-rider-1', 'DROPPED_OFF'),
-    ).rejects.toMatchObject<Partial<DriverSessionError>>({
+    ).rejects.toMatchObject({
       status: 409,
       code: 'INVALID_RIDER_TRANSITION',
     })
@@ -207,7 +212,7 @@ describe('driver session service', () => {
   it('blocks closing or mutating a session outside the assigned vehicle scope', async () => {
     prismaMock.vehicleTripSession.findFirst.mockResolvedValueOnce(null)
 
-    await expect(closeDriverSession(makeDriverRequest(), 'session-other')).rejects.toMatchObject<Partial<DriverSessionError>>({
+    await expect(closeDriverSession(makeDriverRequest(), 'session-other')).rejects.toMatchObject({
       status: 404,
       code: 'SESSION_NOT_FOUND',
     })
@@ -278,7 +283,7 @@ describe('driver session service', () => {
   it('rejects invalid recent history limits', async () => {
     await expect(
       getDriverSessionHistoryResponse(makeDriverRequest('http://localhost/api/driver/session/history?limit=0')),
-    ).rejects.toMatchObject<Partial<DriverSessionError>>({
+    ).rejects.toMatchObject({
       status: 400,
       code: 'INVALID_HISTORY_LIMIT',
     })

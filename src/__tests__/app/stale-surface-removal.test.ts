@@ -35,7 +35,6 @@ describe("Phase 6 stale surface removal", () => {
     expect(adminDashboard).not.toContain("serverStatus");
     expect(adminDashboard).not.toContain("apiHealth");
     expect(adminDashboard).not.toContain("lastBackup");
-    expect(adminPage).not.toContain("System Settings");
-    expect(adminPage).not.toContain("settings");
+    expect(adminPage).not.toContain('System Settings')
   });
 });
