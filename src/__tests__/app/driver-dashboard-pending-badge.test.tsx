@@ -27,6 +27,7 @@ const swrState = vi.hoisted(() => ({
 
 vi.mock('swr', () => ({
   default: () => ({ data: swrState.data, isLoading: false, mutate: swrState.mutate }),
+  useSWRConfig: () => ({ mutate: swrState.mutate }),
 }))
 
 vi.mock('@/components/AuthProvider', () => ({

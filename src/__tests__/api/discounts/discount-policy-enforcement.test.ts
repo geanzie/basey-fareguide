@@ -17,12 +17,14 @@ const prismaMock = vi.hoisted(() => ({
     findFirst: vi.fn(),
   },
   vehicleTripSessionRider: {
-    findUnique: vi.fn(),
+    updateMany: vi.fn(),
+    findFirst: vi.fn(),
     create: vi.fn(),
   },
   discountUsageLog: {
     create: vi.fn(),
   },
+  $transaction: vi.fn(),
 }));
 
 const authMock = vi.hoisted(() => ({
@@ -61,6 +63,7 @@ function makeFareSaveRequest(overrides: Record<string, unknown> = {}) {
       distance: 10,
       calculatedFare: 24,
       calculationType: "Route Planner",
+      vehicleId: "vehicle-1",
       discountCardId: "card-1",
       originalFare: 30,
       discountApplied: 6,
@@ -110,13 +113,22 @@ beforeEach(() => {
     userType: "PUBLIC",
   });
   prismaMock.fareCalculation.findFirst.mockResolvedValue(null);
-  prismaMock.vehicle.findUnique.mockReset();
-  prismaMock.vehicleTripSession.findFirst.mockResolvedValue(null);
-  prismaMock.vehicleTripSessionRider.findUnique.mockResolvedValue(null);
+  prismaMock.vehicle.findUnique.mockResolvedValue({
+    id: "vehicle-1",
+    isActive: true,
+  });
+  prismaMock.vehicleTripSession.findFirst.mockResolvedValue({
+    id: "session-1",
+  });
+  prismaMock.vehicleTripSessionRider.updateMany.mockResolvedValue({ count: 0 });
+  prismaMock.vehicleTripSessionRider.findFirst.mockResolvedValue(null);
   prismaMock.vehicleTripSessionRider.create.mockResolvedValue({
     id: "session-rider-1",
     sessionId: "session-1",
   });
+  prismaMock.$transaction.mockImplementation(async (callback: (tx: typeof prismaMock) => Promise<unknown>) =>
+    callback(prismaMock),
+  );
 });
 
 describe("discount policy enforcement", () => {
@@ -186,35 +198,36 @@ describe("discount policy enforcement", () => {
     expect(json.validationChecks.isExpired).toBe(true);
   });
 
-  it("persists and logs fare usage only when the discount card passes the canonical policy", async () => {
+  it("queues pending trip request when the discount card passes the canonical policy and defers usage logging", async () => {
     prismaMock.discountCard.findUnique.mockResolvedValueOnce(validCard);
-    prismaMock.fareCalculation.create.mockResolvedValueOnce(
-      makeStoredFareCalculation({
-        originalFare: 30,
-        discountApplied: 6,
-        discountType: "STUDENT",
-      }),
-    );
-    prismaMock.discountUsageLog.create.mockResolvedValueOnce({ id: "log-1" });
-    prismaMock.discountCard.update.mockResolvedValueOnce({ id: "card-1" });
 
     const res = await saveFareCalculation(makeFareSaveRequest());
 
     expect(res.status).toBe(201);
-    expect(prismaMock.fareCalculation.create).toHaveBeenCalledWith(
+    expect(prismaMock.vehicleTripSessionRider.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          discountCardId: "card-1",
-          discountType: "STUDENT",
+          sessionId: "session-1",
+          riderUserId: "public-1",
+          discountCardIdSnapshot: "card-1",
+          discountTypeSnapshot: "STUDENT",
+          originalFareSnapshot: 30,
+          discountAppliedSnapshot: 6,
         }),
       }),
     );
-    expect(prismaMock.discountUsageLog.create).toHaveBeenCalledTimes(1);
-    expect(prismaMock.discountCard.update).toHaveBeenCalledTimes(1);
+    expect(prismaMock.fareCalculation.create).not.toHaveBeenCalled();
+    expect(prismaMock.discountUsageLog.create).not.toHaveBeenCalled();
+    expect(prismaMock.discountCard.update).not.toHaveBeenCalled();
   });
 
-  it("returns the existing fare record for a recent duplicate save request", async () => {
-    prismaMock.fareCalculation.findFirst.mockResolvedValueOnce(makeStoredFareCalculation());
+  it("returns the existing active trip request for a duplicate submit", async () => {
+    prismaMock.vehicleTripSessionRider.findFirst.mockResolvedValueOnce({
+      id: "session-rider-existing",
+      sessionId: "session-1",
+      fareCalculationId: null,
+      status: "PENDING",
+    });
 
     const res = await saveFareCalculation(
       makeFareSaveRequest({
@@ -226,10 +239,12 @@ describe("discount policy enforcement", () => {
     );
     const json = await res.json();
 
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(201);
     expect(json.success).toBe(true);
-    expect(json.message).toMatch(/already saved/i);
+    expect(json.message).toMatch(/already active/i);
+    expect(json.tripRequestId).toBe("session-rider-existing");
     expect(prismaMock.fareCalculation.create).not.toHaveBeenCalled();
+    expect(prismaMock.vehicleTripSessionRider.create).not.toHaveBeenCalled();
     expect(prismaMock.discountUsageLog.create).not.toHaveBeenCalled();
   });
 
@@ -274,63 +289,11 @@ describe("discount policy enforcement", () => {
     expect(prismaMock.fareCalculation.create).not.toHaveBeenCalled();
   });
 
-  it("persists an optional active vehicle without changing fare computation", async () => {
+  it("queues pending trip request for an active vehicle without changing fare computation", async () => {
     prismaMock.vehicle.findUnique.mockResolvedValueOnce({
       id: "vehicle-1",
       isActive: true,
     });
-    prismaMock.fareCalculation.create.mockResolvedValueOnce(
-      makeStoredFareCalculation({
-        id: "calc-2",
-        vehicle: {
-          id: "vehicle-1",
-          plateNumber: "ABC-1234",
-          vehicleType: "JEEPNEY",
-        },
-      }),
-    );
-
-    const res = await saveFareCalculation(
-      makeFareSaveRequest({
-        discountCardId: null,
-        originalFare: null,
-        discountApplied: null,
-        discountType: null,
-        vehicleId: "vehicle-1",
-      }),
-    );
-
-    expect(res.status).toBe(201);
-    expect(prismaMock.fareCalculation.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          vehicleId: "vehicle-1",
-          calculatedFare: 24,
-        }),
-      }),
-    );
-    expect(prismaMock.discountUsageLog.create).not.toHaveBeenCalled();
-  });
-
-  it("joins the active vehicle trip session when a tagged rider saves a trip", async () => {
-    prismaMock.vehicle.findUnique.mockResolvedValueOnce({
-      id: "vehicle-1",
-      isActive: true,
-    });
-    prismaMock.vehicleTripSession.findFirst.mockResolvedValueOnce({
-      id: "session-1",
-    });
-    prismaMock.fareCalculation.create.mockResolvedValueOnce(
-      makeStoredFareCalculation({
-        id: "calc-3",
-        vehicle: {
-          id: "vehicle-1",
-          plateNumber: "ABC-1234",
-          vehicleType: "JEEPNEY",
-        },
-        createdAt: new Date("2026-04-15T08:00:00.000Z"),
-      }),
-    );
 
     const res = await saveFareCalculation(
       makeFareSaveRequest({
@@ -347,8 +310,41 @@ describe("discount policy enforcement", () => {
       expect.objectContaining({
         data: expect.objectContaining({
           sessionId: "session-1",
-          fareCalculationId: "calc-3",
+          fareSnapshot: 24,
+          distanceSnapshot: 10,
+        }),
+      }),
+    );
+    expect(prismaMock.fareCalculation.create).not.toHaveBeenCalled();
+    expect(prismaMock.discountUsageLog.create).not.toHaveBeenCalled();
+  });
+
+  it("joins the active vehicle trip session when a tagged rider saves a trip", async () => {
+    prismaMock.vehicle.findUnique.mockResolvedValueOnce({
+      id: "vehicle-1",
+      isActive: true,
+    });
+    prismaMock.vehicleTripSession.findFirst.mockResolvedValueOnce({
+      id: "session-1",
+    });
+
+    const res = await saveFareCalculation(
+      makeFareSaveRequest({
+        discountCardId: null,
+        originalFare: null,
+        discountApplied: null,
+        discountType: null,
+        vehicleId: "vehicle-1",
+      }),
+    );
+
+    expect(res.status).toBe(201);
+    expect(prismaMock.vehicleTripSessionRider.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          sessionId: "session-1",
           riderUserId: "public-1",
+          activeRequestKey: "session-1:public-1",
           status: "PENDING",
           originSnapshot: "Amandayehan",
           destinationSnapshot: "Anglit",

@@ -1,7 +1,29 @@
 vi.mock('@/components/PublicRideTagScanner', () => ({
   __esModule: true,
-  default: ({ autoStart }: { autoStart?: boolean }) =>
-    React.createElement('div', null, autoStart ? 'Mock scanner active' : 'Mock scanner idle'),
+  default: ({ autoStart, onUseVehicle, onClearVehicle }: { autoStart?: boolean; onUseVehicle?: (vehicle: unknown) => void; onClearVehicle?: () => void }) =>
+    React.createElement(
+      'div',
+      null,
+      autoStart ? 'Mock scanner active' : 'Mock scanner idle',
+      React.createElement(
+        'button',
+        {
+          onClick: () =>
+            onUseVehicle?.({
+              id: 'vehicle-1',
+              plateNumber: 'ABC-1234',
+              permitPlateNumber: 'ABC-1234',
+              vehicleType: 'JEEPNEY',
+            }),
+        },
+        'Mock use vehicle',
+      ),
+      React.createElement(
+        'button',
+        { onClick: () => onClearVehicle?.() },
+        'Mock clear vehicle',
+      ),
+    ),
 }))
 // @vitest-environment jsdom
 
@@ -212,7 +234,9 @@ describe('RoutePlannerCalculator', () => {
 
       if (url.includes('/api/fare-calculations')) {
         savedCalculationBodies.push(JSON.parse(String(init?.body ?? '{}')))
-        return Promise.resolve(makeResponse({ success: true, calculation: { id: 'calc-1' } }))
+        return Promise.resolve(
+          makeResponse({ success: true, calculation: null, tripRequestId: 'sr-1', requestStatus: 'PENDING' }),
+        )
       }
 
       throw new Error(`Unhandled fetch url: ${url}`)
@@ -390,10 +414,10 @@ describe('RoutePlannerCalculator', () => {
     expect(container.textContent).toContain('PHP 24.00')
     expect(container.textContent).toContain('polyline:encoded-ors')
     expect(container.textContent).toContain('Verified road route')
-    expect(container.textContent).toContain('Log in to save this route to your history.')
+    expect(container.textContent).toContain('Log in to send this trip request.')
   })
 
-  it('saves only after an authenticated rider clicks save and persists planner routeData verification metadata', async () => {
+  it('sends trip request only after an authenticated rider selects a vehicle and confirms request', async () => {
     authState.user = { id: 'public-1' }
     authState.status = 'authenticated'
 
@@ -438,7 +462,17 @@ describe('RoutePlannerCalculator', () => {
     expect(savedCalculationBodies).toHaveLength(0)
 
     await act(async () => {
-      clickButton('Save to history')
+      clickButton('Scan operator QR')
+      await Promise.resolve()
+    })
+
+    await act(async () => {
+      clickButton('Mock use vehicle')
+      await Promise.resolve()
+    })
+
+    await act(async () => {
+      clickButton('Send trip request')
       await Promise.resolve()
       await Promise.resolve()
     })
@@ -447,10 +481,15 @@ describe('RoutePlannerCalculator', () => {
     expect(savedCalculationBodies[0]).toMatchObject({
       fromLocation: 'Mercado',
       toLocation: 'Amandayehan Wharf',
-      vehicleId: null,
+      vehicleId: 'vehicle-1',
       distance: 5.4,
       calculatedFare: 24,
       calculationType: 'Road Route Planner',
+      farePolicySnapshot: {
+        baseDistanceKm: DEFAULT_FARE_POLICY.baseDistanceKm,
+        baseFare: DEFAULT_FARE_POLICY.baseFare,
+        perKmRate: DEFAULT_FARE_POLICY.perKmRate,
+      },
       routeData: {
         method: 'ors',
         providerUsed: 'ors',
@@ -461,7 +500,7 @@ describe('RoutePlannerCalculator', () => {
         polylinePresent: true,
       },
     })
-    expect(container.textContent).toContain('Saved to fare history.')
+    expect(container.textContent).toContain('Trip request sent to driver.')
   })
 
   it('lets riders reset both pins after a route has been created', async () => {

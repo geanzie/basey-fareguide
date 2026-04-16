@@ -22,6 +22,7 @@ const prismaMock = vi.hoisted(() => ({
   },
   vehicleTripSession: {
     findFirst: vi.fn(),
+    findMany: vi.fn(),
     findUnique: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
@@ -48,11 +49,12 @@ import {
   DriverSessionError,
   applyDriverSessionAction,
   closeDriverSession,
+  getDriverSessionHistoryResponse,
   startDriverSession,
 } from '@/lib/driverSession'
 
-function makeDriverRequest() {
-  return new Request('http://localhost/api/driver/session') as never
+function makeDriverRequest(url = 'http://localhost/api/driver/session') {
+  return { nextUrl: new URL(url) } as never
 }
 
 function makeDriverUser() {
@@ -96,6 +98,7 @@ beforeEach(() => {
   authMock.verifyAuthWithSelect.mockResolvedValue(makeDriverUser())
   prismaMock.vehicle.findUnique.mockResolvedValue(makeVehicle())
   prismaMock.vehicleTripSession.findFirst.mockResolvedValue(makeSession())
+  prismaMock.vehicleTripSession.findMany.mockResolvedValue([])
   prismaMock.vehicleTripSession.findUnique.mockResolvedValue(makeSession())
   prismaMock.vehicleTripSession.create.mockResolvedValue({ id: 'session-1' })
 })
@@ -201,6 +204,77 @@ describe('driver session service', () => {
     await expect(closeDriverSession(makeDriverRequest(), 'session-other')).rejects.toMatchObject<Partial<DriverSessionError>>({
       status: 404,
       code: 'SESSION_NOT_FOUND',
+    })
+  })
+
+  it('returns recent closed trip history by driver id without requiring a vehicle assignment', async () => {
+    authMock.verifyAuthWithSelect.mockResolvedValue({
+      ...makeDriverUser(),
+      assignedVehicleId: null,
+      assignedVehicleAssignedAt: null,
+    })
+    prismaMock.vehicleTripSession.findMany.mockResolvedValue([
+      {
+        id: 'closed-session-1',
+        status: 'CLOSED',
+        openedAt: new Date('2026-04-15T08:00:00.000Z'),
+        closedAt: new Date('2026-04-15T09:00:00.000Z'),
+        riders: [
+          {
+            id: 'session-rider-closed-1',
+            fareCalculationId: 'calc-closed-1',
+            status: 'COMPLETED',
+            originSnapshot: 'Mercado',
+            destinationSnapshot: 'Terminal',
+            fareSnapshot: 35,
+            discountTypeSnapshot: null,
+            joinedAt: new Date('2026-04-15T08:05:00.000Z'),
+            acceptedAt: new Date('2026-04-15T08:06:00.000Z'),
+            boardedAt: new Date('2026-04-15T08:10:00.000Z'),
+            completedAt: new Date('2026-04-15T08:25:00.000Z'),
+            finalisedAt: new Date('2026-04-15T08:25:00.000Z'),
+          },
+        ],
+      },
+    ])
+
+    const response = await getDriverSessionHistoryResponse(
+      makeDriverRequest('http://localhost/api/driver/session/history?limit=50'),
+    )
+
+    expect(prismaMock.vehicle.findUnique).not.toHaveBeenCalled()
+    expect(prismaMock.vehicleTripSession.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          driverUserId: 'driver-1',
+          status: 'CLOSED',
+          closedAt: { not: null },
+        },
+        take: 20,
+      }),
+    )
+    expect(response.limit).toBe(20)
+    expect(response.items).toHaveLength(1)
+    expect(response.items[0]).toMatchObject({
+      id: 'closed-session-1',
+      closedAt: '2026-04-15T09:00:00.000Z',
+      completedCount: 1,
+      riderCount: 1,
+    })
+    expect(response.items[0].riders[0]).toMatchObject({
+      origin: 'Mercado',
+      destination: 'Terminal',
+      fareSnapshot: 35,
+      status: 'COMPLETED',
+    })
+  })
+
+  it('rejects invalid recent history limits', async () => {
+    await expect(
+      getDriverSessionHistoryResponse(makeDriverRequest('http://localhost/api/driver/session/history?limit=0')),
+    ).rejects.toMatchObject<Partial<DriverSessionError>>({
+      status: 400,
+      code: 'INVALID_HISTORY_LIMIT',
     })
   })
 })

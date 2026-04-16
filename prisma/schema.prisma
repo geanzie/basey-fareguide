@@ -334,14 +334,23 @@ model VehicleTripSession {
 model VehicleTripSessionRider {
   id                   String                      @id @default(cuid())
   sessionId            String
-  fareCalculationId    String                      @unique
+    fareCalculationId    String?                     @unique
   riderUserId          String
+    activeRequestKey     String?                     @unique
   status               DriverTripSessionRiderStatus @default(PENDING)
   originSnapshot       String
   destinationSnapshot  String
+    distanceSnapshot     Decimal                     @db.Decimal(10, 2)
   fareSnapshot         Decimal                     @db.Decimal(10, 2)
+    calculationTypeSnapshot String
+    routeDataSnapshot    String?
+    farePolicySnapshot   String?
+    discountCardIdSnapshot String?
+    originalFareSnapshot Decimal?                    @db.Decimal(10, 2)
+    discountAppliedSnapshot Decimal?                 @db.Decimal(10, 2)
   discountTypeSnapshot DiscountType?
   joinedAt             DateTime                    @default(now())
+    expiresAt            DateTime?
   acceptedAt           DateTime?
   boardedAt            DateTime?
   completedAt          DateTime?
@@ -349,12 +358,13 @@ model VehicleTripSessionRider {
   createdAt            DateTime                    @default(now())
   updatedAt            DateTime                    @updatedAt
   session              VehicleTripSession          @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  fareCalculation      FareCalculation             @relation("FareCalculationSessionRider", fields: [fareCalculationId], references: [id], onDelete: Cascade)
+    fareCalculation      FareCalculation?            @relation("FareCalculationSessionRider", fields: [fareCalculationId], references: [id], onDelete: Cascade)
   riderUser            User                        @relation("RiderTripSessionEntries", fields: [riderUserId], references: [id], onDelete: Cascade)
   events               VehicleTripSessionRiderEvent[]
 
   @@index([sessionId, status])
   @@index([riderUserId, status])
+    @@index([status, expiresAt])
   @@index([joinedAt])
   @@map("vehicle_trip_session_riders")
 }
@@ -669,6 +679,7 @@ enum DriverTripSessionRiderStatus {
   REJECTED_FULL
   REJECTED_WRONG_TRIP
   CANCELLED
+  EXPIRED
 }
 
 enum DriverTripSessionRiderAction {
@@ -679,6 +690,7 @@ enum DriverTripSessionRiderAction {
   FULL
   WRONG_TRIP
   CANCELLED
+  EXPIRE
 }
 
 enum OffenseTier {

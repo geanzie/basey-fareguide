@@ -14,7 +14,7 @@ describe('authenticated navigation registry', () => {
     expect(getAuthenticatedNavigationConfig('ADMIN').tabs).toHaveLength(4)
     expect(getAuthenticatedNavigationConfig('DATA_ENCODER').tabs).toHaveLength(4)
     expect(getAuthenticatedNavigationConfig('ENFORCER').tabs).toHaveLength(2)
-    expect(getAuthenticatedNavigationConfig('DRIVER').tabs).toHaveLength(1)
+    expect(getAuthenticatedNavigationConfig('DRIVER').tabs).toHaveLength(2)
   })
 
   it('derives mobile primary actions from the active role navigation', () => {
@@ -22,7 +22,7 @@ describe('authenticated navigation registry', () => {
     expect(getAuthenticatedMobilePrimaryActionCount('ADMIN')).toBe(5)
     expect(getAuthenticatedMobilePrimaryActionCount('DATA_ENCODER')).toBe(5)
     expect(getAuthenticatedMobilePrimaryActionCount('ENFORCER')).toBe(3)
-    expect(getAuthenticatedMobilePrimaryActionCount('DRIVER')).toBe(2)
+    expect(getAuthenticatedMobilePrimaryActionCount('DRIVER')).toBe(3)
   })
 
   it('matches legacy public calculator and report aliases to the new tabs', () => {
@@ -50,6 +50,7 @@ describe('authenticated navigation registry', () => {
     expect(getAuthenticatedNavigationTitle('/admin/ticket-payments', 'ADMIN')).toBe('Ticket Payments')
     expect(getAuthenticatedNavigationTitle('/encoder/ticket-payments', 'DATA_ENCODER')).toBe('Ticket Payments')
     expect(getAuthenticatedNavigationTitle('/profile', 'ENFORCER')).toBe('My Profile')
-    expect(getAuthenticatedNavigationTitle('/driver', 'DRIVER')).toBe('Driver Portal')
+    expect(getAuthenticatedNavigationTitle('/driver', 'DRIVER')).toBe('Trip Session')
+    expect(getAuthenticatedNavigationTitle('/driver/history', 'DRIVER')).toBe('Trip History')
   })
 })

@@ -1,3 +1,4 @@
+import type { DriverSessionRiderStatusDto } from "./driverSession";
 import type { PaginationDto } from "./common";
 
 export interface FareVehicleSummaryDto {
@@ -32,6 +33,8 @@ export interface FareCalculationsResponseDto {
 
 export interface FareCalculationMutationResponseDto {
   success: boolean;
-  calculation: FareCalculationDto;
+  calculation: FareCalculationDto | null;
+  tripRequestId: string | null;
+  requestStatus: DriverSessionRiderStatusDto | null;
   message: string;
 }

@@ -16,7 +16,7 @@ const PENDING_RESPONSE = {
   hasActiveTrip: true,
   trip: {
     id: 'sr-1',
-    fareCalculationId: 'calc-1',
+    fareCalculationId: null,
     status: 'PENDING',
     statusLabel: 'Waiting for driver',
     origin: 'Market',
@@ -24,7 +24,9 @@ const PENDING_RESPONSE = {
     fare: 35,
     discountType: null,
     joinedAt: '2026-04-16T08:00:00.000Z',
+    expiresAt: '2026-04-16T08:10:00.000Z',
     acceptedAt: null,
+    boardedAt: null,
     vehiclePlateNumber: 'ABC-123',
     vehicleType: 'TRICYCLE',
   },
@@ -34,8 +36,10 @@ const ACCEPTED_RESPONSE = {
   ...PENDING_RESPONSE,
   trip: {
     ...PENDING_RESPONSE.trip,
+    fareCalculationId: 'calc-1',
     status: 'ACCEPTED',
     statusLabel: 'Trip accepted',
+    expiresAt: null,
     acceptedAt: '2026-04-16T08:02:00.000Z',
   },
 }
@@ -75,7 +79,7 @@ describe('RiderTripStatusPanel', () => {
 
     const { container, root } = mountPanel()
     await act(async () => {
-      root.render(React.createElement(RiderTripStatusPanel, { fareCalculationId: 'calc-1' }))
+      root.render(React.createElement(RiderTripStatusPanel, { tripRequestId: 'sr-1' }))
       await Promise.resolve()
     })
 
@@ -93,7 +97,7 @@ describe('RiderTripStatusPanel', () => {
 
     const { container, root } = mountPanel()
     await act(async () => {
-      root.render(React.createElement(RiderTripStatusPanel, { fareCalculationId: 'calc-1' }))
+      root.render(React.createElement(RiderTripStatusPanel, { tripRequestId: 'sr-1' }))
       await Promise.resolve()
     })
 
@@ -115,7 +119,7 @@ describe('RiderTripStatusPanel', () => {
 
     const { container, root } = mountPanel()
     await act(async () => {
-      root.render(React.createElement(RiderTripStatusPanel, { fareCalculationId: 'calc-1' }))
+      root.render(React.createElement(RiderTripStatusPanel, { tripRequestId: 'sr-1' }))
       await Promise.resolve()
     })
 
@@ -136,7 +140,7 @@ describe('RiderTripStatusPanel', () => {
 
     const { container, root } = mountPanel()
     await act(async () => {
-      root.render(React.createElement(RiderTripStatusPanel, { fareCalculationId: 'calc-1' }))
+      root.render(React.createElement(RiderTripStatusPanel, { tripRequestId: 'sr-1' }))
       await Promise.resolve()
     })
 
@@ -150,7 +154,7 @@ describe('RiderTripStatusPanel', () => {
     } as never)
 
     await act(async () => {
-      root.render(React.createElement(RiderTripStatusPanel, { fareCalculationId: 'calc-1' }))
+      root.render(React.createElement(RiderTripStatusPanel, { tripRequestId: 'sr-1' }))
       await Promise.resolve()
     })
 
@@ -168,7 +172,7 @@ describe('RiderTripStatusPanel', () => {
 
     const { container, root } = mountPanel()
     await act(async () => {
-      root.render(React.createElement(RiderTripStatusPanel, { fareCalculationId: 'calc-1' }))
+      root.render(React.createElement(RiderTripStatusPanel, { tripRequestId: 'sr-1' }))
       await Promise.resolve()
     })
 
@@ -191,7 +195,7 @@ describe('RiderTripStatusPanel', () => {
 
     const { container, root } = mountPanel()
     await act(async () => {
-      root.render(React.createElement(RiderTripStatusPanel, { fareCalculationId: 'calc-1' }))
+      root.render(React.createElement(RiderTripStatusPanel, { tripRequestId: 'sr-1' }))
       await Promise.resolve()
     })
 
@@ -216,7 +220,7 @@ describe('RiderTripStatusPanel', () => {
     expect(container.textContent).toContain('Driver accepted your trip')
   })
 
-  it('uses fareCalculationId-scoped SWR key', async () => {
+  it('uses tripRequestId-scoped SWR key', async () => {
     vi.mocked(useSWR).mockReturnValue({
       data: NO_TRIP_RESPONSE,
       error: undefined,
@@ -227,11 +231,11 @@ describe('RiderTripStatusPanel', () => {
 
     const { container, root } = mountPanel()
     await act(async () => {
-      root.render(React.createElement(RiderTripStatusPanel, { fareCalculationId: 'calc-42' }))
+      root.render(React.createElement(RiderTripStatusPanel, { tripRequestId: 'sr-42' }))
       await Promise.resolve()
     })
 
     const swrCallKey = vi.mocked(useSWR).mock.calls[0][0]
-    expect(String(swrCallKey)).toContain('calc-42')
+    expect(String(swrCallKey)).toContain('tripRequestId=sr-42')
   })
 })

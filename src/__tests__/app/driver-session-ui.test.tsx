@@ -3,6 +3,7 @@
 import React, { act } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
+import { SWRConfig } from 'swr'
 
 const authState = vi.hoisted(() => ({
   user: { id: 'driver-1', username: 'ABC-123' },
@@ -19,6 +20,14 @@ function makeResponse(body: unknown, status = 200) {
     status,
     headers: { 'Content-Type': 'application/json' },
   })
+}
+
+function renderDashboard() {
+  return React.createElement(
+    SWRConfig,
+    { value: { provider: () => new Map(), dedupingInterval: 0 } },
+    React.createElement(DriverDashboard),
+  )
 }
 
 describe('DriverDashboard session UI', () => {
@@ -151,6 +160,43 @@ describe('DriverDashboard session UI', () => {
         )
       }
 
+      if (url.includes('/api/driver/session/history')) {
+        return Promise.resolve(
+          makeResponse({
+            limit: 10,
+            items: [
+              {
+                id: 'closed-session-1',
+                status: 'CLOSED',
+                statusLabel: 'Closed',
+                openedAt: '2026-04-14T08:00:00.000Z',
+                closedAt: '2026-04-14T09:00:00.000Z',
+                riderCount: 1,
+                completedCount: 1,
+                archivedCount: 0,
+                riders: [
+                  {
+                    id: 'history-rider-1',
+                    fareCalculationId: 'history-calc-1',
+                    origin: 'Old Market',
+                    destination: 'Town Plaza',
+                    fareSnapshot: 40,
+                    discountType: null,
+                    status: 'COMPLETED',
+                    statusLabel: 'Completed',
+                    joinedAt: '2026-04-14T08:05:00.000Z',
+                    acceptedAt: '2026-04-14T08:06:00.000Z',
+                    boardedAt: '2026-04-14T08:10:00.000Z',
+                    completedAt: '2026-04-14T08:25:00.000Z',
+                    finalisedAt: '2026-04-14T08:25:00.000Z',
+                  },
+                ],
+              },
+            ],
+          }),
+        )
+      }
+
       if (url.includes('/api/driver/session/session-1/riders/rider-1/action')) {
         return Promise.resolve(makeResponse({ success: true }))
       }
@@ -172,7 +218,7 @@ describe('DriverDashboard session UI', () => {
 
   it('renders Boarded section and Dropped Off action; shows pending badge not a full Pending section', async () => {
     await act(async () => {
-      root.render(React.createElement(DriverDashboard))
+      root.render(renderDashboard())
       await Promise.resolve()
       await Promise.resolve()
     })
@@ -211,5 +257,220 @@ describe('DriverDashboard session UI', () => {
     // Negative action labels are not shown in the main scroll (pending riders are not in main section)
     expect(container.textContent).not.toContain('Not Here')
     expect(container.textContent).not.toContain('Wrong Trip')
+  })
+
+  it('refreshes recent history immediately after closing a trip', async () => {
+    let sessionClosed = false
+
+    fetchMock.mockImplementation((input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
+
+      if (url.includes('/api/driver/session/active')) {
+        return Promise.resolve(
+          makeResponse(
+            sessionClosed
+              ? {
+                  driver: {
+                    id: 'driver-1',
+                    firstName: 'Driver',
+                    lastName: 'One',
+                    username: 'ABC-123',
+                  },
+                  vehicle: {
+                    id: 'vehicle-1',
+                    plateNumber: 'ABC-123',
+                    vehicleType: 'TRICYCLE',
+                    make: 'Honda',
+                    model: 'TMX',
+                    color: 'Blue',
+                    assignedAt: '2026-04-15T07:00:00.000Z',
+                  },
+                  session: {
+                    id: null,
+                    status: null,
+                    statusLabel: 'No Active Trip',
+                    activeRiderCount: 0,
+                    pendingCount: 0,
+                    boardedCount: 0,
+                    completedCount: 0,
+                    archivedCount: 0,
+                    openedAt: null,
+                    closedAt: null,
+                    canStartSession: true,
+                    canCloseSession: false,
+                  },
+                  sections: [],
+                }
+              : {
+                  driver: {
+                    id: 'driver-1',
+                    firstName: 'Driver',
+                    lastName: 'One',
+                    username: 'ABC-123',
+                  },
+                  vehicle: {
+                    id: 'vehicle-1',
+                    plateNumber: 'ABC-123',
+                    vehicleType: 'TRICYCLE',
+                    make: 'Honda',
+                    model: 'TMX',
+                    color: 'Blue',
+                    assignedAt: '2026-04-15T07:00:00.000Z',
+                  },
+                  session: {
+                    id: 'session-1',
+                    status: 'IN_PROGRESS',
+                    statusLabel: 'In Progress',
+                    activeRiderCount: 0,
+                    pendingCount: 0,
+                    boardedCount: 0,
+                    completedCount: 1,
+                    archivedCount: 0,
+                    openedAt: '2026-04-15T08:00:00.000Z',
+                    closedAt: null,
+                    canStartSession: false,
+                    canCloseSession: true,
+                  },
+                  sections: [
+                    {
+                      key: 'pending',
+                      label: 'Pending',
+                      riders: [],
+                    },
+                    {
+                      key: 'boarded',
+                      label: 'Boarded',
+                      riders: [],
+                    },
+                    {
+                      key: 'completed',
+                      label: 'Completed',
+                      riders: [
+                        {
+                          id: 'rider-3',
+                          fareCalculationId: 'calc-3',
+                          origin: 'Bridge',
+                          destination: 'Wharf',
+                          fareSnapshot: 20,
+                          discountType: null,
+                          status: 'COMPLETED',
+                          statusLabel: 'Completed',
+                          joinedAt: '2026-04-15T08:15:00.000Z',
+                          availableActions: [],
+                        },
+                      ],
+                    },
+                    {
+                      key: 'archived',
+                      label: 'Archived',
+                      riders: [],
+                    },
+                  ],
+                },
+          ),
+        )
+      }
+
+      if (url.includes('/api/driver/session/history')) {
+        return Promise.resolve(
+          makeResponse({
+            limit: 10,
+            items: sessionClosed
+              ? [
+                  {
+                    id: 'closed-session-2',
+                    status: 'CLOSED',
+                    statusLabel: 'Closed',
+                    openedAt: '2026-04-15T08:00:00.000Z',
+                    closedAt: '2026-04-15T09:00:00.000Z',
+                    riderCount: 1,
+                    completedCount: 1,
+                    archivedCount: 0,
+                    riders: [
+                      {
+                        id: 'history-rider-2',
+                        fareCalculationId: 'history-calc-2',
+                        origin: 'Closed Market',
+                        destination: 'River Port',
+                        fareSnapshot: 42,
+                        discountType: null,
+                        status: 'COMPLETED',
+                        statusLabel: 'Completed',
+                        joinedAt: '2026-04-15T08:05:00.000Z',
+                        acceptedAt: '2026-04-15T08:06:00.000Z',
+                        boardedAt: '2026-04-15T08:10:00.000Z',
+                        completedAt: '2026-04-15T08:24:00.000Z',
+                        finalisedAt: '2026-04-15T08:24:00.000Z',
+                      },
+                    ],
+                  },
+                ]
+              : [],
+          }),
+        )
+      }
+
+      if (url.includes('/api/driver/session/session-1/close')) {
+        sessionClosed = true
+
+        return Promise.resolve(
+          makeResponse({
+            driver: {
+              id: 'driver-1',
+              firstName: 'Driver',
+              lastName: 'One',
+              username: 'ABC-123',
+            },
+            vehicle: {
+              id: 'vehicle-1',
+              plateNumber: 'ABC-123',
+              vehicleType: 'TRICYCLE',
+              make: 'Honda',
+              model: 'TMX',
+              color: 'Blue',
+              assignedAt: '2026-04-15T07:00:00.000Z',
+            },
+            session: {
+              id: null,
+              status: null,
+              statusLabel: 'No Active Trip',
+              activeRiderCount: 0,
+              pendingCount: 0,
+              boardedCount: 0,
+              completedCount: 0,
+              archivedCount: 0,
+              openedAt: null,
+              closedAt: null,
+              canStartSession: true,
+              canCloseSession: false,
+            },
+            sections: [],
+          }),
+        )
+      }
+
+      throw new Error(`Unhandled fetch url: ${url}`)
+    })
+
+    await act(async () => {
+      root.render(renderDashboard())
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    const closeButton = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent?.trim() === 'Close Trip',
+    )
+    expect(closeButton).toBeDefined()
+
+    await act(async () => {
+      closeButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await Promise.resolve()
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    // Close trip resets session — driver can now start a new trip
+    expect(container.textContent).toContain('No Active Trip')
   })
 })

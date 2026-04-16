@@ -10,9 +10,12 @@ const authMock = vi.hoisted(() => ({
 }))
 
 const txMock = vi.hoisted(() => ({
-  vehicleTripSessionRider: { update: vi.fn() },
+  vehicleTripSessionRider: { updateMany: vi.fn() },
   vehicleTripSession: { update: vi.fn() },
   vehicleTripSessionRiderEvent: { create: vi.fn() },
+  fareCalculation: { create: vi.fn() },
+  discountUsageLog: { create: vi.fn() },
+  discountCard: { update: vi.fn() },
 }))
 
 const prismaMock = vi.hoisted(() => ({
@@ -55,19 +58,34 @@ const VEHICLE = {
 
 const OPEN_SESSION_WITH_PENDING_RIDER = {
   id: 'session-1',
+  vehicleId: 'vehicle-1',
   status: 'OPEN' as const,
   openedAt: new Date('2026-04-16T08:00:00.000Z'),
   closedAt: null,
   riders: [
     {
       id: 'sr-1',
-      fareCalculationId: 'calc-1',
+      riderUserId: 'rider-1',
+      fareCalculationId: null,
+      activeRequestKey: 'session-1:rider-1',
       status: 'PENDING' as const,
       originSnapshot: 'Market',
       destinationSnapshot: 'Terminal',
+      distanceSnapshot: '4.50',
       fareSnapshot: '35.00',
+      calculationTypeSnapshot: 'Road Route Planner',
+      routeDataSnapshot: '{"provider":"ors"}',
+      farePolicySnapshot: null,
+      discountCardIdSnapshot: null,
+      originalFareSnapshot: null,
+      discountAppliedSnapshot: null,
       discountTypeSnapshot: null,
       joinedAt: new Date('2026-04-16T08:05:00.000Z'),
+      expiresAt: new Date('2026-04-17T08:15:00.000Z'),
+      acceptedAt: null,
+      boardedAt: null,
+      completedAt: null,
+      finalisedAt: null,
     },
   ],
 }
@@ -78,7 +96,9 @@ const OPEN_SESSION_WITH_ACCEPTED_RIDER = {
     {
       ...OPEN_SESSION_WITH_PENDING_RIDER.riders[0],
       status: 'ACCEPTED' as const,
+      fareCalculationId: 'calc-1',
       acceptedAt: new Date('2026-04-16T08:06:00.000Z'),
+      expiresAt: null,
     },
   ],
 }
@@ -198,7 +218,7 @@ describe('POST /api/driver/session/[sessionId]/riders/[sessionRiderId]/action â€
     expect(json.code).toBe('INVALID_RIDER_TRANSITION')
   })
 
-  it('accepts a PENDING rider and writes acceptedAt and boardedAt via transaction', async () => {
+  it('accepts a PENDING rider and writes acceptedAt plus fare history via transaction', async () => {
     authMock.verifyAuthWithSelect.mockResolvedValueOnce(DRIVER_USER)
     prismaMock.vehicle.findUnique.mockResolvedValueOnce(VEHICLE)
     // Initial session load
@@ -206,10 +226,17 @@ describe('POST /api/driver/session/[sessionId]/riders/[sessionRiderId]/action â€
     // Session refresh after transaction uses findUnique
     prismaMock.vehicleTripSession.findUnique.mockResolvedValueOnce({
       ...OPEN_SESSION_WITH_PENDING_RIDER,
-      riders: [{ ...OPEN_SESSION_WITH_PENDING_RIDER.riders[0], status: 'BOARDED' }],
+      riders: [{
+        ...OPEN_SESSION_WITH_PENDING_RIDER.riders[0],
+        status: 'ACCEPTED',
+        fareCalculationId: 'calc-accepted-1',
+        acceptedAt: new Date('2026-04-16T08:06:00.000Z'),
+        expiresAt: null,
+      }],
     })
 
-    txMock.vehicleTripSessionRider.update.mockResolvedValueOnce({})
+    txMock.fareCalculation.create.mockResolvedValueOnce({ id: 'calc-accepted-1' })
+    txMock.vehicleTripSessionRider.updateMany.mockResolvedValueOnce({ count: 1 })
     txMock.vehicleTripSessionRiderEvent.create.mockResolvedValueOnce({})
 
     const response = await POST(
@@ -219,17 +246,19 @@ describe('POST /api/driver/session/[sessionId]/riders/[sessionRiderId]/action â€
 
     expect(response.status).toBe(200)
     expect(prismaMock.$transaction).toHaveBeenCalledOnce()
+    expect(txMock.fareCalculation.create).toHaveBeenCalledOnce()
 
-    const updateCall = txMock.vehicleTripSessionRider.update.mock.calls[0][0]
+    const updateCall = txMock.vehicleTripSessionRider.updateMany.mock.calls[0][0]
     expect(updateCall.where.id).toBe('sr-1')
-    expect(updateCall.data.status).toBe('BOARDED')
+    expect(updateCall.data.status).toBe('ACCEPTED')
     expect(updateCall.data.acceptedAt).toBeInstanceOf(Date)
-    expect(updateCall.data.boardedAt).toBeInstanceOf(Date)
+    expect(updateCall.data.boardedAt).toBeUndefined()
+    expect(updateCall.data.fareCalculationId).toBe('calc-accepted-1')
 
     const eventCall = txMock.vehicleTripSessionRiderEvent.create.mock.calls[0][0]
     expect(eventCall.data.action).toBe('ACCEPT')
     expect(eventCall.data.fromStatus).toBe('PENDING')
-    expect(eventCall.data.toStatus).toBe('BOARDED')
+    expect(eventCall.data.toStatus).toBe('ACCEPTED')
     expect(eventCall.data.actedByUserId).toBe('driver-1')
   })
 })

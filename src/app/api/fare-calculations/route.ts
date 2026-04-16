@@ -3,10 +3,8 @@ import { prisma } from '@/lib/prisma'
 import { buildPaginationMetadata, parsePaginationParams } from '@/lib/api/pagination'
 import { verifyAuth } from '@/lib/auth'
 import { evaluateDiscountCardPolicy } from '@/lib/discountCardPolicy'
-import { attachFareCalculationToActiveDriverSession } from '@/lib/driverSession'
+import { createPendingTripRequest } from '@/lib/driverSession'
 import { serializeFareCalculation } from '@/lib/serializers'
-
-const RECENT_DUPLICATE_SAVE_WINDOW_MS = 60_000
 
 const fareCalculationSerializeSelect = {
   id: true,
@@ -167,7 +165,8 @@ export async function POST(request: NextRequest) {
       discountCardId,
       originalFare,
       discountApplied,
-      discountType
+      discountType,
+      farePolicySnapshot,
     } = body
     const userId = user.id
 
@@ -208,41 +207,40 @@ export async function POST(request: NextRequest) {
     const parsedOriginalFare = toOptionalNumber(originalFare)
     const parsedDiscountApplied = toOptionalNumber(discountApplied)
     const serializedRouteData = routeData ? JSON.stringify(routeData) : null
+    const serializedFarePolicySnapshot = farePolicySnapshot ? JSON.stringify(farePolicySnapshot) : null
 
     let resolvedVehicleId: string | null = null
 
-    if (vehicleId != null) {
-      if (typeof vehicleId !== 'string' || vehicleId.trim().length === 0) {
-        return NextResponse.json(
-          { error: 'vehicleId must be a non-empty string when provided' },
-          { status: 400 }
-        )
-      }
-
-      const selectedVehicle = await prisma.vehicle.findUnique({
-        where: { id: vehicleId },
-        select: {
-          id: true,
-          isActive: true,
-        }
-      })
-
-      if (!selectedVehicle) {
-        return NextResponse.json(
-          { error: 'Selected vehicle was not found' },
-          { status: 404 }
-        )
-      }
-
-      if (!selectedVehicle.isActive) {
-        return NextResponse.json(
-          { error: 'Selected vehicle is inactive and cannot be attached to this fare calculation' },
-          { status: 400 }
-        )
-      }
-
-      resolvedVehicleId = selectedVehicle.id
+    if (typeof vehicleId !== 'string' || vehicleId.trim().length === 0) {
+      return NextResponse.json(
+        { error: 'Select an active driver vehicle before sending a trip request' },
+        { status: 400 }
+      )
     }
+
+    const selectedVehicle = await prisma.vehicle.findUnique({
+      where: { id: vehicleId },
+      select: {
+        id: true,
+        isActive: true,
+      }
+    })
+
+    if (!selectedVehicle) {
+      return NextResponse.json(
+        { error: 'Selected vehicle was not found' },
+        { status: 404 }
+      )
+    }
+
+    if (!selectedVehicle.isActive) {
+      return NextResponse.json(
+        { error: 'Selected vehicle is inactive and cannot receive trip requests' },
+        { status: 400 }
+      )
+    }
+
+    resolvedVehicleId = selectedVehicle.id
 
     // Verify discount card ownership — prevent using another user's card
     let resolvedDiscountType = discountType || null
@@ -296,9 +294,8 @@ export async function POST(request: NextRequest) {
       resolvedDiscountType = card.discountType
     }
 
-    const duplicateWindowStart = new Date(Date.now() - RECENT_DUPLICATE_SAVE_WINDOW_MS)
-    const existingCalculation = await prisma.fareCalculation.findFirst({
-      where: {
+    const pendingTripRequest = await createPendingTripRequest(
+      {
         userId,
         vehicleId: resolvedVehicleId,
         fromLocation: String(fromLocation),
@@ -307,115 +304,29 @@ export async function POST(request: NextRequest) {
         calculatedFare: parsedCalculatedFare,
         calculationType: String(calculationType),
         routeData: serializedRouteData,
+        farePolicySnapshot: serializedFarePolicySnapshot,
         discountCardId: discountCardId || null,
         originalFare: parsedOriginalFare,
         discountApplied: parsedDiscountApplied,
         discountType: resolvedDiscountType,
-        createdAt: {
-          gte: duplicateWindowStart,
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      select: fareCalculationSerializeSelect,
-    })
-
-    if (existingCalculation) {
-      await attachFareCalculationToActiveDriverSession(
-        {
-          id: existingCalculation.id,
-          userId,
-          vehicleId: resolvedVehicleId,
-          fromLocation: existingCalculation.fromLocation,
-          toLocation: existingCalculation.toLocation,
-          calculatedFare: existingCalculation.calculatedFare,
-          discountType: existingCalculation.discountType,
-          createdAt: existingCalculation.createdAt,
-        },
-        user.userType,
-      )
-
-      return NextResponse.json({
-        success: true,
-        calculation: serializeFareCalculation(existingCalculation),
-        message: 'Fare calculation already saved',
-      })
-    }
-
-    // Create fare calculation record
-    const fareCalculation = await prisma.fareCalculation.create({
-      data: {
-        userId,
-        vehicleId: resolvedVehicleId,
-        fromLocation: String(fromLocation),
-        toLocation: String(toLocation),
-        distance: parsedDistance,
-        calculatedFare: parsedCalculatedFare,
-        calculationType: String(calculationType),
-        routeData: serializedRouteData,
-        // Discount card fields
-        discountCardId: discountCardId || null,
-        originalFare: parsedOriginalFare,
-        discountApplied: parsedDiscountApplied,
-        discountType: resolvedDiscountType
-      },
-      select: fareCalculationSerializeSelect,
-    })
-
-    await attachFareCalculationToActiveDriverSession(
-      {
-        id: fareCalculation.id,
-        userId,
-        vehicleId: resolvedVehicleId,
-        fromLocation: fareCalculation.fromLocation,
-        toLocation: fareCalculation.toLocation,
-        calculatedFare: fareCalculation.calculatedFare,
-        discountType: fareCalculation.discountType,
-        createdAt: fareCalculation.createdAt,
+        createdAt: new Date(),
       },
       user.userType,
     )
 
-    // Create discount usage log if discount was applied
-    if (discountCardId && parsedDiscountApplied && parsedDiscountApplied > 0 && parsedOriginalFare) {
-      try {
-        await prisma.discountUsageLog.create({
-          data: {
-            discountCardId: discountCardId,
-            fareCalculationId: fareCalculation.id,
-            originalFare: parsedOriginalFare,
-            discountAmount: parsedDiscountApplied,
-            finalFare: parsedCalculatedFare,
-            discountRate: parsedDiscountApplied / parsedOriginalFare, // Calculate actual rate used
-            fromLocation: String(fromLocation),
-            toLocation: String(toLocation),
-            distance: parsedDistance,
-            // Optional tracking fields
-            ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || null,
-            gpsCoordinates: null, // Can be added later if needed
-            isSuspicious: false
-          }
-        })
-
-        // Update discount card usage stats
-        await prisma.discountCard.update({
-          where: { id: discountCardId },
-          data: {
-            lastUsedAt: new Date(),
-            usageCount: { increment: 1 },
-            dailyUsageCount: { increment: 1 }
-          }
-        })
-      } catch (logError) {
-        // Don't fail the request if logging fails
-      }
+    if (!pendingTripRequest) {
+      return NextResponse.json(
+        { error: 'Selected driver is not currently accepting trip requests' },
+        { status: 409 }
+      )
     }
 
     return NextResponse.json({
       success: true,
-      calculation: serializeFareCalculation(fareCalculation),
-      message: 'Fare calculation saved successfully'
+      calculation: null,
+      tripRequestId: pendingTripRequest.id,
+      requestStatus: pendingTripRequest.status,
+      message: pendingTripRequest.created ? 'Trip request sent successfully' : 'Trip request already active'
     }, { status: 201 })
 
   } catch (error) {

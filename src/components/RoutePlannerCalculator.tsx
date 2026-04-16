@@ -160,6 +160,7 @@ function buildFareCalculationPayload(routeResult: RouteResult, vehicle: VehicleL
     originalFare: routeResult.originalFare || null,
     discountApplied: routeResult.discountApplied || null,
     discountType: routeResult.discountCard?.discountType || null,
+    farePolicySnapshot: routeResult.farePolicy,
   }
 }
 
@@ -181,7 +182,7 @@ const RoutePlannerCalculator = ({
   const [routeMessage, setRouteMessage] = useState<string | null>(null)
   const [isCalculating, setIsCalculating] = useState(false)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle')
-  const [savedCalculationId, setSavedCalculationId] = useState<string | null>(null)
+  const [pendingTripRequestId, setPendingTripRequestId] = useState<string | null>(null)
   const [userDiscountCard, setUserDiscountCard] = useState<DiscountCardDto | null>(null)
   const [fitBoundsToken, setFitBoundsToken] = useState(0)
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleLookupDto | null>(null)
@@ -221,6 +222,7 @@ const RoutePlannerCalculator = ({
     !routeResult?.isEstimate &&
     hasFreshDisplayedRoute &&
     !isCalculating &&
+    Boolean(selectedVehicle) &&
     plannerState === 'route_ready'
 
   useEffect(() => {
@@ -310,7 +312,7 @@ const RoutePlannerCalculator = ({
     setPlannerState('placing_points')
     setIsCalculating(false)
     setSaveStatus('idle')
-    setSavedCalculationId(null)
+    setPendingTripRequestId(null)
   }
 
   const refitRoute = () => {
@@ -477,7 +479,7 @@ const RoutePlannerCalculator = ({
 
       setSaveStatus('saved')
       if (data.calculation?.id) {
-        setSavedCalculationId(data.calculation.id)
+        setPendingTripRequestId(data.tripRequestId ?? null)
       }
     } catch {
       if (displayedRouteVersion === displayedRouteVersionRef.current) {
@@ -497,7 +499,7 @@ const RoutePlannerCalculator = ({
     displayedRouteVersionRef.current += 1
     setDisplayedRoutePair(null)
     setSaveStatus('idle')
-    setSavedCalculationId(null)
+    setPendingTripRequestId(null)
 
     if (target === 'origin') {
       setOriginSelection(nextSelection)
@@ -671,13 +673,14 @@ const RoutePlannerCalculator = ({
 
                   <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 px-4 py-3 sm:px-5">
                     <div className="text-xs text-slate-500">
-                      {!user && 'Log in to save this route to your history.'}
-                      {user && saveStatus === 'saved' && 'Saved to fare history.'}
-                      {user && saveStatus === 'failed' && 'Unable to save this route right now.'}
-                      {user && saveStatus === 'saving' && 'Saving to fare history...'}
+                      {!user && 'Log in to send this trip request.'}
+                      {user && saveStatus === 'saved' && 'Trip request sent to driver.'}
+                      {user && saveStatus === 'failed' && 'Unable to send this trip request right now.'}
+                      {user && saveStatus === 'saving' && 'Sending trip request...'}
                       {user && saveStatus === 'idle' && routeResult.method == null && 'Same-point results are not saved.'}
-                      {user && saveStatus === 'idle' && canSaveDisplayedRoute && 'This result is not yet saved.'}
-                      {user && saveStatus === 'idle' && !canSaveDisplayedRoute && routeResult.method != null && 'Resolve the current verified route before saving.'}
+                      {user && saveStatus === 'idle' && canSaveDisplayedRoute && 'This trip request has not been sent yet.'}
+                      {user && saveStatus === 'idle' && !selectedVehicle && routeResult.method != null && 'Select driver vehicle before sending trip request.'}
+                      {user && saveStatus === 'idle' && selectedVehicle && !canSaveDisplayedRoute && routeResult.method != null && 'Resolve the current verified route before sending request.'}
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                       <button
@@ -687,12 +690,12 @@ const RoutePlannerCalculator = ({
                         className="rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-emerald-300"
                       >
                         {!user
-                          ? 'Log in to save'
+                          ? 'Log in to request'
                           : saveStatus === 'saved'
-                            ? 'Saved'
+                            ? 'Sent'
                             : saveStatus === 'saving'
-                              ? 'Saving...'
-                              : 'Save to history'}
+                              ? 'Sending...'
+                              : 'Send trip request'}
                       </button>
                       <button
                         type="button"
@@ -711,9 +714,9 @@ const RoutePlannerCalculator = ({
                     </div>
                   </div>
 
-                  {saveStatus === 'saved' && savedCalculationId && user?.userType === 'PUBLIC' ? (
+                  {saveStatus === 'saved' && pendingTripRequestId && user?.userType === 'PUBLIC' ? (
                     <div className="px-4 pb-4 sm:px-5">
-                      <RiderTripStatusPanel fareCalculationId={savedCalculationId} />
+                      <RiderTripStatusPanel tripRequestId={pendingTripRequestId} />
                     </div>
                   ) : null}
                 </div>

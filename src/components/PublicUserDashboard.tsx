@@ -65,7 +65,7 @@ function PublicUserDashboard() {
   const { data: activeTripData } = useSWR<RiderActiveTripStatusResponseDto>(SWR_KEYS.riderTripStatus, {
     refreshInterval: (latestData) => {
       const status = latestData?.trip?.status
-      if (!status || status === 'PENDING') return 5000
+      if (!status || status === 'PENDING' || status === 'ACCEPTED' || status === 'BOARDED') return 5000
       return 0
     },
   })

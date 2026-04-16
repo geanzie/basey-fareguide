@@ -8,7 +8,8 @@ export type DriverSessionRiderStatusDto =
   | "REJECTED_NOT_HERE"
   | "REJECTED_FULL"
   | "REJECTED_WRONG_TRIP"
-  | "CANCELLED";
+  | "CANCELLED"
+  | "EXPIRED";
 
 export type DriverSessionActionDto =
   | "ACCEPT"
@@ -29,9 +30,42 @@ export interface DriverSessionActionButtonDto {
   kind: DriverSessionActionKindDto;
 }
 
+export interface DriverSessionHistoryRiderDto {
+  id: string;
+  fareCalculationId: string | null;
+  origin: string;
+  destination: string;
+  fareSnapshot: number;
+  discountType: string | null;
+  status: DriverSessionRiderStatusDto;
+  statusLabel: string;
+  joinedAt: string;
+  acceptedAt: string | null;
+  boardedAt: string | null;
+  completedAt: string | null;
+  finalisedAt: string | null;
+}
+
+export interface DriverSessionHistoryItemDto {
+  id: string;
+  status: Extract<DriverSessionStatusDto, "CLOSED">;
+  statusLabel: string;
+  openedAt: string;
+  closedAt: string;
+  riderCount: number;
+  completedCount: number;
+  archivedCount: number;
+  riders: DriverSessionHistoryRiderDto[];
+}
+
+export interface DriverSessionHistoryResponseDto {
+  items: DriverSessionHistoryItemDto[];
+  limit: number;
+}
+
 export interface DriverSessionRiderCardDto {
   id: string;
-  fareCalculationId: string;
+  fareCalculationId: string | null;
   origin: string;
   destination: string;
   fareSnapshot: number;

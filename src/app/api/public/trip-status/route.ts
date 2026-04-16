@@ -21,6 +21,7 @@ const riderStatusLabels: Record<DriverTripSessionRiderStatus, string> = {
   REJECTED_FULL: 'Full',
   REJECTED_WRONG_TRIP: 'Wrong Trip',
   CANCELLED: 'Cancelled',
+  EXPIRED: 'Expired',
 }
 
 export async function GET(request: NextRequest) {
@@ -28,9 +29,32 @@ export async function GET(request: NextRequest) {
     const user = await requireRequestRole(request, [UserType.PUBLIC])
 
     const { searchParams } = new URL(request.url)
+    const tripRequestId = searchParams.get('tripRequestId')
     const fareCalculationId = searchParams.get('fareCalculationId')
+    const now = new Date()
 
-    const whereClause = fareCalculationId
+    await prisma.vehicleTripSessionRider.updateMany({
+      where: {
+        riderUserId: user.id,
+        status: DriverTripSessionRiderStatus.PENDING,
+        expiresAt: {
+          lte: now,
+        },
+      },
+      data: {
+        status: DriverTripSessionRiderStatus.EXPIRED,
+        activeRequestKey: null,
+        finalisedAt: now,
+      },
+    })
+
+    const whereClause = tripRequestId
+      ? {
+          id: tripRequestId,
+          riderUserId: user.id,
+          status: { in: [...ACTIVE_RIDER_STATUSES] },
+        }
+      : fareCalculationId
       ? { fareCalculationId, riderUserId: user.id }
       : {
           riderUserId: user.id,
@@ -49,7 +73,9 @@ export async function GET(request: NextRequest) {
         fareSnapshot: true,
         discountTypeSnapshot: true,
         joinedAt: true,
+        expiresAt: true,
         acceptedAt: true,
+        boardedAt: true,
         session: {
           select: {
             vehicle: {
@@ -63,8 +89,7 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    // Explicit ownership check when fareCalculationId is provided
-    if (fareCalculationId && entry && entry.id) {
+    if ((tripRequestId || fareCalculationId) && entry && entry.id) {
       // Already scoped by riderUserId in the where clause — nothing extra needed.
     }
 
@@ -83,7 +108,9 @@ export async function GET(request: NextRequest) {
       fare: Number(entry.fareSnapshot),
       discountType: entry.discountTypeSnapshot ?? null,
       joinedAt: entry.joinedAt.toISOString(),
+      expiresAt: entry.expiresAt ? entry.expiresAt.toISOString() : null,
       acceptedAt: entry.acceptedAt ? entry.acceptedAt.toISOString() : null,
+      boardedAt: entry.boardedAt ? entry.boardedAt.toISOString() : null,
       vehiclePlateNumber: entry.session.vehicle.plateNumber,
       vehicleType: entry.session.vehicle.vehicleType,
     }

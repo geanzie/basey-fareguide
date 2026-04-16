@@ -2,7 +2,7 @@ import type { DriverSessionRiderStatusDto } from "./driverSession";
 
 export interface RiderTripStatusDto {
   id: string;
-  fareCalculationId: string;
+  fareCalculationId: string | null;
   status: DriverSessionRiderStatusDto;
   statusLabel: string;
   origin: string;
@@ -10,7 +10,9 @@ export interface RiderTripStatusDto {
   fare: number;
   discountType: string | null;
   joinedAt: string;
+  expiresAt: string | null;
   acceptedAt: string | null;
+  boardedAt: string | null;
   vehiclePlateNumber: string | null;
   vehicleType: string | null;
 }

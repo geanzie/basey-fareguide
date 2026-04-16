@@ -7,24 +7,24 @@ import type { RiderActiveTripStatusResponseDto } from '@/lib/contracts'
 import { SWR_KEYS } from '@/lib/swrKeys'
 
 interface RiderTripStatusPanelProps {
-  fareCalculationId: string
+  tripRequestId: string
 }
 
 function formatCurrency(value: number) {
   return `PHP ${value.toFixed(2)}`
 }
 
-export default function RiderTripStatusPanel({ fareCalculationId }: RiderTripStatusPanelProps) {
+export default function RiderTripStatusPanel({ tripRequestId }: RiderTripStatusPanelProps) {
   const [showToast, setShowToast] = useState(false)
   const prevStatusRef = useRef<string | null>(null)
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const swrKey = `${SWR_KEYS.riderTripStatus}?fareCalculationId=${fareCalculationId}`
+  const swrKey = `${SWR_KEYS.riderTripStatus}?tripRequestId=${tripRequestId}`
 
   const { data } = useSWR<RiderActiveTripStatusResponseDto>(swrKey, {
     refreshInterval: (latestData) => {
       const status = latestData?.trip?.status
-      if (!status || status === 'PENDING' || status === 'BOARDED') return 5000
+      if (!status || status === 'PENDING' || status === 'ACCEPTED' || status === 'BOARDED') return 5000
       return 0
     },
   })
