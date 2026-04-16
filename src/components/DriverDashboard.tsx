@@ -11,6 +11,15 @@ import type {
 } from '@/lib/contracts'
 
 import { useAuth } from './AuthProvider'
+import PermitQrCard from './PermitQrCard'
+
+type PermitQrData = {
+  permitPlateNumber: string
+  qrToken: string
+  driverFullName: string
+  permitStatus: string
+  permitExpiryDate: string
+}
 
 type SessionOperationState = {
   targetId: string | null
@@ -45,6 +54,10 @@ export default function DriverDashboard() {
   const [operation, setOperation] = useState<SessionOperationState>({ targetId: null, action: null })
   const [expandedProblemRiderId, setExpandedProblemRiderId] = useState<string | null>(null)
   const [showArchived, setShowArchived] = useState(false)
+  const [permitQr, setPermitQr] = useState<PermitQrData | null>(null)
+  const [permitQrLoading, setPermitQrLoading] = useState(false)
+  const [permitQrError, setPermitQrError] = useState<string | null>(null)
+  const [showPermitQr, setShowPermitQr] = useState(false)
 
   const loadDriverSession = async () => {
     try {
@@ -126,6 +139,33 @@ export default function DriverDashboard() {
     }
   }
 
+  const handleViewPermitQr = async () => {
+    if (permitQr) {
+      setShowPermitQr(true)
+      return
+    }
+
+    try {
+      setPermitQrLoading(true)
+      setPermitQrError(null)
+
+      const response = await fetch('/api/driver/permit/qr')
+      const payload = await response.json()
+
+      if (!response.ok) {
+        setPermitQrError(payload.error ?? 'Unable to load permit QR.')
+        return
+      }
+
+      setPermitQr(payload as PermitQrData)
+      setShowPermitQr(true)
+    } catch {
+      setPermitQrError('Unable to load permit QR.')
+    } finally {
+      setPermitQrLoading(false)
+    }
+  }
+
   const handleStartTrip = async () => {
     await runSessionRequest('session-start', 'start', () =>
       fetch('/api/driver/session/start', {
@@ -190,6 +230,7 @@ export default function DriverDashboard() {
   const visibleSections = data?.sections.filter((section) => !isArchivedSection(section)) ?? []
 
   return (
+    <>
     <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_320px]">
       <section className="space-y-6">
         <div className="app-surface-card rounded-2xl p-6">
@@ -409,6 +450,77 @@ export default function DriverDashboard() {
         </Link>
       </aside>
     </div>
+
+      {/* Floating permit QR button */}
+      <button
+        type="button"
+        onClick={() => void handleViewPermitQr()}
+        disabled={permitQrLoading}
+        aria-label="View my permit QR"
+        style={{ bottom: 'calc(var(--mobile-bottom-nav-height, 0px) + 1rem)' } as React.CSSProperties}
+        className="fixed right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70 sm:right-6"
+      >
+        {permitQrLoading ? (
+          <svg className="h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+          </svg>
+        ) : (
+          <svg className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <rect x="3" y="3" width="7" height="7" rx="1" />
+            <rect x="14" y="3" width="7" height="7" rx="1" />
+            <rect x="3" y="14" width="7" height="7" rx="1" />
+            <path d="M14 14h2v2h-2zM18 14h3M14 18h2M18 18h3v3M21 14v2" />
+          </svg>
+        )}
+      </button>
+
+      {/* Permit QR modal */}
+      {showPermitQr && permitQr ? (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-end sm:justify-end sm:p-6"
+          style={{ paddingBottom: 'calc(var(--mobile-bottom-nav-height, 0px) + 1rem)' } as React.CSSProperties}
+          onClick={() => setShowPermitQr(false)}
+        >
+          <div
+            className="w-full rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl sm:max-w-sm"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-base font-semibold text-slate-900">My Permit QR</h3>
+                <p className="text-xs text-slate-500">Show this at the compliance terminal.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPermitQr(false)}
+                aria-label="Close permit QR"
+                className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <PermitQrCard
+              permitPlateNumber={permitQr.permitPlateNumber}
+              qrToken={permitQr.qrToken}
+              driverFullName={permitQr.driverFullName}
+            />
+          </div>
+        </div>
+      ) : null}
+
+      {/* Permit QR error toast */}
+      {permitQrError && !showPermitQr ? (
+        <div
+          style={{ bottom: 'calc(var(--mobile-bottom-nav-height, 0px) + 5rem)' } as React.CSSProperties}
+          className="fixed left-4 right-4 z-50 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 shadow-lg sm:left-auto sm:right-6 sm:max-w-xs"
+        >
+          {permitQrError}
+        </div>
+      ) : null}
+    </>
   )
 }
 

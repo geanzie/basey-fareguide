@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic'
 
 import { useAuth } from './AuthProvider'
 import PublicRideTagScanner from './PublicRideTagScanner'
+import RiderTripStatusPanel from './RiderTripStatusPanel'
 import type { RoutePlannerMapProps } from './RoutePlannerMap'
 import VehicleLookupField from './VehicleLookupField'
 import type {
@@ -180,6 +181,7 @@ const RoutePlannerCalculator = ({
   const [routeMessage, setRouteMessage] = useState<string | null>(null)
   const [isCalculating, setIsCalculating] = useState(false)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle')
+  const [savedCalculationId, setSavedCalculationId] = useState<string | null>(null)
   const [userDiscountCard, setUserDiscountCard] = useState<DiscountCardDto | null>(null)
   const [fitBoundsToken, setFitBoundsToken] = useState(0)
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleLookupDto | null>(null)
@@ -308,6 +310,7 @@ const RoutePlannerCalculator = ({
     setPlannerState('placing_points')
     setIsCalculating(false)
     setSaveStatus('idle')
+    setSavedCalculationId(null)
   }
 
   const refitRoute = () => {
@@ -473,6 +476,9 @@ const RoutePlannerCalculator = ({
       }
 
       setSaveStatus('saved')
+      if (data.calculation?.id) {
+        setSavedCalculationId(data.calculation.id)
+      }
     } catch {
       if (displayedRouteVersion === displayedRouteVersionRef.current) {
         setSaveStatus('failed')
@@ -491,6 +497,7 @@ const RoutePlannerCalculator = ({
     displayedRouteVersionRef.current += 1
     setDisplayedRoutePair(null)
     setSaveStatus('idle')
+    setSavedCalculationId(null)
 
     if (target === 'origin') {
       setOriginSelection(nextSelection)
@@ -703,6 +710,12 @@ const RoutePlannerCalculator = ({
                       </button>
                     </div>
                   </div>
+
+                  {saveStatus === 'saved' && savedCalculationId && user?.userType === 'PUBLIC' ? (
+                    <div className="px-4 pb-4 sm:px-5">
+                      <RiderTripStatusPanel fareCalculationId={savedCalculationId} />
+                    </div>
+                  ) : null}
                 </div>
               </div>
             ) : null}

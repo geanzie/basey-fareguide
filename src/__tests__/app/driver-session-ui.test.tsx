@@ -187,6 +187,19 @@ describe('DriverDashboard session UI', () => {
     expect(container.querySelector('textarea')).toBeNull()
     expect(container.querySelector('input[type="text"]')).toBeNull()
 
+    // Accept is a single primary (positive) action button — no confirmation dialog before clicking
+    const acceptButton = Array.from(container.querySelectorAll('button')).find((button) =>
+      button.textContent?.trim() === 'Accept',
+    )
+    expect(acceptButton).toBeTruthy()
+    // Accept button should not be inside a confirmation modal or form
+    expect(acceptButton?.closest('dialog')).toBeNull()
+    expect(acceptButton?.closest('form')).toBeNull()
+
+    // Negative actions (NOT_HERE, FULL, WRONG_TRIP, CANCELLED) are hidden behind Problem toggle before click
+    expect(container.textContent).not.toContain('Not Here')
+    expect(container.textContent).not.toContain('Wrong Trip')
+
     const problemButton = Array.from(container.querySelectorAll('button')).find((button) =>
       button.textContent?.includes('Problem'),
     )

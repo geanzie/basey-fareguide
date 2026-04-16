@@ -109,6 +109,12 @@ body {
   .app-mobile-nav-offset {
     padding-bottom: 0;
   }
+
+  /* Bottom nav is hidden at lg+, so collapse its height variable so any
+     calc() offsets (e.g. FAB, modals) naturally fall back to their base value */
+  :root {
+    --mobile-bottom-nav-height: 0px;
+  }
 }
 
 /* Custom animations */

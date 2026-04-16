@@ -13,3 +13,4 @@ export * from "./terminal";
 export * from "./tracker";
 export * from "./vehicles";
 export * from "./routingSettings";
+export * from "./riderTrip";

@@ -19,6 +19,7 @@ import type {
   FareCalculationsResponseDto,
   IncidentListItemDto,
   IncidentsResponseDto,
+  RiderActiveTripStatusResponseDto,
 } from '@/lib/contracts'
 import { SWR_KEYS } from '@/lib/swrKeys'
 
@@ -61,6 +62,13 @@ function PublicUserDashboard() {
     useSWR<IncidentsResponseDto>(SWR_KEYS.incidents)
   const { data: fareCalculationsResponse, isLoading: fareCalculationsLoading } =
     useSWR<FareCalculationsResponseDto>(SWR_KEYS.fareCalculations)
+  const { data: activeTripData } = useSWR<RiderActiveTripStatusResponseDto>(SWR_KEYS.riderTripStatus, {
+    refreshInterval: (latestData) => {
+      const status = latestData?.trip?.status
+      if (!status || status === 'PENDING') return 5000
+      return 0
+    },
+  })
 
   const reportedIncidents: IncidentListItemDto[] = incidentsResponse?.incidents || []
   const recentRoutes: FareCalculationDto[] = fareCalculationsResponse?.calculations || []
@@ -96,6 +104,38 @@ function PublicUserDashboard() {
 
   return (
     <div className="space-y-6 sm:space-y-8">
+      {activeTripData?.hasActiveTrip && activeTripData.trip ? (
+        <section
+          className={`rounded-2xl border p-3 sm:p-4 ${
+            activeTripData.trip.status === 'ACCEPTED' || activeTripData.trip.status === 'BOARDED'
+              ? 'border-emerald-200 bg-emerald-50'
+              : 'border-yellow-200 bg-yellow-50'
+          }`}
+        >
+          <div className="flex items-center justify-between gap-2">
+            <span
+              className={`text-xs font-semibold uppercase tracking-[0.14em] ${
+                activeTripData.trip.status === 'ACCEPTED' || activeTripData.trip.status === 'BOARDED'
+                  ? 'text-emerald-700'
+                  : 'text-yellow-700'
+              }`}
+            >
+              {activeTripData.trip.statusLabel}
+            </span>
+            {activeTripData.trip.vehiclePlateNumber ? (
+              <span className="rounded-full bg-white/80 px-2 py-0.5 text-xs font-medium text-slate-600 ring-1 ring-slate-200">
+                {activeTripData.trip.vehiclePlateNumber}
+              </span>
+            ) : null}
+          </div>
+          <div className="mt-1.5 text-sm font-medium text-slate-800">
+            {activeTripData.trip.origin} → {activeTripData.trip.destination}
+          </div>
+          <div className="mt-0.5 text-sm font-semibold text-slate-900">
+            PHP {activeTripData.trip.fare.toFixed(2)}
+          </div>
+        </section>
+      ) : null}
       <section className="app-surface-card-strong rounded-2xl border border-blue-200/80 p-5 sm:p-6">
         <div className="flex items-start gap-4">
           <div className={getDashboardIconChipClasses('blue')}>
