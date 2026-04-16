@@ -79,6 +79,12 @@ const riderActionConfig: Record<
     label: 'Accept',
     kind: 'positive',
     from: [DriverTripSessionRiderStatus.PENDING],
+    to: DriverTripSessionRiderStatus.ACCEPTED,
+  },
+  BOARDED: {
+    label: 'Boarded',
+    kind: 'positive',
+    from: [DriverTripSessionRiderStatus.ACCEPTED],
     to: DriverTripSessionRiderStatus.BOARDED,
   },
   DROPPED_OFF: {
@@ -940,7 +946,7 @@ export async function applyDriverSessionAction(
         status: actionConfig.to,
         fareCalculationId,
         acceptedAt: action === DriverTripSessionRiderAction.ACCEPT ? now : undefined,
-        boardedAt: action === DriverTripSessionRiderAction.ACCEPT ? now : undefined,
+        boardedAt: action === DriverTripSessionRiderAction.BOARDED ? now : undefined,
         completedAt: action === DriverTripSessionRiderAction.DROPPED_OFF ? now : undefined,
         expiresAt:
           action === DriverTripSessionRiderAction.ACCEPT
