@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
+import { UserType } from '@prisma/client'
 
 import { getJWTSecret } from '@/lib/auth'
 import { AUTH_SESSION_JWT_EXPIRES_IN, AUTH_SESSION_MAX_AGE_SECONDS } from '@/lib/authSession'
+import { normalizePlateNumber } from '@/lib/incidents/penaltyRules'
 import { prisma } from '@/lib/prisma'
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS } from '@/lib/rateLimit'
 import { serializeSessionUser } from '@/lib/serializers'
@@ -27,6 +29,40 @@ export type LoginAttemptResult =
 
 export async function verifyPassword(password: string, passwordHash: string): Promise<boolean> {
   return bcrypt.compare(password, passwordHash)
+}
+
+async function resolveLoginUser(username: string) {
+  const exactUser = await prisma.user.findUnique({
+    where: { username },
+  })
+
+  if (exactUser) {
+    return exactUser
+  }
+
+  const normalizedDriverUsername = normalizePlateNumber(username)
+
+  if (!normalizedDriverUsername) {
+    return null
+  }
+
+  // Driver usernames are plate-derived and normalized at creation time, so only
+  // allow a case-insensitive fallback when the lookup resolves to exactly one user.
+  const caseInsensitiveCandidates = await prisma.user.findMany({
+    where: {
+      username: {
+        equals: normalizedDriverUsername,
+        mode: 'insensitive',
+      },
+    },
+  })
+
+  if (caseInsensitiveCandidates.length !== 1) {
+    return null
+  }
+
+  const [candidate] = caseInsensitiveCandidates
+  return candidate.userType === UserType.DRIVER ? candidate : null
 }
 
 export async function authenticateLoginAttempt(
@@ -68,9 +104,7 @@ export async function authenticateLoginAttempt(
     }
   }
 
-  const user = await prisma.user.findUnique({
-    where: { username },
-  })
+  const user = await resolveLoginUser(username)
 
   if (!user) {
     return {
