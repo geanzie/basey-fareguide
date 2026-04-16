@@ -6,4 +6,5 @@ export const SWR_KEYS = {
   fareRates: "/api/fare-rates",
   announcements: "/api/announcements",
   riderTripStatus: "/api/public/trip-status",
+  driverSession: "/api/driver/session/active",
 } as const;

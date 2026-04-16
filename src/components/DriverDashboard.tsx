@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import Link from 'next/link'
+import { useEffect, useRef, useState } from 'react'
+import useSWR from 'swr'
 
 import type {
   DriverSessionActionDto,
@@ -10,6 +10,8 @@ import type {
   DriverSessionSectionDto,
 } from '@/lib/contracts'
 
+import { SWR_KEYS } from '@/lib/swrKeys'
+import { swrFetcher } from '@/lib/swr'
 import { useAuth } from './AuthProvider'
 import PermitQrCard from './PermitQrCard'
 
@@ -48,70 +50,45 @@ function toProblemActions(rider: DriverSessionRiderCardDto) {
 
 export default function DriverDashboard() {
   const { user } = useAuth()
-  const [data, setData] = useState<DriverSessionActiveResponseDto | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { data, isLoading: loading, mutate } = useSWR<DriverSessionActiveResponseDto>(
+    SWR_KEYS.driverSession,
+    swrFetcher,
+    { refreshInterval: 5000 },
+  )
   const [error, setError] = useState<string | null>(null)
   const [operation, setOperation] = useState<SessionOperationState>({ targetId: null, action: null })
   const [expandedProblemRiderId, setExpandedProblemRiderId] = useState<string | null>(null)
   const [showArchived, setShowArchived] = useState(false)
+  const [showCompleted, setShowCompleted] = useState(false)
+  const [pendingModalQueue, setPendingModalQueue] = useState<DriverSessionRiderCardDto[]>([])
+  const [showPendingQueue, setShowPendingQueue] = useState(false)
+  const seenRiderIds = useRef<Set<string>>(new Set())
+  const isInitialLoad = useRef(true)
   const [permitQr, setPermitQr] = useState<PermitQrData | null>(null)
   const [permitQrLoading, setPermitQrLoading] = useState(false)
   const [permitQrError, setPermitQrError] = useState<string | null>(null)
   const [showPermitQr, setShowPermitQr] = useState(false)
 
-  const loadDriverSession = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-
-      const response = await fetch('/api/driver/session/active')
-      const payload = await response.json()
-
-      if (!response.ok) {
-        throw new Error(payload.message || 'Failed to load trip session')
-      }
-
-      setData(payload)
-    } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : 'Failed to load trip session')
-      setData(null)
-    } finally {
-      setLoading(false)
-    }
-  }
-
   useEffect(() => {
-    let active = true
+    if (!data) return
 
-    const hydrate = async () => {
-      try {
-        const response = await fetch('/api/driver/session/active')
-        const payload = await response.json()
+    const pendingRiders = data.sections
+      .filter((s) => !isArchivedSection(s))
+      .flatMap((s) => s.riders)
+      .filter((r) => r.availableActions.some((a) => a.kind === 'positive'))
 
-        if (!response.ok) {
-          throw new Error(payload.message || payload.error || 'Failed to load trip session')
-        }
-
-        if (active) {
-          setData(payload)
-          setError(null)
-          setLoading(false)
-        }
-      } catch (loadError) {
-        if (active) {
-          setError(loadError instanceof Error ? loadError.message : 'Failed to load trip session')
-          setData(null)
-          setLoading(false)
-        }
-      }
+    if (isInitialLoad.current) {
+      pendingRiders.forEach((r) => seenRiderIds.current.add(r.id))
+      isInitialLoad.current = false
+      return
     }
 
-    void hydrate()
-
-    return () => {
-      active = false
+    const newRiders = pendingRiders.filter((r) => !seenRiderIds.current.has(r.id))
+    if (newRiders.length > 0) {
+      newRiders.forEach((r) => seenRiderIds.current.add(r.id))
+      setPendingModalQueue((q) => [...q, ...newRiders])
     }
-  }, [])
+  }, [data])
 
   const runSessionRequest = async (targetId: string, action: string, request: () => Promise<Response>) => {
     try {
@@ -125,11 +102,7 @@ export default function DriverDashboard() {
         throw new Error(payload.message || 'Unable to update trip session')
       }
 
-      if ('sections' in payload) {
-        setData(payload)
-      } else if (data) {
-        await loadDriverSession()
-      }
+      await mutate('sections' in payload ? (payload as DriverSessionActiveResponseDto) : undefined)
 
       setExpandedProblemRiderId(null)
     } catch (requestError) {
@@ -217,7 +190,7 @@ export default function DriverDashboard() {
         <p className="mt-3 text-sm text-red-600">{error}</p>
         <button
           type="button"
-          onClick={() => void loadDriverSession()}
+          onClick={() => void mutate()}
           className="mt-4 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700"
         >
           Try Again
@@ -227,7 +200,8 @@ export default function DriverDashboard() {
   }
 
   const archivedSection = data?.sections.find(isArchivedSection) ?? null
-  const visibleSections = data?.sections.filter((section) => !isArchivedSection(section)) ?? []
+  const pendingSection = data?.sections.find((s) => s.key === 'pending') ?? null
+  const visibleSections = data?.sections.filter((s) => s.key === 'boarded' || s.key === 'completed') ?? []
 
   return (
     <>
@@ -245,9 +219,22 @@ export default function DriverDashboard() {
             </div>
 
             <div className="flex flex-col gap-3 sm:items-end">
-              <span className="inline-flex w-fit rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-700">
-                {data?.session.statusLabel ?? 'No Active Trip'}
-              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex w-fit rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-700">
+                  {data?.session.statusLabel ?? 'No Active Trip'}
+                </span>
+                {(data?.session.pendingCount ?? 0) > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowPendingQueue(true)}
+                    aria-label={`${data?.session.pendingCount} pending rider request${(data?.session.pendingCount ?? 0) !== 1 ? 's' : ''} — tap to review`}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-sm font-semibold text-amber-800 hover:bg-amber-200"
+                  >
+                    <span className="inline-block h-2 w-2 rounded-full bg-amber-500" />
+                    {data?.session.pendingCount} pending
+                  </button>
+                ) : null}
+              </div>
               {data?.session.canStartSession ? (
                 <button
                   type="button"
@@ -272,7 +259,7 @@ export default function DriverDashboard() {
 
           <div className="mt-6 grid gap-4 sm:grid-cols-3">
             <SummaryCard label="Session status" value={data?.session.statusLabel ?? 'No Active Trip'} />
-            <SummaryCard label="Active riders" value={String(data?.session.activeRiderCount ?? 0)} />
+            <SummaryCard label="Boarded" value={String(data?.session.boardedCount ?? 0)} />
             <SummaryCard label="Started" value={formatDateTime(data?.session.openedAt ?? null)} />
           </div>
         </div>
@@ -290,12 +277,23 @@ export default function DriverDashboard() {
           <section key={section.key} className="app-surface-card rounded-2xl p-5">
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-lg font-semibold text-slate-900">{section.label}</h3>
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-600">
-                {section.riders.length}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-600">
+                  {section.riders.length}
+                </span>
+                {section.key === 'completed' && section.riders.length > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowCompleted((c) => !c)}
+                    className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                  >
+                    {showCompleted ? 'Hide' : 'Show'}
+                  </button>
+                ) : null}
+              </div>
             </div>
 
-            {section.riders.length > 0 ? (
+            {(section.key !== 'completed' || showCompleted) && section.riders.length > 0 ? (
               <div className="mt-4 space-y-3">
                 {section.riders.map((rider) => {
                   const positiveActions = rider.availableActions.filter((action) => action.kind === 'positive')
@@ -380,9 +378,9 @@ export default function DriverDashboard() {
                   )
                 })}
               </div>
-            ) : (
+            ) : section.key !== 'completed' ? (
               <p className="mt-4 text-sm text-slate-500">No riders in this section.</p>
-            )}
+            ) : null}
           </section>
         ))}
 
@@ -426,30 +424,136 @@ export default function DriverDashboard() {
 
       <aside className="app-surface-card rounded-2xl p-6">
         <h2 className="text-lg font-semibold text-slate-900">Session Notes</h2>
-        <ul className="mt-4 space-y-3 text-sm text-slate-600">
-          <li>Riders keep their own saved trip records.</li>
-          <li>Use Accept, Boarded, and Dropped Off for normal handling.</li>
-          <li>Use the problem button only when you need a fixed reason.</li>
-          <li>Route and fare details stay locked to the rider trip record.</li>
-        </ul>
+        <p className="mt-2 text-sm text-slate-500">Accept, board, and drop off riders in order. Use the problem button for exceptions.</p>
 
         {data ? (
-          <div className="mt-6 rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
+          <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
             <div className="font-semibold text-slate-900">Trip summary</div>
             <div className="mt-2">Pending: {data.session.pendingCount}</div>
             <div>Boarded: {data.session.boardedCount}</div>
             <div>Completed: {data.session.completedCount}</div>
           </div>
         ) : null}
-
-        <Link
-          href="/profile"
-          className="mt-6 inline-flex rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
-        >
-          Open My Profile
-        </Link>
       </aside>
     </div>
+
+      {/* New ride request modal */}
+      {pendingModalQueue.length > 0 ? (() => {
+        const modalRider = pendingModalQueue[0]
+        const acceptAction = modalRider.availableActions.find((a) => a.kind === 'positive')
+        const remaining = pendingModalQueue.length - 1
+        return (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+            onClick={() => setPendingModalQueue((q) => q.slice(1))}
+          >
+            <div
+              className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mb-1 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                  <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700">New ride request</p>
+                </div>
+                {remaining > 0 ? (
+                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
+                    +{remaining} more
+                  </span>
+                ) : null}
+              </div>
+              <h2 className="mt-2 text-lg font-semibold text-slate-900">
+                {modalRider.origin} → {modalRider.destination}
+              </h2>
+              <p className="mt-1 text-2xl font-bold text-slate-900">{formatCurrency(modalRider.fareSnapshot)}</p>
+              <p className="mt-1 text-xs text-slate-500">Joined {formatDateTime(modalRider.joinedAt)}</p>
+              <div className="mt-5 flex gap-3">
+                {acceptAction ? (
+                  <button
+                    type="button"
+                    disabled={operation.targetId === modalRider.id}
+                    onClick={() => {
+                      void handleRiderAction(modalRider.id, acceptAction.action)
+                      setPendingModalQueue((q) => q.slice(1))
+                    }}
+                    className="flex-1 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {operation.targetId === modalRider.id ? 'Saving...' : acceptAction.label}
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => setPendingModalQueue((q) => q.slice(1))}
+                  className="flex-1 rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })() : null}
+
+      {/* Pending queue drawer */}
+      {showPendingQueue && pendingSection !== null && pendingSection.riders.length > 0 ? (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50"
+          onClick={() => setShowPendingQueue(false)}
+        >
+          <div
+            className="w-full max-w-lg rounded-t-2xl bg-white p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-semibold text-slate-900">Pending requests</h3>
+                <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
+                  {pendingSection.riders.length}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPendingQueue(false)}
+                aria-label="Close pending queue"
+                className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="max-h-72 space-y-2 overflow-y-auto">
+              {pendingSection.riders.map((rider) => {
+                const acceptAction = rider.availableActions.find((a) => a.kind === 'positive')
+                const isBusy = operation.targetId === rider.id
+                return (
+                  <div key={rider.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-semibold text-slate-900">
+                        {rider.origin} → {rider.destination}
+                      </div>
+                      <div className="text-sm font-medium text-slate-500">{formatCurrency(rider.fareSnapshot)}</div>
+                    </div>
+                    {acceptAction ? (
+                      <button
+                        type="button"
+                        disabled={isBusy}
+                        onClick={() => {
+                          void handleRiderAction(rider.id, acceptAction.action)
+                          setShowPendingQueue(false)
+                        }}
+                        className="shrink-0 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isBusy ? 'Saving...' : acceptAction.label}
+                      </button>
+                    ) : null}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {/* Floating permit QR button */}
       <button

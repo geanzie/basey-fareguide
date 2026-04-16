@@ -170,49 +170,46 @@ describe('DriverDashboard session UI', () => {
     ;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false
   })
 
-  it('shows only the simplified driver sections and action labels with no free-text input', async () => {
+  it('renders Boarded section and Dropped Off action; shows pending badge not a full Pending section', async () => {
     await act(async () => {
       root.render(React.createElement(DriverDashboard))
       await Promise.resolve()
       await Promise.resolve()
     })
 
-    expect(container.textContent).toContain('Pending')
+    // Boarded section with its rider action is present in the main scroll
     expect(container.textContent).toContain('Boarded')
-    expect(container.textContent).toContain('Completed')
-    expect(container.textContent).toContain('Accept')
     expect(container.textContent).toContain('Dropped Off')
-    expect(container.textContent).not.toContain('Confirm Route')
-    expect(container.textContent).not.toContain('Validate Rider')
+
+    // Completed section header is present (collapsed by default but heading is visible)
+    expect(container.textContent).toContain('Completed')
+
+    // No free-text input anywhere on the screen
     expect(container.querySelector('textarea')).toBeNull()
     expect(container.querySelector('input[type="text"]')).toBeNull()
 
-    // Accept is a single primary (positive) action button — no confirmation dialog before clicking
-    const acceptButton = Array.from(container.querySelectorAll('button')).find((button) =>
-      button.textContent?.trim() === 'Accept',
-    )
-    expect(acceptButton).toBeTruthy()
-    // Accept button should not be inside a confirmation modal or form
-    expect(acceptButton?.closest('dialog')).toBeNull()
-    expect(acceptButton?.closest('form')).toBeNull()
+    // No extraneous action labels
+    expect(container.textContent).not.toContain('Confirm Route')
+    expect(container.textContent).not.toContain('Validate Rider')
 
-    // Negative actions (NOT_HERE, FULL, WRONG_TRIP, CANCELLED) are hidden behind Problem toggle before click
+    // Pending badge is shown (pendingCount: 1 in test data)
+    expect(container.textContent).toContain('1 pending')
+
+    // Pending is NOT a full section heading in the main scroll area
+    // (it only appears as a badge and in the sidebar summary)
+    const sectionHeadings = Array.from(container.querySelectorAll('h3')).map((el) => el.textContent?.trim())
+    expect(sectionHeadings).not.toContain('Pending')
+
+    // Accept BUTTON is NOT rendered on the main screen (it lives in modal / pending queue drawer)
+    // Note: the sidebar note text "Use Accept, Boarded..." still contains the word Accept, so
+    // we must check for button elements specifically, not textContent.
+    const acceptButton = Array.from(container.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'Accept',
+    )
+    expect(acceptButton).toBeUndefined()
+
+    // Negative action labels are not shown in the main scroll (pending riders are not in main section)
     expect(container.textContent).not.toContain('Not Here')
     expect(container.textContent).not.toContain('Wrong Trip')
-
-    const problemButton = Array.from(container.querySelectorAll('button')).find((button) =>
-      button.textContent?.includes('Problem'),
-    )
-
-    await act(async () => {
-      problemButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      await Promise.resolve()
-    })
-
-    expect(container.textContent).toContain('Choose a reason')
-    expect(container.textContent).toContain('Not Here')
-    expect(container.textContent).toContain('Full')
-    expect(container.textContent).toContain('Wrong Trip')
-    expect(container.textContent).toContain('Cancelled')
   })
 })
