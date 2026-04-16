@@ -180,6 +180,42 @@ describe('RiderTripStatusPanel', () => {
     expect(terminalCount).toBe(1)
   })
 
+  it('shows toast when status transitions from PENDING to BOARDED', async () => {
+    vi.mocked(useSWR).mockReturnValue({
+      data: PENDING_RESPONSE,
+      error: undefined,
+      isLoading: false,
+      isValidating: false,
+      mutate: vi.fn(),
+    } as never)
+
+    const { container, root } = mountPanel()
+    await act(async () => {
+      root.render(React.createElement(RiderTripStatusPanel, { fareCalculationId: 'calc-1' }))
+      await Promise.resolve()
+    })
+
+    const BOARDED_RESPONSE = {
+      ...PENDING_RESPONSE,
+      trip: { ...PENDING_RESPONSE.trip, status: 'BOARDED', statusLabel: 'Trip accepted' },
+    }
+
+    vi.mocked(useSWR).mockReturnValue({
+      data: BOARDED_RESPONSE,
+      error: undefined,
+      isLoading: false,
+      isValidating: false,
+      mutate: vi.fn(),
+    } as never)
+
+    await act(async () => {
+      root.render(React.createElement(RiderTripStatusPanel, { fareCalculationId: 'calc-1' }))
+      await Promise.resolve()
+    })
+
+    expect(container.textContent).toContain('Driver accepted your trip')
+  })
+
   it('uses fareCalculationId-scoped SWR key', async () => {
     vi.mocked(useSWR).mockReturnValue({
       data: NO_TRIP_RESPONSE,

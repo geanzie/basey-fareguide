@@ -132,7 +132,7 @@ describe('driver session service', () => {
           {
             id: 'session-rider-1',
             fareCalculationId: 'calc-1',
-            status: 'ACCEPTED',
+            status: 'BOARDED',
             originSnapshot: 'Mercado',
             destinationSnapshot: 'Terminal',
             fareSnapshot: 35,
@@ -153,7 +153,7 @@ describe('driver session service', () => {
     expect(transactionMock.vehicleTripSessionRider.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'session-rider-1' },
-        data: expect.objectContaining({ status: 'ACCEPTED' }),
+        data: expect.objectContaining({ status: 'BOARDED' }),
       }),
     )
     expect(transactionMock.vehicleTripSessionRiderEvent.create).toHaveBeenCalledWith(
@@ -161,12 +161,12 @@ describe('driver session service', () => {
         data: expect.objectContaining({
           action: 'ACCEPT',
           fromStatus: 'PENDING',
-          toStatus: 'ACCEPTED',
+          toStatus: 'BOARDED',
           actedByUserId: 'driver-1',
         }),
       }),
     )
-    expect(response.rider.status).toBe('ACCEPTED')
+    expect(response.rider.status).toBe('BOARDED')
   })
 
   it('rejects invalid rider state transitions', async () => {

@@ -15,7 +15,7 @@ const ACTIVE_RIDER_STATUSES = [
 const riderStatusLabels: Record<DriverTripSessionRiderStatus, string> = {
   PENDING: 'Waiting for driver',
   ACCEPTED: 'Trip accepted',
-  BOARDED: 'Boarded',
+  BOARDED: 'Trip accepted',
   COMPLETED: 'Completed',
   REJECTED_NOT_HERE: 'Not Here',
   REJECTED_FULL: 'Full',

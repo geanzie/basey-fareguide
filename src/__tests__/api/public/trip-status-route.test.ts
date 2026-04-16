@@ -123,6 +123,31 @@ describe('GET /api/public/trip-status', () => {
     expect(json.trip.acceptedAt).toBe('2026-04-16T08:02:00.000Z')
   })
 
+  it('returns Trip accepted label for BOARDED status', async () => {
+    authMock.requireRequestRole.mockResolvedValueOnce({ id: 'user-1', userType: 'PUBLIC' })
+    prismaMock.vehicleTripSessionRider.findFirst.mockResolvedValueOnce({
+      id: 'sr-1',
+      fareCalculationId: 'calc-1',
+      status: 'BOARDED',
+      originSnapshot: 'Market',
+      destinationSnapshot: 'Terminal',
+      fareSnapshot: '35.00',
+      discountTypeSnapshot: null,
+      joinedAt: new Date('2026-04-16T08:00:00.000Z'),
+      acceptedAt: new Date('2026-04-16T08:02:00.000Z'),
+      session: {
+        vehicle: { plateNumber: 'ABC-123', vehicleType: 'TRICYCLE' },
+      },
+    })
+
+    const response = await GET(makeRequest())
+    const json = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(json.trip.status).toBe('BOARDED')
+    expect(json.trip.statusLabel).toBe('Trip accepted')
+  })
+
   it('scopes query to the correct rider when fareCalculationId is provided', async () => {
     authMock.requireRequestRole.mockResolvedValueOnce({ id: 'user-1', userType: 'PUBLIC' })
     prismaMock.vehicleTripSessionRider.findFirst.mockResolvedValueOnce(null)

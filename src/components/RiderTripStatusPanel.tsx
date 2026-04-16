@@ -24,14 +24,14 @@ export default function RiderTripStatusPanel({ fareCalculationId }: RiderTripSta
   const { data } = useSWR<RiderActiveTripStatusResponseDto>(swrKey, {
     refreshInterval: (latestData) => {
       const status = latestData?.trip?.status
-      if (!status || status === 'PENDING') return 5000
+      if (!status || status === 'PENDING' || status === 'BOARDED') return 5000
       return 0
     },
   })
 
   useEffect(() => {
     const currentStatus = data?.trip?.status ?? null
-    if (prevStatusRef.current === 'PENDING' && currentStatus === 'ACCEPTED') {
+    if (prevStatusRef.current === 'PENDING' && (currentStatus === 'ACCEPTED' || currentStatus === 'BOARDED')) {
       setShowToast(true)
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
       toastTimerRef.current = setTimeout(() => setShowToast(false), 3000)

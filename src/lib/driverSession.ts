@@ -67,7 +67,7 @@ const riderActionConfig: Record<
     label: 'Accept',
     kind: 'positive',
     from: [DriverTripSessionRiderStatus.PENDING],
-    to: DriverTripSessionRiderStatus.ACCEPTED,
+    to: DriverTripSessionRiderStatus.BOARDED,
   },
   BOARDED: {
     label: 'Boarded',
@@ -474,7 +474,7 @@ export async function applyDriverSessionAction(
       data: {
         status: actionConfig.to,
         acceptedAt: action === DriverTripSessionRiderAction.ACCEPT ? now : undefined,
-        boardedAt: action === DriverTripSessionRiderAction.BOARDED ? now : undefined,
+        boardedAt: action === DriverTripSessionRiderAction.BOARDED || action === DriverTripSessionRiderAction.ACCEPT ? now : undefined,
         completedAt: action === DriverTripSessionRiderAction.DROPPED_OFF ? now : undefined,
         finalisedAt: FINALIZED_RIDER_STATUSES.includes(actionConfig.to)
           ? now
@@ -492,7 +492,7 @@ export async function applyDriverSessionAction(
       },
     })
 
-    if (action === DriverTripSessionRiderAction.BOARDED && session.status === DriverTripSessionStatus.OPEN) {
+    if (actionConfig.to === DriverTripSessionRiderStatus.BOARDED && session.status === DriverTripSessionStatus.OPEN) {
       await tx.vehicleTripSession.update({
         where: { id: session.id },
         data: {

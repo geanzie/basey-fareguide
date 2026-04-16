@@ -198,7 +198,7 @@ describe('POST /api/driver/session/[sessionId]/riders/[sessionRiderId]/action â€
     expect(json.code).toBe('INVALID_RIDER_TRANSITION')
   })
 
-  it('accepts a PENDING rider and writes acceptedAt via transaction', async () => {
+  it('accepts a PENDING rider and writes acceptedAt and boardedAt via transaction', async () => {
     authMock.verifyAuthWithSelect.mockResolvedValueOnce(DRIVER_USER)
     prismaMock.vehicle.findUnique.mockResolvedValueOnce(VEHICLE)
     // Initial session load
@@ -206,7 +206,7 @@ describe('POST /api/driver/session/[sessionId]/riders/[sessionRiderId]/action â€
     // Session refresh after transaction uses findUnique
     prismaMock.vehicleTripSession.findUnique.mockResolvedValueOnce({
       ...OPEN_SESSION_WITH_PENDING_RIDER,
-      riders: [{ ...OPEN_SESSION_WITH_PENDING_RIDER.riders[0], status: 'ACCEPTED' }],
+      riders: [{ ...OPEN_SESSION_WITH_PENDING_RIDER.riders[0], status: 'BOARDED' }],
     })
 
     txMock.vehicleTripSessionRider.update.mockResolvedValueOnce({})
@@ -222,13 +222,14 @@ describe('POST /api/driver/session/[sessionId]/riders/[sessionRiderId]/action â€
 
     const updateCall = txMock.vehicleTripSessionRider.update.mock.calls[0][0]
     expect(updateCall.where.id).toBe('sr-1')
-    expect(updateCall.data.status).toBe('ACCEPTED')
+    expect(updateCall.data.status).toBe('BOARDED')
     expect(updateCall.data.acceptedAt).toBeInstanceOf(Date)
+    expect(updateCall.data.boardedAt).toBeInstanceOf(Date)
 
     const eventCall = txMock.vehicleTripSessionRiderEvent.create.mock.calls[0][0]
     expect(eventCall.data.action).toBe('ACCEPT')
     expect(eventCall.data.fromStatus).toBe('PENDING')
-    expect(eventCall.data.toStatus).toBe('ACCEPTED')
+    expect(eventCall.data.toStatus).toBe('BOARDED')
     expect(eventCall.data.actedByUserId).toBe('driver-1')
   })
 })
