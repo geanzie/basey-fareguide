@@ -10,11 +10,15 @@ const authMock = vi.hoisted(() => ({
 }))
 
 const prismaMock = vi.hoisted(() => ({
+  $transaction: vi.fn(),
   user: {
     findUnique: vi.fn(),
     findFirst: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
+    findMany: vi.fn(),
+    count: vi.fn(),
+    groupBy: vi.fn(),
   },
   vehicle: {
     findUnique: vi.fn(),
@@ -51,8 +55,8 @@ vi.mock('bcryptjs', () => ({
 }))
 
 import { POST as createOfficialUser } from '@/app/api/admin/users/create/route'
-import { POST as verifyUser } from '@/app/api/admin/users/verify/route'
 import { POST as toggleUserStatus } from '@/app/api/admin/users/toggle-status/route'
+import { GET as listUsers } from '@/app/api/admin/users/route'
 
 function makeJsonRequest(url: string, body: unknown): Request {
   return new Request(url, {
@@ -69,6 +73,7 @@ beforeEach(() => {
   vi.spyOn(Math, 'random').mockReturnValue(0.123456789)
   authMock.requireRequestRole.mockResolvedValue({ id: 'admin-1', userType: 'ADMIN' })
   bcryptMock.hash.mockResolvedValue('hashed-password')
+  prismaMock.$transaction.mockImplementation(async (callback: (tx: typeof prismaMock) => unknown) => callback(prismaMock))
 })
 
 describe('admin user workflow truthfulness', () => {
@@ -98,6 +103,13 @@ describe('admin user workflow truthfulness', () => {
       lastName: 'Encoder',
       username: 'casey.encoder',
       userType: 'DATA_ENCODER',
+      isActive: true,
+      createdAt: new Date('2026-04-01T00:00:00.000Z'),
+      phoneNumber: '09123456789',
+      governmentId: null,
+      barangayResidence: null,
+      reasonForRegistration: null,
+      assignedVehicle: null,
     })
     prismaMock.adminUserCreation.create.mockResolvedValueOnce({ id: 'audit-1' })
 
@@ -113,8 +125,16 @@ describe('admin user workflow truthfulness', () => {
     const json = await response.json()
 
     expect(response.status).toBe(200)
-    expect(json.message).toBe('User created successfully')
-    expect(json.tempPassword).toEqual(expect.any(String))
+    expect(prismaMock.$transaction).toHaveBeenCalled()
+    expect(json.message).toBe('Official account created successfully')
+    expect(json.data.tempPassword).toEqual(expect.any(String))
+    expect(json.data.user).toEqual(
+      expect.objectContaining({
+        id: 'user-1',
+        fullName: 'Casey Encoder',
+        creationSource: 'ADMIN_CREATED',
+      }),
+    )
     expect(prismaMock.adminUserCreation.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
@@ -128,25 +148,47 @@ describe('admin user workflow truthfulness', () => {
   })
 
   it('creates driver accounts from an existing BPLO plate and records the initial assignment', async () => {
-    prismaMock.vehicle.findUnique.mockResolvedValueOnce({ id: 'vehicle-1' })
+    prismaMock.vehicle.findUnique.mockResolvedValueOnce({
+      id: 'vehicle-1',
+      plateNumber: 'ABC-123',
+      driverName: 'Driver One',
+      driverLicense: 'D-1234',
+      vehicleType: 'TRICYCLE',
+      permit: {
+        driverFullName: 'Pedro Driver One',
+        permitPlateNumber: 'PERMIT-001',
+      },
+    })
     prismaMock.user.findFirst.mockResolvedValueOnce(null)
     prismaMock.user.findUnique.mockResolvedValueOnce(null)
     prismaMock.user.create.mockResolvedValueOnce({
       id: 'driver-1',
-      firstName: 'Driver',
-      lastName: 'One',
+      firstName: 'Pedro',
+      lastName: 'Driver One',
       username: 'ABC-123',
       userType: 'DRIVER',
+      isActive: true,
+      createdAt: new Date('2026-04-01T00:00:00.000Z'),
+      phoneNumber: null,
+      governmentId: null,
+      barangayResidence: null,
+      reasonForRegistration: null,
+      assignedVehicle: {
+        id: 'vehicle-1',
+        plateNumber: 'ABC-123',
+        vehicleType: 'TRICYCLE',
+        permit: {
+          permitPlateNumber: 'PERMIT-001',
+        },
+      },
     })
     prismaMock.adminUserCreation.create.mockResolvedValueOnce({ id: 'audit-2' })
     prismaMock.driverVehicleAssignmentHistory.create.mockResolvedValueOnce({ id: 'assignment-1' })
 
     const response = await createOfficialUser(
       makeJsonRequest('http://localhost/api/admin/users/create', {
-        username: ' abc-123 ',
-        firstName: 'Driver',
-        lastName: 'One',
-        phoneNumber: '09123456789',
+        driverVehicleId: 'vehicle-1',
+        tempPassword: 'driver-temp-1',
         userType: 'DRIVER',
       }) as never,
     )
@@ -154,19 +196,35 @@ describe('admin user workflow truthfulness', () => {
 
     expect(response.status).toBe(200)
     expect(prismaMock.vehicle.findUnique).toHaveBeenCalledWith({
-      where: { plateNumber: 'ABC-123' },
-      select: { id: true },
+      where: { id: 'vehicle-1' },
+      select: {
+        id: true,
+        plateNumber: true,
+        driverName: true,
+        driverLicense: true,
+        vehicleType: true,
+        permit: {
+          select: {
+            driverFullName: true,
+            permitPlateNumber: true,
+          },
+        },
+      },
     })
     expect(prismaMock.user.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
+          firstName: 'Pedro',
+          lastName: 'Driver One',
           username: 'ABC-123',
+          phoneNumber: null,
           userType: 'DRIVER',
           assignedVehicleId: 'vehicle-1',
           assignedVehicleAssignedBy: 'admin-1',
         }),
       }),
     )
+    expect(bcryptMock.hash).toHaveBeenCalledWith('driver-temp-1', 12)
     expect(prismaMock.driverVehicleAssignmentHistory.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
@@ -177,38 +235,85 @@ describe('admin user workflow truthfulness', () => {
         }),
       }),
     )
-    expect(json.user.assignedVehicleId).toBe('vehicle-1')
+    expect(json.message).toBe('Driver account created successfully')
+    expect(json.data.user.assignedVehicle).toEqual({
+      vehicleId: 'vehicle-1',
+      plateNumber: 'ABC-123',
+      vehicleType: 'TRICYCLE',
+      permitPlateNumber: 'PERMIT-001',
+    })
+    expect(json.data.tempPassword).toBe('driver-temp-1')
   })
 
-  it('records the provided rejection reason when a public registration is rejected', async () => {
-    prismaMock.user.findUnique.mockResolvedValueOnce({
-      id: 'user-2',
-      isVerified: false,
-      isActive: true,
-    })
-    prismaMock.user.update.mockResolvedValueOnce({ id: 'user-2' })
-    prismaMock.userVerificationLog.create.mockResolvedValueOnce({ id: 'log-1' })
-
-    const response = await verifyUser(
-      makeJsonRequest('http://localhost/api/admin/users/verify', {
-        userId: 'user-2',
-        action: 'reject',
-        reason: 'Government ID did not match the submitted information.',
+  it('requires the admin to supply a temporary password for driver accounts', async () => {
+    const response = await createOfficialUser(
+      makeJsonRequest('http://localhost/api/admin/users/create', {
+        driverVehicleId: 'vehicle-1',
+        userType: 'DRIVER',
       }) as never,
     )
     const json = await response.json()
 
+    expect(response.status).toBe(400)
+    expect(json.error).toMatch(/temporary password is required/i)
+    expect(prismaMock.vehicle.findUnique).not.toHaveBeenCalled()
+    expect(prismaMock.user.create).not.toHaveBeenCalled()
+  })
+
+  it('returns a canonical admin list contract without verification-era summary fields', async () => {
+    prismaMock.user.findMany.mockResolvedValueOnce([
+      {
+        id: 'user-2',
+        username: 'casey.encoder',
+        firstName: 'Casey',
+        lastName: 'Encoder',
+        userType: 'DATA_ENCODER',
+        isActive: true,
+        createdAt: new Date('2026-04-01T00:00:00.000Z'),
+        phoneNumber: '09123456789',
+        governmentId: null,
+        barangayResidence: null,
+        reasonForRegistration: null,
+        assignedVehicle: null,
+      },
+    ])
+    prismaMock.user.count
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(3)
+      .mockResolvedValueOnce(2)
+      .mockResolvedValueOnce(1)
+    prismaMock.user.groupBy.mockResolvedValueOnce([
+      { userType: 'ADMIN', _count: { _all: 1 } },
+      { userType: 'DATA_ENCODER', _count: { _all: 1 } },
+      { userType: 'PUBLIC', _count: { _all: 1 } },
+    ])
+
+    const response = await listUsers(new Request('http://localhost/api/admin/users') as never)
+    const json = await response.json()
+
     expect(response.status).toBe(200)
-    expect(json.message).toBe('User rejected successfully')
-    expect(prismaMock.userVerificationLog.create).toHaveBeenCalledWith(
+    expect(json.success).toBe(true)
+    expect(json.data.summary).toEqual({
+      total: 3,
+      active: 2,
+      inactive: 1,
+      adminCreated: 2,
+      selfRegistered: 1,
+      byType: {
+        ADMIN: 1,
+        DATA_ENCODER: 1,
+        PUBLIC: 1,
+      },
+    })
+    expect(json.data.users[0]).toEqual(
       expect.objectContaining({
-        data: expect.objectContaining({
-          action: 'REJECTED',
-          performedBy: 'admin-1',
-          reason: 'Government ID did not match the submitted information.',
-        }),
+        id: 'user-2',
+        fullName: 'Casey Encoder',
+        creationSource: 'ADMIN_CREATED',
+        isActive: true,
       }),
     )
+    expect(json.data.summary.pending).toBeUndefined()
   })
 
   it('honors the requested active status instead of blindly toggling', async () => {
@@ -228,8 +333,12 @@ describe('admin user workflow truthfulness', () => {
     const json = await response.json()
 
     expect(response.status).toBe(200)
-    expect(json.message).toBe('User deactivated successfully')
-    expect(json.newStatus).toBe(false)
+    expect(prismaMock.$transaction).toHaveBeenCalled()
+    expect(json.message).toBe('Account deactivated successfully')
+    expect(json.data).toEqual({
+      userId: 'user-3',
+      isActive: false,
+    })
     expect(prismaMock.user.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'user-3' },

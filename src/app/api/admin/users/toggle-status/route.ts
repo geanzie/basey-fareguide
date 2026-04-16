@@ -1,6 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { ADMIN_ONLY, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
+import { ADMIN_ONLY, requireRequestRole } from '@/lib/auth'
+import { type AdminToggleUserStatusData } from '@/lib/admin/user-management-contract'
+import {
+  createAdminRouteAuthError,
+  createAdminRouteError,
+  createAdminRouteSuccess,
+} from '@/lib/admin/user-management-route'
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,49 +15,56 @@ export async function POST(request: NextRequest) {
     const { userId, isActive } = body
 
     if (!userId) {
-      return NextResponse.json(
-        { success: false, error: 'Missing required fields' },
-        { status: 400 }
-      )
+      return createAdminRouteError('Missing required fields', 400)
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: userId }
-    })
+    const result = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          isActive: true,
+        },
+      })
 
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'User not found' },
-        { status: 404 }
-      )
-    }
-
-    // Toggle the active status
-    const newStatus = typeof isActive === 'boolean' ? isActive : !user.isActive
-    
-    await prisma.user.update({
-      where: { id: userId },
-      data: {
-        isActive: newStatus
+      if (!user) {
+        throw new Error('User not found')
       }
-    })
 
-    // Log the status change
-    await prisma.userVerificationLog.create({
-      data: {
+      const newStatus = typeof isActive === 'boolean' ? isActive : !user.isActive
+
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          isActive: newStatus,
+        },
+      })
+
+      await tx.userVerificationLog.create({
+        data: {
+          userId,
+          action: newStatus ? 'ACTIVATED' : 'DEACTIVATED',
+          performedBy: adminUser.id,
+          reason: `User ${newStatus ? 'activated' : 'deactivated'} by admin`,
+        },
+      })
+
+      return {
         userId,
-        action: newStatus ? 'ACTIVATED' : 'DEACTIVATED',
-        performedBy: adminUser.id,
-        reason: `User ${newStatus ? 'activated' : 'deactivated'} by admin`
+        isActive: newStatus,
       }
     })
 
-    return NextResponse.json({
-      success: true,
-      message: `User ${newStatus ? 'activated' : 'deactivated'} successfully`,
-      newStatus
+    const data: AdminToggleUserStatusData = result
+
+    return createAdminRouteSuccess(data, {
+      message: result.isActive ? 'Account activated successfully' : 'Account deactivated successfully',
     })
   } catch (error) {
-    return createAuthErrorResponse(error)
+    if (error instanceof Error && error.message === 'User not found') {
+      return createAdminRouteError(error.message, 404)
+    }
+
+    return createAdminRouteAuthError(error)
   }
 }

@@ -19,6 +19,7 @@ interface ResponsiveTableProps {
   emptyMessage?: string
   className?: string
   mobileCardClassName?: string
+  getRowKey?: (row: any, index: number) => string
 }
 
 function ResponsiveTable({ 
@@ -27,7 +28,8 @@ function ResponsiveTable({
   loading = false,
   emptyMessage = "No data available",
   className = "",
-  mobileCardClassName = ""
+  mobileCardClassName = "",
+  getRowKey,
 }: ResponsiveTableProps) {
   
   if (loading) {
@@ -72,7 +74,7 @@ function ResponsiveTable({
             </thead>
             <tbody className="divide-y divide-gray-200 bg-white/90">
               {data.map((row, rowIndex) => (
-                <tr key={rowIndex} className="transition-colors hover:bg-slate-50/80">
+                <tr key={getRowKey ? getRowKey(row, rowIndex) : rowIndex} className="transition-colors hover:bg-slate-50/80">
                   {columns.map((column) => (
                     <td key={column.key} className={`px-6 py-4 whitespace-nowrap text-sm ${column.className || ''}`}>
                       {column.render ? column.render(row[column.key], row) : row[column.key]}
@@ -88,7 +90,7 @@ function ResponsiveTable({
       {/* Mobile Stacked Card Layout */}
       <div className="md:hidden space-y-4">
         {data.map((row, rowIndex) => (
-          <div key={rowIndex} className={`app-surface-inner rounded-lg p-4 ${mobileCardClassName}`.trim()}>
+          <div key={getRowKey ? getRowKey(row, rowIndex) : rowIndex} className={`app-surface-inner rounded-lg p-4 ${mobileCardClassName}`.trim()}>
             {columns.map((column) => {
               const value = column.render ? column.render(row[column.key], row) : row[column.key]
               
@@ -154,13 +156,15 @@ export function ActionButton({
   onClick, 
   variant = 'primary',
   size = 'sm',
-  className = ""
+  className = "",
+  disabled = false,
 }: { 
   children: ReactNode
   onClick: () => void
   variant?: 'primary' | 'secondary' | 'danger'
   size?: 'xs' | 'sm' | 'md'
   className?: string
+  disabled?: boolean
 }) {
   const getVariantClasses = () => {
     switch (variant) {
@@ -187,9 +191,11 @@ export function ActionButton({
   return (
     <button
       onClick={onClick}
+      disabled={disabled}
       className={`
         inline-flex items-center rounded-md font-medium transition-colors
         focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500
+        disabled:cursor-not-allowed disabled:opacity-60
         ${getVariantClasses()} ${getSizeClasses()} ${className}
       `}
     >

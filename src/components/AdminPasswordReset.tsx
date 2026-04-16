@@ -2,25 +2,18 @@
 
 import { useState } from 'react'
 
-import LoadingSpinner from '@/components/LoadingSpinner'
 import {
   DASHBOARD_ICONS,
   DASHBOARD_ICON_POLICY,
   DashboardIconSlot,
   getDashboardIconChipClasses,
 } from '@/components/dashboardIcons'
-
-interface User {
-  id: string
-  username: string
-  firstName: string
-  lastName: string
-  userType: string
-  isActive: boolean
-}
+import { submitAdminPasswordReset } from '@/components/admin-user-management/api'
+import { formatAdminUserTypeLabel, formatCreationSourceLabel } from '@/components/admin-user-management/display'
+import type { AdminUserDto } from '@/lib/admin/user-management-contract'
 
 interface AdminPasswordResetProps {
-  users: User[]
+  users: AdminUserDto[]
   onRefresh?: () => void
 }
 
@@ -32,22 +25,30 @@ const AdminPasswordReset = ({ users, onRefresh }: AdminPasswordResetProps) => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState<string | null>(null)
-  const [resetToken, setResetToken] = useState<string | null>(null)
+  const [resetOutput, setResetOutput] = useState<{ token: string | null; expiresAt: string | null } | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
 
-  const selectedUser = users.find((u) => u.id === selectedUserId)
+  const selectedUser = users.find((user) => user.id === selectedUserId)
 
-  const filteredUsers = users.filter((user) =>
-    user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.lastName.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
+  const filteredUsers = users.filter((user) => {
+    const query = searchTerm.trim().toLowerCase()
+    if (!query) {
+      return true
+    }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    return (
+      user.username.toLowerCase().includes(query) ||
+      user.firstName.toLowerCase().includes(query) ||
+      user.lastName.toLowerCase().includes(query) ||
+      user.fullName.toLowerCase().includes(query)
+    )
+  })
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault()
     setError('')
     setSuccess(null)
-    setResetToken(null)
+    setResetOutput(null)
 
     if (!selectedUserId) {
       setError('Please select a user')
@@ -69,54 +70,48 @@ const AdminPasswordReset = ({ users, onRefresh }: AdminPasswordResetProps) => {
     setLoading(true)
 
     try {
-      const body: { userId: string; action: string; newPassword?: string } = { userId: selectedUserId, action }
-
-      if (action === 'set-password') {
-        body.newPassword = newPassword
-      }
-
-      const response = await fetch('/api/admin/reset-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
+      const response = await submitAdminPasswordReset({
+        userId: selectedUserId,
+        action,
+        ...(action === 'set-password' ? { newPassword } : {}),
       })
 
-      const data = await response.json()
-
-      if (response.ok) {
-        if (action === 'generate-token') {
-          setResetToken(data.token)
-          setSuccess(`Reset token generated for ${data.user.username}. Token expires at ${new Date(data.expiresAt).toLocaleString()}`)
-        } else {
-          setSuccess(`Password successfully reset for ${data.user.username}`)
-          setNewPassword('')
-          setConfirmPassword('')
-        }
-
-        if (onRefresh) {
-          onRefresh()
-        }
+      if (action === 'generate-token') {
+        setResetOutput({
+          token: response.data.token,
+          expiresAt: response.data.expiresAt,
+        })
+        setSuccess(
+          `Reset token generated for ${response.data.user.username}. Expires at ${new Date(response.data.expiresAt || '').toLocaleString()}`,
+        )
       } else {
-        setError(data.message || 'Operation failed')
+        setSuccess(`Password successfully reset for ${response.data.user.username}`)
+        setNewPassword('')
+        setConfirmPassword('')
       }
-    } catch {
-      setError('Network error. Please try again.')
+
+      if (onRefresh) {
+        onRefresh()
+      }
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : 'Network error. Please try again.')
     } finally {
       setLoading(false)
     }
   }
 
   const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text)
-    alert('Token copied to clipboard!')
+    if (!navigator.clipboard) {
+      return
+    }
+
+    void navigator.clipboard.writeText(text)
   }
 
   return (
     <div className="app-surface-card rounded-2xl p-6">
       <div className="mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-3">
+        <h3 className="mb-2 flex items-center gap-3 text-lg font-semibold text-gray-900">
           <span className={getDashboardIconChipClasses('blue')}>
             <DashboardIconSlot icon={DASHBOARD_ICONS.key} size={DASHBOARD_ICON_POLICY.sizes.card} />
           </span>
@@ -129,37 +124,36 @@ const AdminPasswordReset = ({ users, onRefresh }: AdminPasswordResetProps) => {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {error ? (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
+          <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">
             <DashboardIconSlot icon={DASHBOARD_ICONS.reports} size={DASHBOARD_ICON_POLICY.sizes.alert} className="text-red-600" />
             <span>{error}</span>
           </div>
         ) : null}
 
         {success ? (
-          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg flex items-center gap-2">
+          <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-green-700">
             <DashboardIconSlot icon={DASHBOARD_ICONS.check} size={DASHBOARD_ICON_POLICY.sizes.alert} className="text-green-600" />
             <span>{success}</span>
           </div>
         ) : null}
 
-        {resetToken ? (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex items-start justify-between">
+        {resetOutput?.token ? (
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+            <div className="flex items-start justify-between gap-4">
               <div className="flex-1">
-                <h4 className="text-sm font-medium text-blue-800 mb-2">
-                  Reset Token Generated
-                </h4>
-                <div className="app-surface-inner rounded p-3 border border-blue-300">
-                  <code className="text-xs text-blue-900 break-all">{resetToken}</code>
+                <h4 className="mb-2 text-sm font-medium text-blue-800">Reset Token Generated</h4>
+                <div className="app-surface-inner rounded border border-blue-300 p-3">
+                  <code className="break-all text-xs text-blue-900">{resetOutput.token}</code>
                 </div>
                 <p className="mt-2 text-xs text-blue-700">
-                  Provide this token to the user. They can use it at the password reset page.
+                  Provide this token securely. It expires at{' '}
+                  {resetOutput.expiresAt ? new Date(resetOutput.expiresAt).toLocaleString() : 'the configured reset window'}.
                 </p>
               </div>
               <button
                 type="button"
-                onClick={() => copyToClipboard(resetToken)}
-                className="ml-4 px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 inline-flex items-center gap-2"
+                onClick={() => copyToClipboard(resetOutput.token || '')}
+                className="inline-flex items-center gap-2 rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700"
               >
                 <DashboardIconSlot icon={DASHBOARD_ICONS.copy} size={14} />
                 <span>Copy</span>
@@ -169,11 +163,11 @@ const AdminPasswordReset = ({ users, onRefresh }: AdminPasswordResetProps) => {
         ) : null}
 
         <div>
-          <label htmlFor="admin-password-reset-search" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="admin-password-reset-search" className="mb-2 block text-sm font-medium text-gray-700">
             Select User
           </label>
           <div className="relative mb-2">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
               <DashboardIconSlot icon={DASHBOARD_ICONS.inspect} size={DASHBOARD_ICON_POLICY.sizes.button} />
             </div>
             <input
@@ -182,37 +176,40 @@ const AdminPasswordReset = ({ users, onRefresh }: AdminPasswordResetProps) => {
               type="text"
               autoComplete="off"
               placeholder="Search users..."
-              className="w-full pl-10 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 pl-10 focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 sm:text-sm"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(event) => setSearchTerm(event.target.value)}
             />
           </div>
-          <label htmlFor="admin-password-reset-user-select" className="sr-only">Choose a user for password reset</label>
+          <label htmlFor="admin-password-reset-user-select" className="sr-only">
+            Choose a user for password reset
+          </label>
           <select
             id="admin-password-reset-user-select"
             name="selectedUserId"
             autoComplete="off"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
+            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 sm:text-sm"
             value={selectedUserId}
-            onChange={(e) => setSelectedUserId(e.target.value)}
+            onChange={(event) => setSelectedUserId(event.target.value)}
             required
           >
             <option value="">-- Select a user --</option>
             {filteredUsers.map((user) => (
               <option key={user.id} value={user.id}>
-                {user.firstName} {user.lastName} (@{user.username}) - {user.userType}
+                {user.fullName} (@{user.username}) - {formatAdminUserTypeLabel(user.userType)}
               </option>
             ))}
           </select>
         </div>
 
         {selectedUser ? (
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-gray-900 mb-2">Selected User</h4>
+          <div className="rounded-lg bg-gray-50 p-4">
+            <h4 className="mb-2 text-sm font-medium text-gray-900">Selected User</h4>
             <div className="space-y-1 text-sm text-gray-600">
-              <p><strong>Name:</strong> {selectedUser.firstName} {selectedUser.lastName}</p>
+              <p><strong>Name:</strong> {selectedUser.fullName}</p>
               <p><strong>Username:</strong> @{selectedUser.username}</p>
-              <p><strong>Role:</strong> {selectedUser.userType}</p>
+              <p><strong>Role:</strong> {formatAdminUserTypeLabel(selectedUser.userType)}</p>
+              <p><strong>Source:</strong> {formatCreationSourceLabel(selectedUser.creationSource)}</p>
               <p className="inline-flex items-center gap-2">
                 <strong>Status:</strong>
                 <DashboardIconSlot
@@ -227,9 +224,7 @@ const AdminPasswordReset = ({ users, onRefresh }: AdminPasswordResetProps) => {
         ) : null}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Reset Method
-          </label>
+          <label className="mb-2 block text-sm font-medium text-gray-700">Reset Method</label>
           <div className="space-y-2">
             <label htmlFor="admin-password-reset-generate-token" className="flex items-center">
               <input
@@ -238,12 +233,10 @@ const AdminPasswordReset = ({ users, onRefresh }: AdminPasswordResetProps) => {
                 name="action"
                 value="generate-token"
                 checked={action === 'generate-token'}
-                onChange={(e) => setAction(e.target.value as 'generate-token')}
-                className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300"
+                onChange={(event) => setAction(event.target.value as 'generate-token')}
+                className="h-4 w-4 border-gray-300 text-emerald-600 focus:ring-emerald-500"
               />
-              <span className="ml-2 text-sm text-gray-700">
-                Generate Reset Token (User sets their own password)
-              </span>
+              <span className="ml-2 text-sm text-gray-700">Generate Reset Token (User sets their own password)</span>
             </label>
             <label htmlFor="admin-password-reset-set-password" className="flex items-center">
               <input
@@ -252,12 +245,10 @@ const AdminPasswordReset = ({ users, onRefresh }: AdminPasswordResetProps) => {
                 name="action"
                 value="set-password"
                 checked={action === 'set-password'}
-                onChange={(e) => setAction(e.target.value as 'set-password')}
-                className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300"
+                onChange={(event) => setAction(event.target.value as 'set-password')}
+                className="h-4 w-4 border-gray-300 text-emerald-600 focus:ring-emerald-500"
               />
-              <span className="ml-2 text-sm text-gray-700">
-                Set Password Directly (Admin sets the password)
-              </span>
+              <span className="ml-2 text-sm text-gray-700">Set Password Directly (Admin sets the password)</span>
             </label>
           </div>
         </div>
@@ -274,10 +265,10 @@ const AdminPasswordReset = ({ users, onRefresh }: AdminPasswordResetProps) => {
                 type="password"
                 autoComplete="new-password"
                 required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 sm:text-sm"
                 placeholder="Enter new password (min 8 characters)"
                 value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
+                onChange={(event) => setNewPassword(event.target.value)}
               />
             </div>
             <div>
@@ -290,10 +281,10 @@ const AdminPasswordReset = ({ users, onRefresh }: AdminPasswordResetProps) => {
                 type="password"
                 autoComplete="new-password"
                 required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 sm:text-sm"
                 placeholder="Re-enter new password"
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                onChange={(event) => setConfirmPassword(event.target.value)}
               />
             </div>
           </div>
@@ -308,49 +299,30 @@ const AdminPasswordReset = ({ users, onRefresh }: AdminPasswordResetProps) => {
               setConfirmPassword('')
               setError('')
               setSuccess(null)
-              setResetToken(null)
+              setResetOutput(null)
             }}
-            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
+            className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
           >
             Clear
           </button>
           <button
             type="submit"
             disabled={loading || !selectedUserId}
-            className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center"
+            className="inline-flex items-center rounded-md border border-transparent bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {loading ? (
-              <>
-                <LoadingSpinner size={20} className="mr-3 text-white" />
-                Processing...
-              </>
-            ) : action === 'generate-token' ? (
-              'Generate Reset Token'
-            ) : (
-              'Set New Password'
-            )}
+            {loading ? (action === 'generate-token' ? 'Generating...' : 'Resetting...') : action === 'generate-token' ? 'Generate Reset Token' : 'Set New Password'}
           </button>
         </div>
       </form>
 
-      <div className="mt-6 pt-6 border-t border-gray-200">
-        <h4 className="text-sm font-medium text-gray-900 mb-2">Instructions</h4>
-        <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
+      <div className="mt-6 border-t border-gray-200 pt-6">
+        <h4 className="mb-2 text-sm font-medium text-gray-900">Instructions</h4>
+        <ul className="list-inside list-disc space-y-1 text-sm text-gray-600">
           <li><strong>Generate Token:</strong> Creates a secure token the user can use to reset their own password</li>
           <li><strong>Set Password:</strong> Allows you to directly set a new password for the user</li>
-          <li>Both methods will unlock the account if it was locked due to failed login attempts</li>
+          <li>Both methods unlock the account if it was locked due to failed login attempts</li>
           <li>Reset tokens expire after 24 hours</li>
         </ul>
-
-        <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
-          <p className="text-xs text-blue-800 inline-flex items-start gap-2">
-            <DashboardIconSlot icon={DASHBOARD_ICONS.info} size={14} className="mt-0.5" />
-            <span>
-              <strong>Note:</strong> Users can now reset their passwords independently using OTP codes sent to their registered email addresses.
-              This admin panel is useful for emergency password resets or when users do not have access to their email.
-            </span>
-          </p>
-        </div>
       </div>
     </div>
   )

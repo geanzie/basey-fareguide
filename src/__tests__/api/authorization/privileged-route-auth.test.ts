@@ -14,6 +14,7 @@ const authMocks = vi.hoisted(() => ({
 }));
 
 const prismaMock = vi.hoisted(() => ({
+  $transaction: vi.fn(),
   user: {
     findUnique: vi.fn(),
     update: vi.fn(),
@@ -48,7 +49,7 @@ vi.mock("@/lib/prisma", () => ({
   prisma: prismaMock,
 }));
 
-import { POST as verifyUser } from "@/app/api/admin/users/verify/route";
+import { POST as toggleUserStatus } from "@/app/api/admin/users/toggle-status/route";
 import { POST as createVehicle } from "@/app/api/vehicles/route";
 import { PATCH as takeIncident } from "@/app/api/incidents/[incidentId]/take/route";
 import { PATCH as reviewEvidence } from "@/app/api/evidence/[evidenceId]/review/route";
@@ -63,6 +64,7 @@ function makeJsonRequest(url: string, body: unknown, method = "POST"): Request {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  prismaMock.$transaction.mockImplementation(async (callback: (tx: typeof prismaMock) => unknown) => callback(prismaMock));
 });
 
 describe("privileged route authorization", () => {
@@ -70,8 +72,8 @@ describe("privileged route authorization", () => {
     it("rejects unauthenticated callers with 401", async () => {
       authMocks.requireRequestRole.mockRejectedValueOnce(new Error("Unauthorized"));
 
-      const res = await verifyUser(
-        makeJsonRequest("http://localhost/api/admin/users/verify", { userId: "u1", action: "approve" }) as never
+      const res = await toggleUserStatus(
+        makeJsonRequest("http://localhost/api/admin/users/toggle-status", { userId: "u1", isActive: true }) as never
       );
 
       expect(res.status).toBe(401);
@@ -81,8 +83,8 @@ describe("privileged route authorization", () => {
     it("rejects wrong-role callers with 403", async () => {
       authMocks.requireRequestRole.mockRejectedValueOnce(new Error("Forbidden"));
 
-      const res = await verifyUser(
-        makeJsonRequest("http://localhost/api/admin/users/verify", { userId: "u1", action: "approve" }) as never
+      const res = await toggleUserStatus(
+        makeJsonRequest("http://localhost/api/admin/users/toggle-status", { userId: "u1", isActive: true }) as never
       );
 
       expect(res.status).toBe(403);
@@ -91,12 +93,12 @@ describe("privileged route authorization", () => {
 
     it("allows admins through the success path", async () => {
       authMocks.requireRequestRole.mockResolvedValueOnce({ id: "admin-1" });
-      prismaMock.user.findUnique.mockResolvedValueOnce({ id: "user-1", isVerified: false });
-      prismaMock.user.update.mockResolvedValueOnce({ id: "user-1" });
+      prismaMock.user.findUnique.mockResolvedValueOnce({ id: "user-1", isActive: true });
+      prismaMock.user.update.mockResolvedValueOnce({ id: "user-1", isActive: false });
       prismaMock.userVerificationLog.create.mockResolvedValueOnce({ id: "log-1" });
 
-      const res = await verifyUser(
-        makeJsonRequest("http://localhost/api/admin/users/verify", { userId: "user-1", action: "approve" }) as never
+      const res = await toggleUserStatus(
+        makeJsonRequest("http://localhost/api/admin/users/toggle-status", { userId: "user-1", isActive: false }) as never
       );
 
       expect(res.status).toBe(200);
@@ -104,7 +106,15 @@ describe("privileged route authorization", () => {
       expect(prismaMock.user.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: "user-1" },
-          data: expect.objectContaining({ verifiedBy: "admin-1" }),
+          data: expect.objectContaining({ isActive: false }),
+        })
+      );
+      expect(prismaMock.userVerificationLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            action: "DEACTIVATED",
+            performedBy: "admin-1",
+          }),
         })
       );
     });

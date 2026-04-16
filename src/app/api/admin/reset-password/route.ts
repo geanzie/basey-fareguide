@@ -1,8 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
-import { ADMIN_ONLY, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
+import { ADMIN_ONLY, requireRequestRole } from '@/lib/auth'
 import crypto from 'crypto'
+import {
+  buildAdminUserFullName,
+  type AdminPasswordResetData,
+} from '@/lib/admin/user-management-contract'
+import {
+  createAdminRouteAuthError,
+  createAdminRouteError,
+  createAdminRouteSuccess,
+} from '@/lib/admin/user-management-route'
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,15 +19,10 @@ export async function POST(request: NextRequest) {
 
     const { userId, action, newPassword } = await request.json()
 
-    // Validate input
     if (!userId || !action) {
-      return NextResponse.json(
-        { message: 'User ID and action are required' },
-        { status: 400 }
-      )
+      return createAdminRouteError('User ID and action are required', 400)
     }
 
-    // Find the target user
     const targetUser = await prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -26,66 +30,62 @@ export async function POST(request: NextRequest) {
         username: true,
         firstName: true,
         lastName: true,
-        userType: true
-      }
+        userType: true,
+        isActive: true,
+      },
     })
 
     if (!targetUser) {
-      return NextResponse.json(
-        { message: 'User not found' },
-        { status: 404 }
-      )
+      return createAdminRouteError('User not found', 404)
+    }
+
+    const user = {
+      id: targetUser.id,
+      username: targetUser.username,
+      firstName: targetUser.firstName,
+      lastName: targetUser.lastName,
+      fullName: buildAdminUserFullName(targetUser.firstName, targetUser.lastName),
+      userType: targetUser.userType,
+      isActive: targetUser.isActive,
     }
 
     if (action === 'generate-token') {
-      // Generate a secure reset token
       const resetToken = crypto.randomBytes(32).toString('hex')
-      
-      // Set token expiry to 24 hours from now (longer for admin-generated tokens)
+
       const resetExpiry = new Date()
       resetExpiry.setHours(resetExpiry.getHours() + 24)
 
-      // Update user with reset token
       await prisma.user.update({
         where: { id: userId },
         data: {
           passwordResetToken: resetToken,
-          passwordResetExpiry: resetExpiry
-        }
+          passwordResetExpiry: resetExpiry,
+        },
       })
 
-      return NextResponse.json({
-        message: 'Password reset token generated successfully',
+      const data: AdminPasswordResetData = {
+        action: 'generate-token',
         token: resetToken,
-        expiresAt: resetExpiry,
-        user: {
-          username: targetUser.username,
-          firstName: targetUser.firstName,
-          lastName: targetUser.lastName
-        }
+        expiresAt: resetExpiry.toISOString(),
+        user,
+      }
+
+      return createAdminRouteSuccess(data, {
+        message: 'Password reset token generated successfully',
       })
     }
 
     if (action === 'set-password') {
       if (!newPassword) {
-        return NextResponse.json(
-          { message: 'New password is required' },
-          { status: 400 }
-        )
+        return createAdminRouteError('New password is required', 400)
       }
 
-      // Validate password strength
       if (newPassword.length < 8) {
-        return NextResponse.json(
-          { message: 'Password must be at least 8 characters long' },
-          { status: 400 }
-        )
+        return createAdminRouteError('Password must be at least 8 characters long', 400)
       }
 
-      // Hash the new password
       const hashedPassword = await bcrypt.hash(newPassword, 12)
 
-      // Update password and clear any reset tokens
       await prisma.user.update({
         where: { id: userId },
         data: {
@@ -93,25 +93,24 @@ export async function POST(request: NextRequest) {
           passwordResetToken: null,
           passwordResetExpiry: null,
           loginAttempts: 0,
-          lockedUntil: null
-        }
+          lockedUntil: null,
+        },
       })
 
-      return NextResponse.json({
+      const data: AdminPasswordResetData = {
+        action: 'set-password',
+        token: null,
+        expiresAt: null,
+        user,
+      }
+
+      return createAdminRouteSuccess(data, {
         message: 'Password successfully reset',
-        user: {
-          username: targetUser.username,
-          firstName: targetUser.firstName,
-          lastName: targetUser.lastName
-        }
       })
     }
 
-    return NextResponse.json(
-      { message: 'Invalid action. Use "generate-token" or "set-password"' },
-      { status: 400 }
-    )
+    return createAdminRouteError('Invalid action. Use "generate-token" or "set-password"', 400)
   } catch (error) {
-    return createAuthErrorResponse(error)
+    return createAdminRouteAuthError(error)
   }
 }
