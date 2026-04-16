@@ -228,10 +228,10 @@ describe('POST /api/driver/session/[sessionId]/riders/[sessionRiderId]/action â€
       ...OPEN_SESSION_WITH_PENDING_RIDER,
       riders: [{
         ...OPEN_SESSION_WITH_PENDING_RIDER.riders[0],
-        status: 'ACCEPTED',
+        status: 'BOARDED',
         fareCalculationId: 'calc-accepted-1',
         acceptedAt: new Date('2026-04-16T08:06:00.000Z'),
-        boardedAt: null,
+        boardedAt: new Date('2026-04-16T08:06:00.000Z'),
         expiresAt: null,
       }],
     })
@@ -251,15 +251,15 @@ describe('POST /api/driver/session/[sessionId]/riders/[sessionRiderId]/action â€
 
     const updateCall = txMock.vehicleTripSessionRider.updateMany.mock.calls[0][0]
     expect(updateCall.where.id).toBe('sr-1')
-    expect(updateCall.data.status).toBe('ACCEPTED')
+    expect(updateCall.data.status).toBe('BOARDED')
     expect(updateCall.data.acceptedAt).toBeInstanceOf(Date)
-    expect(updateCall.data.boardedAt).toBeUndefined()
+    expect(updateCall.data.boardedAt).toBeInstanceOf(Date)
     expect(updateCall.data.fareCalculationId).toBe('calc-accepted-1')
 
     const eventCall = txMock.vehicleTripSessionRiderEvent.create.mock.calls[0][0]
     expect(eventCall.data.action).toBe('ACCEPT')
     expect(eventCall.data.fromStatus).toBe('PENDING')
-    expect(eventCall.data.toStatus).toBe('ACCEPTED')
+    expect(eventCall.data.toStatus).toBe('BOARDED')
     expect(eventCall.data.actedByUserId).toBe('driver-1')
   })
 })

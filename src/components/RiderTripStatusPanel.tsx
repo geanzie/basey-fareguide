@@ -45,7 +45,37 @@ export default function RiderTripStatusPanel({ tripRequestId }: RiderTripStatusP
   if (!data?.hasActiveTrip || !data.trip) return null
 
   const { trip } = data
+  const isCompleted = trip.status === 'COMPLETED'
   const isAccepted = trip.status === 'ACCEPTED' || trip.status === 'BOARDED'
+
+  if (isCompleted) {
+    return (
+      <div className="mt-3 w-full rounded-2xl border border-blue-200 bg-blue-50 p-3 sm:p-4">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-blue-700">
+            Completed
+          </span>
+          {trip.vehiclePlateNumber ? (
+            <span className="rounded-full bg-white/80 px-2 py-0.5 text-xs font-medium text-slate-600 ring-1 ring-slate-200">
+              {trip.vehiclePlateNumber}
+            </span>
+          ) : null}
+        </div>
+        <div className="mt-2 text-sm font-medium text-slate-800">
+          {trip.origin} → {trip.destination}
+        </div>
+        <div className="mt-1 text-base font-semibold text-slate-900">
+          {formatCurrency(trip.fare)}
+          {trip.discountType ? (
+            <span className="ml-2 text-xs font-normal text-emerald-700">
+              {trip.discountType.replace(/_/g, ' ')} discount
+            </span>
+          ) : null}
+        </div>
+        <p className="mt-2 text-xs text-blue-600">Your trip has been completed. Thank you!</p>
+      </div>
+    )
+  }
 
   return (
     <div className="relative mt-3 w-full">

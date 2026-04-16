@@ -10,6 +10,7 @@ const ACTIVE_RIDER_STATUSES = [
   DriverTripSessionRiderStatus.PENDING,
   DriverTripSessionRiderStatus.ACCEPTED,
   DriverTripSessionRiderStatus.BOARDED,
+  DriverTripSessionRiderStatus.COMPLETED,
 ] as const
 
 const riderStatusLabels: Record<DriverTripSessionRiderStatus, string> = {
