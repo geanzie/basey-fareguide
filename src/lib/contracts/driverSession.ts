@@ -13,7 +13,6 @@ export type DriverSessionRiderStatusDto =
 
 export type DriverSessionActionDto =
   | "ACCEPT"
-  | "BOARDED"
   | "DROPPED_OFF"
   | "NOT_HERE"
   | "FULL"
@@ -61,6 +60,9 @@ export interface DriverSessionHistoryItemDto {
 export interface DriverSessionHistoryResponseDto {
   items: DriverSessionHistoryItemDto[];
   limit: number;
+  page: number;
+  total: number;
+  totalPages: number;
 }
 
 export interface DriverSessionRiderCardDto {

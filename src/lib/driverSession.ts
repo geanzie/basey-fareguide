@@ -79,12 +79,6 @@ const riderActionConfig: Record<
     label: 'Accept',
     kind: 'positive',
     from: [DriverTripSessionRiderStatus.PENDING],
-    to: DriverTripSessionRiderStatus.ACCEPTED,
-  },
-  BOARDED: {
-    label: 'Boarded',
-    kind: 'positive',
-    from: [DriverTripSessionRiderStatus.ACCEPTED],
     to: DriverTripSessionRiderStatus.BOARDED,
   },
   DROPPED_OFF: {
@@ -372,6 +366,26 @@ function parseDriverHistoryLimit(request: NextRequest) {
   }
 
   return Math.min(parsedLimit, DRIVER_HISTORY_MAX_LIMIT)
+}
+
+function parseDriverHistoryPage(request: NextRequest) {
+  const raw = request.nextUrl.searchParams.get('page')
+
+  if (!raw) {
+    return 1
+  }
+
+  const parsed = Number.parseInt(raw, 10)
+
+  if (!Number.isFinite(parsed) || parsed < 1) {
+    throw new DriverSessionError('Page must be a positive integer.', 400, 'INVALID_HISTORY_PAGE')
+  }
+
+  return parsed
+}
+
+function parseDriverHistorySearch(request: NextRequest) {
+  return request.nextUrl.searchParams.get('search')?.trim() ?? ''
 }
 
 function buildSessionSummary(session: DriverSessionRecord | null): DriverSessionSummaryDto {
@@ -771,21 +785,44 @@ export async function getDriverSessionActiveResponse(request: NextRequest): Prom
 export async function getDriverSessionHistoryResponse(request: NextRequest): Promise<DriverSessionHistoryResponseDto> {
   const driverContext = await requireDriverContext(request)
   const limit = parseDriverHistoryLimit(request)
+  const page = parseDriverHistoryPage(request)
+  const search = parseDriverHistorySearch(request)
 
-  const sessions = await prisma.vehicleTripSession.findMany({
-    where: {
-      driverUserId: driverContext.id,
-      status: DriverTripSessionStatus.CLOSED,
-      closedAt: { not: null },
-    },
-    orderBy: [{ closedAt: 'desc' }, { id: 'desc' }],
-    take: limit,
-    select: driverHistorySessionSelect,
-  })
+  const baseWhere: Parameters<typeof prisma.vehicleTripSession.findMany>[0]['where'] = {
+    driverUserId: driverContext.id,
+    status: DriverTripSessionStatus.CLOSED,
+    closedAt: { not: null },
+    ...(search
+      ? {
+          riders: {
+            some: {
+              OR: [
+                { originSnapshot: { contains: search, mode: 'insensitive' } },
+                { destinationSnapshot: { contains: search, mode: 'insensitive' } },
+              ],
+            },
+          },
+        }
+      : {}),
+  }
+
+  const [sessions, total] = await prisma.$transaction([
+    prisma.vehicleTripSession.findMany({
+      where: baseWhere,
+      orderBy: [{ closedAt: 'desc' }, { id: 'desc' }],
+      skip: (page - 1) * limit,
+      take: limit,
+      select: driverHistorySessionSelect,
+    }),
+    prisma.vehicleTripSession.count({ where: baseWhere }),
+  ])
 
   return {
     items: sessions.map(toHistoryItem),
     limit,
+    page,
+    total,
+    totalPages: total === 0 ? 1 : Math.ceil(total / limit),
   }
 }
 
@@ -903,10 +940,10 @@ export async function applyDriverSessionAction(
         status: actionConfig.to,
         fareCalculationId,
         acceptedAt: action === DriverTripSessionRiderAction.ACCEPT ? now : undefined,
-        boardedAt: action === DriverTripSessionRiderAction.BOARDED ? now : undefined,
+        boardedAt: action === DriverTripSessionRiderAction.ACCEPT ? now : undefined,
         completedAt: action === DriverTripSessionRiderAction.DROPPED_OFF ? now : undefined,
         expiresAt:
-          action === DriverTripSessionRiderAction.ACCEPT || action === DriverTripSessionRiderAction.BOARDED
+          action === DriverTripSessionRiderAction.ACCEPT
             ? null
             : undefined,
         activeRequestKey: FINALIZED_RIDER_STATUSES.includes(actionConfig.to)

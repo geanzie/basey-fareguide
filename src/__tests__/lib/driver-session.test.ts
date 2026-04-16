@@ -7,12 +7,16 @@ const authMock = vi.hoisted(() => ({
 const transactionMock = vi.hoisted(() => ({
   vehicleTripSessionRider: {
     update: vi.fn(),
+    updateMany: vi.fn(),
   },
   vehicleTripSessionRiderEvent: {
     create: vi.fn(),
   },
   vehicleTripSession: {
     update: vi.fn(),
+  },
+  fareCalculation: {
+    create: vi.fn(),
   },
 }))
 
@@ -101,6 +105,8 @@ beforeEach(() => {
   prismaMock.vehicleTripSession.findMany.mockResolvedValue([])
   prismaMock.vehicleTripSession.findUnique.mockResolvedValue(makeSession())
   prismaMock.vehicleTripSession.create.mockResolvedValue({ id: 'session-1' })
+  transactionMock.vehicleTripSessionRider.updateMany.mockResolvedValue({ count: 1 })
+  transactionMock.fareCalculation.create.mockResolvedValue({ id: 'calc-new-1' })
 })
 
 describe('driver session service', () => {
@@ -153,9 +159,9 @@ describe('driver session service', () => {
       'ACCEPT',
     )
 
-    expect(transactionMock.vehicleTripSessionRider.update).toHaveBeenCalledWith(
+    expect(transactionMock.vehicleTripSessionRider.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: 'session-rider-1' },
+        where: expect.objectContaining({ id: 'session-rider-1' }),
         data: expect.objectContaining({ status: 'BOARDED' }),
       }),
     )

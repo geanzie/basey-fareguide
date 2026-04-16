@@ -478,9 +478,7 @@ const RoutePlannerCalculator = ({
       }
 
       setSaveStatus('saved')
-      if (data.calculation?.id) {
-        setPendingTripRequestId(data.tripRequestId ?? null)
-      }
+      setPendingTripRequestId(data.tripRequestId ?? null)
     } catch {
       if (displayedRouteVersion === displayedRouteVersionRef.current) {
         setSaveStatus('failed')
