@@ -10,15 +10,20 @@ interface RateLimitEntry {
 
 const rateLimitStore = new Map<string, RateLimitEntry>()
 
-// Clean up expired entries every 5 minutes
-setInterval(() => {
-  const now = Date.now()
+// Lazy cleanup: run every CLEANUP_CALL_INTERVAL calls to checkRateLimit.
+// Avoids a background setInterval that does not work reliably in serverless environments.
+let _cleanupCallCounter = 0
+const CLEANUP_CALL_INTERVAL = 100
+
+function maybeCleanupExpiredEntries(now: number) {
+  _cleanupCallCounter++
+  if (_cleanupCallCounter % CLEANUP_CALL_INTERVAL !== 0) return
   for (const [key, entry] of rateLimitStore.entries()) {
     if (entry.resetTime < now) {
       rateLimitStore.delete(key)
     }
   }
-}, 5 * 60 * 1000)
+}
 
 export interface RateLimitConfig {
   windowMs: number // Time window in milliseconds
@@ -43,6 +48,7 @@ export function checkRateLimit(
   config: RateLimitConfig
 ): RateLimitResult {
   const now = Date.now()
+  maybeCleanupExpiredEntries(now)
   const entry = rateLimitStore.get(identifier)
 
   // No entry exists, create new one

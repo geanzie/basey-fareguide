@@ -10,6 +10,11 @@ import { prisma } from '@/lib/prisma'
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS } from '@/lib/rateLimit'
 import { serializeSessionUser } from '@/lib/serializers'
 
+/** Maximum failed attempts before account lockout (per-username, DB-backed, cross-worker). */
+const MAX_FAILED_LOGIN_ATTEMPTS = 5
+/** Lockout duration after hitting the failed-attempt threshold. */
+const LOGIN_LOCKOUT_DURATION_MS = 15 * 60 * 1000 // 15 minutes
+
 export interface LoginAttemptError {
   status: number
   body: Record<string, unknown>
@@ -116,9 +121,42 @@ export async function authenticateLoginAttempt(
     }
   }
 
+  // DB-backed lockout check: cross-worker safe because it reads from the DB.
+  const now = new Date()
+  if (user.lockedUntil && user.lockedUntil > now) {
+    const retryAfter = Math.ceil((user.lockedUntil.getTime() - now.getTime()) / 1000)
+    return {
+      ok: false,
+      error: {
+        status: 429,
+        body: {
+          message: `Too many failed login attempts. Try again in ${retryAfter} seconds.`,
+          retryAfter,
+        },
+        headers: {
+          'Retry-After': String(retryAfter),
+          'X-RateLimit-Remaining': '0',
+          'X-RateLimit-Reset': String(Math.ceil(user.lockedUntil.getTime() / 1000)),
+        },
+      },
+    }
+  }
+
   const validPassword = await verifyPassword(password, user.password)
 
   if (!validPassword) {
+    // Increment per-username failed attempt counter.
+    // Provides cross-worker lockout that survives cold starts.
+    const nextAttempts = (user.loginAttempts ?? 0) + 1
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        loginAttempts: { increment: 1 },
+        ...(nextAttempts >= MAX_FAILED_LOGIN_ATTEMPTS
+          ? { lockedUntil: new Date(now.getTime() + LOGIN_LOCKOUT_DURATION_MS) }
+          : {}),
+      },
+    })
     return {
       ok: false,
       error: {
@@ -137,6 +175,17 @@ export async function authenticateLoginAttempt(
       },
     }
   }
+
+  // Reset lockout counters and record last login details on successful authentication.
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      loginAttempts: 0,
+      lockedUntil: null,
+      lastLoginAt: new Date(),
+      lastLoginIp: getClientIdentifier(request),
+    },
+  })
 
   const token = jwt.sign(
     {

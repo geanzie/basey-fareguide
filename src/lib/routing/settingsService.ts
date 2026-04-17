@@ -20,7 +20,8 @@ type RoutingSettingsRow = {
   updatedByUser: RoutingSettingsActor;
 };
 
-const ROUTING_SETTINGS_CACHE_TTL_MS = 3_600_000;
+const ROUTING_SETTINGS_CACHE_TTL_MS = 120_000;
+const ROUTING_SETTINGS_STALE_TTL_MS = 240_000;
 const ROUTING_SETTINGS_ID = "global";
 
 export const ROUTING_SETTINGS_MIGRATION_REQUIRED_MESSAGE =
@@ -30,8 +31,12 @@ let resolvedRoutingSettingsCache:
   | {
       value: RoutingSettingsSnapshot;
       expiresAt: number;
+      staleUntil: number;
     }
   | null = null;
+
+// Coalesces concurrent callers during a cache miss so only one DB fetch fires.
+let routingSettingsRefreshPromise: Promise<RoutingSettingsSnapshot> | null = null;
 
 export class RoutingSettingsMigrationRequiredError extends Error {
   constructor() {
@@ -83,6 +88,7 @@ function cacheResolvedRoutingSettings(
   resolvedRoutingSettingsCache = {
     value,
     expiresAt: now.getTime() + ROUTING_SETTINGS_CACHE_TTL_MS,
+    staleUntil: now.getTime() + ROUTING_SETTINGS_STALE_TTL_MS,
   };
 }
 
@@ -152,10 +158,34 @@ async function readStoredRoutingSettings(): Promise<RoutingSettingsSnapshot | nu
 export async function getResolvedRoutingSettings(
   now: Date = new Date(),
 ): Promise<RoutingSettingsSnapshot> {
-  if (resolvedRoutingSettingsCache && resolvedRoutingSettingsCache.expiresAt > now.getTime()) {
+  const nowMs = now.getTime();
+
+  // Fresh — return immediately.
+  if (resolvedRoutingSettingsCache && resolvedRoutingSettingsCache.expiresAt > nowMs) {
     return resolvedRoutingSettingsCache.value;
   }
 
+  // Stale but within grace window — serve stale and kick off a background
+  // refresh (coalesced so at most one concurrent DB fetch runs).
+  if (resolvedRoutingSettingsCache && resolvedRoutingSettingsCache.staleUntil > nowMs) {
+    if (!routingSettingsRefreshPromise) {
+      routingSettingsRefreshPromise = loadFreshRoutingSettings(new Date(nowMs)).finally(() => {
+        routingSettingsRefreshPromise = null;
+      });
+    }
+    return resolvedRoutingSettingsCache.value;
+  }
+
+  // Fully expired — coalesce concurrent callers into a single DB fetch.
+  if (!routingSettingsRefreshPromise) {
+    routingSettingsRefreshPromise = loadFreshRoutingSettings(new Date(nowMs)).finally(() => {
+      routingSettingsRefreshPromise = null;
+    });
+  }
+  return routingSettingsRefreshPromise;
+}
+
+async function loadFreshRoutingSettings(now: Date): Promise<RoutingSettingsSnapshot> {
   try {
     const storedSettings = await readStoredRoutingSettings();
     const resolvedSettings = storedSettings ?? getDatabaseDefaultSnapshot();
@@ -167,13 +197,13 @@ export async function getResolvedRoutingSettings(
       cacheResolvedRoutingSettings(fallbackSettings, now);
       return fallbackSettings;
     }
-
     throw error;
   }
 }
 
 export function invalidateResolvedRoutingSettingsCache() {
   resolvedRoutingSettingsCache = null;
+  routingSettingsRefreshPromise = null;
 }
 
 export async function getAdminRoutingSettings(

@@ -4,6 +4,7 @@ const prismaMock = vi.hoisted(() => ({
   user: {
     findUnique: vi.fn(),
     findMany: vi.fn(),
+    update: vi.fn(),
   },
 }))
 
@@ -57,6 +58,10 @@ function buildUser(overrides: Record<string, unknown> = {}) {
     idType: null,
     isActive: true,
     isVerified: true,
+    loginAttempts: 0,
+    lockedUntil: null,
+    lastLoginAt: null,
+    lastLoginIp: null,
     ...overrides,
   }
 }
@@ -66,6 +71,7 @@ beforeEach(() => {
   process.env.JWT_SECRET = 'test-secret'
   rateLimitMock.getClientIdentifier.mockReturnValue('test-client')
   rateLimitMock.checkRateLimit.mockReturnValue({ success: true })
+  prismaMock.user.update.mockResolvedValue({})
 })
 
 function buildFormRequest(formFields: Record<string, string>) {

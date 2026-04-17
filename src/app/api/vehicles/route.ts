@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { buildPaginationMetadata, parsePaginationParams } from '@/lib/api/pagination'
 import { VehicleType } from '@prisma/client'
 import { ADMIN_OR_ENCODER, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
+import { normalizePlateNumber } from '@/lib/incidents/penaltyRules'
 import { serializeVehicle } from '@/lib/serializers'
 
 export async function GET(request: NextRequest) {
@@ -98,9 +99,17 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const normalizedPlate = normalizePlateNumber(plateNumber)
+    if (!normalizedPlate) {
+      return NextResponse.json(
+        { error: 'Invalid plate number' },
+        { status: 400 }
+      )
+    }
+
     // Check if plate number already exists
     const existingVehicle = await prisma.vehicle.findUnique({
-      where: { plateNumber }
+      where: { plateNumber: normalizedPlate }
     })
 
     if (existingVehicle) {
@@ -112,7 +121,7 @@ export async function POST(request: NextRequest) {
 
     const vehicle = await prisma.vehicle.create({
       data: {
-        plateNumber,
+        plateNumber: normalizedPlate,
         vehicleType,
         make,
         model,

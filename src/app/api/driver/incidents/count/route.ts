@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyAuthWithSelect } from '@/lib/auth'
-
-/** Strip spaces, hyphens, and uppercase for plate comparison. */
-function normalizePlate(plate: string): string {
-  return plate.replace(/[\s\-]/g, '').toUpperCase()
-}
+import { normalizePlateNumber } from '@/lib/incidents/penaltyRules'
 
 export async function GET(request: NextRequest) {
   try {
@@ -32,7 +28,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ count: 0 })
     }
 
-    const normalizedPlate = normalizePlate(vehicle.plateNumber)
+    const normalizedPlate = normalizePlateNumber(vehicle.plateNumber) ?? vehicle.plateNumber
 
     // vehicleId match: use count() directly (cheap)
     const vehicleIdCount = await prisma.incident.count({
@@ -53,7 +49,7 @@ export async function GET(request: NextRequest) {
     })
 
     const plateFallbackCount = plateFallbackRows.filter(
-      (r) => r.plateNumber && normalizePlate(r.plateNumber) === normalizedPlate,
+      (r) => r.plateNumber && (normalizePlateNumber(r.plateNumber) ?? r.plateNumber) === normalizedPlate,
     ).length
 
     return NextResponse.json({ count: vehicleIdCount + plateFallbackCount })

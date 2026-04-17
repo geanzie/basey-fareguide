@@ -10,6 +10,22 @@ import {
 } from '@/utils/locationValidation';
 
 /**
+ * Validate a "lat,lng" coordinate string.
+ * Latitude: -90..90, Longitude: -180..180.
+ */
+function isValidCoordinateString(value: string): boolean {
+  const parts = value.split(',')
+  if (parts.length !== 2) return false
+  const lat = parseFloat(parts[0])
+  const lng = parseFloat(parts[1])
+  return (
+    Number.isFinite(lat) && Number.isFinite(lng) &&
+    lat >= -90 && lat <= 90 &&
+    lng >= -180 && lng <= 180
+  )
+}
+
+/**
  * GET /api/admin/locations
  * List all locations with filtering and pagination
  */
@@ -90,6 +106,13 @@ export async function POST(request: NextRequest) {
     if (!name || !type || !coordinates) {
       return NextResponse.json(
         { error: 'Missing required fields: name, type, coordinates' },
+        { status: 400 }
+      );
+    }
+
+    if (!isValidCoordinateString(coordinates)) {
+      return NextResponse.json(
+        { error: 'Invalid coordinates format. Expected "lat,lng" with valid ranges (lat: -90..90, lng: -180..180).' },
         { status: 400 }
       );
     }

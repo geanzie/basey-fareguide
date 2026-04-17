@@ -560,6 +560,51 @@ async function expireStalePendingRequestForKey(
   })
 }
 
+/**
+ * Cancel any other open PENDING requests this rider has in different sessions.
+ * Prevents cross-session contamination when a rider submits to a different vehicle.
+ */
+async function cancelSupersededPendingRequestsForRider(
+  tx: Prisma.TransactionClient,
+  riderUserId: string,
+  exceptKey: string,
+  now: Date,
+) {
+  await tx.vehicleTripSessionRider.updateMany({
+    where: {
+      riderUserId,
+      status: DriverTripSessionRiderStatus.PENDING,
+      activeRequestKey: { not: exceptKey },
+    },
+    data: {
+      status: DriverTripSessionRiderStatus.CANCELLED,
+      activeRequestKey: null,
+      finalisedAt: now,
+    },
+  })
+}
+
+/**
+ * Expire all globally stale PENDING rows whose TTL has elapsed.
+ * Safe to call at any time; idempotent. Returns the count of rows expired.
+ * Provides an on-demand fallback when no background scheduler is available.
+ */
+export async function expireAllStalePendingRequests(now?: Date): Promise<number> {
+  const cutoff = now ?? new Date()
+  const result = await prisma.vehicleTripSessionRider.updateMany({
+    where: {
+      status: DriverTripSessionRiderStatus.PENDING,
+      expiresAt: { lte: cutoff },
+    },
+    data: {
+      status: DriverTripSessionRiderStatus.EXPIRED,
+      activeRequestKey: null,
+      finalisedAt: cutoff,
+    },
+  })
+  return result.count
+}
+
 async function createFareCalculationFromPendingRequest(
   tx: Prisma.TransactionClient,
   session: DriverSessionRecord,
@@ -612,12 +657,32 @@ async function createFareCalculationFromPendingRequest(
       },
     })
 
+    // Lazy daily-reset: if the card's lastResetDate is from a previous UTC calendar day,
+    // reset dailyUsageCount to 1 (this use) instead of incrementing yesterday's count.
+    const now = new Date()
+    const todayUTC = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+
+    const card = await tx.discountCard.findUnique({
+      where: { id: rider.discountCardIdSnapshot },
+      select: { lastResetDate: true },
+    })
+
+    const lastResetUTC = card?.lastResetDate
+      ? Date.UTC(
+          card.lastResetDate.getUTCFullYear(),
+          card.lastResetDate.getUTCMonth(),
+          card.lastResetDate.getUTCDate(),
+        )
+      : 0
+    const isNewDay = lastResetUTC < todayUTC
+
     await tx.discountCard.update({
       where: { id: rider.discountCardIdSnapshot },
       data: {
-        lastUsedAt: new Date(),
+        lastUsedAt: now,
         usageCount: { increment: 1 },
-        dailyUsageCount: { increment: 1 },
+        dailyUsageCount: isNewDay ? 1 : { increment: 1 },
+        lastResetDate: isNewDay ? now : undefined,
       },
     })
   }
@@ -661,6 +726,7 @@ export async function createPendingTripRequest(
 
   return prisma.$transaction(async (tx) => {
     await expireStalePendingRequestForKey(tx, activeRequestKey, now)
+    await cancelSupersededPendingRequestsForRider(tx, riderUserId, activeRequestKey, now)
 
     const existingEntry = await tx.vehicleTripSessionRider.findFirst({
       where: {
@@ -902,6 +968,28 @@ export async function applyDriverSessionAction(
   }
 
   if (!actionConfig.from.includes(rider.status)) {
+    // Idempotency guard: if ACCEPT already succeeded (rider is in or past the target
+    // state), return the current state instead of a misleading transition error.
+    // This covers transient network failures where the driver retries a successful ACCEPT.
+    if (
+      action === DriverTripSessionRiderAction.ACCEPT &&
+      (rider.status === DriverTripSessionRiderStatus.BOARDED ||
+        rider.status === DriverTripSessionRiderStatus.ACCEPTED)
+    ) {
+      const refreshed = await prisma.vehicleTripSession.findUnique({
+        where: { id: session.id },
+        select: driverSessionSelect,
+      })
+      const refreshedRider = refreshed?.riders.find((e) => e.id === rider.id)
+      if (refreshed && refreshedRider) {
+        return {
+          success: true,
+          session: buildSessionSummary(refreshed),
+          rider: toRiderCard(refreshedRider),
+          message: 'Rider already accepted.',
+        }
+      }
+    }
     throw new DriverSessionError('That action is not allowed for the rider\'s current status.', 409, 'INVALID_RIDER_TRANSITION')
   }
 

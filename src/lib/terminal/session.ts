@@ -119,3 +119,18 @@ export async function touchTerminalUnlockSession(sessionId: string) {
     },
   })
 }
+
+/**
+ * Delete all TerminalUnlockSession rows whose expiresAt is in the past.
+ * Safe to call from an admin sweep endpoint or a background job.
+ * Returns the number of deleted sessions.
+ */
+export async function expireAllStaleTerminalUnlockSessions(now?: Date): Promise<number> {
+  const cutoff = now ?? new Date()
+  const result = await prisma.terminalUnlockSession.deleteMany({
+    where: {
+      expiresAt: { lte: cutoff },
+    },
+  })
+  return result.count
+}

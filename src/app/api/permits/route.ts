@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { buildPaginationMetadata, parsePaginationParams } from '@/lib/api/pagination'
 import { VehicleType, PermitStatus } from '@prisma/client'
 import { ADMIN_OR_ENCODER, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
+import { normalizePlateNumber } from '@/lib/incidents/penaltyRules'
 import { createPermitWithQr } from '@/lib/permits/qr'
 import { serializePermit } from '@/lib/serializers'
 
@@ -78,9 +79,17 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const normalizedPermitPlate = normalizePlateNumber(permitPlateNumber)
+    if (!normalizedPermitPlate) {
+      return NextResponse.json(
+        { error: 'Invalid permit plate number' },
+        { status: 400 }
+      )
+    }
+
     // Check if permit plate number already exists
     const existingPlatePermit = await prisma.permit.findUnique({
-      where: { permitPlateNumber: permitPlateNumber.toUpperCase() }
+      where: { permitPlateNumber: normalizedPermitPlate }
     })
 
     if (existingPlatePermit) {
@@ -116,7 +125,7 @@ export async function POST(request: NextRequest) {
 
     const permit = await createPermitWithQr({
       vehicleId,
-      permitPlateNumber,
+      permitPlateNumber: normalizedPermitPlate,
       driverFullName,
       vehicleType,
       encodedBy: actor.id,

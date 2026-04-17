@@ -29,8 +29,8 @@ export const fareRateVersionInclude = {
   },
 } as const;
 
-const FARE_RATE_CACHE_TTL_MS = 300_000;
-const FARE_RATE_STALE_TTL_MS = 600_000;
+const FARE_RATE_CACHE_TTL_MS = 60_000;
+const FARE_RATE_STALE_TTL_MS = 120_000;
 
 let resolvedFareRatesCache:
   | {

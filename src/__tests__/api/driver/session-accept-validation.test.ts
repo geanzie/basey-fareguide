@@ -81,7 +81,7 @@ const OPEN_SESSION_WITH_PENDING_RIDER = {
       discountAppliedSnapshot: null,
       discountTypeSnapshot: null,
       joinedAt: new Date('2026-04-16T08:05:00.000Z'),
-      expiresAt: new Date('2026-04-17T08:15:00.000Z'),
+      expiresAt: new Date('2099-04-17T08:15:00.000Z'),
       acceptedAt: null,
       boardedAt: null,
       completedAt: null,

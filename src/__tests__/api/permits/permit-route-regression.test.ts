@@ -159,7 +159,7 @@ describe('permit route regression coverage', () => {
     expect(permitQrMock.createPermitWithQr).toHaveBeenCalledWith(
       expect.objectContaining({
         vehicleId: 'vehicle-1',
-        permitPlateNumber: 'perm-100',
+        permitPlateNumber: 'PERM-100', // normalized: trim + toUpperCase
         driverFullName: 'Driver Name',
         vehicleType: 'JEEPNEY',
         encodedBy: 'encoder-1',
