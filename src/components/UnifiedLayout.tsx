@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
+import useSWR from 'swr'
 import { getCurrentPageData, subscribeToPageData } from './PageWrapper'
 import BrandMark from './BrandMark'
 import { useAuth } from './AuthProvider'
@@ -18,6 +19,7 @@ import {
   AuthenticatedSidebarNavigation,
 } from '@/components/AuthenticatedNavigation'
 import { getAuthenticatedNavigationTitle } from '@/lib/navigation/authenticatedNavigation'
+import { swrFetcher } from '@/lib/swr'
 
 interface UnifiedLayoutProps {
   children: React.ReactNode
@@ -39,6 +41,16 @@ export default function UnifiedLayout({
   const [pageData, setPageData] = useState(getCurrentPageData)
   const pathname = usePathname()
   const { logout, status } = useAuth()
+
+  const { data: incidentCountData } = useSWR<{ count: number }>(
+    user.userType === 'DRIVER' ? '/api/driver/incidents/count' : null,
+    swrFetcher,
+    { refreshInterval: 60000 },
+  )
+  const driverTabBadges: Record<string, number> =
+    user.userType === 'DRIVER' && (incidentCountData?.count ?? 0) > 0
+      ? { incidents: incidentCountData!.count }
+      : {}
 
   useEffect(() => {
     const unsubscribe = subscribeToPageData(() => {
@@ -84,7 +96,7 @@ export default function UnifiedLayout({
           </div>
 
           <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-            <AuthenticatedSidebarNavigation user={user} pathname={pathname} />
+            <AuthenticatedSidebarNavigation user={user} pathname={pathname} tabBadges={driverTabBadges} />
           </nav>
         </div>
       </aside>
@@ -201,6 +213,7 @@ export default function UnifiedLayout({
         pathname={pathname}
         profileSheetOpen={mobileProfileSheetOpen}
         onOpenProfileSheet={() => setMobileProfileSheetOpen(true)}
+        tabBadges={driverTabBadges}
       />
 
       <AuthenticatedMobileProfileSheet

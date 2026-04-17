@@ -64,6 +64,10 @@ model User {
   routingSettingsAuditEntries RoutingSettingsAudit[] @relation("RoutingSettingsAuditActor")
   permitQrAuditEntries  PermitQrAudit[]       @relation("PermitQrAuditActor")
   fareRateDeletionAuditEntries FareRateDeletionAudit[] @relation("FareRateDeletionAuditActor")
+  verifiedIncidents     Incident[]            @relation("IncidentEvidenceVerifier")
+  ticketIssuedIncidents Incident[]            @relation("IncidentTicketIssuer")
+  dismissedIncidents    Incident[]            @relation("IncidentDismisser")
+  paymentRecordedIncidents Incident[]         @relation("IncidentPaymentRecorder")
   assignedVehicle       Vehicle?              @relation("DriverAssignedVehicle", fields: [assignedVehicleId], references: [id])
   driverAssignmentHistory DriverVehicleAssignmentHistory[] @relation("DriverAssignmentHistoryUser")
   driverTripSessions    VehicleTripSession[]  @relation("DriverTripSessions")
@@ -223,7 +227,7 @@ model Incident {
   penaltyAmount Decimal?
   offenseNumberAtIssuance Int?
   offenseTierAtIssuance OffenseTier?
-  penaltyRuleVersion String?
+  penaltyRuleVersion String?  
   paymentStatus TicketPaymentStatus @default(NOT_APPLICABLE)
   paidAt        DateTime?
   officialReceiptNumber String? @unique
@@ -233,11 +237,33 @@ model Incident {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   resolvedAt    DateTime?
+
+  // Evidence verification audit
+  evidenceVerifiedAt   DateTime?
+  evidenceVerifiedById String?
+
+  // Ticket issuance audit
+  ticketIssuedAt   DateTime?
+  ticketIssuedById String?
+
+  // Dismissal audit
+  dismissedAt    DateTime?
+  dismissedById  String?
+  dismissRemarks String?
+
+  // Payment recording audit
+  paymentRecordedAt   DateTime?
+  paymentRecordedById String?
+
   fareCalculation FareCalculation? @relation(fields: [fareCalculationId], references: [id])
-  handledBy     User?          @relation("HandledBy", fields: [handledById], references: [id])
-  reportedBy    User           @relation("ReportedBy", fields: [reportedById], references: [id])
-  vehicle       Vehicle?       @relation(fields: [vehicleId], references: [id])
-  evidence      Evidence[]
+  handledBy       User?            @relation("HandledBy", fields: [handledById], references: [id])
+  reportedBy      User             @relation("ReportedBy", fields: [reportedById], references: [id])
+  vehicle         Vehicle?         @relation(fields: [vehicleId], references: [id])
+  evidence        Evidence[]
+  evidenceVerifiedBy   User?        @relation("IncidentEvidenceVerifier", fields: [evidenceVerifiedById], references: [id])
+  ticketIssuedBy       User?        @relation("IncidentTicketIssuer", fields: [ticketIssuedById], references: [id])
+  dismissedBy          User?        @relation("IncidentDismisser", fields: [dismissedById], references: [id])
+  paymentRecordedBy    User?        @relation("IncidentPaymentRecorder", fields: [paymentRecordedById], references: [id])
 
   @@index([fareCalculationId])
   @@index([status])
@@ -250,6 +276,11 @@ model Incident {
   @@index([paymentStatus])
   @@index([status, incidentType])
   @@index([status, createdAt])
+  @@index([status, paymentStatus])
+  @@index([evidenceVerifiedById])
+  @@index([ticketIssuedById])
+  @@index([dismissedById])
+  @@index([paymentRecordedById])
   @@map("incidents")
 }
 
@@ -660,6 +691,7 @@ enum IncidentType {
 enum IncidentStatus {
   PENDING
   INVESTIGATING
+  TICKET_ISSUED
   RESOLVED
   DISMISSED
 }

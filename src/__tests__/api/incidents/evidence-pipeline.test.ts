@@ -190,6 +190,8 @@ describe("incident evidence pipeline", () => {
   });
 
   it("derives the incident location from GPS coordinates when the location field is blank", async () => {
+    const file = new File(["img"], "photo.jpg", { type: "image/jpeg" });
+    evidenceStorageMock.extractEvidenceFiles.mockReturnValueOnce([file]);
     prismaMock.incident.create.mockResolvedValueOnce({
       id: "inc-gps",
       location: "Amandayehan",
@@ -199,9 +201,11 @@ describe("incident evidence pipeline", () => {
         username: "public-1",
       },
     });
+    evidenceStorageMock.uploadEvidenceFiles.mockResolvedValueOnce([]);
 
     const res = await reportIncident(
       makeIncidentReportRequest({
+        file,
         location: "",
         coordinates: JSON.stringify({ latitude: 11.278823, longitude: 125.001194 }),
       }),
@@ -219,10 +223,21 @@ describe("incident evidence pipeline", () => {
     );
   });
 
+  it("rejects report when no evidence file is provided", async () => {
+    const res = await reportIncident(makeIncidentReportRequest());
+    const json = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(json.message).toMatch(/at least one evidence file is required/i);
+    expect(prismaMock.incident.create).not.toHaveBeenCalled();
+  });
+
   it("requires a selected trip when the public user has eligible recent trip history", async () => {
+    const file = new File(["img"], "photo.jpg", { type: "image/jpeg" });
+    evidenceStorageMock.extractEvidenceFiles.mockReturnValueOnce([file]);
     prismaMock.fareCalculation.findMany.mockResolvedValueOnce([{ id: "calc-1" }]);
 
-    const res = await reportIncident(makeIncidentReportRequest());
+    const res = await reportIncident(makeIncidentReportRequest({ file }));
     const json = await res.json();
 
     expect(res.status).toBe(400);
@@ -231,6 +246,8 @@ describe("incident evidence pipeline", () => {
   });
 
   it("anchors the report to the selected trip and ignores manual location overrides", async () => {
+    const file = new File(["img"], "photo.jpg", { type: "image/jpeg" });
+    evidenceStorageMock.extractEvidenceFiles.mockReturnValueOnce([file]);
     prismaMock.fareCalculation.findMany.mockResolvedValueOnce([{ id: "calc-1" }]);
     prismaMock.fareCalculation.findFirst.mockResolvedValueOnce({
       id: "calc-1",
@@ -259,9 +276,11 @@ describe("incident evidence pipeline", () => {
         username: "public-1",
       },
     });
+    evidenceStorageMock.uploadEvidenceFiles.mockResolvedValueOnce([]);
 
     const res = await reportIncident(
       makeIncidentReportRequest({
+        file,
         fareCalculationId: "calc-1",
         location: "Manual override",
       }),

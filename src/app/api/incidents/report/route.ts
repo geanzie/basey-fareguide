@@ -172,6 +172,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    if (evidenceFiles.length === 0) {
+      return NextResponse.json(
+        { message: 'At least one evidence file is required to submit an incident report.' },
+        { status: 400 },
+      )
+    }
+
     const eligibleFareCalculationIds =
       shouldEnforceTripSelection || fareCalculationId
         ? await loadEligibleFareCalculationIds(user.id)

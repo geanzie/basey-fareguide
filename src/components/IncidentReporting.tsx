@@ -369,6 +369,11 @@ const IncidentReporting = () => {
         return
       }
 
+      if (formData.evidenceFiles.length === 0) {
+        setError('At least one evidence file is required to submit an incident report.')
+        return
+      }
+
       const submitData = new FormData()
       submitData.append('incidentType', formData.incidentType)
       submitData.append('description', formData.description)
@@ -755,7 +760,7 @@ const IncidentReporting = () => {
 
               <div>
                 <label htmlFor="evidence" className="block text-sm font-medium text-gray-700 mb-2">
-                  Evidence (Optional)
+                  Evidence *
                 </label>
                 <input
                   type="file"

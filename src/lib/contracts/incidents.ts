@@ -3,6 +3,7 @@ import type { PaginationDto, UserRole } from "./common";
 export type IncidentStatus =
   | "PENDING"
   | "INVESTIGATING"
+  | "TICKET_ISSUED"
   | "RESOLVED"
   | "DISMISSED";
 
@@ -68,6 +69,15 @@ export interface IncidentListItemDto {
   handledBy: IncidentPersonDto | null;
   trip: IncidentTripSummaryDto | null;
   evidenceCount?: number;
+  evidenceVerifiedAt: string | null;
+  evidenceVerifiedBy: IncidentPersonDto | null;
+  ticketIssuedAt: string | null;
+  ticketIssuedBy: IncidentPersonDto | null;
+  dismissedAt: string | null;
+  dismissedBy: IncidentPersonDto | null;
+  dismissRemarks: string | null;
+  paymentRecordedAt: string | null;
+  paymentRecordedBy: IncidentPersonDto | null;
 }
 
 export interface IncidentsResponseDto {

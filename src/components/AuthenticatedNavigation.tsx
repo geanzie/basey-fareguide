@@ -26,7 +26,8 @@ export function AuthenticatedSidebarNavigation({
   user,
   pathname,
   onNavigate,
-}: AuthenticatedNavigationProps & { onNavigate?: () => void }) {
+  tabBadges,
+}: AuthenticatedNavigationProps & { onNavigate?: () => void; tabBadges?: Record<string, number> }) {
   const navigation = getAuthenticatedNavigationConfig(user.userType)
 
   return (
@@ -40,6 +41,7 @@ export function AuthenticatedSidebarNavigation({
             icon={item.icon}
             active={isAuthenticatedNavigationItemActive(pathname, item)}
             onNavigate={onNavigate}
+            badge={(tabBadges?.[item.id] ?? 0) > 0 ? tabBadges![item.id] : undefined}
           />
         ))}
       </div>
@@ -72,9 +74,11 @@ export function AuthenticatedMobileBottomNavigation({
   pathname,
   profileSheetOpen,
   onOpenProfileSheet,
+  tabBadges,
 }: AuthenticatedNavigationProps & {
   profileSheetOpen: boolean
   onOpenProfileSheet: () => void
+  tabBadges?: Record<string, number>
 }) {
   const navigation = getAuthenticatedNavigationConfig(user.userType)
   const mobilePrimaryActionCount = getAuthenticatedMobilePrimaryActionCount(user.userType)
@@ -89,6 +93,7 @@ export function AuthenticatedMobileBottomNavigation({
       >
         {navigation.tabs.map((item) => {
           const active = isAuthenticatedNavigationItemActive(pathname, item)
+          const badgeCount = tabBadges?.[item.id] ?? 0
 
           return (
             <Link
@@ -100,7 +105,15 @@ export function AuthenticatedMobileBottomNavigation({
                   : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
               }`}
             >
-              <DashboardIconSlot icon={item.icon} size={20} />
+              <div className="relative">
+                <DashboardIconSlot icon={item.icon} size={20} />
+                {badgeCount > 0 ? (
+                  <span
+                    aria-label={`${badgeCount} active incident${badgeCount !== 1 ? 's' : ''}`}
+                    className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-amber-400"
+                  />
+                ) : null}
+              </div>
               <span className="mt-1 truncate">{item.shortLabel}</span>
             </Link>
           )
@@ -219,12 +232,14 @@ function SidebarNavigationLink({
   icon,
   active,
   onNavigate,
+  badge,
 }: {
   label: string
   href: string
   icon: React.ComponentProps<typeof DashboardIconSlot>['icon']
   active: boolean
   onNavigate?: () => void
+  badge?: number
 }) {
   return (
     <Link
@@ -236,7 +251,15 @@ function SidebarNavigationLink({
           : 'text-gray-600 hover:bg-white/70 hover:text-gray-900'
       }`}
     >
-      <DashboardIconSlot icon={icon} size={DASHBOARD_ICON_POLICY.sizes.tab} />
+      <div className="relative shrink-0">
+        <DashboardIconSlot icon={icon} size={DASHBOARD_ICON_POLICY.sizes.tab} />
+        {badge != null && badge > 0 ? (
+          <span
+            aria-label={`${badge} active incident${badge !== 1 ? 's' : ''}`}
+            className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-amber-400"
+          />
+        ) : null}
+      </div>
       <span className="flex-1">{label}</span>
     </Link>
   )

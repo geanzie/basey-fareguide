@@ -35,7 +35,7 @@ vi.mock('@/lib/serializers', () => ({
 
 import { GET } from '@/app/api/incidents/enforcer/route'
 
-function makeIncident(status: 'PENDING' | 'INVESTIGATING' | 'RESOLVED' | 'DISMISSED') {
+function makeIncident(status: 'PENDING' | 'TICKET_ISSUED' | 'RESOLVED' | 'DISMISSED') {
   return {
     id: `incident-${status.toLowerCase()}`,
     incidentType: 'OTHER',
@@ -95,7 +95,7 @@ describe('GET /api/incidents/enforcer', () => {
   it('returns unresolved queue data with FIFO ordering when unresolved scope is requested', async () => {
     prismaMock.incident.findMany.mockResolvedValueOnce([
       makeIncident('PENDING'),
-      makeIncident('INVESTIGATING'),
+      makeIncident('TICKET_ISSUED'),
     ])
 
     const response = await GET(
@@ -107,7 +107,7 @@ describe('GET /api/incidents/enforcer', () => {
     expect(prismaMock.incident.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
-          status: { in: ['PENDING', 'INVESTIGATING'] },
+          status: { in: ['PENDING', 'TICKET_ISSUED'] },
         },
         orderBy: { createdAt: 'asc' },
       }),

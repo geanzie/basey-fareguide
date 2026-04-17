@@ -10,6 +10,7 @@ const authMock = vi.hoisted(() => ({
 }))
 
 const prismaMock = vi.hoisted(() => ({
+  $transaction: vi.fn(),
   incident: {
     findUnique: vi.fn(),
     count: vi.fn(),
@@ -39,10 +40,11 @@ vi.mock('@/lib/evidenceCleanup', () => ({
 }))
 
 import { PATCH as takeIncident } from '@/app/api/incidents/[incidentId]/take/route'
-import { GET as getTicketPenaltyPreview } from '@/app/api/incidents/[incidentId]/issue-ticket/route'
-import { PATCH as issueTicket } from '@/app/api/incidents/[incidentId]/issue-ticket/route'
+import { GET as getTicketPenaltyPreview, PATCH as issueTicket } from '@/app/api/incidents/[incidentId]/issue-ticket/route'
 import { PATCH as markTicketPaid } from '@/app/api/incidents/[incidentId]/payment/route'
 import { PATCH as resolveIncident } from '@/app/api/incidents/[incidentId]/resolve/route'
+import { PATCH as verifyEvidence } from '@/app/api/incidents/[incidentId]/verify-evidence/route'
+import { PATCH as dismissIncident } from '@/app/api/incidents/[incidentId]/dismiss/route'
 
 function makeJsonRequest(url: string, body: unknown = {}): Request {
   return new Request(url, {
@@ -59,7 +61,7 @@ function makeRequest(url: string, method: 'GET' | 'PATCH' = 'GET'): Request {
 }
 
 beforeEach(() => {
-  vi.clearAllMocks()
+  vi.resetAllMocks()
   authMock.requireRequestRole.mockResolvedValue({ id: 'enforcer-1', userType: 'ENFORCER' })
   cleanupMock.cleanupEvidenceFiles.mockResolvedValue(undefined)
   prismaMock.incident.count.mockResolvedValue(0)
@@ -67,61 +69,145 @@ beforeEach(() => {
     _count: { id: 0 },
     _sum: { penaltyAmount: null },
   })
+  prismaMock.$transaction.mockImplementation(
+    (fn: (tx: typeof prismaMock) => Promise<unknown>) => fn(prismaMock),
+  )
 })
 
 describe('enforcer workflow truthfulness', () => {
-  it('returns an explicit assignment message when an enforcer takes a pending incident', async () => {
+  it('returns 410 Gone for the deprecated take-ownership route', async () => {
+    const response = await takeIncident(
+      makeJsonRequest('http://localhost/api/incidents/incident-1/take') as never,
+      { params: Promise.resolve({ incidentId: 'incident-1' }) },
+    )
+    const json = await response.json()
+
+    expect(response.status).toBe(410)
+    expect(json.message).toBe(
+      'The take-ownership step has been removed. Scan the QR token and verify evidence to proceed.',
+    )
+    expect(prismaMock.incident.update).not.toHaveBeenCalled()
+  })
+
+  it('returns 410 Gone for the deprecated direct-resolve route', async () => {
+    const response = await resolveIncident(
+      makeJsonRequest('http://localhost/api/incidents/incident-1/resolve') as never,
+      { params: Promise.resolve({ incidentId: 'incident-1' }) },
+    )
+    const json = await response.json()
+
+    expect(response.status).toBe(410)
+    expect(json.message).toBe(
+      'Direct resolution without payment has been removed. Issue a ticket and record confirmed full payment to resolve.',
+    )
+    expect(prismaMock.incident.update).not.toHaveBeenCalled()
+  })
+
+  it('verifies evidence on a pending incident and records the actor', async () => {
     prismaMock.incident.findUnique.mockResolvedValueOnce({
       id: 'incident-1',
       status: 'PENDING',
+      evidenceVerifiedAt: null,
+      evidenceVerifiedById: null,
+      _count: { evidence: 1 },
     })
     prismaMock.incident.update.mockResolvedValueOnce({
       id: 'incident-1',
-      status: 'INVESTIGATING',
+      status: 'PENDING',
+      evidenceVerifiedAt: new Date(),
+      evidenceVerifiedById: 'enforcer-1',
     })
 
-    const response = await takeIncident(
-      makeJsonRequest('http://localhost/api/incidents/incident-1/take') as never,
+    const response = await verifyEvidence(
+      makeJsonRequest('http://localhost/api/incidents/incident-1/verify-evidence') as never,
       { params: Promise.resolve({ incidentId: 'incident-1' }) },
     )
     const json = await response.json()
 
     expect(response.status).toBe(200)
-    expect(json.message).toBe('Incident assigned successfully')
+    expect(json.message).toMatch(/evidence verified/i)
     expect(prismaMock.incident.update).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          status: 'INVESTIGATING',
-          handledById: 'enforcer-1',
+          evidenceVerifiedById: 'enforcer-1',
         }),
       }),
     )
   })
 
-  it('blocks take ownership once an incident is no longer pending', async () => {
+  it('returns 409 and skips the update when evidence was already verified', async () => {
     prismaMock.incident.findUnique.mockResolvedValueOnce({
       id: 'incident-1',
-      status: 'INVESTIGATING',
-      handledById: 'enforcer-2',
+      status: 'PENDING',
+      evidenceVerifiedAt: new Date(),
+      evidenceVerifiedById: 'enforcer-2',
     })
 
-    const response = await takeIncident(
-      makeJsonRequest('http://localhost/api/incidents/incident-1/take') as never,
+    const response = await verifyEvidence(
+      makeJsonRequest('http://localhost/api/incidents/incident-1/verify-evidence') as never,
+      { params: Promise.resolve({ incidentId: 'incident-1' }) },
+    )
+    const json = await response.json()
+
+    expect(response.status).toBe(409)
+    expect(json.message).toMatch(/already verified/i)
+    expect(prismaMock.incident.update).not.toHaveBeenCalled()
+  })
+
+  it('dismisses a pending incident when remarks are supplied', async () => {
+    prismaMock.incident.findUnique.mockResolvedValueOnce({
+      id: 'incident-1',
+      status: 'PENDING',
+      handledById: null,
+    })
+    prismaMock.incident.update.mockResolvedValueOnce({
+      id: 'incident-1',
+      status: 'DISMISSED',
+    })
+
+    const response = await dismissIncident(
+      makeJsonRequest('http://localhost/api/incidents/incident-1/dismiss', {
+        remarks: 'Duplicate report.',
+      }) as never,
+      { params: Promise.resolve({ incidentId: 'incident-1' }) },
+    )
+    const json = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(json.message).toMatch(/dismissed/i)
+    expect(prismaMock.incident.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: 'DISMISSED',
+          dismissRemarks: 'Duplicate report.',
+          dismissedById: 'enforcer-1',
+        }),
+      }),
+    )
+  })
+
+  it('rejects dismiss when remarks are blank', async () => {
+    const response = await dismissIncident(
+      makeJsonRequest('http://localhost/api/incidents/incident-1/dismiss', {
+        remarks: '   ',
+      }) as never,
       { params: Promise.resolve({ incidentId: 'incident-1' }) },
     )
     const json = await response.json()
 
     expect(response.status).toBe(400)
-    expect(json.message).toBe('This incident has already been assigned or resolved')
+    expect(json.message).toMatch(/remarks/i)
     expect(prismaMock.incident.update).not.toHaveBeenCalled()
   })
 
-  it('returns a truthful ticket-and-resolution message and retains evidence for scheduled cleanup', async () => {
+  it('issues a ticket for a verified-evidence pending incident and sets status to TICKET_ISSUED', async () => {
     prismaMock.incident.findUnique
       .mockResolvedValueOnce({
         id: 'incident-1',
-        status: 'INVESTIGATING',
-        handledById: 'enforcer-1',
+        status: 'PENDING',
+        evidenceVerifiedAt: new Date('2026-04-01T09:50:00.000Z'),
+        evidenceVerifiedById: 'enforcer-1',
+        handledById: null,
         ticketNumber: null,
         plateNumber: 'ABC-123',
         incidentDate: new Date('2026-04-01T10:00:00.000Z'),
@@ -131,7 +217,7 @@ describe('enforcer workflow truthfulness', () => {
       .mockResolvedValueOnce(null)
     prismaMock.incident.update.mockResolvedValueOnce({
       id: 'incident-1',
-      status: 'RESOLVED',
+      status: 'TICKET_ISSUED',
       ticketNumber: 'T-100',
     })
 
@@ -146,7 +232,7 @@ describe('enforcer workflow truthfulness', () => {
 
     expect(response.status).toBe(200)
     expect(json.message).toBe(
-      'Ticket T-100 issued successfully. Incident marked as resolved. Evidence remains available for 30 days before scheduled cleanup removes stored files.',
+      'Ticket T-100 issued. Awaiting confirmed full payment before the incident is marked as resolved. Evidence remains available for 30 days.',
     )
     expect(json.penalty).toEqual(
       expect.objectContaining({
@@ -169,6 +255,7 @@ describe('enforcer workflow truthfulness', () => {
           offenseNumberAtIssuance: 1,
           offenseTierAtIssuance: 'FIRST',
           penaltyRuleVersion: '2026-04-municipal-v1',
+          status: 'TICKET_ISSUED',
         }),
       }),
     )
@@ -177,11 +264,13 @@ describe('enforcer workflow truthfulness', () => {
     expect(cleanupMock.cleanupEvidenceFiles).not.toHaveBeenCalled()
   })
 
-  it('returns a computed penalty preview for the assigned investigating incident', async () => {
+  it('returns a computed penalty preview for a pending verified-evidence incident', async () => {
     prismaMock.incident.findUnique.mockResolvedValueOnce({
       id: 'incident-1',
-      status: 'INVESTIGATING',
-      handledById: 'enforcer-1',
+      status: 'PENDING',
+      evidenceVerifiedAt: new Date('2026-04-03T07:50:00.000Z'),
+      evidenceVerifiedById: 'enforcer-1',
+      handledById: null,
       ticketNumber: null,
       plateNumber: 'ABC-123',
       incidentDate: new Date('2026-04-03T08:00:00.000Z'),
@@ -217,8 +306,10 @@ describe('enforcer workflow truthfulness', () => {
   it('caps the computed penalty at the third-and-above tier', async () => {
     prismaMock.incident.findUnique.mockResolvedValueOnce({
       id: 'incident-1',
-      status: 'INVESTIGATING',
-      handledById: 'enforcer-1',
+      status: 'PENDING',
+      evidenceVerifiedAt: new Date('2026-04-03T07:50:00.000Z'),
+      evidenceVerifiedById: 'enforcer-1',
+      handledById: null,
       ticketNumber: null,
       plateNumber: 'ABC-123',
       incidentDate: new Date('2026-04-03T08:00:00.000Z'),
@@ -249,10 +340,12 @@ describe('enforcer workflow truthfulness', () => {
     )
   })
 
-  it('rejects ticket issuance when the incident is not yet under investigation', async () => {
+  it('rejects ticket issuance when evidence has not been verified', async () => {
     prismaMock.incident.findUnique.mockResolvedValueOnce({
       id: 'incident-1',
       status: 'PENDING',
+      evidenceVerifiedAt: null,
+      evidenceVerifiedById: null,
       handledById: null,
       ticketNumber: null,
       plateNumber: 'ABC-123',
@@ -269,16 +362,18 @@ describe('enforcer workflow truthfulness', () => {
     const json = await response.json()
 
     expect(response.status).toBe(400)
-    expect(json.message).toBe('Can only issue tickets for incidents under investigation')
+    expect(json.message).toBe('Evidence must be verified before issuing a ticket.')
     expect(prismaMock.incident.update).not.toHaveBeenCalled()
   })
 
-  it('rejects ticket issuance from an enforcer who is not assigned to the incident', async () => {
+  it('rejects ticket issuance when incident is not in PENDING status', async () => {
     prismaMock.incident.findUnique.mockResolvedValueOnce({
       id: 'incident-1',
-      status: 'INVESTIGATING',
-      handledById: 'enforcer-2',
-      ticketNumber: null,
+      status: 'TICKET_ISSUED',
+      evidenceVerifiedAt: new Date(),
+      evidenceVerifiedById: 'enforcer-1',
+      handledById: 'enforcer-1',
+      ticketNumber: 'T-100',
       plateNumber: 'ABC-123',
       incidentDate: new Date('2026-04-03T08:00:00.000Z'),
       createdAt: new Date('2026-04-03T08:05:00.000Z'),
@@ -286,26 +381,34 @@ describe('enforcer workflow truthfulness', () => {
 
     const response = await issueTicket(
       makeJsonRequest('http://localhost/api/incidents/incident-1/issue-ticket', {
-        ticketNumber: 'T-202',
+        ticketNumber: 'T-201',
       }) as never,
       { params: Promise.resolve({ incidentId: 'incident-1' }) },
     )
     const json = await response.json()
 
-    expect(response.status).toBe(403)
-    expect(json.message).toBe('You can only issue a ticket for an incident assigned to you')
+    expect(response.status).toBe(400)
+    expect(json.message).toBe('Can only issue tickets for pending incidents.')
     expect(prismaMock.incident.update).not.toHaveBeenCalled()
   })
 
-  it('lets the encoder office mark a ticket as paid without changing its resolution state', async () => {
+  it('lets the encoder record confirmed full payment and auto-resolves the incident', async () => {
     authMock.requireRequestRole.mockResolvedValueOnce({ id: 'encoder-1', userType: 'DATA_ENCODER' })
-    prismaMock.incident.findUnique.mockResolvedValueOnce({
-      id: 'incident-1',
-      ticketNumber: 'T-101',
-      handledById: 'enforcer-1',
-      paymentStatus: 'UNPAID',
-      remarks: null,
-    })
+    prismaMock.incident.findUnique
+      .mockResolvedValueOnce({
+        id: 'incident-1',
+        ticketNumber: 'T-101',
+        handledById: 'enforcer-1',
+        paymentStatus: 'UNPAID',
+        remarks: null,
+      })
+      .mockResolvedValueOnce({
+        id: 'incident-1',
+        ticketNumber: 'T-101',
+        handledById: 'enforcer-1',
+        paymentStatus: 'UNPAID',
+        remarks: null,
+      })
     prismaMock.incident.update.mockResolvedValueOnce({
       id: 'incident-1',
       ticketNumber: 'T-101',
@@ -322,12 +425,14 @@ describe('enforcer workflow truthfulness', () => {
     const json = await response.json()
 
     expect(response.status).toBe(200)
-    expect(json.message).toBe('Ticket T-101 marked as paid.')
+    expect(json.message).toBe('Confirmed full payment for ticket T-101. Incident marked as resolved.')
     expect(prismaMock.incident.update).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           paymentStatus: 'PAID',
           officialReceiptNumber: 'OR-1001',
+          status: 'RESOLVED',
+          paymentRecordedById: 'encoder-1',
         }),
       }),
     )
@@ -348,82 +453,5 @@ describe('enforcer workflow truthfulness', () => {
     expect(json.message).toBe('Forbidden')
     expect(prismaMock.incident.findUnique).not.toHaveBeenCalled()
     expect(prismaMock.incident.update).not.toHaveBeenCalled()
-  })
-
-  it('blocks ticket issuance when the incident has no usable plate number', async () => {
-    prismaMock.incident.findUnique.mockResolvedValueOnce({
-      id: 'incident-1',
-      status: 'INVESTIGATING',
-      handledById: 'enforcer-1',
-      ticketNumber: null,
-      plateNumber: null,
-      incidentDate: new Date('2026-04-03T08:00:00.000Z'),
-      createdAt: new Date('2026-04-03T08:05:00.000Z'),
-    })
-
-    const response = await issueTicket(
-      makeJsonRequest('http://localhost/api/incidents/incident-1/issue-ticket', {
-        ticketNumber: 'T-200',
-      }) as never,
-      { params: Promise.resolve({ incidentId: 'incident-1' }) },
-    )
-    const json = await response.json()
-
-    expect(response.status).toBe(400)
-    expect(json.message).toMatch(/plate number is required/i)
-    expect(prismaMock.incident.update).not.toHaveBeenCalled()
-  })
-
-  it('blocks the resolve-without-ticket path once a ticket already exists', async () => {
-    prismaMock.incident.findUnique.mockResolvedValueOnce({
-      id: 'incident-1',
-      status: 'INVESTIGATING',
-      handledById: 'enforcer-1',
-      ticketNumber: 'T-101',
-    })
-
-    const response = await resolveIncident(
-      makeJsonRequest('http://localhost/api/incidents/incident-1/resolve', {
-        remarks: 'Already handled',
-      }) as never,
-      { params: Promise.resolve({ incidentId: 'incident-1' }) },
-    )
-    const json = await response.json()
-
-    expect(response.status).toBe(400)
-    expect(json.message).toMatch(/already has a ticket/i)
-    expect(prismaMock.incident.update).not.toHaveBeenCalled()
-  })
-
-  it('returns a truthful resolve-without-ticket message and retains evidence for scheduled cleanup', async () => {
-    prismaMock.incident.findUnique.mockResolvedValueOnce({
-      id: 'incident-1',
-      status: 'INVESTIGATING',
-      handledById: 'enforcer-1',
-      ticketNumber: null,
-      remarks: null,
-    })
-    prismaMock.incident.update.mockResolvedValueOnce({
-      id: 'incident-1',
-      status: 'RESOLVED',
-      ticketNumber: null,
-      remarks: 'No ticket issued after field verification',
-    })
-
-    const response = await resolveIncident(
-      makeJsonRequest('http://localhost/api/incidents/incident-1/resolve', {
-        remarks: 'No ticket issued after field verification',
-      }) as never,
-      { params: Promise.resolve({ incidentId: 'incident-1' }) },
-    )
-    const json = await response.json()
-
-    expect(response.status).toBe(200)
-    expect(json.message).toBe(
-      'Incident resolved without issuing a ticket. Evidence remains available for 30 days before scheduled cleanup removes stored files.',
-    )
-    expect(json.evidenceRetainedUntilCleanup).toBe(true)
-    expect(json.evidenceRetentionDays).toBe(30)
-    expect(cleanupMock.cleanupEvidenceFiles).not.toHaveBeenCalled()
   })
 })

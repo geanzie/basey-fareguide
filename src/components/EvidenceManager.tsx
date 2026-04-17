@@ -38,15 +38,19 @@ interface Evidence {
 interface EvidenceManagerProps {
   incidentId: string
   onClose: () => void
+  onVerified?: () => void
+  incidentVerifiedAt?: string | null
 }
 
-const EvidenceManager = ({ incidentId, onClose }: EvidenceManagerProps) => {
+const EvidenceManager = ({ incidentId, onClose, onVerified, incidentVerifiedAt }: EvidenceManagerProps) => {
   const [evidence, setEvidence] = useState<Evidence[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [reviewingId, setReviewingId] = useState<string | null>(null)
   const [reviewStatus, setReviewStatus] = useState('')
   const [reviewRemarks, setReviewRemarks] = useState('')
+  const [verifying, setVerifying] = useState(false)
+  const [verifiedSuccessfully, setVerifiedSuccessfully] = useState(false)
 
   useEffect(() => {
     fetchEvidence()
@@ -98,6 +102,27 @@ const EvidenceManager = ({ incidentId, onClose }: EvidenceManagerProps) => {
       }
     } catch {
       setError('Failed to review evidence')
+    }
+  }
+
+  const handleVerifyIncident = async () => {
+    setVerifying(true)
+    setError('')
+    try {
+      const response = await fetch(`/api/incidents/${incidentId}/verify-evidence`, {
+        method: 'PATCH',
+      })
+      const data = await response.json().catch(() => null)
+      if (response.ok || response.status === 409) {
+        setVerifiedSuccessfully(true)
+        onVerified?.()
+      } else {
+        setError(data?.message || 'Failed to verify evidence.')
+      }
+    } catch {
+      setError('Failed to verify evidence.')
+    } finally {
+      setVerifying(false)
     }
   }
 
@@ -327,7 +352,28 @@ const EvidenceManager = ({ incidentId, onClose }: EvidenceManagerProps) => {
             )}
           </div>
 
-          <div className="flex flex-col-reverse gap-3 border-t border-slate-200/80 bg-white/95 px-4 py-4 sm:flex-row sm:justify-end sm:px-5">
+          <div className="flex flex-col-reverse gap-3 border-t border-slate-200/80 bg-white/95 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+            <div className="sm:flex-1">
+              {verifiedSuccessfully || incidentVerifiedAt ? (
+                <span className="inline-flex items-center gap-2 rounded-lg bg-green-50 px-3 py-2 text-sm font-semibold text-green-800">
+                  <DashboardIconSlot icon={DASHBOARD_ICONS.check} size={DASHBOARD_ICON_POLICY.sizes.button} />
+                  Evidence Verified—Ticket can now be issued
+                </span>
+              ) : (
+                <button
+                  onClick={() => { void handleVerifyIncident() }}
+                  disabled={verifying || loading || evidence.length === 0}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                >
+                  {verifying ? (
+                    <LoadingSpinner size={14} />
+                  ) : (
+                    <DashboardIconSlot icon={DASHBOARD_ICONS.inspect} size={DASHBOARD_ICON_POLICY.sizes.button} />
+                  )}
+                  <span>{verifying ? 'Verifying…' : 'Submit Verification'}</span>
+                </button>
+              )}
+            </div>
             <button
               onClick={onClose}
               className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-gray-300 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-400 sm:w-auto"

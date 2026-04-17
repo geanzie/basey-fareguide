@@ -30,20 +30,20 @@ async function resolveTicketIssuanceContext(
     }
   }
 
-  if (incident.status !== 'INVESTIGATING') {
+  if (incident.status !== 'PENDING') {
     return {
       response: NextResponse.json(
-        { message: 'Can only issue tickets for incidents under investigation' },
+        { message: 'Can only issue tickets for pending incidents.' },
         { status: 400 },
       ),
     }
   }
 
-  if (incident.handledById !== userId) {
+  if (!incident.evidenceVerifiedAt || !incident.evidenceVerifiedById) {
     return {
       response: NextResponse.json(
-        { message: 'You can only issue a ticket for an incident assigned to you' },
-        { status: 403 },
+        { message: 'Evidence must be verified before issuing a ticket.' },
+        { status: 400 },
       ),
     }
   }
@@ -51,8 +51,8 @@ async function resolveTicketIssuanceContext(
   if (incident.ticketNumber) {
     return {
       response: NextResponse.json(
-        { message: 'Ticket has already been issued for this incident' },
-        { status: 400 },
+        { message: 'Ticket has already been issued for this incident.' },
+        { status: 409 },
       ),
     }
   }
@@ -200,8 +200,10 @@ export async function PATCH(
         paymentStatus: 'UNPAID',
         paidAt: null,
         remarks: remarks || incident.remarks,
-        status: 'RESOLVED',
-        resolvedAt: new Date(),
+        status: 'TICKET_ISSUED',
+        handledById: user.id,
+        ticketIssuedAt: new Date(),
+        ticketIssuedById: user.id,
         updatedAt: new Date()
       },
       include: {
@@ -235,7 +237,7 @@ export async function PATCH(
         ...penaltyDecision,
         offenseTierLabel: getOffenseTierLabel(penaltyDecision.offenseTier),
       },
-      message: `Ticket ${ticketNumber} issued successfully. Incident marked as resolved. Evidence remains available for ${RESOLVED_EVIDENCE_RETENTION_DAYS} days before scheduled cleanup removes stored files.`,
+      message: `Ticket ${ticketNumber} issued. Awaiting confirmed full payment before the incident is marked as resolved. Evidence remains available for ${RESOLVED_EVIDENCE_RETENTION_DAYS} days.`,
       evidenceRetainedUntilCleanup: true,
       evidenceRetentionDays: RESOLVED_EVIDENCE_RETENTION_DAYS,
     })

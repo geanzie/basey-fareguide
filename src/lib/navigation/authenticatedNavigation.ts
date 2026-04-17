@@ -274,6 +274,14 @@ const authenticatedNavigationRegistry: Record<UserRole, AuthenticatedNavigationC
         href: '/driver/history',
         matchers: [exact('/driver/history')],
       },
+      {
+        id: 'incidents',
+        label: 'Vehicle Incidents',
+        shortLabel: 'Incidents',
+        icon: DASHBOARD_ICONS.incidents,
+        href: '/driver/incidents',
+        matchers: [prefix('/driver/incidents')],
+      },
     ],
     secondaryActions: [
       {

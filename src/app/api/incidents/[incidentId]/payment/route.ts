@@ -7,7 +7,7 @@ export async function PATCH(
   context: { params: Promise<{ incidentId: string }> }
 ) {
   try {
-    await requireRequestRole(request, [...ADMIN_OR_ENCODER])
+    const user = await requireRequestRole(request, [...ADMIN_OR_ENCODER])
     const { incidentId } = await context.params
     const body = await request.json().catch(() => ({}))
     const officialReceiptNumber =
@@ -39,46 +39,59 @@ export async function PATCH(
     }
 
     if (incident.paymentStatus === 'PAID') {
-      return NextResponse.json({ message: 'This ticket is already marked as paid.' }, { status: 400 })
+      return NextResponse.json({ message: 'This ticket is already marked as paid.' }, { status: 409 })
     }
 
-    const updatedIncident = await prisma.incident.update({
-      where: { id: incidentId },
-      data: {
-        paymentStatus: 'PAID',
-        paidAt,
-        officialReceiptNumber,
-        remarks: remarks || incident.remarks,
-        updatedAt: new Date(),
-      },
-      include: {
-        reportedBy: {
-          select: {
-            firstName: true,
-            lastName: true,
-            username: true,
+    const updatedIncident = await prisma.$transaction(async (tx) => {
+      const freshIncident = await tx.incident.findUnique({ where: { id: incidentId } })
+      if (!freshIncident) throw Object.assign(new Error('Incident not found'), { statusCode: 404 })
+      if (freshIncident.paymentStatus === 'PAID') throw Object.assign(new Error('This ticket is already marked as paid.'), { statusCode: 409 })
+
+      return tx.incident.update({
+        where: { id: incidentId },
+        data: {
+          paymentStatus: 'PAID',
+          paidAt,
+          officialReceiptNumber,
+          remarks: remarks || incident.remarks,
+          status: 'RESOLVED',
+          resolvedAt: paidAt,
+          paymentRecordedAt: new Date(),
+          paymentRecordedById: user.id,
+          updatedAt: new Date(),
+        },
+        include: {
+          reportedBy: {
+            select: {
+              firstName: true,
+              lastName: true,
+              username: true,
+            },
+          },
+          handledBy: {
+            select: {
+              firstName: true,
+              lastName: true,
+              username: true,
+            },
+          },
+          vehicle: {
+            select: {
+              plateNumber: true,
+              vehicleType: true,
+              ownerName: true,
+            },
+          },
+          paymentRecordedBy: {
+            select: { firstName: true, lastName: true, username: true },
           },
         },
-        handledBy: {
-          select: {
-            firstName: true,
-            lastName: true,
-            username: true,
-          },
-        },
-        vehicle: {
-          select: {
-            plateNumber: true,
-            vehicleType: true,
-            ownerName: true,
-          },
-        },
-      },
+      })
     })
 
     return NextResponse.json({
       incident: updatedIncident,
-      message: `Ticket ${incident.ticketNumber} marked as paid.`,
+      message: `Confirmed full payment for ticket ${incident.ticketNumber}. Incident marked as resolved.`,
     })
   } catch (error) {
     return createAuthErrorResponse(error)

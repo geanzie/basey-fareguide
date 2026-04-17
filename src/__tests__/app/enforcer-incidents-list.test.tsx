@@ -144,7 +144,7 @@ describe('EnforcerIncidentsList', () => {
           new Response(
             JSON.stringify({
               message:
-                'Ticket T-202 issued successfully. Incident marked as resolved. Evidence remains available for 30 days before scheduled cleanup removes stored files.',
+                'Ticket T-202 issued. Awaiting confirmed full payment before the incident is marked as resolved. Evidence remains available for 30 days.',
             }),
             {
               status: 200,
@@ -186,8 +186,8 @@ describe('EnforcerIncidentsList', () => {
           },
           {
             id: 'incident-2',
-            status: 'INVESTIGATING',
-            statusLabel: 'Investigating',
+            status: 'PENDING',
+            statusLabel: 'Pending',
             type: 'RECKLESS_DRIVING',
             typeLabel: 'Reckless Driving',
             location: 'Barangay Tinago',
@@ -200,7 +200,9 @@ describe('EnforcerIncidentsList', () => {
             paymentStatus: null,
             paidAt: null,
             penaltyAmount: 500,
-            handledById: 'enforcer-1',
+            handledById: null,
+            evidenceVerifiedAt: '2026-04-02T10:50:00.000Z',
+            evidenceVerifiedBy: { firstName: 'Pedro', lastName: 'Reyes', fullName: 'Pedro Reyes' },
             reportedBy: {
               firstName: 'Maria',
               lastName: 'Santos',
@@ -280,9 +282,11 @@ describe('EnforcerIncidentsList', () => {
     expect(container.textContent).toContain('4 incidents returned')
     expect(container.textContent).toContain('View Details')
     expect(container.textContent).toContain('Evidence')
-    expect(container.textContent).toContain('Take and Issue Ticket')
+    expect(container.textContent).not.toContain('Verify Evidence')
     expect(container.textContent).toContain('Issue Ticket')
-    expect(container.textContent).toContain('Resolve Only')
+    expect(container.textContent).not.toContain('Dismiss')
+    expect(container.textContent).not.toContain('Take and Issue Ticket')
+    expect(container.textContent).not.toContain('Resolve Only')
 
     const controls = Array.from(container.querySelectorAll('button'))
 
@@ -290,7 +294,7 @@ describe('EnforcerIncidentsList', () => {
     expect(controls.every((button) => (button.textContent || '').trim().length > 0)).toBe(true)
   })
 
-  it('keeps evidence management behind assignment and shows a truthful notice for unassigned incidents', async () => {
+  it('shows evidence management for all enforcers without requiring assignment', async () => {
     await act(async () => {
       root.render(React.createElement(EnforcerIncidentsList, { mode: 'dashboard' }))
       await Promise.resolve()
@@ -307,9 +311,8 @@ describe('EnforcerIncidentsList', () => {
       await Promise.resolve()
     })
 
-    expect(container.textContent).toContain('Take ownership of this incident before managing its evidence.')
-    expect(container.textContent).not.toContain('Manage Evidence')
-    expect(container.textContent).not.toContain('EvidenceManager')
+    expect(container.textContent).toContain('Manage Evidence')
+    expect(container.textContent).not.toContain('Evidence is only accessible to the enforcer or admin.')
   })
 
   it('renders incident details in a compact case snapshot layout', async () => {
@@ -416,7 +419,7 @@ describe('EnforcerIncidentsList', () => {
     expect(mutateCacheMock).toHaveBeenCalledWith('/api/incidents/enforcer?scope=unresolved&mode=queue')
     expect(container.textContent).toContain('Ticket issued')
     expect(container.textContent).toContain(
-      'Ticket T-202 issued successfully. Incident marked as resolved. Evidence remains available for 30 days before scheduled cleanup removes stored files.',
+      'Ticket T-202 issued. Awaiting confirmed full payment before the incident is marked as resolved. Evidence remains available for 30 days.',
     )
     expect(container.querySelector('[role="status"]')).not.toBeNull()
     expect(vi.mocked(globalThis.alert)).not.toHaveBeenCalled()
@@ -441,8 +444,8 @@ describe('EnforcerIncidentsList', () => {
 
     expect(buttons).not.toContain('Resolved (1)')
     expect(buttons).toContain('All (2)')
-    expect(buttons).toContain('Pending (1)')
-    expect(buttons).toContain('Investigating (1)')
+    expect(buttons).toContain('Pending (2)')
+    expect(buttons).toContain('Ticket Issued (0)')
   })
 
   it('loads the QR handoff snapshot into the enforcer queue banner', async () => {

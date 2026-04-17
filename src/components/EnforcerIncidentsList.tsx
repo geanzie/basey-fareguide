@@ -1,7 +1,7 @@
 'use client'
 
 import type { FormEvent, ReactNode } from 'react'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import useSWR, { useSWRConfig } from 'swr'
 import ResponsiveTable, { ActionButton, StatusBadge } from './ResponsiveTable'
@@ -47,14 +47,14 @@ interface ActionNotice {
   message: string
 }
 
-type EnforcerStatusFilter = 'ALL' | 'PENDING' | 'INVESTIGATING' | 'RESOLVED'
+type EnforcerStatusFilter = 'ALL' | 'PENDING' | 'TICKET_ISSUED' | 'RESOLVED'
 
-const QUEUE_STATUS_FILTERS = ['ALL', 'PENDING', 'INVESTIGATING'] as const satisfies readonly EnforcerStatusFilter[]
+const QUEUE_STATUS_FILTERS = ['ALL', 'PENDING', 'TICKET_ISSUED'] as const satisfies readonly EnforcerStatusFilter[]
 
-const DASHBOARD_STATUS_FILTERS = ['ALL', 'PENDING', 'INVESTIGATING', 'RESOLVED'] as const satisfies readonly EnforcerStatusFilter[]
+const DASHBOARD_STATUS_FILTERS = ['ALL', 'PENDING', 'TICKET_ISSUED', 'RESOLVED'] as const satisfies readonly EnforcerStatusFilter[]
 
-const UNRESOLVED_INCIDENT_STATUSES = ['PENDING', 'INVESTIGATING'] as const
-const EVIDENCE_ASSIGNMENT_NOTICE = 'Take ownership of this incident before managing its evidence.'
+const UNRESOLVED_INCIDENT_STATUSES = ['PENDING', 'TICKET_ISSUED'] as const
+const EVIDENCE_ASSIGNMENT_NOTICE = 'Evidence is only accessible to the enforcer or admin.'
 const INCIDENT_LIST_CACHE_KEYS = [
   '/api/incidents/enforcer?scope=all&mode=dashboard',
   '/api/incidents/enforcer?scope=unresolved&mode=queue',
@@ -69,13 +69,13 @@ const STATUS_TABS: Record<EnforcerIncidentsViewMode, Array<{ key: EnforcerStatus
   dashboard: [
     { key: 'ALL', label: 'All' },
     { key: 'PENDING', label: 'Pending' },
-    { key: 'INVESTIGATING', label: 'Investigating' },
+    { key: 'TICKET_ISSUED', label: 'Ticket Issued' },
     { key: 'RESOLVED', label: 'Resolved' },
   ],
   queue: [
     { key: 'ALL', label: 'All' },
     { key: 'PENDING', label: 'Pending' },
-    { key: 'INVESTIGATING', label: 'Investigating' },
+    { key: 'TICKET_ISSUED', label: 'Ticket Issued' },
   ],
 }
 
@@ -140,6 +140,7 @@ export default function EnforcerIncidentsList({
   const [selectedIncident, setSelectedIncident] = useState<IncidentListItemDto | null>(null)
   const [showIncidentDetails, setShowIncidentDetails] = useState(false)
   const [evidenceIncidentId, setEvidenceIncidentId] = useState<string | null>(null)
+  const [evidenceIncident, setEvidenceIncident] = useState<IncidentListItemDto | null>(null)
   const [showEvidenceManager, setShowEvidenceManager] = useState(false)
   const [ticketIncident, setTicketIncident] = useState<IncidentListItemDto | null>(null)
   const [showTicketModal, setShowTicketModal] = useState(false)
@@ -289,7 +290,9 @@ export default function EnforcerIncidentsList({
     () => ({
       total: scopedIncidents.length,
       pending: scopedIncidents.filter((incident) => incident.status === 'PENDING').length,
-      investigating: scopedIncidents.filter((incident) => incident.status === 'INVESTIGATING').length,
+      forReview: scopedIncidents.filter((incident) => incident.status === 'PENDING' && !incident.evidenceVerifiedAt).length,
+      readyForTicket: scopedIncidents.filter((incident) => incident.status === 'PENDING' && incident.evidenceVerifiedAt).length,
+      ticketIssued: scopedIncidents.filter((incident) => incident.status === 'TICKET_ISSUED').length,
       resolved: scopedIncidents.filter((incident) => incident.status === 'RESOLVED').length,
     }),
     [scopedIncidents],
@@ -301,8 +304,8 @@ export default function EnforcerIncidentsList({
         return stats.total
       case 'PENDING':
         return stats.pending
-      case 'INVESTIGATING':
-        return stats.investigating
+      case 'TICKET_ISSUED':
+        return stats.ticketIssued
       case 'RESOLVED':
         return stats.resolved
       default:
@@ -350,59 +353,38 @@ export default function EnforcerIncidentsList({
     })
   }
 
-  const handleTakeAndIssueTicket = async (incident: IncidentListItemDto) => {
-    try {
-      const response = await fetch(`/api/incidents/${incident.id}/take`, {
-        method: 'PATCH',
-      })
-      const payload = await response.json()
+  const handleDismissIncident = async (incident: IncidentListItemDto) => {
+    let remarks = window.prompt('Dismissal remarks (required):', '')
 
-      if (!response.ok) {
-        showActionNotice('error', 'Unable to take incident', payload.message || 'Failed to take incident.')
-        return
-      }
-
-      await revalidateIncidentLists()
-      await openTicketModal({ ...incident, status: 'INVESTIGATING' })
-    } catch (_error) {
-      showActionNotice('error', 'Unable to take incident', 'Error taking incident. Please try again.')
+    while (remarks !== null && remarks.trim() === '') {
+      remarks = window.prompt('Remarks cannot be blank. Enter dismissal remarks:', '')
     }
-  }
 
-  const handleResolveIncident = async (incident: IncidentListItemDto) => {
-    const confirmed = window.confirm(
-      'Resolve this incident without issuing a ticket? This will mark it as resolved and start evidence cleanup.'
-    )
-
-    if (!confirmed) {
+    if (remarks === null) {
       return
     }
 
-    const remarks = window.prompt('Resolution remarks (optional):', '') || ''
-
     try {
-      const response = await fetch(`/api/incidents/${incident.id}/resolve`, {
+      const response = await fetch(`/api/incidents/${incident.id}/dismiss`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ remarks }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dismissRemarks: remarks }),
       })
       const payload = await response.json()
 
       if (!response.ok) {
-        showActionNotice('error', 'Unable to resolve incident', payload.message || 'Failed to resolve incident.')
+        showActionNotice('error', 'Unable to dismiss incident', payload.message || 'Failed to dismiss incident.')
         return
       }
 
-      showActionNotice('success', 'Incident resolved', payload.message || 'Incident resolved successfully.')
+      showActionNotice('success', 'Incident dismissed', payload.message || 'Incident dismissed.')
       if (selectedIncident?.id === incident.id) {
         closeIncidentDetails()
       }
       await revalidateIncidentLists()
       onWorkflowComplete?.()
     } catch (_error) {
-      showActionNotice('error', 'Unable to resolve incident', 'Error resolving incident. Please try again.')
+      showActionNotice('error', 'Unable to dismiss incident', 'Error dismissing incident. Please try again.')
     }
   }
 
@@ -447,18 +429,37 @@ export default function EnforcerIncidentsList({
     }
   }
 
-  const closeIncidentDetails = () => {
+  const closeIncidentDetails = useCallback(() => {
     setShowIncidentDetails(false)
     setSelectedIncident(null)
-  }
+  }, [])
 
-  const closeEvidenceManager = () => {
+  const closeEvidenceManager = useCallback(() => {
     setShowEvidenceManager(false)
     setEvidenceIncidentId(null)
-  }
+    setEvidenceIncident(null)
+  }, [])
 
-  const canAccessIncidentEvidence = (incident: IncidentListItemDto) =>
-    user?.userType === 'ADMIN' || incident.handledById === user?.id
+  // Sync selectedIncident with fresh SWR data so the details modal never shows stale status.
+  useEffect(() => {
+    if (!selectedIncident) return
+    const fresh = incidents.find((i) => i.id === selectedIncident.id)
+    if (!fresh) {
+      closeIncidentDetails()
+      return
+    }
+    setSelectedIncident(fresh)
+  }, [incidents, selectedIncident?.id, closeIncidentDetails])
+
+  // Sync evidenceIncident so EvidenceManager receives the latest incidentVerifiedAt.
+  useEffect(() => {
+    if (!evidenceIncident) return
+    const fresh = incidents.find((i) => i.id === evidenceIncident.id)
+    if (fresh) setEvidenceIncident(fresh)
+  }, [incidents, evidenceIncident?.id])
+
+  const canAccessIncidentEvidence = (_incident: IncidentListItemDto) =>
+    user?.userType === 'ADMIN' || user?.userType === 'ENFORCER'
 
   const openEvidenceManager = (incident: IncidentListItemDto) => {
     if (!canAccessIncidentEvidence(incident)) {
@@ -467,6 +468,7 @@ export default function EnforcerIncidentsList({
     }
 
     setEvidenceIncidentId(incident.id)
+    setEvidenceIncident(incident)
     setShowEvidenceManager(true)
   }
 
@@ -474,10 +476,12 @@ export default function EnforcerIncidentsList({
     switch (status) {
       case 'PENDING':
         return 'bg-yellow-100 text-yellow-800'
-      case 'INVESTIGATING':
-        return 'bg-blue-100 text-blue-800'
+      case 'TICKET_ISSUED':
+        return 'bg-amber-100 text-amber-800'
       case 'RESOLVED':
         return 'bg-green-100 text-green-800'
+      case 'DISMISSED':
+        return 'bg-gray-100 text-gray-800'
       default:
         return 'bg-gray-100 text-gray-800'
     }
@@ -605,7 +609,7 @@ export default function EnforcerIncidentsList({
                   {stats.pending} incident{stats.pending === 1 ? '' : 's'} awaiting response
                 </h3>
                 <p className="text-red-600 text-sm">
-                  Use the pending filter to take the next case into the investigation workflow.
+                  Scan the QR token and verify evidence before issuing a ticket.
                 </p>
               </div>
             </div>
@@ -683,15 +687,15 @@ export default function EnforcerIncidentsList({
               tone="slate"
             />
             <MetricCard
-              label="Pending"
-              value={stats.pending}
-              icon={DASHBOARD_ICONS.approval}
+              label="For Review"
+              value={stats.forReview}
+              icon={DASHBOARD_ICONS.inspect}
               tone="amber"
             />
             <MetricCard
-              label="Investigating"
-              value={stats.investigating}
-              icon={DASHBOARD_ICONS.inspect}
+              label="Awaiting Payment"
+              value={stats.ticketIssued}
+              icon={DASHBOARD_ICONS.ticket}
               tone="blue"
             />
             <MetricCard
@@ -862,38 +866,19 @@ export default function EnforcerIncidentsList({
                           </ActionLabel>
                         </ActionButton>
                       ) : null}
-                      {incident.status === 'PENDING' ? (
+                      {incident.status === 'PENDING' && incident.evidenceVerifiedAt ? (
                         <ActionButton
-                          onClick={() => handleTakeAndIssueTicket(incident)}
+                          onClick={() => {
+                            void openTicketModal(incident)
+                          }}
                           variant="primary"
                           size="xs"
                           className="bg-red-600 hover:bg-red-700 text-white font-semibold"
                         >
                           <ActionLabel icon={DASHBOARD_ICONS.ticket} iconClassName="text-white">
-                            Take and Issue Ticket
+                            Issue Ticket
                           </ActionLabel>
                         </ActionButton>
-                      ) : null}
-                      {incident.status === 'INVESTIGATING' && !incident.ticketNumber ? (
-                        <>
-                          <ActionButton
-                            onClick={() => {
-                              void openTicketModal(incident)
-                            }}
-                            variant="primary"
-                            size="xs"
-                            className="bg-red-600 hover:bg-red-700 text-white font-semibold"
-                          >
-                            <ActionLabel icon={DASHBOARD_ICONS.ticket} iconClassName="text-white">
-                              Issue Ticket
-                            </ActionLabel>
-                          </ActionButton>
-                          <ActionButton onClick={() => handleResolveIncident(incident)} variant="secondary" size="xs">
-                            <ActionLabel icon={DASHBOARD_ICONS.check} iconClassName="text-gray-500">
-                              Resolve Only
-                            </ActionLabel>
-                          </ActionButton>
-                        </>
                       ) : null}
                     </div>
                   ),
@@ -1025,11 +1010,11 @@ export default function EnforcerIncidentsList({
                     <p className="text-sm text-gray-600">{EVIDENCE_ASSIGNMENT_NOTICE}</p>
                   )}
 
-                  {selectedIncident.status === 'PENDING' ? (
+                  {selectedIncident.status === 'PENDING' && selectedIncident.evidenceVerifiedAt ? (
                     <button
                       onClick={() => {
                         closeIncidentDetails()
-                        handleTakeAndIssueTicket(selectedIncident)
+                        void openTicketModal(selectedIncident)
                       }}
                       className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700"
                     >
@@ -1038,38 +1023,8 @@ export default function EnforcerIncidentsList({
                         size={DASHBOARD_ICON_POLICY.sizes.button}
                         className="text-white"
                       />
-                      <span>Take and Issue Ticket</span>
+                      <span>Issue Ticket</span>
                     </button>
-                  ) : null}
-
-                  {selectedIncident.status === 'INVESTIGATING' && !selectedIncident.ticketNumber ? (
-                    <>
-                      <button
-                        onClick={() => {
-                          closeIncidentDetails()
-                          void openTicketModal(selectedIncident)
-                        }}
-                        className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700"
-                      >
-                        <DashboardIconSlot
-                          icon={DASHBOARD_ICONS.ticket}
-                          size={DASHBOARD_ICON_POLICY.sizes.button}
-                          className="text-white"
-                        />
-                        <span>Issue Ticket</span>
-                      </button>
-                      <button
-                        onClick={() => handleResolveIncident(selectedIncident)}
-                        className="inline-flex items-center gap-2 rounded-lg bg-gray-700 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-gray-800"
-                      >
-                        <DashboardIconSlot
-                          icon={DASHBOARD_ICONS.check}
-                          size={DASHBOARD_ICON_POLICY.sizes.button}
-                          className="text-white"
-                        />
-                        <span>Resolve Only</span>
-                      </button>
-                    </>
                   ) : null}
 
                   {selectedIncident.ticketNumber ? (
@@ -1085,7 +1040,12 @@ export default function EnforcerIncidentsList({
       ) : null}
 
       {showEvidenceManager && evidenceIncidentId ? (
-        <EvidenceManager incidentId={evidenceIncidentId} onClose={closeEvidenceManager} />
+        <EvidenceManager
+          incidentId={evidenceIncidentId}
+          onClose={closeEvidenceManager}
+          onVerified={() => { void revalidateIncidentLists() }}
+          incidentVerifiedAt={evidenceIncident?.evidenceVerifiedAt ?? null}
+        />
       ) : null}
 
       {showTicketModal && ticketIncident ? (

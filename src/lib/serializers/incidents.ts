@@ -21,6 +21,7 @@ const INCIDENT_TYPE_LABELS: Record<string, string> = {
 const INCIDENT_STATUS_LABELS: Record<string, string> = {
   PENDING: "Pending",
   INVESTIGATING: "Investigating",
+  TICKET_ISSUED: "Ticket Issued",
   RESOLVED: "Resolved",
   DISMISSED: "Dismissed",
 };
@@ -154,6 +155,15 @@ export function serializeIncident(record: {
     userType?: string | null;
   } | null;
   evidenceCount?: number;
+  evidenceVerifiedAt?: Date | string | null;
+  evidenceVerifiedBy?: { firstName: string; lastName: string; userType?: string | null } | null;
+  ticketIssuedAt?: Date | string | null;
+  ticketIssuedBy?: { firstName: string; lastName: string; userType?: string | null } | null;
+  dismissedAt?: Date | string | null;
+  dismissedBy?: { firstName: string; lastName: string; userType?: string | null } | null;
+  dismissRemarks?: string | null;
+  paymentRecordedAt?: Date | string | null;
+  paymentRecordedBy?: { firstName: string; lastName: string; userType?: string | null } | null;
 }): IncidentListItemDto {
   return {
     id: record.id,
@@ -180,6 +190,15 @@ export function serializeIncident(record: {
     handledBy: serializeIncidentPerson(record.handledBy),
     trip: serializeIncidentTrip(record),
     evidenceCount: record.evidenceCount,
+    evidenceVerifiedAt: record.evidenceVerifiedAt ? toIsoString(record.evidenceVerifiedAt) : null,
+    evidenceVerifiedBy: serializeIncidentPerson(record.evidenceVerifiedBy),
+    ticketIssuedAt: record.ticketIssuedAt ? toIsoString(record.ticketIssuedAt) : null,
+    ticketIssuedBy: serializeIncidentPerson(record.ticketIssuedBy),
+    dismissedAt: record.dismissedAt ? toIsoString(record.dismissedAt) : null,
+    dismissedBy: serializeIncidentPerson(record.dismissedBy),
+    dismissRemarks: toNullableString(record.dismissRemarks),
+    paymentRecordedAt: record.paymentRecordedAt ? toIsoString(record.paymentRecordedAt) : null,
+    paymentRecordedBy: serializeIncidentPerson(record.paymentRecordedBy),
   };
 }
 

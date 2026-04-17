@@ -92,7 +92,7 @@ describe('incident evidence authorization', () => {
     expect(prismaMock.evidence.findMany).toHaveBeenCalled()
   })
 
-  it('rejects an unassigned enforcer from reading incident evidence', async () => {
+  it('allows any enforcer to read incident evidence regardless of assignment', async () => {
     authMock.requireRequestUser.mockResolvedValueOnce({ id: 'enforcer-2', userType: 'ENFORCER' })
     prismaMock.incident.findUnique.mockResolvedValueOnce({
       id: 'incident-1',
@@ -104,13 +104,9 @@ describe('incident evidence authorization', () => {
       makeRequest('http://localhost/api/incidents/incident-1/evidence') as never,
       { params: Promise.resolve({ incidentId: 'incident-1' }) },
     )
-    const json = await response.json()
 
-    expect(response.status).toBe(403)
-    expect(json.message).toBe(
-      'You can only view evidence for incidents you reported or incidents assigned to you.',
-    )
-    expect(prismaMock.evidence.findMany).not.toHaveBeenCalled()
+    expect(response.status).toBe(200)
+    expect(prismaMock.evidence.findMany).toHaveBeenCalled()
   })
 
   it('allows admins to read any incident evidence', async () => {
@@ -159,7 +155,7 @@ describe('incident evidence authorization', () => {
     )
   })
 
-  it('rejects an unassigned enforcer from reviewing evidence', async () => {
+  it('allows any enforcer to review evidence regardless of assignment', async () => {
     authMock.requireRequestRole.mockResolvedValueOnce({ id: 'enforcer-2', userType: 'ENFORCER' })
     prismaMock.evidence.findUnique.mockResolvedValueOnce({
       id: 'evidence-1',
@@ -178,14 +174,12 @@ describe('incident evidence authorization', () => {
       }) as never,
       { params: Promise.resolve({ evidenceId: 'evidence-1' }) },
     )
-    const json = await response.json()
 
-    expect(response.status).toBe(403)
-    expect(json.message).toBe('Only the assigned enforcer for this incident can review its evidence.')
-    expect(prismaMock.evidence.update).not.toHaveBeenCalled()
+    expect(response.status).toBe(200)
+    expect(prismaMock.evidence.update).toHaveBeenCalled()
   })
 
-  it('rejects admins from reviewing evidence without an explicit escalation path', async () => {
+  it('rejects admins from reviewing evidence (only enforcers may review)', async () => {
     authMock.requireRequestRole.mockResolvedValueOnce({ id: 'admin-1', userType: 'ADMIN' })
     prismaMock.evidence.findUnique.mockResolvedValueOnce({
       id: 'evidence-1',
@@ -207,7 +201,7 @@ describe('incident evidence authorization', () => {
     const json = await response.json()
 
     expect(response.status).toBe(403)
-    expect(json.message).toBe('Only the assigned enforcer for this incident can review its evidence.')
+    expect(json.message).toBe('Only enforcers can verify incident evidence.')
     expect(prismaMock.evidence.update).not.toHaveBeenCalled()
   })
 })

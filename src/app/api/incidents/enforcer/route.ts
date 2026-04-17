@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     const whereClause: any =
       scope === 'unresolved'
         ? {
-            status: { in: ['PENDING', 'INVESTIGATING'] },
+            status: { in: ['PENDING', 'TICKET_ISSUED'] },
           }
         : {}
 
@@ -80,7 +80,19 @@ export async function GET(request: NextRequest) {
             status: true,
             createdAt: true
           }
-        }
+        },
+        evidenceVerifiedBy: {
+          select: { firstName: true, lastName: true, username: true },
+        },
+        ticketIssuedBy: {
+          select: { firstName: true, lastName: true, username: true },
+        },
+        dismissedBy: {
+          select: { firstName: true, lastName: true, username: true },
+        },
+        paymentRecordedBy: {
+          select: { firstName: true, lastName: true, username: true },
+        },
       },
       orderBy,
     })
@@ -108,6 +120,15 @@ export async function GET(request: NextRequest) {
         reportedBy: incident.reportedBy,
         handledBy: incident.handledBy,
         evidenceCount: incident.evidence?.length || 0,
+        evidenceVerifiedAt: incident.evidenceVerifiedAt,
+        evidenceVerifiedBy: (incident as any).evidenceVerifiedBy ?? null,
+        ticketIssuedAt: incident.ticketIssuedAt,
+        ticketIssuedBy: (incident as any).ticketIssuedBy ?? null,
+        dismissedAt: incident.dismissedAt,
+        dismissedBy: (incident as any).dismissedBy ?? null,
+        dismissRemarks: incident.dismissRemarks,
+        paymentRecordedAt: incident.paymentRecordedAt,
+        paymentRecordedBy: (incident as any).paymentRecordedBy ?? null,
       }),
     )
 
