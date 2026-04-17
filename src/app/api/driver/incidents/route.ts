@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
         { vehicleId: vehicle.id },
         { vehicleId: null, plateNumber: { not: null } },
       ],
-    } as const
+    }
 
     const extraFilters: object[] = []
     if (statusFilter) extraFilters.push({ status: statusFilter })
