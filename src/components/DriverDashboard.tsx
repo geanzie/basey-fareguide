@@ -54,7 +54,16 @@ export default function DriverDashboard() {
   const { data, isLoading: loading, mutate } = useSWR<DriverSessionActiveResponseDto>(
     SWR_KEYS.driverSession,
     swrFetcher,
-    { refreshInterval: 5000 },
+    {
+      refreshInterval: (data: DriverSessionActiveResponseDto | undefined) => {
+        if (!data?.session) return 30_000
+        const hasPending = data.sections
+          .filter((s) => !isArchivedSection(s))
+          .flatMap((s) => s.riders)
+          .some((r) => r.availableActions.some((a) => a.kind === 'positive'))
+        return hasPending ? 5_000 : 15_000
+      },
+    },
   )
   const [error, setError] = useState<string | null>(null)
   const [operation, setOperation] = useState<SessionOperationState>({ targetId: null, action: null })

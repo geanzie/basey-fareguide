@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { ADMIN_ONLY, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
 
-const REPORT_TREND_ROW_LIMIT = 5000
+const REPORT_TREND_ROW_LIMIT = 200
 
 export async function GET(request: NextRequest) {
   try {

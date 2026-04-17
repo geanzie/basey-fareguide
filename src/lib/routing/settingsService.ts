@@ -20,7 +20,7 @@ type RoutingSettingsRow = {
   updatedByUser: RoutingSettingsActor;
 };
 
-const ROUTING_SETTINGS_CACHE_TTL_MS = 60_000;
+const ROUTING_SETTINGS_CACHE_TTL_MS = 3_600_000;
 const ROUTING_SETTINGS_ID = "global";
 
 export const ROUTING_SETTINGS_MIGRATION_REQUIRED_MESSAGE =

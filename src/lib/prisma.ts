@@ -46,11 +46,19 @@ function createPrismaAdapter() {
 
   normalizePgConnectionUrlForNodePostgres(parsedDatabaseUrl)
 
+  const connectionString = parsedDatabaseUrl.toString()
+  // Neon pooler manages its own large pool; keep client-side pool small to
+  // avoid connection explosion across Vercel workers. Direct connections get
+  // a slightly higher cap since each connection is a real Postgres backend.
+  const maxConnections = connectionString.includes('-pooler.') ? 5 : 10
+
   const pool =
     globalForPrisma.prismaPool ??
     new Pool({
-      connectionString: parsedDatabaseUrl.toString(),
+      connectionString,
       connectionTimeoutMillis: getPgConnectionTimeoutMs(),
+      max: maxConnections,
+      idleTimeoutMillis: 30_000,
     })
 
   if (process.env.NODE_ENV !== 'production') {

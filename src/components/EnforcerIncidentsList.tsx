@@ -55,6 +55,8 @@ const DASHBOARD_STATUS_FILTERS = ['ALL', 'PENDING', 'TICKET_ISSUED', 'RESOLVED']
 
 const UNRESOLVED_INCIDENT_STATUSES = ['PENDING', 'TICKET_ISSUED'] as const
 const EVIDENCE_ASSIGNMENT_NOTICE = 'Evidence is only accessible to the enforcer or admin.'
+const PAGE_SIZE = 50
+
 const INCIDENT_LIST_CACHE_KEYS = [
   '/api/incidents/enforcer?scope=all&mode=dashboard',
   '/api/incidents/enforcer?scope=unresolved&mode=queue',
@@ -153,9 +155,11 @@ export default function EnforcerIncidentsList({
   })
 
   const isQueueMode = mode === 'queue'
+  const [page, setPage] = useState(1)
   const isEmbeddedQueueMode = isQueueMode && embeddedQrHandoffSnapshot !== undefined
   const requestScope: EnforcerIncidentScope = isQueueMode ? 'unresolved' : 'all'
-  const swrKey = `/api/incidents/enforcer?scope=${requestScope}&mode=${mode}`
+  const statusQueryParam = statusFilter !== 'ALL' ? `&status=${statusFilter}` : ''
+  const swrKey = `/api/incidents/enforcer?scope=${requestScope}&mode=${mode}&page=${page}&limit=${PAGE_SIZE}${statusQueryParam}`
   const allowedStatusFilters = ALLOWED_STATUS_FILTERS[mode]
   const statusTabs = STATUS_TABS[mode]
 
@@ -163,10 +167,11 @@ export default function EnforcerIncidentsList({
   const incidents = data?.incidents || []
 
   const revalidateIncidentLists = async () => {
-    await Promise.all([
-      mutate(),
-      ...INCIDENT_LIST_CACHE_KEYS.map((cacheKey) => mutateCache(cacheKey)),
-    ])
+    await mutateCache(
+      (key: unknown) => typeof key === 'string' && key.startsWith('/api/incidents/enforcer'),
+      undefined,
+      { revalidate: true },
+    )
   }
 
   useEffect(() => {
@@ -178,6 +183,12 @@ export default function EnforcerIncidentsList({
       setStatusFilter('ALL')
     }
   }, [allowedStatusFilters, isQueueMode, statusFilter])
+
+  // Reset to page 1 whenever the status filter changes so we don't land on a
+  // now-invalid page after the server re-filters the result set.
+  useEffect(() => {
+    setPage(1)
+  }, [statusFilter])
 
   useEffect(() => {
     if (!actionNotice) {
@@ -288,7 +299,7 @@ export default function EnforcerIncidentsList({
 
   const stats = useMemo(
     () => ({
-      total: scopedIncidents.length,
+      total: data?.pagination?.total ?? scopedIncidents.length,
       pending: scopedIncidents.filter((incident) => incident.status === 'PENDING').length,
       forReview: scopedIncidents.filter((incident) => incident.status === 'PENDING' && !incident.evidenceVerifiedAt).length,
       readyForTicket: scopedIncidents.filter((incident) => incident.status === 'PENDING' && incident.evidenceVerifiedAt).length,
@@ -895,6 +906,28 @@ export default function EnforcerIncidentsList({
             />
           </div>
         </div>
+
+        {!isEmbeddedQueueMode && data?.pagination && data.pagination.totalPages > 1 ? (
+          <div className="flex items-center justify-between border-t border-slate-200/80 px-2 pt-3">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-slate-100 disabled:pointer-events-none disabled:opacity-40"
+            >
+              ← Prev
+            </button>
+            <span className="text-xs text-gray-500">
+              Page {page} of {data.pagination.totalPages}
+            </span>
+            <button
+              onClick={() => setPage((p) => Math.min(data.pagination!.totalPages, p + 1))}
+              disabled={page >= data.pagination.totalPages}
+              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-slate-100 disabled:pointer-events-none disabled:opacity-40"
+            >
+              Next →
+            </button>
+          </div>
+        ) : null}
       </div>
 
       {showIncidentDetails && selectedIncident ? (

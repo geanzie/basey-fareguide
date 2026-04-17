@@ -145,12 +145,18 @@ export async function POST(request: NextRequest) {
   const passengerType = passengerTypeUpper as PassengerType;
 
   // --- Resolve origin to coordinates ---
+  // Fire both preset lookups in parallel to eliminate sequential waterfall.
+  const [originPresetResult, destPresetResult] = await Promise.all([
+    originInput.type === 'preset' ? resolvePlannerLocationByName(originInput.name) : Promise.resolve(null),
+    destInput.type === 'preset' ? resolvePlannerLocationByName(destInput.name) : Promise.resolve(null),
+  ]);
+
   let originCoords: { lat: number; lng: number };
   let originLabel: string;
   let originResolved: ResolvedPinLabel | null = null;
 
   if (originInput.type === "preset") {
-    const resolved = await resolvePlannerLocationByName(originInput.name);
+    const resolved = originPresetResult;
     if (!resolved) {
       return jsonError(400, "INVALID_ROUTE_INPUT", `Unknown location: "${originInput.name}"`);
     }
@@ -189,7 +195,7 @@ export async function POST(request: NextRequest) {
   let destinationResolved: ResolvedPinLabel | null = null;
 
   if (destInput.type === "preset") {
-    const resolved = await resolvePlannerLocationByName(destInput.name);
+    const resolved = destPresetResult;
     if (!resolved) {
       return jsonError(400, "INVALID_ROUTE_INPUT", `Unknown location: "${destInput.name}"`);
     }

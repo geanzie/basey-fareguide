@@ -29,14 +29,19 @@ export const fareRateVersionInclude = {
   },
 } as const;
 
-const FARE_RATE_CACHE_TTL_MS = 60_000;
+const FARE_RATE_CACHE_TTL_MS = 300_000;
+const FARE_RATE_STALE_TTL_MS = 600_000;
 
 let resolvedFareRatesCache:
   | {
       value: FareRatesResponseDto;
       expiresAt: number;
+      staleUntil: number;
     }
   | null = null;
+
+// Coalesces concurrent callers during a cache miss so only one DB fetch fires.
+let fareRateRefreshPromise: Promise<FareRatesResponseDto> | null = null;
 
 export function isFareRateStorageMissingError(error: unknown): boolean {
   if (!(error instanceof Error)) {
@@ -165,10 +170,34 @@ function buildFarePolicySnapshot(
 }
 
 export async function getResolvedFareRates(now: Date = new Date()): Promise<FareRatesResponseDto> {
-  if (resolvedFareRatesCache && resolvedFareRatesCache.expiresAt > now.getTime()) {
+  const nowMs = now.getTime();
+
+  // Fresh — return immediately.
+  if (resolvedFareRatesCache && resolvedFareRatesCache.expiresAt > nowMs) {
     return resolvedFareRatesCache.value;
   }
 
+  // Stale but within grace window — serve stale and kick off a background
+  // refresh (coalesced so at most one concurrent DB fetch runs).
+  if (resolvedFareRatesCache && resolvedFareRatesCache.staleUntil > nowMs) {
+    if (!fareRateRefreshPromise) {
+      fareRateRefreshPromise = loadFreshFareRates(new Date(nowMs)).finally(() => {
+        fareRateRefreshPromise = null;
+      });
+    }
+    return resolvedFareRatesCache.value;
+  }
+
+  // Fully expired — coalesce concurrent callers into a single DB fetch.
+  if (!fareRateRefreshPromise) {
+    fareRateRefreshPromise = loadFreshFareRates(new Date(nowMs)).finally(() => {
+      fareRateRefreshPromise = null;
+    });
+  }
+  return fareRateRefreshPromise;
+}
+
+async function loadFreshFareRates(now: Date): Promise<FareRatesResponseDto> {
   let currentVersion;
   let upcomingVersion;
 
@@ -187,6 +216,7 @@ export async function getResolvedFareRates(now: Date = new Date()): Promise<Fare
       resolvedFareRatesCache = {
         value: fallbackValue,
         expiresAt: now.getTime() + FARE_RATE_CACHE_TTL_MS,
+        staleUntil: now.getTime() + FARE_RATE_STALE_TTL_MS,
       };
 
       return fallbackValue;
@@ -203,6 +233,7 @@ export async function getResolvedFareRates(now: Date = new Date()): Promise<Fare
   resolvedFareRatesCache = {
     value: resolvedFareRates,
     expiresAt: now.getTime() + FARE_RATE_CACHE_TTL_MS,
+    staleUntil: now.getTime() + FARE_RATE_STALE_TTL_MS,
   };
 
   return resolvedFareRates;
@@ -210,6 +241,7 @@ export async function getResolvedFareRates(now: Date = new Date()): Promise<Fare
 
 export function invalidateResolvedFareRatesCache() {
   resolvedFareRatesCache = null;
+  fareRateRefreshPromise = null;
 }
 
 export async function getAdminFareRates(now: Date = new Date()): Promise<AdminFareRatesResponseDto> {

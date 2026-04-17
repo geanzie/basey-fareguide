@@ -281,6 +281,9 @@ model Incident {
   @@index([ticketIssuedById])
   @@index([dismissedById])
   @@index([paymentRecordedById])
+  @@index([tripPermitPlateNumber])
+  @@index([tripPlateNumber])
+  @@index([driverLicense])
   @@map("incidents")
 }
 
@@ -338,6 +341,7 @@ model FareCalculation {
   @@index([userId])
   @@index([vehicleId])
   @@index([createdAt])
+  @@index([userId, createdAt])
   @@index([calculationType])
   @@index([discountCardId])
   @@map("fare_calculations")

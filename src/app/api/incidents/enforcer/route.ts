@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { ENFORCER_ONLY, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
 import { serializeIncident } from '@/lib/serializers'
+import { parsePaginationParams, buildPaginationMetadata } from '@/lib/api/pagination'
 import type { EnforcerIncidentScope } from '@/lib/contracts'
 
 const ENFORCER_INCIDENT_SCOPES: readonly EnforcerIncidentScope[] = ['all', 'unresolved']
@@ -43,13 +44,22 @@ export async function GET(request: NextRequest) {
       whereClause.incidentType = filter
     }
 
+    // Status filter — overrides scope-level status constraint when provided
+    const statusParam = searchParams.get('status')
+    if (statusParam) {
+      whereClause.status = statusParam
+    }
+
+    const pagination = parsePaginationParams(searchParams, { defaultLimit: 50, maxLimit: 100 })
+
     const orderBy = {
       createdAt: scope === 'unresolved' ? 'asc' : 'desc',
     } as const
 
-    const incidents = await prisma.incident.findMany({
-      where: whereClause,
-      include: {
+    const [incidents, totalCount] = await Promise.all([
+      prisma.incident.findMany({
+        where: whereClause,
+        include: {
         reportedBy: {
           select: {
             firstName: true,
@@ -95,7 +105,11 @@ export async function GET(request: NextRequest) {
         },
       },
       orderBy,
-    })
+        take: pagination.limit,
+        skip: pagination.skip,
+      }),
+      prisma.incident.count({ where: whereClause }),
+    ])
 
     const incidentsWithCounts = incidents.map((incident) =>
       serializeIncident({
@@ -134,6 +148,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       incidents: incidentsWithCounts,
+      pagination: buildPaginationMetadata(pagination, totalCount),
       message: 'Incidents retrieved successfully',
       filters: {
         scope,

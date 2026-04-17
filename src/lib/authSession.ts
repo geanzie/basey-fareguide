@@ -15,7 +15,7 @@ export const AUTH_SESSION_IDLE_TIMEOUT_MS = parsePositiveInteger(
 
 export const AUTH_SESSION_REVALIDATION_MS = parsePositiveInteger(
   process.env.NEXT_PUBLIC_AUTH_REVALIDATION_MS,
-  60 * 1000,
+  5 * 60 * 1000,
 )
 
 export const AUTH_SESSION_BOOTSTRAP_TIMEOUT_MS = parsePositiveInteger(
