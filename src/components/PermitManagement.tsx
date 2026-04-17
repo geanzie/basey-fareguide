@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useAuth } from '@/components/AuthProvider'
 import PermitQrCard from '@/components/PermitQrCard'
+import BulkQrPrintSheet from '@/components/BulkQrPrintSheet'
 import { VehicleType, PermitStatus } from '@prisma/client'
 import ResponsiveTable, { StatusBadge, ActionButton } from './ResponsiveTable'
 import VehicleLookupField from './VehicleLookupField'
@@ -33,6 +34,7 @@ export default function PermitManagement() {
   const [lastCreatedPermit, setLastCreatedPermit] = useState<PermitDto | null>(null)
   const [selectedQrPermit, setSelectedQrPermit] = useState<PermitDto | null>(null)
   const [loadingQrPermitId, setLoadingQrPermitId] = useState<string | null>(null)
+  const [showBulkPrint, setShowBulkPrint] = useState(false)
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -328,12 +330,20 @@ export default function PermitManagement() {
           <h2 className="text-2xl font-bold text-gray-900">Permit Management</h2>
           <p className="text-gray-600">Manage tricycle and habal-habal permits</p>
         </div>
-        <button
-          onClick={() => setShowAddForm(true)}
-          className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors"
-        >
-          Add New Permit
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowBulkPrint(true)}
+            className="border border-emerald-600 text-emerald-700 px-4 py-2 rounded-lg hover:bg-emerald-50 transition-colors text-sm"
+          >
+            Bulk Print QR
+          </button>
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors text-sm"
+          >
+            Add New Permit
+          </button>
+        </div>
       </div>
 
       {lastCreatedPermit?.qrToken ? (
@@ -798,6 +808,10 @@ export default function PermitManagement() {
             />
           </div>
         </div>
+      ) : null}
+
+      {showBulkPrint ? (
+        <BulkQrPrintSheet onClose={() => setShowBulkPrint(false)} />
       ) : null}
     </div>
   )
