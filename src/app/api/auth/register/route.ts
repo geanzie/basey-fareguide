@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS } from '@/lib/rateLimit'
+import { CURRENT_PRIVACY_NOTICE_VERSION } from '@/lib/privacyNotice'
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,7 +37,9 @@ export async function POST(request: NextRequest) {
       governmentId,
       idType,
       barangayResidence,
-      userType
+      userType,
+      privacyNoticeAcknowledged,
+      privacyNoticeVersion,
     } = await request.json()
 
     const normalizedUsername = typeof username === 'string' ? username.trim() : ''
@@ -49,6 +52,21 @@ export async function POST(request: NextRequest) {
     if (!normalizedUsername || !password || !firstName || !lastName || !normalizedEmail || !phoneNumber) {
       return NextResponse.json(
         { message: 'All required fields must be provided' },
+        { status: 400 }
+      )
+    }
+
+    // Validate privacy notice acknowledgment
+    if (privacyNoticeAcknowledged !== true) {
+      return NextResponse.json(
+        { message: 'You must acknowledge the Privacy Notice before creating an account.' },
+        { status: 400 }
+      )
+    }
+
+    if (!privacyNoticeVersion || privacyNoticeVersion !== CURRENT_PRIVACY_NOTICE_VERSION) {
+      return NextResponse.json(
+        { message: 'Privacy Notice version mismatch. Please reload the page and try again.' },
         { status: 400 }
       )
     }
@@ -138,7 +156,9 @@ export async function POST(request: NextRequest) {
           isActive: isPublicUser,
           isVerified: isPublicUser,
           verifiedAt: isPublicUser ? new Date() : null,
-          verifiedBy: isPublicUser ? 'AUTO_APPROVED' : null
+          verifiedBy: isPublicUser ? 'AUTO_APPROVED' : null,
+          privacyNoticeAcknowledgedAt: new Date(),
+          privacyNoticeVersion: CURRENT_PRIVACY_NOTICE_VERSION,
         }
       })
     } catch (error) {
