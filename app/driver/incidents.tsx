@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, RefreshControl, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '@/services/api';
-import type { Incident } from '@/types/incidents';
+import type { Incident, IncidentType } from '@/types/incidents';
 import IncidentCard from '@/components/IncidentCard';
 
 export default function DriverIncidentsScreen() {
@@ -12,8 +12,12 @@ export default function DriverIncidentsScreen() {
 
   const load = async () => {
     try {
-      const data = await api.get<{ items: Incident[] }>('/api/driver/incidents');
-      setIncidents(data.items);
+      const data = await api.get<{ items: Record<string, unknown>[] }>('/api/driver/incidents');
+      setIncidents((data.items ?? []).map((raw) => ({
+        ...(raw as Incident),
+        incidentType: (raw.type ?? raw.incidentType) as IncidentType,
+        incidentDate: (raw.date ?? raw.incidentDate) as string,
+      })));
     } catch {} finally {
       setLoading(false);
     }

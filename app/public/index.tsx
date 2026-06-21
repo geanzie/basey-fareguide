@@ -79,7 +79,7 @@ export default function PublicDashboard() {
                     <View style={[s.annDot, { backgroundColor: CATEGORY_COLORS[ann.category] ?? '#64748b' }]} />
                     <View style={s.annBody}>
                       <Text style={s.annTitle}>{ann.title}</Text>
-                      <Text style={s.annContent} numberOfLines={2}>{ann.content}</Text>
+                      <Text style={s.annContent} numberOfLines={2}>{ann.body}</Text>
                       <Text style={s.annCat}>{ann.category.replace(/_/g, ' ')}</Text>
                     </View>
                   </View>

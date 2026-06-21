@@ -21,11 +21,19 @@ export async function saveFareCalculation(payload: {
   return api.post<FareCalculation>('/api/fare-calculations', payload);
 }
 
+function normalizeFareCalc(raw: Record<string, unknown>): FareCalculation {
+  return {
+    ...(raw as FareCalculation),
+    originLabel: (raw.from ?? raw.originLabel) as string,
+    destinationLabel: (raw.to ?? raw.destinationLabel) as string,
+  };
+}
+
 export async function fetchFareHistory(page = 1, pageSize = 20): Promise<PaginatedResponse<FareCalculation>> {
-  const res = await api.get<{ calculations: FareCalculation[] }>(
+  const res = await api.get<{ calculations: Record<string, unknown>[] }>(
     `/api/fare-calculations?page=${page}&pageSize=${pageSize}`,
   );
-  return { items: res.calculations ?? [], total: 0, page, pageSize, hasMore: false };
+  return { items: (res.calculations ?? []).map(normalizeFareCalc), total: 0, page, pageSize, hasMore: false };
 }
 
 export async function fetchCurrentFareRates(): Promise<FareRate> {

@@ -38,9 +38,10 @@ export interface CreateIncidentRequest {
 }
 
 export interface IssueTicketRequest {
-  penaltyAmount: number;
+  ticketNumber: string;
+  remarks?: string;
 }
 
 export interface DismissIncidentRequest {
-  dismissRemarks: string;
+  remarks: string;
 }

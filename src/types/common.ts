@@ -23,7 +23,7 @@ export type AnnouncementCategory =
 export interface Announcement {
   id: string;
   title: string;
-  content: string;
+  body: string;
   category: AnnouncementCategory;
   isActive: boolean;
   createdAt: string;

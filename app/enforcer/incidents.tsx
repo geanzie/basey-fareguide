@@ -12,7 +12,7 @@ import {
   TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { fetchEnforcerIncidents, takeIncident, issueTicket, dismissIncident } from '@/services/incidents';
+import { fetchEnforcerIncidents, issueTicket, dismissIncident } from '@/services/incidents';
 import type { Incident } from '@/types/incidents';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -29,7 +29,6 @@ export default function EnforcerIncidentsScreen() {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [acting, setActing] = useState<string | null>(null);
   const [modalMode, setModalMode] = useState<ModalMode>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState('');
@@ -52,18 +51,6 @@ export default function EnforcerIncidentsScreen() {
     setRefreshing(false);
   };
 
-  const handleTake = async (id: string) => {
-    setActing(id);
-    try {
-      await takeIncident(id);
-      await load();
-    } catch (err) {
-      Alert.alert('Error', err instanceof Error ? err.message : 'Failed.');
-    } finally {
-      setActing(null);
-    }
-  };
-
   const openModal = (id: string, mode: ModalMode) => {
     setActiveId(id);
     setModalMode(mode);
@@ -79,14 +66,13 @@ export default function EnforcerIncidentsScreen() {
   const submitModal = async () => {
     if (!activeId || !modalMode) return;
     if (modalMode === 'ticket') {
-      const amount = parseFloat(inputValue);
-      if (!Number.isFinite(amount) || amount <= 0) {
-        Alert.alert('Invalid', 'Enter a valid penalty amount.');
+      if (!inputValue.trim()) {
+        Alert.alert('Required', 'Enter a ticket number.');
         return;
       }
       setModalLoading(true);
       try {
-        await issueTicket(activeId, { penaltyAmount: amount });
+        await issueTicket(activeId, { ticketNumber: inputValue.trim() });
         closeModal();
         await load();
       } catch (err) {
@@ -101,7 +87,7 @@ export default function EnforcerIncidentsScreen() {
       }
       setModalLoading(true);
       try {
-        await dismissIncident(activeId, { dismissRemarks: inputValue.trim() });
+        await dismissIncident(activeId, { remarks: inputValue.trim() });
         closeModal();
         await load();
       } catch (err) {
@@ -143,19 +129,6 @@ export default function EnforcerIncidentsScreen() {
               <Text style={s.meta}>{item.location} · {new Date(item.incidentDate).toLocaleDateString('en-PH')}</Text>
               {item.plateNumber ? <Text style={s.plate}>{item.plateNumber}</Text> : null}
               <View style={s.btnRow}>
-                {item.status === 'PENDING' && (
-                  <Pressable
-                    style={[s.btn, s.btnBlue]}
-                    onPress={() => handleTake(item.id)}
-                    disabled={acting === item.id}
-                  >
-                    {acting === item.id ? (
-                      <ActivityIndicator color="#fff" size="small" />
-                    ) : (
-                      <Text style={s.btnText}>Take</Text>
-                    )}
-                  </Pressable>
-                )}
                 {item.status === 'INVESTIGATING' && (
                   <>
                     <Pressable style={[s.btn, s.btnGreen]} onPress={() => openModal(item.id, 'ticket')}>
@@ -184,7 +157,7 @@ export default function EnforcerIncidentsScreen() {
           </View>
           <View style={s.modalBody}>
             <Text style={s.modalLabel}>
-              {modalMode === 'ticket' ? 'Penalty Amount (₱)' : 'Reason for dismissal'}
+              {modalMode === 'ticket' ? 'Ticket Number' : 'Reason for dismissal'}
             </Text>
             <TextInput
               style={s.modalInput}
@@ -192,7 +165,7 @@ export default function EnforcerIncidentsScreen() {
               onChangeText={setInputValue}
               placeholder={modalMode === 'ticket' ? 'e.g. 500' : 'Enter reason...'}
               placeholderTextColor="#94a3b8"
-              keyboardType={modalMode === 'ticket' ? 'numeric' : 'default'}
+              keyboardType="default"
               autoFocus
               multiline={modalMode === 'dismiss'}
               numberOfLines={modalMode === 'dismiss' ? 4 : 1}

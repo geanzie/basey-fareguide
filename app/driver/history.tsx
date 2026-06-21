@@ -8,7 +8,6 @@ interface TripSession {
   status: string;
   openedAt: string;
   closedAt: string | null;
-  vehicle: { plateNumber: string; vehicleType: string };
   riderCount: number;
 }
 
@@ -50,8 +49,8 @@ export default function DriverHistoryScreen() {
         renderItem={({ item }) => (
           <View style={s.card}>
             <View style={s.row}>
-              <Text style={s.plate}>{item.vehicle.plateNumber}</Text>
-              <Text style={s.riders}>{item.riderCount} riders</Text>
+              <Text style={s.plate}>{item.riderCount} riders</Text>
+              <Text style={s.riders}>{item.status}</Text>
             </View>
             <Text style={s.meta}>
               {new Date(item.openedAt).toLocaleDateString('en-PH', { dateStyle: 'medium' })}

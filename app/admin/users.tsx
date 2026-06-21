@@ -34,8 +34,8 @@ export default function AdminUsersScreen() {
 
   const load = async () => {
     try {
-      const data = await api.get<{ users: AdminUser[] }>('/api/admin/users');
-      setUsers(data.users ?? []);
+      const data = await api.get<{ data: { users: AdminUser[] } }>('/api/admin/users');
+      setUsers(data.data?.users ?? []);
     } catch {} finally {
       setLoading(false);
     }

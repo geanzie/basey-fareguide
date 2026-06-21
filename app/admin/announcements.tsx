@@ -25,7 +25,7 @@ export default function AdminAnnouncementsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState({ title: '', content: '', category: '' as AnnouncementCategory | '' });
+  const [form, setForm] = useState({ title: '', body: '', category: '' as AnnouncementCategory | '', startsAt: new Date().toISOString() });
 
   const load = useCallback(async () => {
     try {
@@ -46,18 +46,19 @@ export default function AdminAnnouncementsScreen() {
 
   const handleCreate = async () => {
     if (!form.title.trim()) { Alert.alert('Required', 'Enter a title.'); return; }
-    if (!form.content.trim()) { Alert.alert('Required', 'Enter content.'); return; }
+    if (!form.body.trim()) { Alert.alert('Required', 'Enter content.'); return; }
     if (!form.category) { Alert.alert('Required', 'Select a category.'); return; }
 
     setCreating(true);
     try {
       await createAnnouncement({
         title: form.title.trim(),
-        content: form.content.trim(),
+        body: form.body.trim(),
         category: form.category,
+        startsAt: form.startsAt || new Date().toISOString(),
       });
       setShowForm(false);
-      setForm({ title: '', content: '', category: '' });
+      setForm({ title: '', body: '', category: '', startsAt: new Date().toISOString() });
       await load();
     } catch (err) {
       Alert.alert('Error', err instanceof Error ? err.message : 'Creation failed.');
@@ -116,8 +117,8 @@ export default function AdminAnnouncementsScreen() {
                 <Text style={s.formLabel}>Content</Text>
                 <TextInput
                   style={[s.formInput, s.textArea]}
-                  value={form.content}
-                  onChangeText={(t) => setForm((p) => ({ ...p, content: t }))}
+                  value={form.body}
+                  onChangeText={(t) => setForm((p) => ({ ...p, body: t }))}
                   placeholder="Announcement body..."
                   placeholderTextColor="#94a3b8"
                   multiline
@@ -161,7 +162,7 @@ export default function AdminAnnouncementsScreen() {
                   <Text style={s.archiveBtnText}>Archive</Text>
                 </Pressable>
               </View>
-              <Text style={s.cardContent} numberOfLines={3}>{item.content}</Text>
+              <Text style={s.cardContent} numberOfLines={3}>{item.body}</Text>
               <Text style={s.cardMeta}>{item.category.replace(/_/g, ' ')}</Text>
             </View>
           );

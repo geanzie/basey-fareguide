@@ -9,9 +9,9 @@ interface DashboardStats {
   totalUsers: number;
   totalIncidents: number;
   pendingIncidents: number;
+  resolvedIncidents: number;
   totalVehicles: number;
   totalPermits: number;
-  activeAnnouncements: number;
 }
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
@@ -24,8 +24,8 @@ export default function AdminDashboard() {
 
   const load = useCallback(async () => {
     try {
-      const data = await api.get<DashboardStats>('/api/dashboard/stats');
-      setStats(data);
+      const data = await api.get<{ stats: DashboardStats }>('/api/dashboard/stats');
+      setStats(data.stats);
     } catch {} finally {
       setLoading(false);
     }
@@ -47,9 +47,9 @@ export default function AdminDashboard() {
     { label: 'Total Users', value: stats.totalUsers, color: '#3b82f6', icon: 'people' },
     { label: 'Pending Incidents', value: stats.pendingIncidents, color: '#f59e0b', icon: 'warning' },
     { label: 'Total Incidents', value: stats.totalIncidents, color: '#dc2626', icon: 'alert-circle' },
+    { label: 'Resolved', value: stats.resolvedIncidents, color: '#16a34a', icon: 'checkmark-circle' },
     { label: 'Vehicles', value: stats.totalVehicles, color: '#8b5cf6', icon: 'car' },
-    { label: 'Active Permits', value: stats.totalPermits, color: '#16a34a', icon: 'document-text' },
-    { label: 'Announcements', value: stats.activeAnnouncements, color: '#06b6d4', icon: 'megaphone' },
+    { label: 'Active Permits', value: stats.totalPermits, color: '#06b6d4', icon: 'document-text' },
   ] : [];
 
   return (
