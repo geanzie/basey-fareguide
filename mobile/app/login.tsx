@@ -117,6 +117,13 @@ export default function LoginScreen() {
           </Pressable>
         </View>
 
+        <Pressable style={s.registerLink} onPress={() => router.push('/register' as never)}>
+          <Text style={s.registerLinkText}>
+            Don't have an account?{' '}
+            <Text style={s.registerLinkHighlight}>Register</Text>
+          </Text>
+        </Pressable>
+
         <Text style={s.footer}>Basey Municipality, Samar · Philippines</Text>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -172,5 +179,8 @@ const s = StyleSheet.create({
   btnPressed: { opacity: 0.85 },
   btnDisabled: { opacity: 0.6 },
   btnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
-  footer: { color: '#334155', fontSize: 11, textAlign: 'center', marginTop: 32 },
+  registerLink: { alignItems: 'center', marginTop: 24 },
+  registerLinkText: { color: '#94a3b8', fontSize: 14 },
+  registerLinkHighlight: { color: '#16a34a', fontWeight: '700' },
+  footer: { color: '#334155', fontSize: 11, textAlign: 'center', marginTop: 16 },
 });

@@ -20,7 +20,7 @@ interface AdminUser {
   reasonForRegistration?: string | null;
 }
 
-const USER_TYPES = ['ADMIN', 'DATA_ENCODER', 'ENFORCER'] as const;
+const USER_TYPES = ['ADMIN', 'DATA_ENCODER', 'ENFORCER', 'DRIVER'] as const;
 type CreateUserType = typeof USER_TYPES[number];
 type Tab = 'all' | 'pending';
 

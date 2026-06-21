@@ -1,6 +1,39 @@
 import type { LoginRequest, LoginResponse } from '@/types/auth';
 
 const API_BASE = process.env.EXPO_PUBLIC_API_BASE_URL ?? '';
+
+export interface RegisterRequest {
+  firstName: string;
+  lastName: string;
+  phoneNumber: string;
+  email: string;
+  dateOfBirth: string | null;
+  governmentId: string;
+  idType: string;
+  barangayResidence: string;
+  username: string;
+  password: string;
+  userType: 'PUBLIC';
+  privacyNoticeAcknowledged: true;
+  privacyNoticeVersion: '2026-04-21';
+}
+
+export interface RegisterResponse {
+  message: string;
+  userId: string;
+  canLoginImmediately: boolean;
+}
+
+export async function registerRequest(data: RegisterRequest): Promise<RegisterResponse> {
+  const res = await fetch(`${API_BASE}/api/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  const json = await res.json() as RegisterResponse & { message?: string };
+  if (!res.ok) throw new Error((json as { message?: string }).message ?? 'Registration failed.');
+  return json;
+}
 const LOGIN_TIMEOUT_MS = 15000;
 
 export async function loginRequest(credentials: LoginRequest): Promise<LoginResponse> {
