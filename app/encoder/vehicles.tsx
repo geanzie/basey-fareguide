@@ -49,9 +49,9 @@ export default function VehiclesScreen() {
 
   const load = async () => {
     try {
-      const data = await api.get<{ items: Vehicle[] }>('/api/vehicles');
-      setVehicles(data.items);
-      setFiltered(data.items);
+      const data = await api.get<{ vehicles: Vehicle[] }>('/api/vehicles');
+      setVehicles(data.vehicles ?? []);
+      setFiltered(data.vehicles ?? []);
     } catch {} finally {
       setLoading(false);
     }

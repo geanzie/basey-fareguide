@@ -22,9 +22,10 @@ export async function saveFareCalculation(payload: {
 }
 
 export async function fetchFareHistory(page = 1, pageSize = 20): Promise<PaginatedResponse<FareCalculation>> {
-  return api.get<PaginatedResponse<FareCalculation>>(
+  const res = await api.get<{ calculations: FareCalculation[] }>(
     `/api/fare-calculations?page=${page}&pageSize=${pageSize}`,
   );
+  return { items: res.calculations ?? [], total: 0, page, pageSize, hasMore: false };
 }
 
 export async function fetchCurrentFareRates(): Promise<FareRate> {
@@ -32,15 +33,14 @@ export async function fetchCurrentFareRates(): Promise<FareRate> {
 }
 
 export async function fetchAdminFareRates(): Promise<{ items: FareRate[] }> {
-  return api.get<{ items: FareRate[] }>('/api/fare-rates');
+  const res = await api.get<{ history: FareRate[] }>('/api/admin/fare-rates');
+  return { items: res.history ?? [] };
 }
 
 export async function createFareRate(payload: {
   baseFare: number;
-  baseDistanceKm: number;
   perKmRate: number;
-  notes?: string;
-  effectiveFrom: string;
+  notes: string;
 }): Promise<FareRate> {
   return api.post<FareRate>('/api/admin/fare-rates', payload);
 }

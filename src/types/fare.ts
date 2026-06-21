@@ -49,6 +49,6 @@ export interface FareRate {
   perKmRate: number;
   notes?: string;
   isActive: boolean;
-  effectiveFrom: string;
+  effectiveAt: string;
   createdAt: string;
 }

@@ -61,6 +61,7 @@ export default function AdminIncidentsScreen() {
         ))}
       </ScrollView>
       <FlatList
+        style={s.flatList}
         data={incidents}
         keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
@@ -81,6 +82,7 @@ const s = StyleSheet.create({
   filterChipActive: { backgroundColor: '#0f172a' },
   filterChipText: { fontSize: 13, fontWeight: '600', color: '#64748b' },
   filterChipTextActive: { color: '#fff' },
+  flatList: { flex: 1 },
   list: { padding: 16, gap: 10 },
   empty: { textAlign: 'center', color: '#94a3b8', marginTop: 40 },
 });

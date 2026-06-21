@@ -2,7 +2,8 @@ import { api } from './api';
 import type { Announcement, AnnouncementCategory } from '@/types/common';
 
 export async function fetchActiveAnnouncements(): Promise<{ items: Announcement[] }> {
-  return api.get<{ items: Announcement[] }>('/api/announcements?isActive=true');
+  const res = await api.get<{ announcements: Announcement[] }>('/api/announcements?isActive=true');
+  return { items: res.announcements ?? [] };
 }
 
 export async function createAnnouncement(payload: {

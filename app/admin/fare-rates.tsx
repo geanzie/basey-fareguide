@@ -13,7 +13,7 @@ export default function AdminFareRatesScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState({ baseFare: '', baseDistanceKm: '', perKmRate: '', notes: '' });
+  const [form, setForm] = useState({ baseFare: '', perKmRate: '', notes: '' });
 
   const load = useCallback(async () => {
     try {
@@ -34,11 +34,15 @@ export default function AdminFareRatesScreen() {
 
   const handleCreate = async () => {
     const baseFare = parseFloat(form.baseFare);
-    const baseDistanceKm = parseFloat(form.baseDistanceKm);
     const perKmRate = parseFloat(form.perKmRate);
 
-    if (!Number.isFinite(baseFare) || !Number.isFinite(baseDistanceKm) || !Number.isFinite(perKmRate)) {
-      Alert.alert('Invalid', 'Enter valid numbers for all rate fields.');
+    if (!Number.isFinite(baseFare) || !Number.isFinite(perKmRate)) {
+      Alert.alert('Invalid', 'Enter valid numbers for base fare and per-km rate.');
+      return;
+    }
+
+    if (!form.notes.trim()) {
+      Alert.alert('Required', 'Admin note is required for fare changes.');
       return;
     }
 
@@ -46,13 +50,11 @@ export default function AdminFareRatesScreen() {
     try {
       await createFareRate({
         baseFare,
-        baseDistanceKm,
         perKmRate,
-        notes: form.notes.trim() || undefined,
-        effectiveFrom: new Date().toISOString(),
+        notes: form.notes.trim(),
       });
       setShowForm(false);
-      setForm({ baseFare: '', baseDistanceKm: '', perKmRate: '', notes: '' });
+      setForm({ baseFare: '', perKmRate: '', notes: '' });
       await load();
     } catch (err) {
       Alert.alert('Error', err instanceof Error ? err.message : 'Creation failed.');
@@ -84,9 +86,8 @@ export default function AdminFareRatesScreen() {
               <View style={s.formCard}>
                 {[
                   { key: 'baseFare', label: 'Base Fare (₱)', kb: 'numeric' },
-                  { key: 'baseDistanceKm', label: 'Base Distance (km)', kb: 'numeric' },
                   { key: 'perKmRate', label: 'Per Km Rate (₱)', kb: 'numeric' },
-                  { key: 'notes', label: 'Notes (optional)', kb: 'default' },
+                  { key: 'notes', label: 'Admin Note (required)', kb: 'default' },
                 ].map((f) => (
                   <View key={f.key} style={s.formField}>
                     <Text style={s.formLabel}>{f.label}</Text>
@@ -122,7 +123,7 @@ export default function AdminFareRatesScreen() {
             <Text style={s.rateSub}>Base distance: {item.baseDistanceKm} km</Text>
             {item.notes ? <Text style={s.rateNotes}>{item.notes}</Text> : null}
             <Text style={s.rateMeta}>
-              Effective {new Date(item.effectiveFrom).toLocaleDateString('en-PH')}
+              Effective {new Date(item.effectiveAt).toLocaleDateString('en-PH')}
             </Text>
           </View>
         )}

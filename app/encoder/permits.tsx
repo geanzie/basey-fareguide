@@ -27,8 +27,8 @@ export default function PermitsScreen() {
 
   const load = async () => {
     try {
-      const data = await api.get<{ items: Permit[] }>('/api/permits');
-      setPermits(data.items);
+      const data = await api.get<{ permits: Permit[] }>('/api/permits');
+      setPermits(data.permits ?? []);
     } catch {} finally {
       setLoading(false);
     }
