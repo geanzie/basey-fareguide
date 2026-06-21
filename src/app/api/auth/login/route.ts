@@ -16,6 +16,7 @@ export async function POST(request: NextRequest) {
 
     const response = NextResponse.json({
       user: result.serializedUser,
+      token: result.token,
     })
 
     applyLoginSessionCookie(response, result.token)
