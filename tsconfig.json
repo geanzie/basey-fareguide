@@ -37,6 +37,7 @@
   ],
   "exclude": [
     "node_modules",
-    "src/components/_archived"
+    "src/components/_archived",
+    "../mobile"
   ]
 }
