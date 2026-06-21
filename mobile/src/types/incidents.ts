@@ -26,6 +26,8 @@ export interface Incident {
   ticketNumber?: string;
   penaltyAmount?: number;
   paymentStatus?: TicketPaymentStatus;
+  evidenceVerifiedAt?: string | null;
+  evidenceCount?: number;
   createdAt: string;
 }
 

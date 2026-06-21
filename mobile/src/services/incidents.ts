@@ -39,3 +39,7 @@ export async function issueTicket(id: string, payload: IssueTicketRequest): Prom
 export async function dismissIncident(id: string, payload: DismissIncidentRequest): Promise<Incident> {
   return api.patch<Incident>(`/api/incidents/${id}/dismiss`, payload);
 }
+
+export async function verifyEvidence(id: string): Promise<Incident> {
+  return api.patch<Incident>(`/api/incidents/${id}/verify-evidence`, {});
+}

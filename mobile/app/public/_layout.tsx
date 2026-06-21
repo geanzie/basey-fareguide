@@ -57,6 +57,8 @@ export default function PublicLayout() {
           tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" size={size} color={color} />,
         }}
       />
+      <Tabs.Screen name="discount" options={{ href: null }} />
+      <Tabs.Screen name="ordinance" options={{ href: null }} />
     </Tabs>
   );
 }

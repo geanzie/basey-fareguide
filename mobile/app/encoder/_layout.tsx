@@ -50,6 +50,7 @@ export default function EncoderLayout() {
           tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" size={size} color={color} />,
         }}
       />
+      <Tabs.Screen name="ticket-payments" options={{ href: null }} />
     </Tabs>
   );
 }

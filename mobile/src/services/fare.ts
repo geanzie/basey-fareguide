@@ -36,8 +36,13 @@ export async function fetchFareHistory(page = 1, pageSize = 20): Promise<Paginat
   return { items: (res.calculations ?? []).map(normalizeFareCalc), total: 0, page, pageSize, hasMore: false };
 }
 
-export async function fetchCurrentFareRates(): Promise<FareRate> {
-  return api.get<FareRate>('/api/fare-rates/current');
+export interface FareRatesResponse {
+  current: { versionId: string | null; baseDistanceKm: number; baseFare: number; perKmRate: number; effectiveAt: string | null };
+  upcoming: { versionId: string | null; baseDistanceKm: number; baseFare: number; perKmRate: number; effectiveAt: string | null } | null;
+}
+
+export async function fetchCurrentFareRates(): Promise<FareRatesResponse> {
+  return api.get<FareRatesResponse>('/api/fare-rates');
 }
 
 export async function fetchAdminFareRates(): Promise<{ items: FareRate[] }> {

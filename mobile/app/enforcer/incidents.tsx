@@ -12,7 +12,7 @@ import {
   TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { fetchEnforcerIncidents, issueTicket, dismissIncident } from '@/services/incidents';
+import { fetchEnforcerIncidents, issueTicket, dismissIncident, verifyEvidence } from '@/services/incidents';
 import type { Incident } from '@/types/incidents';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -33,6 +33,7 @@ export default function EnforcerIncidentsScreen() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState('');
   const [modalLoading, setModalLoading] = useState(false);
+  const [verifyingId, setVerifyingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -61,6 +62,30 @@ export default function EnforcerIncidentsScreen() {
     setModalMode(null);
     setActiveId(null);
     setInputValue('');
+  };
+
+  const handleVerifyEvidence = async (id: string) => {
+    Alert.alert(
+      'Verify Evidence',
+      'Confirm that you have reviewed all submitted evidence and it is sufficient to proceed.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Verify',
+          onPress: async () => {
+            setVerifyingId(id);
+            try {
+              await verifyEvidence(id);
+              await load();
+            } catch (err) {
+              Alert.alert('Error', err instanceof Error ? err.message : 'Failed to verify evidence.');
+            } finally {
+              setVerifyingId(null);
+            }
+          },
+        },
+      ],
+    );
   };
 
   const submitModal = async () => {
@@ -117,6 +142,10 @@ export default function EnforcerIncidentsScreen() {
         ListEmptyComponent={<Text style={s.empty}>No incidents in queue.</Text>}
         renderItem={({ item }) => {
           const color = STATUS_COLORS[item.status] ?? '#64748b';
+          const isPending = item.status === 'PENDING';
+          const evidenceVerified = !!item.evidenceVerifiedAt;
+          const isVerifying = verifyingId === item.id;
+
           return (
             <View style={s.card}>
               <View style={s.cardTop}>
@@ -128,18 +157,43 @@ export default function EnforcerIncidentsScreen() {
               <Text style={s.desc} numberOfLines={2}>{item.description}</Text>
               <Text style={s.meta}>{item.location} · {new Date(item.incidentDate).toLocaleDateString('en-PH')}</Text>
               {item.plateNumber ? <Text style={s.plate}>{item.plateNumber}</Text> : null}
-              <View style={s.btnRow}>
-                {item.status === 'INVESTIGATING' && (
-                  <>
-                    <Pressable style={[s.btn, s.btnGreen]} onPress={() => openModal(item.id, 'ticket')}>
-                      <Text style={s.btnText}>Issue Ticket</Text>
-                    </Pressable>
-                    <Pressable style={[s.btn, s.btnGray]} onPress={() => openModal(item.id, 'dismiss')}>
-                      <Text style={s.btnText}>Dismiss</Text>
-                    </Pressable>
-                  </>
-                )}
-              </View>
+
+              {item.evidenceCount !== undefined && item.evidenceCount > 0 && (
+                <Text style={s.evidenceMeta}>
+                  {item.evidenceCount} evidence file{item.evidenceCount !== 1 ? 's' : ''}
+                  {evidenceVerified ? ' · Verified' : ' · Pending verification'}
+                </Text>
+              )}
+
+              {isPending && (
+                <View style={s.btnRow}>
+                  {!evidenceVerified ? (
+                    <>
+                      <Pressable
+                        style={[s.btn, s.btnBlue, isVerifying && s.btnDisabled]}
+                        onPress={() => handleVerifyEvidence(item.id)}
+                        disabled={isVerifying}
+                      >
+                        {isVerifying
+                          ? <ActivityIndicator color="#fff" size="small" />
+                          : <Text style={s.btnText}>Verify Evidence</Text>}
+                      </Pressable>
+                      <Pressable style={[s.btn, s.btnGray]} onPress={() => openModal(item.id, 'dismiss')}>
+                        <Text style={s.btnText}>Dismiss</Text>
+                      </Pressable>
+                    </>
+                  ) : (
+                    <>
+                      <Pressable style={[s.btn, s.btnGreen]} onPress={() => openModal(item.id, 'ticket')}>
+                        <Text style={s.btnText}>Issue Ticket</Text>
+                      </Pressable>
+                      <Pressable style={[s.btn, s.btnGray]} onPress={() => openModal(item.id, 'dismiss')}>
+                        <Text style={s.btnText}>Dismiss</Text>
+                      </Pressable>
+                    </>
+                  )}
+                </View>
+              )}
             </View>
           );
         }}
@@ -205,11 +259,13 @@ const s = StyleSheet.create({
   desc: { color: '#64748b', fontSize: 13 },
   meta: { color: '#94a3b8', fontSize: 12 },
   plate: { fontWeight: '800', color: '#0f172a', letterSpacing: 1, fontSize: 13 },
+  evidenceMeta: { color: '#64748b', fontSize: 12, fontStyle: 'italic' },
   btnRow: { flexDirection: 'row', gap: 8, marginTop: 6 },
   btn: { flex: 1, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 8, alignItems: 'center' },
   btnBlue: { backgroundColor: '#2563eb' },
   btnGreen: { backgroundColor: '#16a34a' },
   btnGray: { backgroundColor: '#64748b' },
+  btnDisabled: { opacity: 0.6 },
   btnText: { color: '#fff', fontWeight: '700', fontSize: 12 },
   modal: { flex: 1, backgroundColor: '#f8fafc' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: '#e2e8f0', backgroundColor: '#fff' },

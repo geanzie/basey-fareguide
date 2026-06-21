@@ -16,26 +16,36 @@ interface AdminUser {
   isActive: boolean;
   isVerified: boolean;
   createdAt: string;
+  governmentId?: string | null;
+  reasonForRegistration?: string | null;
 }
 
 const USER_TYPES = ['ADMIN', 'DATA_ENCODER', 'ENFORCER'] as const;
 type CreateUserType = typeof USER_TYPES[number];
+type Tab = 'all' | 'pending';
 
 const EMPTY_FORM = { firstName: '', lastName: '', username: '', phoneNumber: '', userType: 'ENFORCER' as CreateUserType };
 
 export default function AdminUsersScreen() {
+  const [tab, setTab] = useState<Tab>('all');
   const [users, setUsers] = useState<AdminUser[]>([]);
+  const [pendingUsers, setPendingUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [addLoading, setAddLoading] = useState(false);
   const [addError, setAddError] = useState('');
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
   const load = async () => {
     try {
-      const data = await api.get<{ data: { users: AdminUser[] } }>('/api/admin/users');
-      setUsers(data.data?.users ?? []);
+      const [allRes, pendingRes] = await Promise.all([
+        api.get<{ data: { users: AdminUser[] } }>('/api/admin/users'),
+        api.get<{ users: AdminUser[] }>('/api/admin/users/pending'),
+      ]);
+      setUsers(allRes.data?.users ?? []);
+      setPendingUsers(pendingRes.users ?? []);
     } catch {} finally {
       setLoading(false);
     }
@@ -86,48 +96,149 @@ export default function AdminUsersScreen() {
     }
   };
 
+  const handleVerify = (userId: string, username: string, action: 'approve' | 'reject') => {
+    const label = action === 'approve' ? 'Approve' : 'Reject';
+    Alert.alert(
+      `${label} User`,
+      `${label} registration for @${username}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: label,
+          style: action === 'reject' ? 'destructive' : 'default',
+          onPress: async () => {
+            setActionLoadingId(userId);
+            try {
+              await api.post('/api/admin/users/verify', { userId, action });
+              await load();
+            } catch (err) {
+              Alert.alert('Error', err instanceof Error ? err.message : 'Failed.');
+            } finally {
+              setActionLoadingId(null);
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const handleToggleStatus = (userId: string, username: string, currentlyActive: boolean) => {
+    const action = currentlyActive ? 'Deactivate' : 'Activate';
+    Alert.alert(
+      `${action} User`,
+      `${action} account for @${username}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: action,
+          style: currentlyActive ? 'destructive' : 'default',
+          onPress: async () => {
+            setActionLoadingId(userId);
+            try {
+              await api.post('/api/admin/users/toggle-status', { userId, isActive: !currentlyActive });
+              await load();
+            } catch (err) {
+              Alert.alert('Error', err instanceof Error ? err.message : 'Failed.');
+            } finally {
+              setActionLoadingId(null);
+            }
+          },
+        },
+      ],
+    );
+  };
+
   if (loading) {
     return <SafeAreaView style={s.center}><ActivityIndicator color="#16a34a" size="large" /></SafeAreaView>;
   }
 
+  const displayedUsers = tab === 'all' ? users : pendingUsers;
+
   return (
     <SafeAreaView style={s.container}>
+      <View style={s.header}>
+        <Text style={s.title}>User Management</Text>
+        <TouchableOpacity style={s.addBtn} onPress={openAdd}>
+          <Ionicons name="add" size={22} color="#fff" />
+        </TouchableOpacity>
+      </View>
+
+      <View style={s.tabBar}>
+        {(['all', 'pending'] as Tab[]).map((t) => (
+          <Pressable key={t} style={[s.tabBtn, tab === t && s.tabBtnActive]} onPress={() => setTab(t)}>
+            <Text style={[s.tabBtnText, tab === t && s.tabBtnTextActive]}>
+              {t === 'all' ? 'All Users' : `Pending${pendingUsers.length > 0 ? ` (${pendingUsers.length})` : ''}`}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+
       <FlatList
-        data={users}
+        data={displayedUsers}
         keyExtractor={(u) => u.id}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         contentContainerStyle={s.list}
-        ListHeaderComponent={
-          <View style={s.headerRow}>
-            <Text style={s.title}>User Management</Text>
-            <TouchableOpacity style={s.addBtn} onPress={openAdd}>
-              <Ionicons name="add" size={22} color="#fff" />
-            </TouchableOpacity>
-          </View>
+        ListEmptyComponent={
+          <Text style={s.empty}>
+            {tab === 'pending' ? 'No pending registrations.' : 'No users found.'}
+          </Text>
         }
-        ListEmptyComponent={<Text style={s.empty}>No users found.</Text>}
-        renderItem={({ item }) => (
-          <View style={s.card}>
-            <View style={s.row}>
-              <View style={s.avatar}>
-                <Text style={s.avatarText}>{item.firstName[0]}{item.lastName[0]}</Text>
+        renderItem={({ item }) => {
+          const isActioning = actionLoadingId === item.id;
+          return (
+            <View style={s.card}>
+              <View style={s.row}>
+                <View style={s.avatar}>
+                  <Text style={s.avatarText}>{item.firstName[0]}{item.lastName[0]}</Text>
+                </View>
+                <View style={s.info}>
+                  <Text style={s.name}>{item.firstName} {item.lastName}</Text>
+                  <Text style={s.username}>@{item.username}</Text>
+                </View>
+                <View style={[s.badge, !item.isActive && s.badgeInactive]}>
+                  <Text style={[s.badgeText, !item.isActive && s.badgeTextInactive]}>
+                    {item.isActive ? 'Active' : 'Inactive'}
+                  </Text>
+                </View>
               </View>
-              <View style={s.info}>
-                <Text style={s.name}>{item.firstName} {item.lastName}</Text>
-                <Text style={s.username}>@{item.username}</Text>
-              </View>
-              <View style={[s.badge, !item.isActive && s.badgeInactive]}>
-                <Text style={[s.badgeText, !item.isActive && s.badgeTextInactive]}>
-                  {item.isActive ? 'Active' : 'Inactive'}
-                </Text>
-              </View>
+              <Text style={s.role}>{item.userType.replace('_', ' ')}</Text>
+              <Text style={s.meta}>
+                Joined {new Date(item.createdAt).toLocaleDateString('en-PH')} · {item.isVerified ? 'Verified' : 'Unverified'}
+              </Text>
+
+              {tab === 'pending' ? (
+                <View style={s.btnRow}>
+                  <Pressable
+                    style={[s.actionBtn, s.btnApprove, isActioning && s.btnDisabled]}
+                    onPress={() => handleVerify(item.id, item.username, 'approve')}
+                    disabled={isActioning}
+                  >
+                    {isActioning
+                      ? <ActivityIndicator color="#fff" size="small" />
+                      : <Text style={s.actionBtnText}>Approve</Text>}
+                  </Pressable>
+                  <Pressable
+                    style={[s.actionBtn, s.btnReject, isActioning && s.btnDisabled]}
+                    onPress={() => handleVerify(item.id, item.username, 'reject')}
+                    disabled={isActioning}
+                  >
+                    <Text style={s.actionBtnText}>Reject</Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <Pressable
+                  style={[s.toggleBtn, item.isActive ? s.toggleBtnDeactivate : s.toggleBtnActivate, isActioning && s.btnDisabled]}
+                  onPress={() => handleToggleStatus(item.id, item.username, item.isActive)}
+                  disabled={isActioning}
+                >
+                  {isActioning
+                    ? <ActivityIndicator color="#fff" size="small" />
+                    : <Text style={s.toggleBtnText}>{item.isActive ? 'Deactivate' : 'Activate'}</Text>}
+                </Pressable>
+              )}
             </View>
-            <Text style={s.role}>{item.userType.replace('_', ' ')}</Text>
-            <Text style={s.meta}>
-              Joined {new Date(item.createdAt).toLocaleDateString('en-PH')} · {item.isVerified ? 'Verified' : 'Unverified'}
-            </Text>
-          </View>
-        )}
+          );
+        }}
       />
 
       <Modal visible={showAdd} animationType="slide" presentationStyle="pageSheet" onRequestClose={closeAdd}>
@@ -205,13 +316,18 @@ export default function AdminUsersScreen() {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f1f5f9' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  list: { padding: 16, gap: 10 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
   title: { fontSize: 22, fontWeight: '700', color: '#0f172a' },
   addBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: '#16a34a', justifyContent: 'center', alignItems: 'center' },
+  tabBar: { flexDirection: 'row', backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e2e8f0' },
+  tabBtn: { flex: 1, paddingVertical: 12, alignItems: 'center' },
+  tabBtnActive: { borderBottomWidth: 2, borderBottomColor: '#16a34a' },
+  tabBtnText: { fontSize: 13, fontWeight: '600', color: '#64748b' },
+  tabBtnTextActive: { color: '#16a34a' },
+  list: { padding: 16, gap: 10 },
   empty: { textAlign: 'center', color: '#94a3b8', marginTop: 40 },
-  card: { backgroundColor: '#fff', borderRadius: 12, padding: 14, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, elevation: 1 },
-  row: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  card: { backgroundColor: '#fff', borderRadius: 12, padding: 14, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, elevation: 1, gap: 4 },
+  row: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
   avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#e2e8f0', justifyContent: 'center', alignItems: 'center', marginRight: 10 },
   avatarText: { fontWeight: '700', color: '#64748b' },
   info: { flex: 1 },
@@ -221,8 +337,18 @@ const s = StyleSheet.create({
   badgeInactive: { backgroundColor: '#f1f5f9' },
   badgeText: { fontSize: 11, fontWeight: '700', color: '#16a34a' },
   badgeTextInactive: { color: '#94a3b8' },
-  role: { fontSize: 12, color: '#64748b', fontWeight: '600', marginBottom: 2 },
+  role: { fontSize: 12, color: '#64748b', fontWeight: '600' },
   meta: { fontSize: 11, color: '#94a3b8' },
+  btnRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
+  actionBtn: { flex: 1, borderRadius: 8, paddingVertical: 8, alignItems: 'center' },
+  btnApprove: { backgroundColor: '#16a34a' },
+  btnReject: { backgroundColor: '#dc2626' },
+  btnDisabled: { opacity: 0.6 },
+  actionBtnText: { color: '#fff', fontWeight: '700', fontSize: 12 },
+  toggleBtn: { borderRadius: 8, paddingVertical: 8, alignItems: 'center', marginTop: 8 },
+  toggleBtnActivate: { backgroundColor: '#16a34a' },
+  toggleBtnDeactivate: { backgroundColor: '#64748b' },
+  toggleBtnText: { color: '#fff', fontWeight: '700', fontSize: 12 },
   modal: { flex: 1, backgroundColor: '#f8fafc' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: '#e2e8f0', backgroundColor: '#fff' },
   modalTitle: { fontSize: 17, fontWeight: '700', color: '#0f172a' },

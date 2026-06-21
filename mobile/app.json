@@ -37,7 +37,14 @@
           "locationAlwaysAndWhenInUsePermission": "Allow Basey FareCheck to use your location to calculate fares."
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Basey FareCheck to access your photos for discount card applications.",
+          "cameraPermission": "Allow Basey FareCheck to use your camera for discount card ID photos."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

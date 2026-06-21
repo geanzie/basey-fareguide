@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { fetchAdminFareRates, createFareRate } from '@/services/fare';
+import { api } from '@/services/api';
 import type { FareRate } from '@/types/fare';
 
 export default function AdminFareRatesScreen() {
@@ -13,6 +14,7 @@ export default function AdminFareRatesScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [reverting, setReverting] = useState(false);
   const [form, setForm] = useState({ baseFare: '', perKmRate: '', notes: '' });
 
   const load = useCallback(async () => {
@@ -63,6 +65,32 @@ export default function AdminFareRatesScreen() {
     }
   };
 
+  const handleRevert = () => {
+    Alert.alert(
+      'Revert Fare Rate',
+      'This will cancel the current live fare rate and restore the previous eligible version. Confirm?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Revert',
+          style: 'destructive',
+          onPress: async () => {
+            setReverting(true);
+            try {
+              await api.post('/api/admin/fare-rates/revert', {});
+              await load();
+              Alert.alert('Reverted', 'Fare rate rolled back to previous version.');
+            } catch (err) {
+              Alert.alert('Error', err instanceof Error ? err.message : 'Revert failed.');
+            } finally {
+              setReverting(false);
+            }
+          },
+        },
+      ],
+    );
+  };
+
   if (loading) {
     return <SafeAreaView style={s.center}><ActivityIndicator color="#16a34a" size="large" /></SafeAreaView>;
   }
@@ -78,9 +106,20 @@ export default function AdminFareRatesScreen() {
           <View>
             <View style={s.titleRow}>
               <Text style={s.title}>Fare Rates</Text>
-              <Pressable style={s.addBtn} onPress={() => setShowForm((v) => !v)}>
-                <Text style={s.addBtnText}>{showForm ? 'Cancel' : '+ New Rate'}</Text>
-              </Pressable>
+              <View style={s.titleBtns}>
+                <Pressable
+                  style={[s.revertBtn, reverting && s.revertBtnDisabled]}
+                  onPress={handleRevert}
+                  disabled={reverting}
+                >
+                  {reverting
+                    ? <ActivityIndicator color="#dc2626" size="small" />
+                    : <Text style={s.revertBtnText}>Revert</Text>}
+                </Pressable>
+                <Pressable style={s.addBtn} onPress={() => setShowForm((v) => !v)}>
+                  <Text style={s.addBtnText}>{showForm ? 'Cancel' : '+ New Rate'}</Text>
+                </Pressable>
+              </View>
             </View>
             {showForm && (
               <View style={s.formCard}>
@@ -138,6 +177,10 @@ const s = StyleSheet.create({
   list: { padding: 16, gap: 10 },
   titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   title: { fontSize: 22, fontWeight: '700', color: '#0f172a' },
+  titleBtns: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  revertBtn: { borderWidth: 1.5, borderColor: '#dc2626', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7, minWidth: 60, alignItems: 'center' },
+  revertBtnDisabled: { opacity: 0.5 },
+  revertBtnText: { color: '#dc2626', fontWeight: '700', fontSize: 13 },
   addBtn: { backgroundColor: '#16a34a', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 },
   addBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
   formCard: { backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, elevation: 2 },

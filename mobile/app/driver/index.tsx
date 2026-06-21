@@ -38,17 +38,32 @@ interface DriverSession {
   }>;
 }
 
+interface DriverSummary {
+  summary: {
+    fareCalculationCount: number;
+    totalIncidents: number;
+    openIncidents: number;
+    unpaidTickets: number;
+    outstandingPenalties: number;
+  };
+}
+
 export default function DriverTripScreen() {
   const { user } = useAuthStore();
   const [data, setData] = useState<DriverSession | null>(null);
+  const [summary, setSummary] = useState<DriverSummary['summary'] | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [acting, setActing] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const res = await api.get<DriverSession>('/api/driver/session/active');
-      setData(res);
+      const [session, sum] = await Promise.allSettled([
+        api.get<DriverSession>('/api/driver/session/active'),
+        api.get<DriverSummary>('/api/driver/summary'),
+      ]);
+      if (session.status === 'fulfilled') setData(session.value);
+      if (sum.status === 'fulfilled') setSummary(sum.value.summary);
     } catch {} finally {
       setLoading(false);
     }
@@ -122,6 +137,32 @@ export default function DriverTripScreen() {
           <Text style={s.title}>Trip Session</Text>
           <Text style={s.sub}>{user?.firstName} {user?.lastName}</Text>
         </View>
+
+        {summary && (
+          <View style={s.summaryCard}>
+            <Text style={s.summaryTitle}>Overview</Text>
+            <View style={s.summaryRow}>
+              {[
+                { label: 'Fare Calcs', value: summary.fareCalculationCount },
+                { label: 'Incidents', value: summary.totalIncidents },
+                { label: 'Open', value: summary.openIncidents, alert: summary.openIncidents > 0 },
+                { label: 'Unpaid', value: summary.unpaidTickets, alert: summary.unpaidTickets > 0 },
+              ].map((item) => (
+                <View key={item.label} style={s.summaryStat}>
+                  <Text style={[s.summaryVal, item.alert ? s.summaryValAlert : null]}>{item.value}</Text>
+                  <Text style={s.summaryLbl}>{item.label}</Text>
+                </View>
+              ))}
+            </View>
+            {summary.outstandingPenalties > 0 && (
+              <View style={s.penaltyBanner}>
+                <Text style={s.penaltyText}>
+                  Outstanding penalties: ₱{summary.outstandingPenalties.toFixed(2)}
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
 
         {vehicle ? (
           <View style={s.vehicleCard}>
@@ -213,6 +254,15 @@ const s = StyleSheet.create({
   header: { padding: 24, paddingBottom: 8 },
   title: { fontSize: 22, fontWeight: '700', color: '#0f172a' },
   sub: { fontSize: 13, color: '#64748b', marginTop: 2 },
+  summaryCard: { marginHorizontal: 16, marginBottom: 12, backgroundColor: '#fff', borderRadius: 16, padding: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, elevation: 2 },
+  summaryTitle: { fontSize: 12, fontWeight: '700', color: '#64748b', marginBottom: 12, letterSpacing: 0.5 },
+  summaryRow: { flexDirection: 'row', justifyContent: 'space-around' },
+  summaryStat: { alignItems: 'center' },
+  summaryVal: { fontSize: 24, fontWeight: '800', color: '#0f172a' },
+  summaryValAlert: { color: '#dc2626' },
+  summaryLbl: { fontSize: 11, color: '#64748b', fontWeight: '600', marginTop: 2 },
+  penaltyBanner: { backgroundColor: '#fef2f2', borderRadius: 10, padding: 10, marginTop: 12 },
+  penaltyText: { color: '#dc2626', fontWeight: '700', fontSize: 13, textAlign: 'center' },
   vehicleCard: { margin: 16, backgroundColor: '#0f172a', borderRadius: 16, padding: 20 },
   plate: { fontSize: 22, fontWeight: '900', color: '#fff', letterSpacing: 2 },
   vehicleInfo: { color: '#94a3b8', marginTop: 4, fontSize: 13 },

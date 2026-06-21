@@ -1,7 +1,8 @@
-import { View, Text, StyleSheet, Pressable, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Alert, ActivityIndicator, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/store/authStore';
 import { logoutRequest } from '@/services/auth';
 
@@ -34,7 +35,7 @@ export default function PublicProfileScreen() {
 
   return (
     <SafeAreaView style={s.container}>
-      <View style={s.content}>
+      <ScrollView contentContainerStyle={s.content}>
         <View style={s.avatarBox}>
           <View style={s.avatar}>
             <Text style={s.avatarText}>{initials}</Text>
@@ -59,6 +60,18 @@ export default function PublicProfileScreen() {
           ))}
         </View>
 
+        <Pressable style={s.menuItem} onPress={() => router.push('/public/discount')}>
+          <Ionicons name="card-outline" size={20} color="#16a34a" />
+          <Text style={s.menuItemText}>Discount Card</Text>
+          <Ionicons name="chevron-forward-outline" size={18} color="#94a3b8" />
+        </Pressable>
+
+        <Pressable style={s.menuItem} onPress={() => router.push('/public/ordinance')}>
+          <Ionicons name="document-text-outline" size={20} color="#16a34a" />
+          <Text style={s.menuItemText}>Ordinance No. 105</Text>
+          <Ionicons name="chevron-forward-outline" size={18} color="#94a3b8" />
+        </Pressable>
+
         <Pressable
           style={[s.logoutBtn, loggingOut && s.logoutBtnDisabled]}
           onPress={handleLogout}
@@ -70,14 +83,14 @@ export default function PublicProfileScreen() {
             <Text style={s.logoutText}>Sign Out</Text>
           )}
         </Pressable>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f1f5f9' },
-  content: { padding: 24 },
+  content: { padding: 24, paddingBottom: 40 },
   avatarBox: { alignItems: 'center', marginBottom: 24 },
   avatar: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#16a34a', justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
   avatarText: { color: '#fff', fontSize: 28, fontWeight: '800' },
@@ -89,6 +102,8 @@ const s = StyleSheet.create({
   infoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
   infoLabel: { color: '#64748b', fontSize: 14 },
   infoValue: { color: '#0f172a', fontSize: 14, fontWeight: '600' },
+  menuItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 14, padding: 16, marginBottom: 12, gap: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, elevation: 1 },
+  menuItemText: { flex: 1, fontSize: 15, fontWeight: '600', color: '#0f172a' },
   logoutBtn: { backgroundColor: '#fff', borderRadius: 14, padding: 16, alignItems: 'center', borderWidth: 1.5, borderColor: '#dc2626' },
   logoutBtnDisabled: { opacity: 0.6 },
   logoutText: { color: '#dc2626', fontWeight: '700', fontSize: 15 },

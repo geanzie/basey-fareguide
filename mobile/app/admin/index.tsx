@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, ActivityIndicator, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { api } from '@/services/api';
 import { useAuthStore } from '@/store/authStore';
 
@@ -18,6 +19,7 @@ type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
 export default function AdminDashboard() {
   const { user } = useAuthStore();
+  const router = useRouter();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -68,6 +70,28 @@ export default function AdminDashboard() {
             </View>
           ))}
         </View>
+
+        <View style={s.quickLinks}>
+          <Text style={s.quickLinksTitle}>Quick Actions</Text>
+          {[
+            { label: 'Discount Cards', sub: 'Review applications', route: '/admin/discount-cards', icon: 'card-outline' as IoniconName },
+            { label: 'Reports', sub: 'Analytics & statistics', route: '/admin/reports', icon: 'bar-chart-outline' as IoniconName },
+            { label: 'Routing Settings', sub: 'Configure route provider', route: '/admin/settings', icon: 'git-branch-outline' as IoniconName },
+          ].map((link) => (
+            <Pressable
+              key={link.label}
+              style={({ pressed }) => [s.quickLink, pressed && s.quickLinkPressed]}
+              onPress={() => router.push(link.route as never)}
+            >
+              <Ionicons name={link.icon} size={22} color="#16a34a" style={s.quickLinkIcon} />
+              <View style={s.quickLinkText}>
+                <Text style={s.quickLinkLabel}>{link.label}</Text>
+                <Text style={s.quickLinkSub}>{link.sub}</Text>
+              </View>
+              <Ionicons name="chevron-forward-outline" size={18} color="#94a3b8" />
+            </Pressable>
+          ))}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -84,4 +108,12 @@ const s = StyleSheet.create({
   icon: { marginBottom: 8 },
   statVal: { fontSize: 36, fontWeight: '900' },
   statLabel: { fontSize: 12, color: '#64748b', fontWeight: '600', marginTop: 4, textAlign: 'center' },
+  quickLinks: { margin: 12, marginTop: 16, backgroundColor: '#fff', borderRadius: 16, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, elevation: 2 },
+  quickLinksTitle: { fontSize: 13, fontWeight: '700', color: '#64748b', paddingHorizontal: 16, paddingTop: 14, paddingBottom: 8 },
+  quickLink: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderTopWidth: 1, borderTopColor: '#f1f5f9' },
+  quickLinkPressed: { backgroundColor: '#f8fafc' },
+  quickLinkIcon: { marginRight: 12 },
+  quickLinkText: { flex: 1 },
+  quickLinkLabel: { fontSize: 14, fontWeight: '600', color: '#0f172a' },
+  quickLinkSub: { fontSize: 12, color: '#64748b', marginTop: 1 },
 });

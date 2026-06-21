@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/authStore';
 const actions = [
   { label: 'Manage Permits', sub: 'View and encode permits', route: '/encoder/permits' },
   { label: 'Vehicle Registry', sub: 'Browse registered vehicles', route: '/encoder/vehicles' },
+  { label: 'Ticket Payments', sub: 'Record violation payments', route: '/encoder/ticket-payments' },
 ] as const;
 
 export default function EncoderDashboard() {
