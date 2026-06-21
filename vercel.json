@@ -1,3 +1,3 @@
 {
-  "ignoreCommand": "echo 'Mobile (Expo) branch — skipping Vercel build'; exit 1"
+  "ignoreCommand": "echo 'Mobile (Expo) branch — skipping Vercel build'; exit 0"
 }
