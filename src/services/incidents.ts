@@ -1,7 +1,9 @@
 import { api } from './api';
-import type { Incident, IncidentType, CreateIncidentRequest, IssueTicketRequest, DismissIncidentRequest } from '@/types/incidents';
+import { useAuthStore } from '@/store/authStore';
+import type { Incident, IncidentType, CreateIncidentRequest, IssueTicketRequest, DismissIncidentRequest, EvidenceFile, TicketPenaltyPreview, EnforcerStats } from '@/types/incidents';
 import type { PaginatedResponse } from '@/types/common';
 
+const API_BASE = process.env.EXPO_PUBLIC_API_BASE_URL ?? '';
 const EMPTY_PAGE = { total: 0, page: 1, pageSize: 100, hasMore: false };
 
 function normalizeIncident(raw: Record<string, unknown>): Incident {
@@ -23,13 +25,84 @@ export async function fetchAllIncidents(status?: string): Promise<PaginatedRespo
   return { items: (res.incidents ?? []).map(normalizeIncident), ...EMPTY_PAGE };
 }
 
-export async function fetchEnforcerIncidents(): Promise<PaginatedResponse<Incident>> {
-  const res = await api.get<{ incidents: Record<string, unknown>[] }>('/api/incidents/enforcer');
+export async function fetchEnforcerIncidents(scope: 'all' | 'unresolved' = 'unresolved'): Promise<PaginatedResponse<Incident>> {
+  const res = await api.get<{ incidents: Record<string, unknown>[] }>(`/api/incidents/enforcer?scope=${scope}`);
   return { items: (res.incidents ?? []).map(normalizeIncident), ...EMPTY_PAGE };
 }
 
-export async function createIncident(payload: CreateIncidentRequest): Promise<Incident> {
-  return api.post<Incident>('/api/incidents', payload);
+export async function getTicketPreview(id: string): Promise<{ plateNumber: string; penalty: TicketPenaltyPreview }> {
+  return api.get(`/api/incidents/${id}/issue-ticket`);
+}
+
+export async function getIncidentEvidence(id: string): Promise<{ evidence: EvidenceFile[] }> {
+  return api.get(`/api/incidents/${id}/evidence`);
+}
+
+export async function fetchEnforcerStats(): Promise<EnforcerStats> {
+  const res = await api.get<{
+    total: number;
+    pending: number;
+    resolved: number;
+    dismissed: number;
+    byStatus: Record<string, number>;
+  }>('/api/admin/incidents/stats');
+  return {
+    total: res.total,
+    pending: res.pending,
+    ticketIssued: res.byStatus['ticket_issued'] ?? 0,
+    resolved: res.resolved,
+    dismissed: res.dismissed,
+  };
+}
+
+export async function createIncident(
+  payload: CreateIncidentRequest,
+  evidenceUri?: string,
+): Promise<{ referenceNumber?: string; message?: string }> {
+  const { token } = useAuthStore.getState();
+
+  const form = new FormData();
+  form.append('incidentType', payload.incidentType);
+  form.append('description', payload.description);
+  // backend expects YYYY-MM-DD, not full ISO datetime
+  form.append('incidentDate', payload.incidentDate.split('T')[0]);
+
+  const now = new Date();
+  form.append(
+    'incidentTime',
+    `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`,
+  );
+
+  if (payload.location) form.append('location', payload.location);
+  if (payload.plateNumber) form.append('plateNumber', payload.plateNumber);
+  if (payload.vehicleId) form.append('vehicleId', payload.vehicleId);
+  if (payload.fareCalculationId) form.append('fareCalculationId', payload.fareCalculationId);
+
+  if (evidenceUri) {
+    const fileName = evidenceUri.split('/').pop() ?? 'evidence.jpg';
+    const ext = fileName.split('.').pop()?.toLowerCase() ?? 'jpg';
+    const mimeType =
+      ext === 'mp4' || ext === 'mov' ? 'video/mp4' : `image/${ext === 'jpg' ? 'jpeg' : ext}`;
+    form.append('evidence', { uri: evidenceUri, name: fileName, type: mimeType } as unknown as Blob);
+  }
+
+  const res = await fetch(`${API_BASE}/api/incidents/report`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: form,
+  });
+
+  const text = await res.text();
+  let json: Record<string, unknown> = {};
+  try {
+    if (text) json = JSON.parse(text) as Record<string, unknown>;
+  } catch { /* non-JSON body — ignore */ }
+
+  if (!res.ok) {
+    throw new Error((json.message as string | undefined) ?? `HTTP ${res.status}`);
+  }
+
+  return json as { referenceNumber?: string; message?: string };
 }
 
 export async function issueTicket(id: string, payload: IssueTicketRequest): Promise<Incident> {
@@ -38,4 +111,8 @@ export async function issueTicket(id: string, payload: IssueTicketRequest): Prom
 
 export async function dismissIncident(id: string, payload: DismissIncidentRequest): Promise<Incident> {
   return api.patch<Incident>(`/api/incidents/${id}/dismiss`, payload);
+}
+
+export async function verifyEvidence(id: string): Promise<Incident> {
+  return api.patch<Incident>(`/api/incidents/${id}/verify-evidence`, {});
 }

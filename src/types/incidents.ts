@@ -1,9 +1,9 @@
 export type IncidentType =
-  | 'OVERCHARGING'
+  | 'FARE_OVERCHARGE'
+  | 'FARE_UNDERCHARGE'
   | 'RECKLESS_DRIVING'
-  | 'REFUSAL_OF_SERVICE'
-  | 'COLORUM'
-  | 'OVERLOADING'
+  | 'VEHICLE_VIOLATION'
+  | 'ROUTE_VIOLATION'
   | 'OTHER';
 
 export type IncidentStatus =
@@ -14,6 +14,35 @@ export type IncidentStatus =
   | 'DISMISSED';
 
 export type TicketPaymentStatus = 'UNPAID' | 'PAID' | 'WAIVED';
+
+export type EvidenceFileStatus = 'PENDING_REVIEW' | 'VERIFIED' | 'REJECTED' | 'REQUIRES_ADDITIONAL';
+
+export interface EvidenceFile {
+  id: string;
+  fileName: string;
+  fileType: string;
+  status: EvidenceFileStatus;
+  createdAt: string;
+}
+
+export interface TicketPenaltyPreview {
+  offenseNumber: number;
+  offenseTier: 'FIRST' | 'SECOND' | 'THIRD_PLUS';
+  offenseTierLabel: string;
+  currentPenaltyAmount: number;
+  carriedForwardPenaltyAmount: number;
+  priorTicketCount: number;
+  priorUnpaidTicketCount: number;
+  ruleVersion: string;
+}
+
+export interface EnforcerStats {
+  total: number;
+  pending: number;
+  ticketIssued: number;
+  resolved: number;
+  dismissed: number;
+}
 
 export interface Incident {
   id: string;
@@ -26,6 +55,8 @@ export interface Incident {
   ticketNumber?: string;
   penaltyAmount?: number;
   paymentStatus?: TicketPaymentStatus;
+  evidenceVerifiedAt?: string | null;
+  evidenceCount?: number;
   createdAt: string;
 }
 
@@ -34,6 +65,8 @@ export interface CreateIncidentRequest {
   description: string;
   location: string;
   plateNumber?: string;
+  vehicleId?: string;
+  fareCalculationId?: string;
   incidentDate: string;
 }
 
