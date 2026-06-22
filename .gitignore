@@ -63,3 +63,6 @@ next-env.d.ts
 /public/uploads/**
 !/public/uploads/.gitkeep
 !/public/uploads/discount-cards/.gitkeep
+
+# mobile app lives in its own repo at project root (../mobile), not here
+/mobile
