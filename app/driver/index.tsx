@@ -9,6 +9,7 @@ import {
   Alert,
   RefreshControl,
 } from 'react-native';
+import { StatGridSkeleton, SectionSkeleton } from '@/ui/Skeleton';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '@/services/api';
 import { useAuthStore } from '@/store/authStore';
@@ -109,7 +110,12 @@ export default function DriverTripScreen() {
   };
 
   if (loading) {
-    return <SafeAreaView style={s.center}><ActivityIndicator color="#16a34a" size="large" /></SafeAreaView>;
+    return (
+      <SafeAreaView style={s.container}>
+        <StatGridSkeleton count={3} />
+        <SectionSkeleton count={3} />
+      </SafeAreaView>
+    );
   }
 
   const session = data?.session;

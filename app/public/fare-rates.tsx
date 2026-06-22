@@ -6,6 +6,7 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
+import { ListSkeleton } from '@/ui/Skeleton';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { fetchCurrentFareRates, type FareRatesResponse } from '@/services/fare';
 
@@ -84,7 +85,7 @@ export default function FareRatesScreen() {
         <Text style={s.title}>Fare Rates</Text>
         <Text style={s.subtitle}>Municipal Ordinance 105, Series of 2023</Text>
 
-        {loading && <ActivityIndicator color="#16a34a" style={s.spinner} />}
+        {loading && <ListSkeleton count={2} />}
 
         {error && (
           <View style={s.errorBox}>

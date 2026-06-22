@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { api } from '@/services/api';
+import { ListSkeleton } from '@/ui/Skeleton';
 
 interface TicketPayment {
   id: string;
@@ -79,7 +80,11 @@ export default function AdminTicketPaymentsScreen() {
     : payments;
 
   if (loading) {
-    return <SafeAreaView style={s.center}><ActivityIndicator color="#16a34a" size="large" /></SafeAreaView>;
+    return (
+      <SafeAreaView style={s.container}>
+        <ListSkeleton count={4} />
+      </SafeAreaView>
+    );
   }
 
   return (

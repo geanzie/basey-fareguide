@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { fetchAllIncidents } from '@/services/incidents';
 import type { Incident, IncidentStatus } from '@/types/incidents';
 import IncidentCard from '@/components/IncidentCard';
+import { ListSkeleton } from '@/ui/Skeleton';
 
 const STATUSES: Array<{ label: string; value: IncidentStatus | 'ALL' }> = [
   { label: 'All', value: 'ALL' },
@@ -41,7 +42,11 @@ export default function AdminIncidentsScreen() {
   };
 
   if (loading) {
-    return <SafeAreaView style={s.center}><ActivityIndicator color="#16a34a" size="large" /></SafeAreaView>;
+    return (
+      <SafeAreaView style={s.container}>
+        <ListSkeleton count={4} />
+      </SafeAreaView>
+    );
   }
 
   return (

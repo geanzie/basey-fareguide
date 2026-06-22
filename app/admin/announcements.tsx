@@ -6,6 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { fetchActiveAnnouncements, createAnnouncement, archiveAnnouncement } from '@/services/announcements';
 import type { Announcement, AnnouncementCategory } from '@/types/common';
+import { ListSkeleton } from '@/ui/Skeleton';
 
 const CATEGORIES: AnnouncementCategory[] = [
   'EMERGENCY_NOTICE', 'ROAD_CLOSURE', 'ROAD_WORK', 'TRAFFIC_ADVISORY', 'GENERAL_INFORMATION',
@@ -86,7 +87,11 @@ export default function AdminAnnouncementsScreen() {
   };
 
   if (loading) {
-    return <SafeAreaView style={s.center}><ActivityIndicator color="#16a34a" size="large" /></SafeAreaView>;
+    return (
+      <SafeAreaView style={s.container}>
+        <ListSkeleton count={4} />
+      </SafeAreaView>
+    );
   }
 
   return (

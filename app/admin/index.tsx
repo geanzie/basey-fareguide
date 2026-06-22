@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@/services/api';
 import { useAuthStore } from '@/store/authStore';
+import { StatGridSkeleton } from '@/ui/Skeleton';
 
 interface DashboardStats {
   totalUsers: number;
@@ -44,7 +45,11 @@ export default function AdminDashboard() {
   };
 
   if (loading) {
-    return <SafeAreaView style={s.center}><ActivityIndicator color="#16a34a" size="large" /></SafeAreaView>;
+    return (
+      <SafeAreaView style={s.container}>
+        <StatGridSkeleton count={6} />
+      </SafeAreaView>
+    );
   }
 
   const statItems: { label: string; value: number; color: string; icon: IoniconName }[] = stats ? [

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, RefreshControl, ActivityIndicator } from 'react-native';
+import { ListSkeleton } from '@/ui/Skeleton';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '@/services/api';
 
@@ -34,7 +35,11 @@ export default function DriverHistoryScreen() {
   };
 
   if (loading) {
-    return <SafeAreaView style={s.center}><ActivityIndicator color="#16a34a" size="large" /></SafeAreaView>;
+    return (
+      <SafeAreaView style={s.container}>
+        <ListSkeleton count={5} />
+      </SafeAreaView>
+    );
   }
 
   return (

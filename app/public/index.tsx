@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/store/authStore';
+import { SectionSkeleton } from '@/ui/Skeleton';
 import { fetchActiveAnnouncements } from '@/services/announcements';
 import { fetchFareHistory } from '@/services/fare';
 import type { Announcement } from '@/types/common';
@@ -52,8 +53,9 @@ export default function PublicDashboard() {
 
   if (loading) {
     return (
-      <SafeAreaView style={s.center}>
-        <ActivityIndicator color="#16a34a" size="large" />
+      <SafeAreaView style={s.container}>
+        <SectionSkeleton count={2} />
+        <SectionSkeleton count={3} />
       </SafeAreaView>
     );
   }

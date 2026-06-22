@@ -10,6 +10,7 @@ import {
   TextInput,
   Image,
 } from 'react-native';
+import { FormSkeleton } from '@/ui/Skeleton';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
@@ -162,8 +163,8 @@ export default function DiscountCardScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={s.center}>
-        <ActivityIndicator color="#16a34a" size="large" />
+      <SafeAreaView style={s.container}>
+        <FormSkeleton fields={3} />
       </SafeAreaView>
     );
   }

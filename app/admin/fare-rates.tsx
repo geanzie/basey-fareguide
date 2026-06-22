@@ -6,6 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { fetchAdminFareRates, createFareRate } from '@/services/fare';
 import type { FareRate } from '@/types/fare';
+import { ListSkeleton } from '@/ui/Skeleton';
 
 export default function AdminFareRatesScreen() {
   const [rates, setRates] = useState<FareRate[]>([]);
@@ -64,7 +65,11 @@ export default function AdminFareRatesScreen() {
   };
 
   if (loading) {
-    return <SafeAreaView style={s.center}><ActivityIndicator color="#16a34a" size="large" /></SafeAreaView>;
+    return (
+      <SafeAreaView style={s.container}>
+        <ListSkeleton count={3} />
+      </SafeAreaView>
+    );
   }
 
   return (

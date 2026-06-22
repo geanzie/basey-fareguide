@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Pressable,
 } from 'react-native';
+import { ListSkeleton } from '@/ui/Skeleton';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { fetchFareHistory } from '@/services/fare';
 import { fetchMyIncidents } from '@/services/incidents';
@@ -47,8 +48,8 @@ export default function HistoryScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={s.center}>
-        <ActivityIndicator color="#16a34a" size="large" />
+      <SafeAreaView style={s.container}>
+        <ListSkeleton count={5} />
       </SafeAreaView>
     );
   }

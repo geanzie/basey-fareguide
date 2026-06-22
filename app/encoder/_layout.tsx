@@ -44,6 +44,13 @@ export default function EncoderLayout() {
         }}
       />
       <Tabs.Screen
+        name="ticket-payments"
+        options={{
+          title: 'Tickets',
+          tabBarIcon: ({ color, size }) => <Ionicons name="receipt-outline" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',

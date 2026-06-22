@@ -4,9 +4,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/store/authStore';
-import { fetchEnforcerStats } from '@/services/incidents';
-import type { EnforcerStats } from '@/types/incidents';
+import { fetchEnforcerStats, fetchEnforcerIncidents } from '@/services/incidents';
+import type { EnforcerStats, Incident } from '@/types/incidents';
 import QrComplianceScanModal from '@/components/QrComplianceScanModal';
+import IncidentCard from '@/components/IncidentCard';
+import { StatGridSkeleton, SectionSkeleton } from '@/ui/Skeleton';
 
 interface StatCard {
   label: string;
@@ -19,6 +21,7 @@ export default function EnforcerDashboard() {
   const { user } = useAuthStore();
   const router = useRouter();
   const [stats, setStats] = useState<EnforcerStats | null>(null);
+  const [recent, setRecent] = useState<Incident[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [scanModalVisible, setScanModalVisible] = useState(false);
@@ -30,8 +33,12 @@ export default function EnforcerDashboard() {
 
   const load = useCallback(async () => {
     try {
-      const data = await fetchEnforcerStats();
+      const [data, incidents] = await Promise.all([
+        fetchEnforcerStats(),
+        fetchEnforcerIncidents('unresolved'),
+      ]);
       setStats(data);
+      setRecent(incidents.items.slice(0, 5));
       setError('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not load stats.');
@@ -70,9 +77,10 @@ export default function EnforcerDashboard() {
         </View>
 
         {loading ? (
-          <View style={s.center}>
-            <ActivityIndicator color="#16a34a" size="large" />
-          </View>
+          <>
+            <StatGridSkeleton count={4} />
+            <SectionSkeleton count={3} />
+          </>
         ) : stats ? (
           <View style={s.grid}>
             {cards.map((card) => (
@@ -91,11 +99,27 @@ export default function EnforcerDashboard() {
           </View>
         )}
 
-        <View style={s.infoCard}>
-          <Text style={s.infoText}>
-            Use the Queue tab to manage incoming incident reports. Verify evidence, issue tickets, or dismiss cases.
-          </Text>
-        </View>
+        {!loading && (
+          <View style={s.section}>
+            <View style={s.sectionHead}>
+              <Text style={s.sectionTitle}>Needs Review</Text>
+              <Pressable onPress={() => router.push('/enforcer/incidents')} hitSlop={8}>
+                <Text style={s.viewAll}>View all</Text>
+              </Pressable>
+            </View>
+            {recent.length === 0 ? (
+              <View style={s.infoCard}>
+                <Text style={s.infoText}>No incidents awaiting review. Nice work.</Text>
+              </View>
+            ) : (
+              recent.map((incident) => (
+                <Pressable key={incident.id} onPress={() => router.push('/enforcer/incidents')}>
+                  <IncidentCard incident={incident} />
+                </Pressable>
+              ))
+            )}
+          </View>
+        )}
       </ScrollView>
 
       {/* QR scan FAB */}
@@ -130,6 +154,10 @@ const s = StyleSheet.create({
   cardLabel: { fontSize: 12, fontWeight: '600' },
   infoCard: { backgroundColor: '#fff', borderRadius: 16, padding: 16 },
   infoText: { color: '#374151', fontSize: 14, lineHeight: 22 },
+  section: { gap: 10 },
+  sectionHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  sectionTitle: { fontSize: 16, fontWeight: '700', color: '#0f172a' },
+  viewAll: { fontSize: 13, fontWeight: '600', color: '#16a34a' },
   errorBox: { backgroundColor: '#fef2f2', borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   errorText: { color: '#dc2626', fontSize: 14, fontWeight: '500', flex: 1, marginRight: 12 },
   retryBtn: { backgroundColor: '#dc2626', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 16 },

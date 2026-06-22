@@ -4,6 +4,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '@/services/api';
+import { FormSkeleton } from '@/ui/Skeleton';
 
 type Provider = 'ors' | 'google_routes';
 
@@ -71,7 +72,11 @@ export default function AdminSettingsScreen() {
   };
 
   if (loading) {
-    return <SafeAreaView style={s.center}><ActivityIndicator color="#16a34a" size="large" /></SafeAreaView>;
+    return (
+      <SafeAreaView style={s.container}>
+        <FormSkeleton fields={4} />
+      </SafeAreaView>
+    );
   }
 
   if (!settings) {

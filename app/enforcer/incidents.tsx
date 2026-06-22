@@ -9,9 +9,7 @@ import {
   ActivityIndicator,
   Pressable,
   Alert,
-  Modal,
   TextInput,
-  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -23,6 +21,9 @@ import {
   getIncidentEvidence,
 } from '@/services/incidents';
 import type { Incident, TicketPenaltyPreview, EvidenceFile } from '@/types/incidents';
+import AppModal from '@/ui/AppModal';
+import Button from '@/ui/Button';
+import { ListSkeleton } from '@/ui/Skeleton';
 
 const STATUS_COLORS: Record<string, string> = {
   PENDING: '#f59e0b',
@@ -225,8 +226,8 @@ export default function EnforcerIncidentsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={s.center}>
-        <ActivityIndicator color="#16a34a" size="large" />
+      <SafeAreaView style={s.container}>
+        <ListSkeleton count={4} variant="complex" />
       </SafeAreaView>
     );
   }
@@ -383,127 +384,108 @@ export default function EnforcerIncidentsScreen() {
       />
 
       {/* Ticket issuance modal */}
-      <Modal
+      <AppModal
         visible={ticketModal !== null}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={closeTicketModal}
+        onClose={closeTicketModal}
+        title="Issue Ticket"
+        closeLabel="Cancel"
+        footer={
+          <Button
+            label="Issue Ticket"
+            onPress={submitTicket}
+            loading={modalLoading}
+            disabled={ticketModal?.loadingPreview}
+            style={s.flex1}
+          />
+        }
       >
-        <View style={s.modal}>
-          <View style={s.modalHeader}>
-            <Text style={s.modalTitle}>Issue Ticket</Text>
-            <Pressable onPress={closeTicketModal} style={s.closeBtn}>
-              <Text style={s.closeBtnText}>Cancel</Text>
-            </Pressable>
-          </View>
-          <ScrollView style={s.modalBody} contentContainerStyle={{ gap: 16 }}>
-            {ticketModal?.loadingPreview ? (
-              <View style={s.penaltyLoading}>
-                <ActivityIndicator color="#7c3aed" />
-                <Text style={s.penaltyLoadingText}>Loading penalty details...</Text>
-              </View>
-            ) : ticketModal?.penalty ? (
-              <View style={s.penaltyBox}>
-                <Text style={s.penaltyTitle}>Penalty Preview</Text>
-                <View style={s.penaltyRow}>
-                  <Text style={s.penaltyKey}>Offense</Text>
-                  <Text style={s.penaltyVal}>#{ticketModal.penalty.offenseNumber} — {ticketModal.penalty.offenseTierLabel}</Text>
-                </View>
-                <View style={s.penaltyRow}>
-                  <Text style={s.penaltyKey}>Prior Tickets</Text>
-                  <Text style={s.penaltyVal}>{ticketModal.penalty.priorTicketCount} ({ticketModal.penalty.priorUnpaidTicketCount} unpaid)</Text>
-                </View>
-                {ticketModal.penalty.carriedForwardPenaltyAmount > 0 && (
-                  <View style={s.penaltyRow}>
-                    <Text style={s.penaltyKey}>Carried Forward</Text>
-                    <Text style={s.penaltyVal}>₱{ticketModal.penalty.carriedForwardPenaltyAmount.toFixed(2)}</Text>
-                  </View>
-                )}
-                <View style={[s.penaltyRow, s.penaltyTotal]}>
-                  <Text style={s.penaltyTotalKey}>Total Amount</Text>
-                  <Text style={s.penaltyTotalVal}>₱{ticketModal.penalty.currentPenaltyAmount.toFixed(2)}</Text>
-                </View>
-              </View>
-            ) : null}
-
-            <View>
-              <Text style={s.modalLabel}>Ticket Number *</Text>
-              <TextInput
-                style={s.modalInput}
-                value={inputValue}
-                onChangeText={setInputValue}
-                placeholder="e.g. TKT-2024-001"
-                placeholderTextColor="#94a3b8"
-                autoFocus
-              />
+        <View style={s.modalFields}>
+          {ticketModal?.loadingPreview ? (
+            <View style={s.penaltyLoading}>
+              <ActivityIndicator color="#7c3aed" />
+              <Text style={s.penaltyLoadingText}>Loading penalty details...</Text>
             </View>
-
-            <View>
-              <Text style={s.modalLabel}>Remarks (optional)</Text>
-              <TextInput
-                style={[s.modalInput, s.modalInputMulti]}
-                value={remarksValue}
-                onChangeText={setRemarksValue}
-                placeholder="Additional notes..."
-                placeholderTextColor="#94a3b8"
-                multiline
-                numberOfLines={3}
-                textAlignVertical="top"
-              />
+          ) : ticketModal?.penalty ? (
+            <View style={s.penaltyBox}>
+              <Text style={s.penaltyTitle}>Penalty Preview</Text>
+              <View style={s.penaltyRow}>
+                <Text style={s.penaltyKey}>Offense</Text>
+                <Text style={s.penaltyVal}>#{ticketModal.penalty.offenseNumber} — {ticketModal.penalty.offenseTierLabel}</Text>
+              </View>
+              <View style={s.penaltyRow}>
+                <Text style={s.penaltyKey}>Prior Tickets</Text>
+                <Text style={s.penaltyVal}>{ticketModal.penalty.priorTicketCount} ({ticketModal.penalty.priorUnpaidTicketCount} unpaid)</Text>
+              </View>
+              {ticketModal.penalty.carriedForwardPenaltyAmount > 0 && (
+                <View style={s.penaltyRow}>
+                  <Text style={s.penaltyKey}>Carried Forward</Text>
+                  <Text style={s.penaltyVal}>₱{ticketModal.penalty.carriedForwardPenaltyAmount.toFixed(2)}</Text>
+                </View>
+              )}
+              <View style={[s.penaltyRow, s.penaltyTotal]}>
+                <Text style={s.penaltyTotalKey}>Total Amount</Text>
+                <Text style={s.penaltyTotalVal}>₱{ticketModal.penalty.currentPenaltyAmount.toFixed(2)}</Text>
+              </View>
             </View>
+          ) : null}
 
-            <Pressable
-              style={[s.modalSubmitBtn, (modalLoading || ticketModal?.loadingPreview) && s.modalSubmitDisabled]}
-              onPress={submitTicket}
-              disabled={modalLoading || ticketModal?.loadingPreview}
-            >
-              {modalLoading
-                ? <ActivityIndicator color="#fff" />
-                : <Text style={s.modalSubmitText}>Issue Ticket</Text>}
-            </Pressable>
-          </ScrollView>
-        </View>
-      </Modal>
-
-      {/* Dismiss modal */}
-      <Modal
-        visible={modalMode === 'dismiss'}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={closeDismissModal}
-      >
-        <View style={s.modal}>
-          <View style={s.modalHeader}>
-            <Text style={s.modalTitle}>Dismiss Incident</Text>
-            <Pressable onPress={closeDismissModal} style={s.closeBtn}>
-              <Text style={s.closeBtnText}>Cancel</Text>
-            </Pressable>
-          </View>
-          <View style={s.modalBody}>
-            <Text style={s.modalLabel}>Reason for dismissal *</Text>
+          <View>
+            <Text style={s.modalLabel}>Ticket Number *</Text>
             <TextInput
-              style={[s.modalInput, s.modalInputMulti]}
+              style={s.modalInput}
               value={inputValue}
               onChangeText={setInputValue}
-              placeholder="Enter reason..."
+              placeholder="e.g. TKT-2024-001"
               placeholderTextColor="#94a3b8"
-              multiline
-              numberOfLines={4}
-              textAlignVertical="top"
               autoFocus
             />
-            <Pressable
-              style={[s.modalSubmitBtn, s.modalSubmitDismiss, modalLoading && s.modalSubmitDisabled]}
-              onPress={submitDismiss}
-              disabled={modalLoading}
-            >
-              {modalLoading
-                ? <ActivityIndicator color="#fff" />
-                : <Text style={s.modalSubmitText}>Dismiss</Text>}
-            </Pressable>
+          </View>
+
+          <View>
+            <Text style={s.modalLabel}>Remarks (optional)</Text>
+            <TextInput
+              style={[s.modalInput, s.modalInputMulti]}
+              value={remarksValue}
+              onChangeText={setRemarksValue}
+              placeholder="Additional notes..."
+              placeholderTextColor="#94a3b8"
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+            />
           </View>
         </View>
-      </Modal>
+      </AppModal>
+
+      {/* Dismiss modal */}
+      <AppModal
+        visible={modalMode === 'dismiss'}
+        onClose={closeDismissModal}
+        title="Dismiss Incident"
+        closeLabel="Cancel"
+        footer={
+          <Button
+            label="Dismiss"
+            variant="danger"
+            onPress={submitDismiss}
+            loading={modalLoading}
+            style={s.flex1}
+          />
+        }
+      >
+        <Text style={s.modalLabel}>Reason for dismissal *</Text>
+        <TextInput
+          style={[s.modalInput, s.modalInputMulti]}
+          value={inputValue}
+          onChangeText={setInputValue}
+          placeholder="Enter reason..."
+          placeholderTextColor="#94a3b8"
+          multiline
+          numberOfLines={4}
+          textAlignVertical="top"
+          autoFocus
+        />
+      </AppModal>
     </SafeAreaView>
   );
 }
@@ -602,6 +584,8 @@ const s = StyleSheet.create({
   penaltyTotalKey: { fontSize: 14, fontWeight: '700', color: '#5b21b6' },
   penaltyTotalVal: { fontSize: 18, fontWeight: '800', color: '#5b21b6' },
 
+  flex1: { flex: 1 },
+  modalFields: { gap: 16 },
   modalLabel: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 8 },
   modalInput: {
     borderWidth: 1,

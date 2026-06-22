@@ -8,13 +8,14 @@ import {
   ActivityIndicator,
   Pressable,
   Alert,
-  Modal,
   TextInput,
-  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { api } from '@/services/api';
+import AppModal from '@/ui/AppModal';
+import Button from '@/ui/Button';
+import { ListSkeleton } from '@/ui/Skeleton';
 
 interface TicketedIncident {
   id: string;
@@ -98,7 +99,11 @@ export default function EncoderTicketPaymentsScreen() {
   };
 
   if (loading) {
-    return <SafeAreaView style={s.center}><ActivityIndicator color="#16a34a" size="large" /></SafeAreaView>;
+    return (
+      <SafeAreaView style={s.container}>
+        <ListSkeleton count={4} />
+      </SafeAreaView>
+    );
   }
 
   return (
@@ -136,46 +141,40 @@ export default function EncoderTicketPaymentsScreen() {
                 <Text style={s.penalty}>Penalty: ₱{Number(item.penaltyAmount).toLocaleString('en-PH')}</Text>
               )}
               {item.paymentStatus === 'UNPAID' && (
-                <Pressable style={s.recordBtn} onPress={() => openPaymentModal(item.id)}>
-                  <Text style={s.recordBtnText}>Record Payment</Text>
-                </Pressable>
+                <Button
+                  label="Record Payment"
+                  size="sm"
+                  onPress={() => openPaymentModal(item.id)}
+                  style={s.recordBtn}
+                />
               )}
             </View>
           );
         }}
       />
 
-      <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={closeModal}>
-        <SafeAreaView style={s.modal}>
-          <View style={s.modalHeader}>
-            <Text style={s.modalTitle}>Record Payment</Text>
-            <Pressable onPress={closeModal}><Text style={s.cancelText}>Cancel</Text></Pressable>
-          </View>
-          <ScrollView style={s.modalBody} keyboardShouldPersistTaps="handled">
-            <Text style={s.fieldLabel}>Official Receipt Number</Text>
-            <TextInput
-              style={s.input}
-              value={receiptNumber}
-              onChangeText={setReceiptNumber}
-              placeholder="e.g. OR-2024-001234"
-              placeholderTextColor="#94a3b8"
-              autoFocus
-            />
-            <Text style={s.hint}>
-              Recording payment will mark the incident as resolved. Ensure the receipt number is correct before submitting.
-            </Text>
-            <Pressable
-              style={[s.submitBtn, submitting && s.submitBtnDisabled]}
-              onPress={submitPayment}
-              disabled={submitting}
-            >
-              {submitting
-                ? <ActivityIndicator color="#fff" />
-                : <Text style={s.submitBtnText}>Confirm Payment</Text>}
-            </Pressable>
-          </ScrollView>
-        </SafeAreaView>
-      </Modal>
+      <AppModal
+        visible={showModal}
+        onClose={closeModal}
+        title="Record Payment"
+        closeLabel="Cancel"
+        footer={
+          <Button label="Confirm Payment" onPress={submitPayment} loading={submitting} style={s.flex1} />
+        }
+      >
+        <Text style={s.fieldLabel}>Official Receipt Number</Text>
+        <TextInput
+          style={s.input}
+          value={receiptNumber}
+          onChangeText={setReceiptNumber}
+          placeholder="e.g. OR-2024-001234"
+          placeholderTextColor="#94a3b8"
+          autoFocus
+        />
+        <Text style={s.hint}>
+          Recording payment will mark the incident as resolved. Ensure the receipt number is correct before submitting.
+        </Text>
+      </AppModal>
     </SafeAreaView>
   );
 }
@@ -198,8 +197,8 @@ const s = StyleSheet.create({
   cardMeta: { color: '#94a3b8', fontSize: 12 },
   plate: { fontWeight: '800', color: '#0f172a', letterSpacing: 1, fontSize: 13 },
   penalty: { color: '#dc2626', fontWeight: '700', fontSize: 13 },
-  recordBtn: { backgroundColor: '#16a34a', borderRadius: 8, paddingVertical: 8, alignItems: 'center', marginTop: 8 },
-  recordBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  recordBtn: { marginTop: 8, alignSelf: 'flex-start' },
+  flex1: { flex: 1 },
   modal: { flex: 1, backgroundColor: '#f8fafc' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: '#e2e8f0', backgroundColor: '#fff' },
   modalTitle: { fontSize: 17, fontWeight: '700', color: '#0f172a' },

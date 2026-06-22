@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@/services/api';
+import { StatGridSkeleton, ListSkeleton } from '@/ui/Skeleton';
 
 type Period = '7d' | '30d' | '90d' | '1y';
 
@@ -79,7 +80,12 @@ export default function AdminReportsScreen() {
   };
 
   if (loading) {
-    return <SafeAreaView style={s.center}><ActivityIndicator color="#16a34a" size="large" /></SafeAreaView>;
+    return (
+      <SafeAreaView style={s.container}>
+        <StatGridSkeleton count={4} />
+        <ListSkeleton count={3} />
+      </SafeAreaView>
+    );
   }
 
   const statCards: { label: string; value: string | number; color: string; icon: IoniconName }[] = data ? [

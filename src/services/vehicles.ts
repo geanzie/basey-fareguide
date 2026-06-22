@@ -9,6 +9,10 @@ export async function searchVehicles(query: string): Promise<VehicleLookup[]> {
   return res.vehicles ?? [];
 }
 
+export async function setVehicleActive(id: string, isActive: boolean): Promise<unknown> {
+  return api.patch(`/api/vehicles/${id}`, { isActive });
+}
+
 export async function lookupByRideTag(token: string): Promise<VehicleLookup | null> {
   const res = await api.post<{ matchFound: boolean; vehicle?: VehicleLookup }>(
     '/api/public/ride-tag/lookup',
