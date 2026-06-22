@@ -8,7 +8,7 @@ const EMPTY_PAGE = { total: 0, page: 1, pageSize: 100, hasMore: false };
 
 function normalizeIncident(raw: Record<string, unknown>): Incident {
   return {
-    ...(raw as Incident),
+    ...(raw as unknown as Incident),
     incidentType: ((raw.type ?? raw.incidentType) as IncidentType),
     incidentDate: (raw.date ?? raw.incidentDate) as string,
   };

@@ -128,7 +128,7 @@ export default function VehiclePickerField({ selected, onSelect, onClear, open: 
           ) : (
             <FlatList
               data={results}
-              keyExtractor={(item) => item.id}
+              keyExtractor={(item, index) => item.id ?? item.plateNumber ?? String(index)}
               contentContainerStyle={s.listContainer}
               ListEmptyComponent={
                 query.trim().length >= 2 ? (

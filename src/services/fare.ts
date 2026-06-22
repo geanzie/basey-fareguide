@@ -1,6 +1,15 @@
 import { api } from './api';
-import type { RouteCalculationRequest, RouteCalculationResponse, FareCalculation, FareRate } from '@/types/fare';
+import type {
+  RouteCalculationRequest,
+  RouteCalculationResponse,
+  FareCalculation,
+  FareRate,
+  FareRatesResponse,
+  VehicleLookup,
+} from '@/types/fare';
 import type { PaginatedResponse } from '@/types/common';
+
+export type { FareRatesResponse } from '@/types/fare';
 
 export async function calculateRoute(req: RouteCalculationRequest): Promise<RouteCalculationResponse> {
   return api.post<RouteCalculationResponse>('/api/routes/calculate', req);
@@ -23,9 +32,10 @@ export async function saveFareCalculation(payload: {
 
 function normalizeFareCalc(raw: Record<string, unknown>): FareCalculation {
   return {
-    ...(raw as FareCalculation),
-    originLabel: (raw.from ?? raw.originLabel) as string,
-    destinationLabel: (raw.to ?? raw.destinationLabel) as string,
+    ...(raw as unknown as FareCalculation),
+    originLabel: (raw.from ?? raw.fromLocation ?? raw.originLabel) as string,
+    destinationLabel: (raw.to ?? raw.toLocation ?? raw.destinationLabel) as string,
+    vehicle: (raw.vehicle as VehicleLookup) ?? null,
   };
 }
 
@@ -36,8 +46,8 @@ export async function fetchFareHistory(page = 1, pageSize = 20): Promise<Paginat
   return { items: (res.calculations ?? []).map(normalizeFareCalc), total: 0, page, pageSize, hasMore: false };
 }
 
-export async function fetchCurrentFareRates(): Promise<FareRate> {
-  return api.get<FareRate>('/api/fare-rates/current');
+export async function fetchCurrentFareRates(): Promise<FareRatesResponse> {
+  return api.get<FareRatesResponse>('/api/fare-rates');
 }
 
 export async function fetchAdminFareRates(): Promise<{ items: FareRate[] }> {

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, ActivityIndicator, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@/services/api';
@@ -21,12 +21,16 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState('');
 
   const load = useCallback(async () => {
     try {
       const data = await api.get<{ stats: DashboardStats }>('/api/dashboard/stats');
       setStats(data.stats);
-    } catch {} finally {
+      setError('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load dashboard.');
+    } finally {
       setLoading(false);
     }
   }, []);
@@ -59,6 +63,14 @@ export default function AdminDashboard() {
           <Text style={s.title}>Admin Dashboard</Text>
           <Text style={s.sub}>{user?.firstName} {user?.lastName}</Text>
         </View>
+        {error ? (
+          <View style={s.errorBox}>
+            <Text style={s.errorText}>{error}</Text>
+            <Pressable style={s.retryBtn} onPress={() => { setLoading(true); void load(); }}>
+              <Text style={s.retryText}>Retry</Text>
+            </Pressable>
+          </View>
+        ) : null}
         <View style={s.grid}>
           {statItems.map((item) => (
             <View key={item.label} style={s.statCard}>
@@ -79,6 +91,10 @@ const s = StyleSheet.create({
   header: { padding: 24, paddingBottom: 16 },
   title: { fontSize: 22, fontWeight: '700', color: '#0f172a' },
   sub: { fontSize: 13, color: '#64748b', marginTop: 2 },
+  errorBox: { marginHorizontal: 12, marginBottom: 12, backgroundColor: '#fef2f2', borderRadius: 12, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  errorText: { color: '#dc2626', fontSize: 13, fontWeight: '500', flex: 1, marginRight: 12 },
+  retryBtn: { backgroundColor: '#dc2626', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 16 },
+  retryText: { color: '#fff', fontWeight: '700', fontSize: 13 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 12, gap: 10 },
   statCard: { width: '47%', backgroundColor: '#fff', borderRadius: 16, padding: 20, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, elevation: 2 },
   icon: { marginBottom: 8 },

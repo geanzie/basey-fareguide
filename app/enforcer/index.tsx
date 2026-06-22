@@ -22,6 +22,7 @@ export default function EnforcerDashboard() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [scanModalVisible, setScanModalVisible] = useState(false);
+  const [error, setError] = useState('');
 
   const handleReviewIncidents = (plateNumber: string) => {
     router.push({ pathname: '/enforcer/incidents', params: { plate: plateNumber } });
@@ -31,8 +32,9 @@ export default function EnforcerDashboard() {
     try {
       const data = await fetchEnforcerStats();
       setStats(data);
-    } catch {
-      // stats fail silently — queue tab still works
+      setError('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not load stats.');
     } finally {
       setLoading(false);
     }
@@ -81,8 +83,11 @@ export default function EnforcerDashboard() {
             ))}
           </View>
         ) : (
-          <View style={s.infoCard}>
-            <Text style={s.infoText}>Could not load stats. Pull to refresh.</Text>
+          <View style={s.errorBox}>
+            <Text style={s.errorText}>{error || 'Could not load stats.'}</Text>
+            <Pressable style={s.retryBtn} onPress={() => { setLoading(true); void load(); }}>
+              <Text style={s.retryText}>Retry</Text>
+            </Pressable>
           </View>
         )}
 
@@ -125,6 +130,10 @@ const s = StyleSheet.create({
   cardLabel: { fontSize: 12, fontWeight: '600' },
   infoCard: { backgroundColor: '#fff', borderRadius: 16, padding: 16 },
   infoText: { color: '#374151', fontSize: 14, lineHeight: 22 },
+  errorBox: { backgroundColor: '#fef2f2', borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  errorText: { color: '#dc2626', fontSize: 14, fontWeight: '500', flex: 1, marginRight: 12 },
+  retryBtn: { backgroundColor: '#dc2626', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 16 },
+  retryText: { color: '#fff', fontWeight: '700', fontSize: 13 },
   fab: {
     position: 'absolute',
     bottom: 24,

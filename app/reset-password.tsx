@@ -11,11 +11,13 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { resetPasswordWithOtp } from '@/services/auth';
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ email?: string }>();
+  const [email, setEmail] = useState(params.email ?? '');
   const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -23,6 +25,8 @@ export default function ResetPasswordScreen() {
   const [error, setError] = useState('');
 
   const handleSubmit = async () => {
+    const trimmedEmail = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) { setError('Enter a valid email address.'); return; }
     if (!otp.trim()) { setError('Enter the reset code from your email.'); return; }
     if (newPassword.length < 8) { setError('Password must be at least 8 characters.'); return; }
     if (newPassword !== confirmPassword) { setError('Passwords do not match.'); return; }
@@ -30,7 +34,7 @@ export default function ResetPasswordScreen() {
     setError('');
     setLoading(true);
     try {
-      await resetPasswordWithOtp(otp.trim(), newPassword);
+      await resetPasswordWithOtp(trimmedEmail, otp.trim(), newPassword);
       Alert.alert(
         'Password Updated',
         'Your password has been reset. Please sign in with your new password.',
@@ -62,6 +66,21 @@ export default function ResetPasswordScreen() {
               <Text style={s.errorText}>{error}</Text>
             </View>
           ) : null}
+
+          <View style={s.field}>
+            <Text style={s.label}>Email</Text>
+            <TextInput
+              style={s.input}
+              value={email}
+              onChangeText={setEmail}
+              placeholder="Enter your email"
+              placeholderTextColor="#94a3b8"
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              editable={!loading}
+            />
+          </View>
 
           <View style={s.field}>
             <Text style={s.label}>Reset Code</Text>

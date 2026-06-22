@@ -20,4 +20,26 @@ export interface LoginResponse {
   token: string;
 }
 
+export interface RegisterRequest {
+  firstName: string;
+  lastName: string;
+  phoneNumber: string;
+  email: string;
+  dateOfBirth: string | null;
+  governmentId: string;
+  idType: string;
+  barangayResidence: string;
+  username: string;
+  password: string;
+  userType: UserRole;
+  privacyNoticeAcknowledged: boolean;
+  privacyNoticeVersion: string;
+}
+
+export interface RegisterResponse {
+  user?: SessionUser;
+  token?: string;
+  message?: string;
+}
+
 export type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';

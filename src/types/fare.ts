@@ -31,6 +31,17 @@ export interface RouteCalculationResponse {
   farePolicy: FarePolicySnapshot;
 }
 
+export interface VehicleLookup {
+  id?: string;
+  plateNumber: string | null;
+  permitPlateNumber: string | null;
+  vehicleType: string | null;
+  make?: string | null;
+  model?: string | null;
+  color?: string | null;
+  hasVehicleContext: boolean;
+}
+
 export interface FareCalculation {
   id: string;
   originLabel: string;
@@ -40,6 +51,7 @@ export interface FareCalculation {
   discountType: DiscountType;
   isEstimate: boolean;
   createdAt: string;
+  vehicle: VehicleLookup | null;
 }
 
 export interface FareRate {
@@ -51,4 +63,17 @@ export interface FareRate {
   isActive: boolean;
   effectiveAt: string;
   createdAt: string;
+}
+
+/** A resolved fare policy as returned by GET /api/fare-rates. */
+export interface FareRateSnapshot {
+  baseFare: number;
+  baseDistanceKm: number;
+  perKmRate: number;
+  effectiveAt: string | null;
+}
+
+export interface FareRatesResponse {
+  current: FareRateSnapshot;
+  upcoming: FareRateSnapshot | null;
 }

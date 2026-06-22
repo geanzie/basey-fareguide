@@ -15,20 +15,21 @@ import { requestPasswordReset } from '@/services/auth';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [sent, setSent] = useState(false);
 
   const handleSubmit = async () => {
-    if (!username.trim()) {
-      setError('Enter your username.');
+    const trimmed = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      setError('Enter a valid email address.');
       return;
     }
     setError('');
     setLoading(true);
     try {
-      await requestPasswordReset(username.trim());
+      await requestPasswordReset(trimmed);
       setSent(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to send reset code.');
@@ -45,7 +46,7 @@ export default function ForgotPasswordScreen() {
             <Text style={s.logoText}>BF</Text>
           </View>
           <Text style={s.title}>Reset Password</Text>
-          <Text style={s.sub}>Enter your username to receive a reset code via email.</Text>
+          <Text style={s.sub}>Enter your email to receive a reset code.</Text>
         </View>
 
         <View style={s.card}>
@@ -53,9 +54,17 @@ export default function ForgotPasswordScreen() {
             <View style={s.successBox}>
               <Text style={s.successTitle}>Code Sent</Text>
               <Text style={s.successText}>
-                If an account exists for that username, a reset code was sent to the registered email address.
+                If an account exists for that email, a reset code was sent to it.
               </Text>
-              <Pressable style={s.btn} onPress={() => router.push('/reset-password' as never)}>
+              <Pressable
+                style={s.btn}
+                onPress={() =>
+                  router.push({
+                    pathname: '/reset-password',
+                    params: { email: email.trim().toLowerCase() },
+                  } as never)
+                }
+              >
                 <Text style={s.btnText}>Enter Reset Code</Text>
               </Pressable>
             </View>
@@ -68,15 +77,16 @@ export default function ForgotPasswordScreen() {
                 </View>
               ) : null}
               <View style={s.field}>
-                <Text style={s.label}>Username</Text>
+                <Text style={s.label}>Email</Text>
                 <TextInput
                   style={s.input}
-                  value={username}
-                  onChangeText={setUsername}
-                  placeholder="Enter your username"
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="Enter your email"
                   placeholderTextColor="#94a3b8"
                   autoCapitalize="none"
                   autoCorrect={false}
+                  keyboardType="email-address"
                   returnKeyType="done"
                   onSubmitEditing={handleSubmit}
                   editable={!loading}

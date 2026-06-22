@@ -13,12 +13,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { createIncident } from '@/services/incidents';
 import type { IncidentType } from '@/types/incidents';
 
-const INCIDENT_TYPES: { label: string; value: IncidentType }[] = [
-  { label: 'Overcharging', value: 'OVERCHARGING' },
+export const INCIDENT_TYPES: { label: string; value: IncidentType }[] = [
+  { label: 'Fare Overcharge', value: 'FARE_OVERCHARGE' },
+  { label: 'Fare Undercharge', value: 'FARE_UNDERCHARGE' },
   { label: 'Reckless Driving', value: 'RECKLESS_DRIVING' },
-  { label: 'Refusal of Service', value: 'REFUSAL_OF_SERVICE' },
-  { label: 'Colorum', value: 'COLORUM' },
-  { label: 'Overloading', value: 'OVERLOADING' },
+  { label: 'Vehicle Violation', value: 'VEHICLE_VIOLATION' },
+  { label: 'Route Violation', value: 'ROUTE_VIOLATION' },
   { label: 'Other', value: 'OTHER' },
 ];
 

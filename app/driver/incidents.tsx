@@ -14,7 +14,7 @@ export default function DriverIncidentsScreen() {
     try {
       const data = await api.get<{ items: Record<string, unknown>[] }>('/api/driver/incidents');
       setIncidents((data.items ?? []).map((raw) => ({
-        ...(raw as Incident),
+        ...(raw as unknown as Incident),
         incidentType: (raw.type ?? raw.incidentType) as IncidentType,
         incidentDate: (raw.date ?? raw.incidentDate) as string,
       })));
