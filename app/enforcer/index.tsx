@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, RefreshControl, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, RefreshControl, ScrollView, ActivityIndicator, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/store/authStore';
 import { fetchEnforcerStats } from '@/services/incidents';
 import type { EnforcerStats } from '@/types/incidents';
+import QrComplianceScanModal from '@/components/QrComplianceScanModal';
 
 interface StatCard {
   label: string;
@@ -14,9 +17,15 @@ interface StatCard {
 
 export default function EnforcerDashboard() {
   const { user } = useAuthStore();
+  const router = useRouter();
   const [stats, setStats] = useState<EnforcerStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [scanModalVisible, setScanModalVisible] = useState(false);
+
+  const handleReviewIncidents = (plateNumber: string) => {
+    router.push({ pathname: '/enforcer/incidents', params: { plate: plateNumber } });
+  };
 
   const load = useCallback(async () => {
     try {
@@ -52,6 +61,7 @@ export default function EnforcerDashboard() {
         contentContainerStyle={s.scroll}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
+
         <View style={s.header}>
           <Text style={s.title}>Enforcement Dashboard</Text>
           <Text style={s.sub}>{user?.firstName} {user?.lastName}</Text>
@@ -82,6 +92,17 @@ export default function EnforcerDashboard() {
           </Text>
         </View>
       </ScrollView>
+
+      {/* QR scan FAB */}
+      <Pressable style={s.fab} onPress={() => setScanModalVisible(true)}>
+        <Ionicons name="camera" size={24} color="#fff" />
+      </Pressable>
+
+      <QrComplianceScanModal
+        visible={scanModalVisible}
+        onClose={() => setScanModalVisible(false)}
+        onReviewIncidents={handleReviewIncidents}
+      />
     </SafeAreaView>
   );
 }
@@ -104,4 +125,20 @@ const s = StyleSheet.create({
   cardLabel: { fontSize: 12, fontWeight: '600' },
   infoCard: { backgroundColor: '#fff', borderRadius: 16, padding: 16 },
   infoText: { color: '#374151', fontSize: 14, lineHeight: 22 },
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#16a34a',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
+  },
 });

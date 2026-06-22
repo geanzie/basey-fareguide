@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useLocalSearchParams } from 'expo-router';
 import {
   View,
   Text,
@@ -56,11 +57,16 @@ interface TicketModalState {
 }
 
 export default function EnforcerIncidentsScreen() {
+  const { plate } = useLocalSearchParams<{ plate?: string }>();
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(plate ?? '');
+
+  useEffect(() => {
+    if (plate) setSearch(plate);
+  }, [plate]);
 
   const [modalMode, setModalMode] = useState<ModalMode>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
