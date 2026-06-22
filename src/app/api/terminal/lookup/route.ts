@@ -34,9 +34,12 @@ export async function POST(request: NextRequest) {
     }
 
     const user = requireRole(authenticatedUser, [UserType.ENFORCER])
-    const unlockSession = await getTerminalUnlockSession(request, user.id)
 
-    if (!unlockSession) {
+    // Mobile clients authenticate via Bearer header — no shared-kiosk concern, skip unlock.
+    const isMobileClient = request.headers.get('authorization')?.startsWith('Bearer ') ?? false
+    const unlockSession = isMobileClient ? null : await getTerminalUnlockSession(request, user.id)
+
+    if (!isMobileClient && !unlockSession) {
       await writeQrScanAudit({
         scannerUserId: user.id,
         submittedToken,
@@ -53,7 +56,10 @@ export async function POST(request: NextRequest) {
       return response
     }
 
-    const refreshedSession = await touchTerminalUnlockSession(unlockSession.id)
+    const refreshedSession = unlockSession
+      ? await touchTerminalUnlockSession(unlockSession.id)
+      : null
+
     const { result, audit } = await lookupQrToken(submittedToken)
 
     await writeQrScanAudit({
@@ -68,11 +74,11 @@ export async function POST(request: NextRequest) {
     const response = NextResponse.json(result)
     const rawUnlockToken = getTerminalUnlockToken(request)
 
-    if (rawUnlockToken) {
+    if (rawUnlockToken && refreshedSession) {
       applyTerminalUnlockCookie(response, rawUnlockToken)
+      response.headers.set('X-Terminal-Unlock-Expires-At', refreshedSession.expiresAt.toISOString())
     }
 
-    response.headers.set('X-Terminal-Unlock-Expires-At', refreshedSession.expiresAt.toISOString())
     return response
   } catch (error) {
     if (submittedToken) {
