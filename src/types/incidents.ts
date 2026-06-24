@@ -78,3 +78,23 @@ export interface IssueTicketRequest {
 export interface DismissIncidentRequest {
   remarks: string;
 }
+
+export interface DashboardStats {
+  totalIncidents: number;
+  pendingIncidents: number;
+  resolvedIncidents: number;
+}
+
+export interface DashboardActivityItem {
+  id: string;
+  type: string;
+  typeLabel: string;
+  description: string;
+  location: string;
+  status: IncidentStatus;
+  statusLabel: string;
+  reportedBy: string | null;
+  handledBy: string | null;
+  createdAt: string;
+  ticketNumber: string | null;
+}

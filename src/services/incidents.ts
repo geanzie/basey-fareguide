@@ -1,6 +1,6 @@
 import { api } from './api';
 import { useAuthStore } from '@/store/authStore';
-import type { Incident, IncidentType, CreateIncidentRequest, IssueTicketRequest, DismissIncidentRequest, EvidenceFile, TicketPenaltyPreview, EnforcerStats } from '@/types/incidents';
+import type { Incident, IncidentType, CreateIncidentRequest, IssueTicketRequest, DismissIncidentRequest, EvidenceFile, TicketPenaltyPreview, EnforcerStats, DashboardStats, DashboardActivityItem } from '@/types/incidents';
 import type { PaginatedResponse } from '@/types/common';
 
 const API_BASE = process.env.EXPO_PUBLIC_API_BASE_URL ?? '';
@@ -115,4 +115,14 @@ export async function dismissIncident(id: string, payload: DismissIncidentReques
 
 export async function verifyEvidence(id: string): Promise<Incident> {
   return api.patch<Incident>(`/api/incidents/${id}/verify-evidence`, {});
+}
+
+export async function fetchDashboardStats(): Promise<DashboardStats> {
+  const res = await api.get<{ stats: DashboardStats }>('/api/dashboard/stats');
+  return res.stats;
+}
+
+export async function fetchDashboardActivity(limit = 3): Promise<DashboardActivityItem[]> {
+  const res = await api.get<{ activity: DashboardActivityItem[] }>(`/api/dashboard/activity?limit=${limit}`);
+  return res.activity ?? [];
 }
