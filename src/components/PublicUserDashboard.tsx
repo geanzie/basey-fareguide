@@ -15,6 +15,7 @@ import {
 import FareRateBanner from '@/components/FareRateBanner'
 import TrafficAnnouncementsFeed from '@/components/TrafficAnnouncementsFeed'
 import type {
+  DashboardActivityItemDto,
   FareCalculationDto,
   FareCalculationsResponseDto,
   IncidentListItemDto,
@@ -22,6 +23,18 @@ import type {
   RiderActiveTripStatusResponseDto,
 } from '@/lib/contracts'
 import { SWR_KEYS } from '@/lib/swrKeys'
+
+interface DashboardStatsResponse {
+  stats: {
+    totalIncidents: number
+    pendingIncidents: number
+    resolvedIncidents: number
+  }
+}
+
+interface DashboardActivityResponse {
+  activity: DashboardActivityItemDto[]
+}
 
 function formatCurrency(amount: number) {
   return `PHP ${amount.toFixed(2)}`
@@ -69,10 +82,16 @@ function PublicUserDashboard() {
       return 0
     },
   })
+  const { data: dashboardStatsData, isLoading: statsLoading } =
+    useSWR<DashboardStatsResponse>(SWR_KEYS.dashboardStats)
+  const { data: dashboardActivityData, isLoading: activityLoading } =
+    useSWR<DashboardActivityResponse>(SWR_KEYS.dashboardActivity)
 
   const reportedIncidents: IncidentListItemDto[] = incidentsResponse?.incidents || []
   const recentRoutes: FareCalculationDto[] = fareCalculationsResponse?.calculations || []
-  const loading = incidentsLoading || fareCalculationsLoading
+  const communityStats = dashboardStatsData?.stats ?? null
+  const recentActivity: DashboardActivityItemDto[] = dashboardActivityData?.activity ?? []
+  const loading = incidentsLoading || fareCalculationsLoading || statsLoading || activityLoading
 
   const summary = useMemo(() => {
     const totalFare = recentRoutes.reduce((total, route) => total + route.fare, 0)
@@ -325,6 +344,53 @@ function PublicUserDashboard() {
           </div>
         </div>
       </section>
+
+      <section className="app-surface-card rounded-2xl">
+        <SectionHeader
+          title="Enforcement Transparency"
+          description="Community-wide incident handling — see that reports are being actioned."
+          href="/history?filter=reports"
+          linkLabel="View your reports"
+          icon={DASHBOARD_ICONS.safe}
+          tone="emerald"
+        />
+
+        {communityStats !== null && (
+          <div className="grid grid-cols-3 divide-x divide-gray-200 border-b border-gray-200">
+            <div className="px-4 py-4 text-center sm:px-6 sm:py-5">
+              <p className="text-2xl font-bold text-slate-900">{communityStats.totalIncidents}</p>
+              <p className="mt-1 text-xs text-slate-500">Total Reports</p>
+            </div>
+            <div className="px-4 py-4 text-center sm:px-6 sm:py-5">
+              <p className="text-2xl font-bold text-emerald-600">{communityStats.resolvedIncidents}</p>
+              <p className="mt-1 text-xs text-slate-500">Resolved</p>
+            </div>
+            <div className="px-4 py-4 text-center sm:px-6 sm:py-5">
+              <p className="text-2xl font-bold text-amber-600">{communityStats.pendingIncidents}</p>
+              <p className="mt-1 text-xs text-slate-500">Under Review</p>
+            </div>
+          </div>
+        )}
+
+        <div className="p-4 sm:p-6">
+          {recentActivity.length === 0 ? (
+            <EmptyState
+              title="No enforcement activity yet"
+              description="Incident actions will appear here once reports are submitted and handled."
+              href="/report"
+              linkLabel="Report an incident"
+              icon={DASHBOARD_ICONS.safe}
+              tone="emerald"
+            />
+          ) : (
+            <div className="space-y-3">
+              {recentActivity.map((item) => (
+                <ActivityRow key={item.id} item={item} />
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
     </div>
   )
 }
@@ -481,6 +547,41 @@ function EmptyState({
       >
         {linkLabel}
       </Link>
+    </div>
+  )
+}
+
+function getEnforcementStatusClasses(status: string): string {
+  if (status === 'RESOLVED') return 'bg-green-100 text-green-800'
+  if (status === 'TICKET_ISSUED') return 'bg-blue-100 text-blue-800'
+  if (status === 'INVESTIGATING') return 'bg-yellow-100 text-yellow-800'
+  return 'bg-gray-100 text-gray-800'
+}
+
+function ActivityRow({ item }: { item: DashboardActivityItemDto }) {
+  return (
+    <div className="app-surface-inner rounded-xl p-4">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <p className="font-medium text-slate-900">{item.typeLabel}</p>
+          <p className="mt-0.5 text-sm text-slate-600">{item.location}</p>
+          {item.handledBy ? (
+            <p className="mt-1 text-xs text-slate-500">Handled by {item.handledBy}</p>
+          ) : null}
+        </div>
+        <div className="flex shrink-0 flex-col items-end gap-1.5">
+          <span
+            className={`rounded-full px-2.5 py-1 text-xs font-medium ${getEnforcementStatusClasses(item.status)}`}
+          >
+            {item.statusLabel}
+          </span>
+          {item.ticketNumber ? (
+            <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-600 ring-1 ring-slate-200">
+              #{item.ticketNumber}
+            </span>
+          ) : null}
+        </div>
+      </div>
     </div>
   )
 }
