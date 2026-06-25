@@ -1,16 +1,46 @@
-import { View, Text, StyleSheet, Pressable, ActivityIndicator, ScrollView } from 'react-native';
+import { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import GradientHeader from '@/ui/GradientHeader';
-import { useState } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { logoutRequest } from '@/services/auth';
 import { useFeedback } from '@/ui/FeedbackProvider';
+import { api } from '@/services/api';
+import GradientHeader from '@/ui/GradientHeader';
+import StatTile from '@/ui/StatTile';
+import Button from '@/ui/Button';
+import { StatGridSkeleton } from '@/ui/Skeleton';
+import { colors, radii, spacing, shadow, gradients } from '@/ui/theme';
+
+interface DriverSummary {
+  fareCalculationCount: number;
+  totalIncidents: number;
+  openIncidents: number;
+  unpaidTickets: number;
+  outstandingPenalties: number;
+}
 
 export default function DriverProfileScreen() {
   const { user, token, clearSession } = useAuthStore();
   const [loggingOut, setLoggingOut] = useState(false);
+  const [summary, setSummary] = useState<DriverSummary | null>(null);
+  const [loadingStats, setLoadingStats] = useState(true);
   const router = useRouter();
   const { showConfirm } = useFeedback();
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const res = await api.get<{ summary: DriverSummary }>('/api/driver/summary');
+        if (active) setSummary(res.summary);
+      } catch {} finally {
+        if (active) setLoadingStats(false);
+      }
+    })();
+    return () => { active = false; };
+  }, []);
 
   const handleLogout = () => {
     showConfirm({
@@ -36,60 +66,127 @@ export default function DriverProfileScreen() {
   return (
     <View style={s.container}>
       <GradientHeader title="Profile">
-        <View style={s.avatarBox}>
-          <View style={s.avatar}>
+        <View style={s.idBlock}>
+          <LinearGradient colors={gradients.brandSoft} style={s.avatar}>
             <Text style={s.avatarText}>{initials}</Text>
-          </View>
+          </LinearGradient>
           <Text style={s.name}>{user.firstName} {user.lastName}</Text>
           <Text style={s.username}>@{user.username}</Text>
           <View style={s.roleBadge}>
+            <Ionicons name="car" size={12} color="#fff" />
             <Text style={s.roleText}>Driver</Text>
           </View>
         </View>
       </GradientHeader>
+
       <ScrollView contentContainerStyle={s.content}>
+        <Text style={s.sectionLabel}>My Records</Text>
+        {loadingStats ? (
+          <StatGridSkeleton count={4} />
+        ) : (
+          <View style={s.statGrid}>
+            <StatTile label="Fare Calcs" value={summary?.fareCalculationCount ?? 0} icon="navigate" tone={colors.info} />
+            <StatTile label="Incidents" value={summary?.totalIncidents ?? 0} icon="warning" tone={colors.warning} />
+            <StatTile label="Open" value={summary?.openIncidents ?? 0} icon="alert-circle" tone={(summary?.openIncidents ?? 0) > 0 ? colors.danger : colors.textMuted} />
+            <StatTile label="Unpaid Tickets" value={summary?.unpaidTickets ?? 0} icon="receipt" tone={(summary?.unpaidTickets ?? 0) > 0 ? colors.danger : colors.textMuted} />
+          </View>
+        )}
+
+        {summary && summary.outstandingPenalties > 0 ? (
+          <View style={s.penaltyBanner}>
+            <Ionicons name="alert-circle" size={18} color={colors.danger} />
+            <Text style={s.penaltyText}>You owe ₱{summary.outstandingPenalties.toFixed(2)} in penalties</Text>
+          </View>
+        ) : null}
+
+        <Text style={s.sectionLabel}>Account</Text>
         <View style={s.infoCard}>
-          {[
-            { label: 'Account Status', value: user.isActive ? 'Active' : 'Inactive' },
-            { label: 'Verified', value: user.isVerified ? 'Yes' : 'No' },
-            { label: 'Role', value: 'Driver' },
-          ].map((row) => (
-            <View key={row.label} style={s.infoRow}>
-              <Text style={s.infoLabel}>{row.label}</Text>
-              <Text style={s.infoValue}>{row.value}</Text>
-            </View>
-          ))}
+          <InfoRow
+            icon="pulse-outline"
+            label="Status"
+            value={user.isActive ? 'Active' : 'Inactive'}
+            valueColor={user.isActive ? colors.primary : colors.danger}
+          />
+          <InfoRow
+            icon="checkmark-circle-outline"
+            label="Verified"
+            value={user.isVerified ? 'Yes' : 'No'}
+            valueColor={user.isVerified ? colors.primary : colors.textMuted}
+            last
+          />
         </View>
 
-        <Pressable
-          style={[s.logoutBtn, loggingOut && s.logoutBtnDisabled]}
-          onPress={handleLogout}
-          disabled={loggingOut}
-        >
-          {loggingOut
-            ? <ActivityIndicator color="#dc2626" />
-            : <Text style={s.logoutText}>Sign Out</Text>}
-        </Pressable>
+        <Button label="Sign Out" variant="danger" loading={loggingOut} onPress={handleLogout} style={s.logout} />
       </ScrollView>
     </View>
   );
 }
 
+function InfoRow({
+  icon,
+  label,
+  value,
+  valueColor,
+  last,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  value: string;
+  valueColor?: string;
+  last?: boolean;
+}) {
+  return (
+    <View style={[s.infoRow, !last && s.infoRowBorder]}>
+      <Ionicons name={icon} size={18} color={colors.textMuted} />
+      <Text style={s.infoLabel}>{label}</Text>
+      <Text style={[s.infoValue, valueColor ? { color: valueColor } : null]}>{value}</Text>
+    </View>
+  );
+}
+
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f1f5f9' },
-  content: { padding: 24 },
-  avatarBox: { alignItems: 'center', marginTop: 12 },
-  avatar: { width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
-  avatarText: { color: '#fff', fontSize: 28, fontWeight: '800' },
-  name: { fontSize: 20, fontWeight: '700', color: '#fff' },
+  container: { flex: 1, backgroundColor: colors.bg },
+  idBlock: { alignItems: 'center', marginTop: spacing.lg },
+  avatar: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+    borderWidth: 3,
+    borderColor: 'rgba(255,255,255,0.25)',
+  },
+  avatarText: { color: '#fff', fontSize: 30, fontWeight: '800' },
+  name: { fontSize: 20, fontWeight: '800', color: '#fff' },
   username: { color: '#bbf7d0', fontSize: 14, marginTop: 2 },
-  roleBadge: { marginTop: 8, backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 4 },
+  roleBadge: {
+    marginTop: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 4,
+  },
   roleText: { color: '#fff', fontSize: 12, fontWeight: '700' },
-  infoCard: { backgroundColor: '#fff', borderRadius: 16, padding: 4, marginBottom: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, elevation: 1 },
-  infoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
-  infoLabel: { color: '#64748b', fontSize: 14 },
-  infoValue: { color: '#0f172a', fontSize: 14, fontWeight: '600' },
-  logoutBtn: { backgroundColor: '#fff', borderRadius: 14, padding: 16, alignItems: 'center', borderWidth: 1.5, borderColor: '#dc2626' },
-  logoutBtnDisabled: { opacity: 0.6 },
-  logoutText: { color: '#dc2626', fontWeight: '700', fontSize: 15 },
+  content: { padding: spacing.lg, paddingBottom: 40, gap: spacing.md },
+  sectionLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginTop: spacing.sm,
+  },
+  statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  penaltyBanner: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.dangerSoftBg, borderRadius: radii.md, padding: spacing.md, borderWidth: 1, borderColor: colors.dangerSoftBorder },
+  penaltyText: { color: colors.danger, fontWeight: '700', fontSize: 13, flex: 1 },
+  infoCard: { backgroundColor: colors.surface, borderRadius: radii.lg, ...shadow.card },
+  infoRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: 14 },
+  infoRowBorder: { borderBottomWidth: 1, borderBottomColor: colors.bg },
+  infoLabel: { flex: 1, color: colors.textBody, fontSize: 14 },
+  infoValue: { color: colors.textStrong, fontSize: 14, fontWeight: '700' },
+  logout: { marginTop: spacing.lg },
 });

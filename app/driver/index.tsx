@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -6,9 +6,11 @@ import {
   StyleSheet,
   Pressable,
   RefreshControl,
+  ActivityIndicator,
   Modal,
+  Vibration,
 } from 'react-native';
-import { StatGridSkeleton, SectionSkeleton } from '@/ui/Skeleton';
+import { SectionSkeleton } from '@/ui/Skeleton';
 import GradientHeader from '@/ui/GradientHeader';
 import Button from '@/ui/Button';
 import EmptyState from '@/ui/EmptyState';
@@ -16,11 +18,13 @@ import { colors, radii, spacing, shadow } from '@/ui/theme';
 import { Ionicons } from '@expo/vector-icons';
 import QRCode from 'react-native-qrcode-svg';
 import { useFocusEffect } from 'expo-router';
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { api, ApiError } from '@/services/api';
 import { useAuthStore } from '@/store/authStore';
 import { useFeedback } from '@/ui/FeedbackProvider';
 
-const POLL_INTERVAL_MS = 15000;
+const POLL_INTERVAL_MS = 10000;
+const KEEP_AWAKE_TAG = 'driver-trip';
 const VISIBLE_SECTION_KEYS = ['pending', 'boarded'];
 
 interface DriverSession {
@@ -49,16 +53,6 @@ interface DriverSession {
   }>;
 }
 
-interface DriverSummary {
-  summary: {
-    fareCalculationCount: number;
-    totalIncidents: number;
-    openIncidents: number;
-    unpaidTickets: number;
-    outstandingPenalties: number;
-  };
-}
-
 interface PermitQrData {
   permitPlateNumber: string;
   driverFullName: string;
@@ -79,28 +73,33 @@ function timeAgo(iso: string): string {
 
 export default function DriverTripScreen() {
   const { user } = useAuthStore();
-  const { showError, showWarning, showConfirm } = useFeedback();
+  const { showSuccess, showError, showWarning, showConfirm } = useFeedback();
   const [data, setData] = useState<DriverSession | null>(null);
-  const [summary, setSummary] = useState<DriverSummary['summary'] | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [acting, setActing] = useState<string | null>(null);
   const [permitQr, setPermitQr] = useState<PermitQrData | null>(null);
   const [permitQrLoading, setPermitQrLoading] = useState(false);
   const [showPermitQr, setShowPermitQr] = useState(false);
+  // Track pending count across polls to alert on a newly-arrived request.
+  const prevPendingRef = useRef<number | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const [session, sum] = await Promise.allSettled([
-        api.get<DriverSession>('/api/driver/session/active'),
-        api.get<DriverSummary>('/api/driver/summary'),
-      ]);
-      if (session.status === 'fulfilled') setData(session.value);
-      if (sum.status === 'fulfilled') setSummary(sum.value.summary);
+      const session = await api.get<DriverSession>('/api/driver/session/active');
+      setData(session);
+
+      const pending = session.session.pendingCount;
+      const prev = prevPendingRef.current;
+      if (prev !== null && pending > prev) {
+        Vibration.vibrate([0, 250, 150, 250]);
+        showSuccess('New trip request — review and accept.', { title: 'New Request' });
+      }
+      prevPendingRef.current = pending;
     } catch {} finally {
       setLoading(false);
     }
-  }, []);
+  }, [showSuccess]);
 
   useFocusEffect(
     useCallback(() => {
@@ -109,6 +108,14 @@ export default function DriverTripScreen() {
       return () => clearInterval(id);
     }, [load]),
   );
+
+  // Keep the screen awake while Online so the poll keeps firing and the driver
+  // never misses a new-request alert mid-wait. Released when Offline / unmounted.
+  const online = Boolean(data?.session?.status);
+  useEffect(() => {
+    if (online) void activateKeepAwakeAsync(KEEP_AWAKE_TAG);
+    return () => { void deactivateKeepAwake(KEEP_AWAKE_TAG); };
+  }, [online]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -186,8 +193,7 @@ export default function DriverTripScreen() {
     return (
       <View style={s.container}>
         <GradientHeader title="Trip Session" subtitle={`${user?.firstName ?? ''} ${user?.lastName ?? ''}`} />
-        <StatGridSkeleton count={3} />
-        <SectionSkeleton count={3} />
+        <SectionSkeleton count={4} />
       </View>
     );
   }
@@ -217,33 +223,6 @@ export default function DriverTripScreen() {
         contentContainerStyle={s.scroll}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {summary && (
-          <View style={s.summaryCard}>
-            <Text style={s.summaryTitle}>OVERVIEW</Text>
-            <View style={s.summaryRow}>
-              {[
-                { label: 'Fare Calcs', value: summary.fareCalculationCount },
-                { label: 'Incidents', value: summary.totalIncidents },
-                { label: 'Open', value: summary.openIncidents, alert: summary.openIncidents > 0 },
-                { label: 'Unpaid', value: summary.unpaidTickets, alert: summary.unpaidTickets > 0 },
-              ].map((item) => (
-                <View key={item.label} style={s.summaryStat}>
-                  <Text style={[s.summaryVal, item.alert ? s.alertText : null]}>{item.value}</Text>
-                  <Text style={s.summaryLbl}>{item.label}</Text>
-                </View>
-              ))}
-            </View>
-            {summary.outstandingPenalties > 0 && (
-              <View style={s.penaltyBanner}>
-                <Ionicons name="alert-circle" size={16} color={colors.danger} />
-                <Text style={s.penaltyText}>
-                  Outstanding penalties: ₱{summary.outstandingPenalties.toFixed(2)}
-                </Text>
-              </View>
-            )}
-          </View>
-        )}
-
         {vehicle ? (
           <View style={s.vehicleCard}>
             <View style={s.vehicleIcon}>
@@ -329,26 +308,47 @@ export default function DriverTripScreen() {
                     <Text style={s.riderTime}>{timeAgo(rider.joinedAt)}</Text>
                   </View>
                 </View>
-                {rider.availableActions.length > 0 && session?.id && (
-                  <View style={s.riderBtnRow}>
-                    {rider.availableActions.map((btn) => {
-                      const actionKey = `${rider.id}:${btn.action}`;
-                      const riderBusy = acting?.startsWith(`${rider.id}:`) ?? false;
-                      return (
-                        <Button
-                          key={btn.action}
-                          label={btn.label}
-                          size="sm"
-                          variant={btn.kind === 'positive' ? 'primary' : 'secondary'}
-                          onPress={() => riderAction(session.id!, rider.id, btn.action)}
-                          loading={acting === actionKey}
-                          disabled={riderBusy && acting !== actionKey}
-                          style={s.flex1}
-                        />
-                      );
-                    })}
-                  </View>
-                )}
+                {rider.availableActions.length > 0 && session?.id && (() => {
+                  const sessionId = session.id;
+                  const riderBusy = acting?.startsWith(`${rider.id}:`) ?? false;
+                  const positive = rider.availableActions.filter((b) => b.kind === 'positive');
+                  const negative = rider.availableActions.filter((b) => b.kind === 'negative');
+                  return (
+                    <View style={s.riderActions}>
+                      {positive.map((btn) => {
+                        const actionKey = `${rider.id}:${btn.action}`;
+                        return (
+                          <Button
+                            key={btn.action}
+                            label={btn.label}
+                            onPress={() => riderAction(sessionId, rider.id, btn.action)}
+                            loading={acting === actionKey}
+                            disabled={riderBusy && acting !== actionKey}
+                          />
+                        );
+                      })}
+                      {negative.length > 0 && (
+                        <>
+                          <Text style={s.reasonLabel}>Can&apos;t take it?</Text>
+                          <View style={s.reasonRow}>
+                            {negative.map((btn) => {
+                              const actionKey = `${rider.id}:${btn.action}`;
+                              return (
+                                <ReasonChip
+                                  key={btn.action}
+                                  label={btn.label}
+                                  busy={acting === actionKey}
+                                  disabled={riderBusy && acting !== actionKey}
+                                  onPress={() => riderAction(sessionId, rider.id, btn.action)}
+                                />
+                              );
+                            })}
+                          </View>
+                        </>
+                      )}
+                    </View>
+                  );
+                })()}
               </View>
             ))}
           </View>
@@ -392,20 +392,36 @@ export default function DriverTripScreen() {
   );
 }
 
+function ReasonChip({
+  label,
+  busy,
+  disabled,
+  onPress,
+}: {
+  label: string;
+  busy: boolean;
+  disabled: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      style={({ pressed }) => [s.reasonChip, pressed && !disabled && s.reasonChipPressed, disabled && s.reasonChipDisabled]}
+      onPress={onPress}
+      disabled={busy || disabled}
+    >
+      {busy ? (
+        <ActivityIndicator size="small" color={colors.textMuted} />
+      ) : (
+        <Text style={s.reasonChipText}>{label}</Text>
+      )}
+    </Pressable>
+  );
+}
+
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   scroll: { paddingTop: spacing.md, paddingBottom: 96 },
   flex1: { flex: 1 },
-
-  summaryCard: { marginHorizontal: spacing.lg, marginBottom: spacing.md, backgroundColor: colors.surface, borderRadius: radii.xl, padding: spacing.lg, ...shadow.card },
-  summaryTitle: { fontSize: 12, fontWeight: '700', color: colors.textMuted, marginBottom: spacing.md, letterSpacing: 0.5 },
-  summaryRow: { flexDirection: 'row', justifyContent: 'space-around' },
-  summaryStat: { alignItems: 'center' },
-  summaryVal: { fontSize: 24, fontWeight: '800', color: colors.textStrong },
-  alertText: { color: colors.danger },
-  summaryLbl: { fontSize: 11, color: colors.textMuted, fontWeight: '600', marginTop: 2 },
-  penaltyBanner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, backgroundColor: colors.dangerSoftBg, borderRadius: radii.md, padding: 10, marginTop: spacing.md },
-  penaltyText: { color: colors.danger, fontWeight: '700', fontSize: 13 },
 
   vehicleCard: { marginHorizontal: spacing.lg, marginBottom: spacing.md, backgroundColor: colors.textStrong, borderRadius: radii.xl, padding: spacing.lg, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   vehicleIcon: { width: 44, height: 44, borderRadius: radii.md, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
@@ -435,7 +451,22 @@ const s = StyleSheet.create({
   riderRight: { alignItems: 'flex-end' },
   riderFare: { color: colors.primary, fontWeight: '800', fontSize: 16 },
   riderTime: { color: colors.textFaint, fontSize: 11, marginTop: 2 },
-  riderBtnRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
+  riderActions: { marginTop: spacing.md, gap: spacing.sm },
+  reasonLabel: { fontSize: 12, color: colors.textMuted, fontWeight: '600', marginTop: spacing.xs },
+  reasonRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  reasonChip: {
+    minHeight: 34,
+    paddingHorizontal: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceAlt,
+  },
+  reasonChipPressed: { opacity: 0.7 },
+  reasonChipDisabled: { opacity: 0.4 },
+  reasonChipText: { fontSize: 13, fontWeight: '600', color: colors.textBody },
 
   fab: { position: 'absolute', bottom: 24, right: 24, width: 56, height: 56, borderRadius: 28, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center', ...shadow.raised },
   fabDisabled: { opacity: 0.7 },

@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/store/authStore';
 import { SectionSkeleton } from '@/ui/Skeleton';
 import GradientHeader from '@/ui/GradientHeader';
+import ActiveTripCard from '@/components/ActiveTripCard';
 import DonutRing from '@/ui/DonutRing';
 import { colors, radii, shadow, spacing, statusColor } from '@/ui/theme';
 import { fetchActiveAnnouncements } from '@/services/announcements';
@@ -76,6 +77,8 @@ export default function PublicDashboard() {
           contentContainerStyle={s.listContent}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
+          <ActiveTripCard />
+
           {announcements.length > 0 && (
             <View style={s.section}>
               <Text style={s.sectionTitle}>Announcements</Text>

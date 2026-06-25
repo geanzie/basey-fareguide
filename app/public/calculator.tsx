@@ -10,6 +10,7 @@ import { calculateRoute, saveFareCalculation } from '@/services/fare';
 import { useFeedback } from '@/ui/FeedbackProvider';
 import InteractiveCalculatorMap from '@/components/InteractiveCalculatorMap';
 import FareResultCard from '@/components/FareResultCard';
+import ActiveTripCard from '@/components/ActiveTripCard';
 import VehiclePickerField from '@/components/VehiclePickerField';
 import QRScannerModal from '@/components/QRScannerModal';
 import type { RouteCalculationResponse, VehicleLookup } from '@/types/fare';
@@ -129,6 +130,8 @@ export default function CalculatorScreen() {
   return (
     <View style={s.root}>
       <GradientHeader title="Fare Calculator" subtitle="Tap the map to set your trip" compact />
+
+      <ActiveTripCard />
 
       <View style={s.topSection}>
         <StepIndicator done={done} activeStep={activeStep} />
