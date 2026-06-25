@@ -53,13 +53,6 @@ export async function GET(
       );
     }
 
-    if (evidence.storageStatus !== "UPLOADED") {
-      return NextResponse.json(
-        { message: "Evidence file is not yet available. The upload may still be processing." },
-        { status: 422 },
-      );
-    }
-
     if (!evidence.fileUrl) {
       return NextResponse.json(
         { message: "Evidence file location is missing." },

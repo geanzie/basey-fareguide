@@ -188,7 +188,7 @@ describe('createPendingTripRequest — cross-session contamination', () => {
     expect(updateCalls.length).toBeGreaterThanOrEqual(2)
 
     const cancelCall = updateCalls.find(
-      ([args]: [{ data: { status: string } }]) => args.data.status === 'CANCELLED',
+      ([args]: any[]) => args.data.status === 'CANCELLED',
     )
     expect(cancelCall).toBeDefined()
     expect(cancelCall![0].where.riderUserId).toBe('rider-1')
@@ -203,7 +203,7 @@ describe('createPendingTripRequest — cross-session contamination', () => {
 
     const updateCalls = txMock.vehicleTripSessionRider.updateMany.mock.calls
     const cancelCall = updateCalls.find(
-      ([args]: [{ data: { status: string } }]) => args.data.status === 'CANCELLED',
+      ([args]: any[]) => args.data.status === 'CANCELLED',
     )
     // The cancellation where clause must exclude the current key
     expect(cancelCall![0].where.activeRequestKey).toEqual(
