@@ -1,0 +1,18 @@
+# EAS uses this INSTEAD of .gitignore for build uploads.
+# Must re-list heavy dirs or they get uploaded.
+
+node_modules/
+.git/
+.expo/
+.claude/
+android/
+ios/
+*.log
+
+# Dev-only files not needed by the cloud build
+src/__tests__/
+**/*.test.ts
+**/*.test.tsx
+jest.config.*
+.env
+.env.local

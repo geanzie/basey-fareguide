@@ -26,7 +26,13 @@
         "googleMaps": {
           "apiKey": ""
         }
-      }
+      },
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "bundler": "metro"
@@ -40,10 +46,23 @@
           "locationAlwaysAndWhenInUsePermission": "Allow Basey FareCheck to use your location to calculate fares."
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Basey FareCheck to scan QR codes."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "ed1c315a-ab61-41b3-9da2-880d0cb0f45e"
+      }
+    },
+    "owner": "walrusp"
   }
 }
