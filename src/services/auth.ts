@@ -1,3 +1,4 @@
+import { api } from './api';
 import type {
   LoginRequest,
   LoginResponse,
@@ -93,4 +94,9 @@ export async function resetPasswordWithOtp(
   newPassword: string,
 ): Promise<void> {
   await postJson<{ message?: string }>('/api/auth/reset-password', { email, otp, newPassword });
+}
+
+/** Authenticated change-password (Bearer token injected by the api wrapper). */
+export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  await api.post('/api/auth/change-password', { currentPassword, newPassword });
 }

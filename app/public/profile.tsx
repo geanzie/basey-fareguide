@@ -98,11 +98,17 @@ export default function PublicProfileScreen() {
         <MenuItem icon="document-text" tint={colors.info} label="Ordinance No. 105" onPress={() => router.push('/public/ordinance')} />
 
         <Button
+          label="Change Password"
+          variant="secondary"
+          onPress={() => router.push('/change-password' as never)}
+          style={s.logout}
+        />
+        <Button
           label="Sign Out"
           variant="danger"
           loading={loggingOut}
           onPress={handleLogout}
-          style={s.logout}
+          style={s.signOut}
         />
       </ScrollView>
     </View>
@@ -208,4 +214,5 @@ const s = StyleSheet.create({
   menuItemText: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.textStrong },
   pressed: { opacity: 0.7 },
   logout: { marginTop: spacing.lg },
+  signOut: { marginTop: spacing.md },
 });

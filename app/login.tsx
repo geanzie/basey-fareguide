@@ -15,6 +15,7 @@ import { useRouter } from 'expo-router';
 import { loginRequest } from '@/services/auth';
 import { useAuthStore } from '@/store/authStore';
 import type { UserRole } from '@/types/auth';
+import PasswordInput from '@/ui/PasswordInput';
 
 const ROLE_ROUTES: Record<UserRole, string> = {
   PUBLIC: '/public',
@@ -90,13 +91,12 @@ export default function LoginScreen() {
 
           <View style={s.field}>
             <Text style={s.label}>Password</Text>
-            <TextInput
+            <PasswordInput
               style={s.input}
               value={password}
               onChangeText={setPassword}
               placeholder="Enter password"
               placeholderTextColor="#94a3b8"
-              secureTextEntry
               returnKeyType="done"
               onSubmitEditing={handleLogin}
               editable={!loading}
@@ -113,6 +113,26 @@ export default function LoginScreen() {
             ) : (
               <Text style={s.btnText}>Sign In</Text>
             )}
+          </Pressable>
+
+          <Pressable
+            style={s.forgotLink}
+            onPress={() => router.push('/forgot-password')}
+            disabled={loading}
+          >
+            <Text style={s.forgotText}>Forgot password?</Text>
+          </Pressable>
+
+          <View style={s.divider} />
+
+          <Pressable
+            style={s.registerRow}
+            onPress={() => router.push('/register')}
+            disabled={loading}
+          >
+            <Text style={s.registerText}>
+              Don&apos;t have an account? <Text style={s.registerStrong}>Register</Text>
+            </Text>
           </Pressable>
         </View>
 
@@ -166,5 +186,11 @@ const s = StyleSheet.create({
   btnPressed: { opacity: 0.85 },
   btnDisabled: { opacity: 0.6 },
   btnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  forgotLink: { alignItems: 'center', marginTop: 16 },
+  forgotText: { color: '#16a34a', fontSize: 14, fontWeight: '600' },
+  divider: { height: 1, backgroundColor: '#e2e8f0', marginVertical: 20 },
+  registerRow: { alignItems: 'center' },
+  registerText: { color: '#475569', fontSize: 14 },
+  registerStrong: { color: '#16a34a', fontWeight: '700' },
   footer: { color: '#334155', fontSize: 11, textAlign: 'center', marginTop: 32 },
 });

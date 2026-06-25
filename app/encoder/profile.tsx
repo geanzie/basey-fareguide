@@ -62,6 +62,14 @@ export default function EncoderProfileScreen() {
         </View>
 
         <Pressable
+          style={s.changePwBtn}
+          onPress={() => router.push('/change-password' as never)}
+          disabled={loggingOut}
+        >
+          <Text style={s.changePwText}>Change Password</Text>
+        </Pressable>
+
+        <Pressable
           style={[s.logoutBtn, loggingOut && s.logoutBtnDisabled]}
           onPress={handleLogout}
           disabled={loggingOut}
@@ -89,6 +97,8 @@ const s = StyleSheet.create({
   infoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
   infoLabel: { color: '#64748b', fontSize: 14 },
   infoValue: { color: '#0f172a', fontSize: 14, fontWeight: '600' },
+  changePwBtn: { backgroundColor: '#fff', borderRadius: 14, padding: 16, alignItems: 'center', borderWidth: 1.5, borderColor: '#16a34a', marginBottom: 12 },
+  changePwText: { color: '#16a34a', fontWeight: '700', fontSize: 15 },
   logoutBtn: { backgroundColor: '#fff', borderRadius: 14, padding: 16, alignItems: 'center', borderWidth: 1.5, borderColor: '#dc2626' },
   logoutBtnDisabled: { opacity: 0.6 },
   logoutText: { color: '#dc2626', fontWeight: '700', fontSize: 15 },

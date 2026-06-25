@@ -2,7 +2,6 @@ import { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
   Pressable,
   StyleSheet,
   KeyboardAvoidingView,
@@ -10,40 +9,33 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { resetPasswordWithOtp } from '@/services/auth';
+import { useRouter } from 'expo-router';
+import { changePassword } from '@/services/auth';
 import { useFeedback } from '@/ui/FeedbackProvider';
 import PasswordInput from '@/ui/PasswordInput';
 
-export default function ResetPasswordScreen() {
+export default function ChangePasswordScreen() {
   const router = useRouter();
   const { showSuccess } = useFeedback();
-  const params = useLocalSearchParams<{ email?: string }>();
-  const [email, setEmail] = useState(params.email ?? '');
-  const [otp, setOtp] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const handleSubmit = async () => {
-    const trimmedEmail = email.trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) { setError('Enter a valid email address.'); return; }
-    if (!otp.trim()) { setError('Enter the reset code from your email.'); return; }
-    if (newPassword.length < 8) { setError('Password must be at least 8 characters.'); return; }
-    if (newPassword !== confirmPassword) { setError('Passwords do not match.'); return; }
+    if (!currentPassword) { setError('Enter your current password.'); return; }
+    if (newPassword.length < 8) { setError('New password must be at least 8 characters.'); return; }
+    if (newPassword !== confirmPassword) { setError('New passwords do not match.'); return; }
 
     setError('');
     setLoading(true);
     try {
-      await resetPasswordWithOtp(trimmedEmail, otp.trim(), newPassword);
-      showSuccess('Your password has been reset. Please sign in with your new password.', {
-        title: 'Password Updated',
-        actionLabel: 'Sign In',
-        onClose: () => router.replace('/login' as never),
-      });
+      await changePassword(currentPassword, newPassword);
+      showSuccess('Your password has been changed.', { title: 'Password Updated' });
+      router.back();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Reset failed. Check the code and try again.');
+      setError(err instanceof Error ? err.message : 'Could not change password. Try again.');
     } finally {
       setLoading(false);
     }
@@ -56,13 +48,11 @@ export default function ResetPasswordScreen() {
           <View style={s.logo}>
             <Text style={s.logoText}>BF</Text>
           </View>
-          <Text style={s.title}>New Password</Text>
-          <Text style={s.sub}>Enter the code from your email and choose a new password.</Text>
+          <Text style={s.title}>Change Password</Text>
+          <Text style={s.sub}>Update the password you use to sign in.</Text>
         </View>
 
         <View style={s.card}>
-          <Text style={s.cardTitle}>Reset Password</Text>
-
           {error ? (
             <View style={s.errorBox}>
               <Text style={s.errorText}>{error}</Text>
@@ -70,31 +60,15 @@ export default function ResetPasswordScreen() {
           ) : null}
 
           <View style={s.field}>
-            <Text style={s.label}>Email</Text>
-            <TextInput
+            <Text style={s.label}>Current Password</Text>
+            <PasswordInput
               style={s.input}
-              value={email}
-              onChangeText={setEmail}
-              placeholder="Enter your email"
+              value={currentPassword}
+              onChangeText={setCurrentPassword}
+              placeholder="Enter current password"
               placeholderTextColor="#94a3b8"
               autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="email-address"
-              editable={!loading}
-            />
-          </View>
-
-          <View style={s.field}>
-            <Text style={s.label}>Reset Code</Text>
-            <TextInput
-              style={s.input}
-              value={otp}
-              onChangeText={setOtp}
-              placeholder="6-digit code from email"
-              placeholderTextColor="#94a3b8"
-              autoCapitalize="none"
-              keyboardType="number-pad"
-              maxLength={8}
+              returnKeyType="next"
               editable={!loading}
             />
           </View>
@@ -107,6 +81,7 @@ export default function ResetPasswordScreen() {
               onChangeText={setNewPassword}
               placeholder="Minimum 8 characters"
               placeholderTextColor="#94a3b8"
+              autoCapitalize="none"
               returnKeyType="next"
               editable={!loading}
             />
@@ -120,23 +95,20 @@ export default function ResetPasswordScreen() {
               onChangeText={setConfirmPassword}
               placeholder="Re-enter new password"
               placeholderTextColor="#94a3b8"
+              autoCapitalize="none"
               returnKeyType="done"
               onSubmitEditing={handleSubmit}
               editable={!loading}
             />
           </View>
 
-          <Pressable
-            style={[s.btn, loading && s.btnDisabled]}
-            onPress={handleSubmit}
-            disabled={loading}
-          >
-            {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnText}>Set New Password</Text>}
+          <Pressable style={[s.btn, loading && s.btnDisabled]} onPress={handleSubmit} disabled={loading}>
+            {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnText}>Change Password</Text>}
           </Pressable>
         </View>
 
-        <Pressable style={s.backLink} onPress={() => router.push('/forgot-password' as never)}>
-          <Text style={s.backLinkText}>Resend code</Text>
+        <Pressable style={s.backLink} onPress={() => router.back()} disabled={loading}>
+          <Text style={s.backLinkText}>Cancel</Text>
         </Pressable>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -152,7 +124,6 @@ const s = StyleSheet.create({
   title: { fontSize: 26, fontWeight: '800', color: '#fff' },
   sub: { fontSize: 12, color: '#64748b', marginTop: 4, textAlign: 'center' },
   card: { backgroundColor: '#fff', borderRadius: 24, padding: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, elevation: 8 },
-  cardTitle: { fontSize: 20, fontWeight: '700', color: '#0f172a', marginBottom: 20 },
   errorBox: { backgroundColor: '#fef2f2', borderRadius: 10, padding: 12, marginBottom: 16 },
   errorText: { color: '#dc2626', fontSize: 13, fontWeight: '500' },
   field: { marginBottom: 16 },

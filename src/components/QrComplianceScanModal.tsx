@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { terminalLookup, terminalUnlock } from '@/services/terminal';
+import PasswordInput from '@/ui/PasswordInput';
 import { ApiError } from '@/services/api';
 import { useTerminalUnlockStore } from '@/store/terminalUnlockStore';
 import type {
@@ -166,11 +167,10 @@ export default function QrComplianceScanModal({ visible, onClose, onReviewIncide
             <Text style={s.lockSubtitle}>
               Re-enter your password to unlock the QR compliance terminal.
             </Text>
-            <TextInput
+            <PasswordInput
               style={s.lockInput}
               placeholder="Password"
               placeholderTextColor="#64748b"
-              secureTextEntry
               autoCapitalize="none"
               autoCorrect={false}
               value={password}

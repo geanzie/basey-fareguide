@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { registerRequest } from '@/services/auth';
 import { useFeedback } from '@/ui/FeedbackProvider';
+import PasswordInput from '@/ui/PasswordInput';
 
 const ID_TYPES = [
   'NATIONAL_ID', 'DRIVERS_LICENSE', 'PASSPORT', 'VOTERS_ID',
@@ -79,9 +80,8 @@ export default function RegisterScreen() {
     if (!phoneNumber.trim()) return 'Phone number required.';
     if (!/^(09|\+639)\d{9}$/.test(phoneNumber.trim())) return 'Phone must be 09XXXXXXXXX or +639XXXXXXXXX.';
     if (!email.trim() || !email.includes('@')) return 'Valid email required.';
-    if (!idType) return 'Select an ID type.';
-    if (governmentId.trim().length < 8) return 'Government ID must be at least 8 characters.';
-    if (!barangayResidence) return 'Select barangay of residence.';
+    // ID type, government ID, and barangay are optional for public registration.
+    if (governmentId.trim() && governmentId.trim().length < 8) return 'Government ID must be at least 8 characters.';
     if (!username.trim()) return 'Username required.';
     if (password.length < 8) return 'Password must be at least 8 characters.';
     if (password !== confirmPassword) return 'Passwords do not match.';
@@ -161,9 +161,9 @@ export default function RegisterScreen() {
           </View>
 
           {/* Identity Verification */}
-          <Text style={s.sectionLabel}>IDENTITY VERIFICATION</Text>
+          <Text style={s.sectionLabel}>IDENTITY VERIFICATION (OPTIONAL)</Text>
           <View style={s.card}>
-            <Text style={s.fieldLabel}>ID Type *</Text>
+            <Text style={s.fieldLabel}>ID Type</Text>
             <View style={s.chipWrap}>
               {ID_TYPES.map((t) => (
                 <Pressable
@@ -178,9 +178,9 @@ export default function RegisterScreen() {
                 </Pressable>
               ))}
             </View>
-            <Text style={s.fieldLabel}>Government ID Number *</Text>
-            <TextInput style={s.input} value={form.governmentId} onChangeText={set('governmentId')} placeholder="Min. 8 characters" placeholderTextColor="#94a3b8" editable={!loading} />
-            <Text style={s.fieldLabel}>Barangay of Residence *</Text>
+            <Text style={s.fieldLabel}>Government ID Number</Text>
+            <TextInput style={s.input} value={form.governmentId} onChangeText={set('governmentId')} placeholder="Min. 8 characters (if provided)" placeholderTextColor="#94a3b8" editable={!loading} />
+            <Text style={s.fieldLabel}>Barangay of Residence</Text>
             <Pressable
               style={[s.input, s.pickerBtn, loading && s.inputDisabled]}
               onPress={() => { setBarangaySearch(''); setShowBarangayModal(true); }}
@@ -198,9 +198,9 @@ export default function RegisterScreen() {
             <Text style={s.fieldLabel}>Username *</Text>
             <TextInput style={s.input} value={form.username} onChangeText={(v) => set('username')(v.toLowerCase().replace(/\s/g, ''))} placeholder="username" placeholderTextColor="#94a3b8" autoCapitalize="none" autoCorrect={false} editable={!loading} />
             <Text style={s.fieldLabel}>Password *</Text>
-            <TextInput style={s.input} value={form.password} onChangeText={set('password')} placeholder="Min. 8 characters" placeholderTextColor="#94a3b8" secureTextEntry editable={!loading} />
+            <PasswordInput style={s.input} value={form.password} onChangeText={set('password')} placeholder="Min. 8 characters" placeholderTextColor="#94a3b8" editable={!loading} />
             <Text style={s.fieldLabel}>Confirm Password *</Text>
-            <TextInput style={s.input} value={form.confirmPassword} onChangeText={set('confirmPassword')} placeholder="Repeat password" placeholderTextColor="#94a3b8" secureTextEntry editable={!loading} />
+            <PasswordInput style={s.input} value={form.confirmPassword} onChangeText={set('confirmPassword')} placeholder="Repeat password" placeholderTextColor="#94a3b8" editable={!loading} />
           </View>
 
           {/* Privacy Notice */}

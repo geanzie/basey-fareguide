@@ -36,6 +36,15 @@ export interface CreatePermitInput {
   remarks?: string;
 }
 
+/** Driver login account auto-provisioned by POST /api/permits. */
+export interface DriverAccountResult {
+  created: boolean;
+  username: string;
+  tempPassword?: string;
+}
+
+export type CreatePermitResult = Permit & { driverAccount?: DriverAccountResult | null };
+
 export interface UpdatePermitInput {
   permitPlateNumber?: string;
   driverFullName?: string;

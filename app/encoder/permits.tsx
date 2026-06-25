@@ -20,7 +20,7 @@ import {
   issuePermitQr,
 } from '@/services/permits';
 import { PERMIT_VEHICLE_TYPES } from '@/types/permits';
-import type { Permit } from '@/types/permits';
+import type { Permit, DriverAccountResult } from '@/types/permits';
 import type { VehicleLookup } from '@/types/fare';
 import { colors, radii, shadow } from '@/ui/theme';
 import Card from '@/ui/Card';
@@ -76,6 +76,9 @@ export default function PermitsScreen() {
 
   // QR view modal
   const [qrPermit, setQrPermit] = useState<Permit | null>(null);
+
+  // One-time driver credentials shown after a permit is created
+  const [newDriverAccount, setNewDriverAccount] = useState<DriverAccountResult | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -164,13 +167,14 @@ export default function PermitsScreen() {
           setFormLoading(false);
           return setFormError('Select the vehicle this permit belongs to.');
         }
-        await createPermit({
+        const res = await createPermit({
           vehicleId: selectedVehicle.id,
           permitPlateNumber: form.permitPlateNumber.trim().toUpperCase(),
           driverFullName: form.driverFullName.trim(),
           vehicleType: form.vehicleType,
           remarks: form.remarks.trim() || undefined,
         });
+        if (res.driverAccount) setNewDriverAccount(res.driverAccount);
       }
       setShowForm(false);
       await load();
@@ -430,6 +434,38 @@ export default function PermitsScreen() {
           </View>
         ) : null}
       </AppModal>
+
+      {/* Driver account credentials (one-time) */}
+      <AppModal
+        visible={newDriverAccount != null}
+        onClose={() => setNewDriverAccount(null)}
+        title={newDriverAccount?.created ? 'Driver Account Created' : 'Driver Account'}
+        variant="center"
+      >
+        {newDriverAccount ? (
+          newDriverAccount.created ? (
+            <View style={s.qrBody}>
+              <Text style={s.credHint}>
+                Share these one-time credentials with the driver. The temporary password is shown
+                only now.
+              </Text>
+              <View style={s.credBox}>
+                <Text style={s.credLabel}>Username</Text>
+                <Text selectable style={s.credValue}>{newDriverAccount.username}</Text>
+                <Text style={[s.credLabel, s.credLabelGap]}>Temporary password</Text>
+                <Text selectable style={s.credValue}>{newDriverAccount.tempPassword}</Text>
+              </View>
+            </View>
+          ) : (
+            <View style={s.qrBody}>
+              <Text style={s.credHint}>
+                Username <Text style={s.credInline}>{newDriverAccount.username}</Text> already has a
+                driver login. The permit was created without changing the existing account.
+              </Text>
+            </View>
+          )
+        ) : null}
+      </AppModal>
     </View>
   );
 }
@@ -487,4 +523,19 @@ const s = StyleSheet.create({
   },
   tokenText: { fontSize: 13, color: colors.textStrong, fontFamily: 'monospace' },
   qrHint: { fontSize: 12, color: colors.textMuted, textAlign: 'center', lineHeight: 18, marginTop: 4 },
+
+  credHint: { fontSize: 13, color: colors.textBody, textAlign: 'center', lineHeight: 19 },
+  credInline: { fontWeight: '800', color: colors.textStrong },
+  credBox: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 14,
+    width: '100%',
+    ...shadow.card,
+  },
+  credLabel: { fontSize: 11, fontWeight: '700', color: colors.textFaint, textTransform: 'uppercase', letterSpacing: 1 },
+  credLabelGap: { marginTop: 12 },
+  credValue: { fontSize: 16, color: colors.textStrong, fontFamily: 'monospace', marginTop: 2 },
 });

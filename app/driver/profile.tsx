@@ -116,7 +116,8 @@ export default function DriverProfileScreen() {
           />
         </View>
 
-        <Button label="Sign Out" variant="danger" loading={loggingOut} onPress={handleLogout} style={s.logout} />
+        <Button label="Change Password" variant="secondary" onPress={() => router.push('/change-password' as never)} style={s.logout} />
+        <Button label="Sign Out" variant="danger" loading={loggingOut} onPress={handleLogout} style={s.signOut} />
       </ScrollView>
     </View>
   );
@@ -189,4 +190,5 @@ const s = StyleSheet.create({
   infoLabel: { flex: 1, color: colors.textBody, fontSize: 14 },
   infoValue: { color: colors.textStrong, fontSize: 14, fontWeight: '700' },
   logout: { marginTop: spacing.lg },
+  signOut: { marginTop: spacing.md },
 });

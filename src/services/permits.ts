@@ -1,6 +1,6 @@
 import { api } from './api';
 import { useAuthStore } from '@/store/authStore';
-import type { Permit, CreatePermitInput, UpdatePermitInput } from '@/types/permits';
+import type { Permit, CreatePermitInput, CreatePermitResult, UpdatePermitInput } from '@/types/permits';
 
 interface PermitFilters {
   status?: string;
@@ -18,8 +18,8 @@ export async function fetchPermits(filters: PermitFilters = {}): Promise<Permit[
   return res.permits ?? [];
 }
 
-export async function createPermit(input: CreatePermitInput): Promise<Permit> {
-  return api.post<Permit>('/api/permits', input);
+export async function createPermit(input: CreatePermitInput): Promise<CreatePermitResult> {
+  return api.post<CreatePermitResult>('/api/permits', input);
 }
 
 export async function updatePermit(id: string, data: UpdatePermitInput): Promise<Permit> {
