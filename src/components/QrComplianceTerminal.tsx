@@ -11,6 +11,7 @@ import {
   getDashboardIconChipClasses,
 } from '@/components/dashboardIcons'
 import EnforcerIncidentsList from '@/components/EnforcerIncidentsList'
+import PasswordInput from '@/components/PasswordInput'
 import QrTokenScannerPanel from '@/components/QrTokenScannerPanel'
 import type {
   TerminalIncidentHandoffSnapshotDto,
@@ -373,10 +374,9 @@ export default function QrComplianceTerminal() {
                       <label htmlFor="terminal-password" className="mb-2 block text-sm font-medium text-slate-700">
                         Re-enter your password to unlock the terminal
                       </label>
-                      <input
+                      <PasswordInput
                         id="terminal-password"
                         name="terminalPassword"
-                        type="password"
                         autoComplete="current-password"
                         value={password}
                         onChange={(event) => setPassword(event.target.value)}

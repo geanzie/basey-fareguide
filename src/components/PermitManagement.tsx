@@ -32,6 +32,11 @@ export default function PermitManagement() {
   const [editingPermit, setEditingPermit] = useState<PermitDto | null>(null)
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleLookupDto | null>(null)
   const [lastCreatedPermit, setLastCreatedPermit] = useState<PermitDto | null>(null)
+  const [newDriverAccount, setNewDriverAccount] = useState<{
+    created: boolean
+    username: string
+    tempPassword?: string
+  } | null>(null)
   const [selectedQrPermit, setSelectedQrPermit] = useState<PermitDto | null>(null)
   const [loadingQrPermitId, setLoadingQrPermitId] = useState<string | null>(null)
   const [showBulkPrint, setShowBulkPrint] = useState(false)
@@ -154,10 +159,13 @@ export default function PermitManagement() {
       })
 
       if (response.ok) {
-        const savedPermit: PermitDto = await response.json()
+        const savedPermit: PermitDto & {
+          driverAccount?: { created: boolean; username: string; tempPassword?: string } | null
+        } = await response.json()
         if (!editingPermit) {
           setLastCreatedPermit(savedPermit)
           setSelectedQrPermit(savedPermit)
+          setNewDriverAccount(savedPermit.driverAccount ?? null)
         }
         resetForm()
         fetchPermits()
@@ -368,6 +376,59 @@ export default function PermitManagement() {
             qrToken={lastCreatedPermit.qrToken}
             driverFullName={lastCreatedPermit.driverFullName}
           />
+        </div>
+      ) : null}
+
+      {newDriverAccount ? (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-semibold text-emerald-900">
+                {newDriverAccount.created ? 'Driver account created' : 'Driver account already exists'}
+              </h3>
+              {newDriverAccount.created ? (
+                <>
+                  <p className="text-sm text-emerald-800">
+                    Share these one-time credentials with the driver. The temporary password is shown only now.
+                  </p>
+                  <div className="mt-3 space-y-1 font-mono text-sm text-emerald-900">
+                    <div>
+                      <span className="font-sans font-medium text-emerald-700">Username:</span>{' '}
+                      {newDriverAccount.username}
+                    </div>
+                    <div>
+                      <span className="font-sans font-medium text-emerald-700">Temp password:</span>{' '}
+                      {newDriverAccount.tempPassword}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      navigator.clipboard?.writeText(
+                        `Username: ${newDriverAccount.username}\nTemporary password: ${newDriverAccount.tempPassword}`,
+                      )
+                    }
+                    className="mt-3 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
+                  >
+                    Copy credentials
+                  </button>
+                </>
+              ) : (
+                <p className="text-sm text-emerald-800">
+                  Username <span className="font-mono">{newDriverAccount.username}</span> already has a driver
+                  login. The permit was created without changing the existing account.
+                </p>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => setNewDriverAccount(null)}
+              className="text-2xl leading-none text-emerald-400 transition-colors hover:text-emerald-600"
+              aria-label="Dismiss driver account notice"
+            >
+              ×
+            </button>
+          </div>
         </div>
       ) : null}
 

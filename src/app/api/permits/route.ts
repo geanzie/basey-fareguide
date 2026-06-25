@@ -5,6 +5,7 @@ import { VehicleType, PermitStatus } from '@prisma/client'
 import { ADMIN_OR_ENCODER, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
 import { normalizePlateNumber } from '@/lib/incidents/penaltyRules'
 import { createPermitWithQr } from '@/lib/permits/qr'
+import { provisionDriverAccount } from '@/lib/admin/driver-account'
 import { serializePermit } from '@/lib/serializers'
 
 export async function GET(request: NextRequest) {
@@ -132,7 +133,31 @@ export async function POST(request: NextRequest) {
       remarks,
     })
 
-    return NextResponse.json(serializePermit(permit, { includeQrToken: true }), { status: 201 })
+    // Auto-provision a DRIVER login account (username = plate, temp password shown once).
+    // Idempotent + isolated: a provisioning failure must not roll back the issued permit.
+    let driverAccount: { created: boolean; username: string; tempPassword?: string } | null = null
+    try {
+      const result = await prisma.$transaction((tx) =>
+        provisionDriverAccount(tx, {
+          vehicleId,
+          plateNumber: vehicle.plateNumber,
+          driverFullName,
+          actorId: actor.id,
+        }),
+      )
+      driverAccount = {
+        created: result.created,
+        username: result.username,
+        ...(result.tempPassword ? { tempPassword: result.tempPassword } : {}),
+      }
+    } catch {
+      driverAccount = null
+    }
+
+    return NextResponse.json(
+      { ...serializePermit(permit, { includeQrToken: true }), driverAccount },
+      { status: 201 },
+    )
   } catch (error) {
     return createAuthErrorResponse(error)
   }

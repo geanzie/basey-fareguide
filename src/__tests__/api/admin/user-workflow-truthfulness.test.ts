@@ -160,7 +160,6 @@ describe('admin user workflow truthfulness', () => {
       },
     })
     prismaMock.user.findFirst.mockResolvedValueOnce(null)
-    prismaMock.user.findUnique.mockResolvedValueOnce(null)
     prismaMock.user.create.mockResolvedValueOnce({
       id: 'driver-1',
       firstName: 'Pedro',

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import PasswordInput from '@/components/PasswordInput'
 import { CURRENT_PRIVACY_NOTICE_VERSION } from '@/lib/privacyNotice'
 import {
   DASHBOARD_ICONS,
@@ -404,10 +405,9 @@ const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
                   <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                     Password <span className="text-red-500">*</span>
                   </label>
-                  <input
+                  <PasswordInput
                     id="password"
                     name="password"
-                    type="password"
                     autoComplete="new-password"
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
@@ -419,10 +419,9 @@ const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
                   <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
                     Confirm Password <span className="text-red-500">*</span>
                   </label>
-                  <input
+                  <PasswordInput
                     id="confirmPassword"
                     name="confirmPassword"
-                    type="password"
                     autoComplete="new-password"
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"

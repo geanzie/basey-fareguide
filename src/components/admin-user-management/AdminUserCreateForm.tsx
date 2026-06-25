@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 
+import PasswordInput from '@/components/PasswordInput'
 import type { AdminDriverOptionDto, AdminUserDto } from '@/lib/admin/user-management-contract'
 
 import { createAdminUser, fetchAdminDriverOptions } from './api'
@@ -312,10 +313,9 @@ export default function AdminUserCreateForm({ onUserCreated }: AdminUserCreateFo
             </LabeledInput>
 
             <LabeledInput label="Temporary password" fieldId="admin-driver-temp-password">
-              <input
+              <PasswordInput
                 id="admin-driver-temp-password"
                 name="tempPassword"
-                type="password"
                 autoComplete="new-password"
                 value={form.tempPassword}
                 onChange={(event) => updateForm('tempPassword', event.target.value)}

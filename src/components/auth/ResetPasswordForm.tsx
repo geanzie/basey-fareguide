@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import LoadingSpinner from '@/components/LoadingSpinner'
+import PasswordInput from '@/components/PasswordInput'
 import {
   DASHBOARD_ICONS,
   DASHBOARD_ICON_POLICY,
@@ -218,10 +219,9 @@ const ResetPasswordForm = () => {
                 <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">
                   New Password
                 </label>
-                <input
+                <PasswordInput
                   id="newPassword"
                   name="newPassword"
-                  type="password"
                   autoComplete="new-password"
                   required
                   disabled={!otpValid}
@@ -236,10 +236,9 @@ const ResetPasswordForm = () => {
                 <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
                   Confirm Password
                 </label>
-                <input
+                <PasswordInput
                   id="confirmPassword"
                   name="confirmPassword"
-                  type="password"
                   autoComplete="new-password"
                   required
                   disabled={!otpValid}
