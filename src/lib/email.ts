@@ -50,72 +50,72 @@ function isValidEmailAddress(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
 }
 
-function resolveEmailCapability(): EmailCapability {
-  const resend = getResendClient()
+type EmailProvider = 'brevo' | 'resend' | 'console' | 'none'
+
+interface ProviderResolution {
+  provider: EmailProvider
+  from?: string
+  reason?: string
+}
+
+/**
+ * Decide which email transport to use, in priority order:
+ *   1. Brevo  — when BREVO_API_KEY + a valid (non-resend.dev) EMAIL_FROM are set.
+ *   2. Resend — when RESEND_API_KEY + a valid verified-domain EMAIL_FROM are set.
+ *   3. Console — development fallback (OTP logged to server console).
+ *   4. None — misconfigured; caller should surface an "unavailable" error.
+ */
+export function resolveProvider(): ProviderResolution {
   const configuredFrom = process.env.EMAIL_FROM?.trim()
+  const brevoKey = process.env.BREVO_API_KEY?.trim()
+  const resendKey = process.env.RESEND_API_KEY?.trim()
 
-  if (!resend) {
-    if (isDevelopmentMode()) {
-      return {
-        available: true,
-        mode: 'development_console',
-        from: DEFAULT_DEV_EMAIL_FROM,
-      }
+  // ── Brevo (preferred) ──
+  if (brevoKey) {
+    if (!configuredFrom) {
+      if (isDevelopmentMode()) return { provider: 'console', from: DEFAULT_DEV_EMAIL_FROM }
+      return { provider: 'none', reason: 'EMAIL_FROM is not configured for Brevo email delivery.' }
     }
-
-    return {
-      available: false,
-      mode: 'provider',
-      reason: 'RESEND_API_KEY is not configured for production email delivery.',
+    const senderEmail = extractEmailAddress(configuredFrom)
+    if (!isValidEmailAddress(senderEmail)) {
+      return { provider: 'none', reason: 'EMAIL_FROM is not a valid sender address.' }
     }
+    if (senderEmail.endsWith('@resend.dev')) {
+      if (isDevelopmentMode()) return { provider: 'console', from: DEFAULT_DEV_EMAIL_FROM }
+      return { provider: 'none', reason: 'EMAIL_FROM must be a Brevo-verified sender address (not @resend.dev).' }
+    }
+    return { provider: 'brevo', from: configuredFrom }
   }
 
+  // ── Resend (fallback) ──
+  if (!resendKey) {
+    if (isDevelopmentMode()) return { provider: 'console', from: DEFAULT_DEV_EMAIL_FROM }
+    return { provider: 'none', reason: 'No email provider configured (set BREVO_API_KEY or RESEND_API_KEY).' }
+  }
   if (!configuredFrom) {
-    if (isDevelopmentMode()) {
-      return {
-        available: true,
-        mode: 'development_console',
-        from: DEFAULT_DEV_EMAIL_FROM,
-      }
-    }
-
-    return {
-      available: false,
-      mode: 'provider',
-      reason: 'EMAIL_FROM is not configured for production email delivery.',
-    }
+    if (isDevelopmentMode()) return { provider: 'console', from: DEFAULT_DEV_EMAIL_FROM }
+    return { provider: 'none', reason: 'EMAIL_FROM is not configured for production email delivery.' }
   }
-
-  const senderEmail = extractEmailAddress(configuredFrom)
-  if (!isValidEmailAddress(senderEmail)) {
-    return {
-      available: false,
-      mode: 'provider',
-      reason: 'EMAIL_FROM is not a valid sender address.',
-    }
+  const resendSender = extractEmailAddress(configuredFrom)
+  if (!isValidEmailAddress(resendSender)) {
+    return { provider: 'none', reason: 'EMAIL_FROM is not a valid sender address.' }
   }
-
-  if (senderEmail.endsWith('@resend.dev')) {
-    if (isDevelopmentMode()) {
-      return {
-        available: true,
-        mode: 'development_console',
-        from: DEFAULT_DEV_EMAIL_FROM,
-      }
-    }
-
-    return {
-      available: false,
-      mode: 'provider',
-      reason: 'EMAIL_FROM is still using Resend onboarding sender. Configure a verified sender domain for production password reset emails.',
-    }
+  if (resendSender.endsWith('@resend.dev')) {
+    if (isDevelopmentMode()) return { provider: 'console', from: DEFAULT_DEV_EMAIL_FROM }
+    return { provider: 'none', reason: 'EMAIL_FROM is still using Resend onboarding sender. Configure a verified sender domain for production password reset emails.' }
   }
+  return { provider: 'resend', from: configuredFrom }
+}
 
-  return {
-    available: true,
-    mode: 'provider',
-    from: configuredFrom,
+function resolveEmailCapability(): EmailCapability {
+  const r = resolveProvider()
+  if (r.provider === 'none') {
+    return { available: false, mode: 'provider', reason: r.reason }
   }
+  if (r.provider === 'console') {
+    return { available: true, mode: 'development_console', from: r.from }
+  }
+  return { available: true, mode: 'provider', from: r.from }
 }
 
 export function getPasswordResetEmailCapability(): EmailCapability {
@@ -123,40 +123,81 @@ export function getPasswordResetEmailCapability(): EmailCapability {
 }
 
 /**
- * Send an email using Resend
+ * Send a transactional email via Brevo's REST API (no SDK dependency).
+ * Free tier: 300 emails/day. Sender must be a Brevo-verified sender.
  */
-export async function sendEmail(options: EmailOptions): Promise<EmailSendResult> {
-  const capability = resolveEmailCapability()
-
-  if (!capability.available) {
-    console.warn('Email service unavailable:', capability.reason)
-    return {
-      success: false,
-      mode: capability.mode,
-      reason: capability.reason,
-    }
-  }
-
-  if (capability.mode === 'development_console') {
-    console.log(`Would have sent email to ${options.to} with subject: ${options.subject}`)
-    return {
-      success: true,
-      mode: 'development_console',
-    }
-  }
+async function sendViaBrevo(apiKey: string, from: string, options: EmailOptions): Promise<EmailSendResult> {
+  const senderEmail = extractEmailAddress(from)
+  const nameMatch = from.match(/^(.*)<[^>]+>/)
+  const senderName = nameMatch?.[1]?.trim() || 'Basey FareCheck'
 
   try {
-    const resend = getResendClient()
-    if (!resend || !capability.from) {
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'api-key': apiKey,
+        'Content-Type': 'application/json',
+        accept: 'application/json',
+      },
+      body: JSON.stringify({
+        sender: { email: senderEmail, name: senderName },
+        to: [{ email: options.to }],
+        subject: options.subject,
+        htmlContent: options.html,
+        textContent: options.text,
+      }),
+    })
+
+    if (!res.ok) {
+      const body = await res.text().catch(() => '')
+      console.error('Brevo rejected the message:', res.status, body)
       return {
         success: false,
         mode: 'provider',
-        reason: 'Resend client is unavailable.',
+        reason: `Email provider rejected the message (HTTP ${res.status}).`,
       }
     }
 
+    return { success: true, mode: 'provider' }
+  } catch (error) {
+    console.error('Brevo email error:', error)
+    return {
+      success: false,
+      mode: 'provider',
+      reason: error instanceof Error ? error.message : 'Email service error.',
+    }
+  }
+}
+
+/**
+ * Send an email via the resolved provider (Brevo → Resend → console).
+ */
+export async function sendEmail(options: EmailOptions): Promise<EmailSendResult> {
+  const r = resolveProvider()
+
+  if (r.provider === 'none') {
+    console.warn('Email service unavailable:', r.reason)
+    return { success: false, mode: 'provider', reason: r.reason }
+  }
+
+  if (r.provider === 'console') {
+    console.log(`Would have sent email to ${options.to} with subject: ${options.subject}`)
+    return { success: true, mode: 'development_console' }
+  }
+
+  if (r.provider === 'brevo') {
+    return sendViaBrevo(process.env.BREVO_API_KEY!.trim(), r.from!, options)
+  }
+
+  // Resend
+  try {
+    const resend = getResendClient()
+    if (!resend || !r.from) {
+      return { success: false, mode: 'provider', reason: 'Resend client is unavailable.' }
+    }
+
     const { data, error } = await resend.emails.send({
-      from: capability.from,
+      from: r.from,
       to: options.to,
       subject: options.subject,
       html: options.html,
@@ -173,10 +214,7 @@ export async function sendEmail(options: EmailOptions): Promise<EmailSendResult>
     }
 
     console.log('Email sent successfully:', data)
-    return {
-      success: true,
-      mode: 'provider',
-    }
+    return { success: true, mode: 'provider' }
   } catch (error) {
     console.error('Email service error:', error)
     return {

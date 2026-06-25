@@ -80,29 +80,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate idType is provided
-    if (!normalizedIdType) {
-      return NextResponse.json(
-        { message: 'Government ID Type is required' },
-        { status: 400 }
-      )
-    }
-
-    // Validate governmentId is provided
-    if (!normalizedGovernmentId) {
-      return NextResponse.json(
-        { message: 'Government ID Number is required' },
-        { status: 400 }
-      )
-    }
-
-    // Validate barangayResidence is provided
-    if (!normalizedBarangayResidence) {
-      return NextResponse.json(
-        { message: 'Barangay of Residence is required' },
-        { status: 400 }
-      )
-    }
+    // ID Type, Government ID Number, and Barangay of Residence are optional at
+    // registration. They can be supplied later (e.g. discount card application).
 
     // Validate phone number format (Philippine mobile)
     const phoneRegex = /^(09|\+639)\d{9}$/
@@ -149,9 +128,9 @@ export async function POST(request: NextRequest) {
           email: normalizedEmail,
           phoneNumber,
           dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
-          governmentId: normalizedGovernmentId,
-          idType: normalizedIdType,
-          barangayResidence: normalizedBarangayResidence,
+          governmentId: normalizedGovernmentId || null,
+          idType: normalizedIdType || null,
+          barangayResidence: normalizedBarangayResidence || null,
           userType,
           isActive: isPublicUser,
           isVerified: isPublicUser,
