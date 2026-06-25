@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import {
   View, Text, FlatList, StyleSheet, RefreshControl, ActivityIndicator,
-  TouchableOpacity, Modal, TextInput, Alert, ScrollView, Pressable,
+  TouchableOpacity, Modal, TextInput, ScrollView, Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import GradientHeader from '@/ui/GradientHeader';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@/services/api';
 import { ListSkeleton } from '@/ui/Skeleton';
+import { useFeedback } from '@/ui/FeedbackProvider';
 
 interface AdminUser {
   id: string;
@@ -25,6 +27,7 @@ type CreateUserType = typeof USER_TYPES[number];
 const EMPTY_FORM = { firstName: '', lastName: '', username: '', phoneNumber: '', userType: 'ENFORCER' as CreateUserType };
 
 export default function AdminUsersScreen() {
+  const { showSuccess } = useFeedback();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -32,12 +35,16 @@ export default function AdminUsersScreen() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [addLoading, setAddLoading] = useState(false);
   const [addError, setAddError] = useState('');
+  const [error, setError] = useState('');
 
   const load = async () => {
     try {
       const data = await api.get<{ data: { users: AdminUser[] } }>('/api/admin/users');
       setUsers(data.data?.users ?? []);
-    } catch {} finally {
+      setError('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load users.');
+    } finally {
       setLoading(false);
     }
   };
@@ -75,10 +82,9 @@ export default function AdminUsersScreen() {
       );
       closeAdd();
       await load();
-      Alert.alert(
-        'Account Created',
+      showSuccess(
         `Temporary password for @${res.data.user.username}:\n\n${res.data.tempPassword}\n\nShare this with the user and ask them to change it on first login.`,
-        [{ text: 'OK' }],
+        { title: 'Account Created' },
       );
     } catch (err) {
       setAddError(err instanceof Error ? err.message : 'Failed to create user.');
@@ -89,26 +95,37 @@ export default function AdminUsersScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={s.container}>
+      <View style={s.container}>
+        <GradientHeader title="User Management" />
         <ListSkeleton count={5} />
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={s.container}>
+    <View style={s.container}>
+      <GradientHeader
+        title="User Management"
+        right={
+          <TouchableOpacity style={s.headerAddBtn} onPress={openAdd}>
+            <Ionicons name="add" size={24} color="#fff" />
+          </TouchableOpacity>
+        }
+      />
       <FlatList
         data={users}
         keyExtractor={(u) => u.id}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         contentContainerStyle={s.list}
         ListHeaderComponent={
-          <View style={s.headerRow}>
-            <Text style={s.title}>User Management</Text>
-            <TouchableOpacity style={s.addBtn} onPress={openAdd}>
-              <Ionicons name="add" size={22} color="#fff" />
-            </TouchableOpacity>
-          </View>
+          error ? (
+            <View style={s.errorBox}>
+              <Text style={s.errorText}>{error}</Text>
+              <Pressable style={s.retryBtn} onPress={() => { setLoading(true); void load(); }}>
+                <Text style={s.retryText}>Retry</Text>
+              </Pressable>
+            </View>
+          ) : null
         }
         ListEmptyComponent={<Text style={s.empty}>No users found.</Text>}
         renderItem={({ item }) => (
@@ -203,7 +220,7 @@ export default function AdminUsersScreen() {
           </ScrollView>
         </SafeAreaView>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -211,9 +228,14 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f1f5f9' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   list: { padding: 16, gap: 10 },
+  errorBox: { backgroundColor: '#fef2f2', borderRadius: 12, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  errorText: { color: '#dc2626', fontSize: 13, fontWeight: '500', flex: 1, marginRight: 12 },
+  retryBtn: { backgroundColor: '#dc2626', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 16 },
+  retryText: { color: '#fff', fontWeight: '700', fontSize: 13 },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
   title: { fontSize: 22, fontWeight: '700', color: '#0f172a' },
   addBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: '#16a34a', justifyContent: 'center', alignItems: 'center' },
+  headerAddBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
   empty: { textAlign: 'center', color: '#94a3b8', marginTop: 40 },
   card: { backgroundColor: '#fff', borderRadius: 12, padding: 14, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, elevation: 1 },
   row: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },

@@ -1,16 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  StyleSheet,
-  RefreshControl,
-  ActivityIndicator,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { View, Text, ScrollView, StyleSheet, RefreshControl } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/store/authStore';
 import { SectionSkeleton } from '@/ui/Skeleton';
-import { colors, shadow, statusColor } from '@/ui/theme';
+import GradientHeader from '@/ui/GradientHeader';
+import DonutRing from '@/ui/DonutRing';
+import { colors, radii, shadow, spacing, statusColor } from '@/ui/theme';
 import { fetchActiveAnnouncements } from '@/services/announcements';
 import { fetchFareHistory } from '@/services/fare';
 import { fetchDashboardStats, fetchDashboardActivity } from '@/services/incidents';
@@ -18,13 +13,16 @@ import type { Announcement } from '@/types/common';
 import type { FareCalculation } from '@/types/fare';
 import type { DashboardStats, DashboardActivityItem } from '@/types/incidents';
 
-const CATEGORY_COLORS: Record<string, string> = {
-  EMERGENCY_NOTICE: '#dc2626',
-  ROAD_CLOSURE: '#f59e0b',
-  ROAD_WORK: '#f59e0b',
-  TRAFFIC_ADVISORY: '#3b82f6',
-  GENERAL_INFORMATION: '#16a34a',
+type IoniconName = keyof typeof Ionicons.glyphMap;
+
+const CATEGORY_META: Record<string, { color: string; icon: IoniconName }> = {
+  EMERGENCY_NOTICE: { color: colors.danger, icon: 'alert-circle' },
+  ROAD_CLOSURE: { color: colors.warning, icon: 'close-circle' },
+  ROAD_WORK: { color: colors.warning, icon: 'construct' },
+  TRAFFIC_ADVISORY: { color: colors.info, icon: 'car' },
+  GENERAL_INFORMATION: { color: colors.primary, icon: 'information-circle' },
 };
+const CATEGORY_FALLBACK = { color: colors.textMuted, icon: 'megaphone' as IoniconName };
 
 export default function PublicDashboard() {
   const { user } = useAuthStore();
@@ -60,102 +58,115 @@ export default function PublicDashboard() {
     setRefreshing(false);
   };
 
-  if (loading) {
-    return (
-      <SafeAreaView style={s.container}>
-        <SectionSkeleton count={2} />
-        <SectionSkeleton count={3} />
-      </SafeAreaView>
-    );
-  }
+  const resolutionRate = useMemo(() => {
+    if (!stats || stats.totalIncidents <= 0) return 0;
+    return stats.resolvedIncidents / stats.totalIncidents;
+  }, [stats]);
 
   return (
-    <SafeAreaView style={s.container}>
-      <FlatList
-        data={[]}
-        keyExtractor={() => ''}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        ListHeaderComponent={
-          <View>
-            <View style={s.header}>
-              <Text style={s.greeting}>Hello, {user?.firstName} 👋</Text>
-              <Text style={s.sub}>Basey FareCheck</Text>
-            </View>
-
-            {announcements.length > 0 && (
-              <View style={s.section}>
-                <Text style={s.sectionTitle}>Announcements</Text>
-                {announcements.map((ann) => (
+    <View style={s.container}>
+      <GradientHeader title={`Hello, ${user?.firstName ?? ''} 👋`} subtitle="Basey FareCheck" />
+      {loading ? (
+        <View style={s.loadingBody}>
+          <SectionSkeleton count={2} />
+          <SectionSkeleton count={3} />
+        </View>
+      ) : (
+        <ScrollView
+          contentContainerStyle={s.listContent}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        >
+          {announcements.length > 0 && (
+            <View style={s.section}>
+              <Text style={s.sectionTitle}>Announcements</Text>
+              {announcements.map((ann) => {
+                const meta = CATEGORY_META[ann.category] ?? CATEGORY_FALLBACK;
+                return (
                   <View key={ann.id} style={s.annCard}>
-                    <View style={[s.annDot, { backgroundColor: CATEGORY_COLORS[ann.category] ?? '#64748b' }]} />
+                    <View style={[s.annIcon, { backgroundColor: meta.color + '1a' }]}>
+                      <Ionicons name={meta.icon} size={18} color={meta.color} />
+                    </View>
                     <View style={s.annBody}>
                       <Text style={s.annTitle}>{ann.title}</Text>
                       <Text style={s.annContent} numberOfLines={2}>{ann.body}</Text>
-                      <Text style={s.annCat}>{ann.category.replace(/_/g, ' ')}</Text>
+                      <Text style={[s.annCat, { color: meta.color }]}>{ann.category.replace(/_/g, ' ')}</Text>
                     </View>
                   </View>
-                ))}
-              </View>
-            )}
+                );
+              })}
+            </View>
+          )}
 
-            {trips.length > 0 && (
-              <View style={s.section}>
-                <Text style={s.sectionTitle}>Recent Trips</Text>
-                {trips.map((trip) => (
-                  <View key={trip.id} style={s.tripCard}>
-                    <View style={s.tripRow}>
-                      <Text style={s.tripRoute} numberOfLines={1}>
-                        {trip.originLabel} → {trip.destinationLabel}
-                      </Text>
-                      <Text style={s.tripFare}>₱{Number(trip.fare).toFixed(2)}</Text>
-                    </View>
+          {trips.length > 0 && (
+            <View style={s.section}>
+              <Text style={s.sectionTitle}>Recent Trips</Text>
+              {trips.map((trip) => (
+                <View key={trip.id} style={s.tripCard}>
+                  <View style={s.tripRoute}>
+                    <Ionicons name="navigate" size={14} color={colors.primary} />
+                    <Text style={s.tripRouteText} numberOfLines={1}>
+                      {trip.originLabel} → {trip.destinationLabel}
+                    </Text>
+                  </View>
+                  <View style={s.tripFooter}>
                     <Text style={s.tripMeta}>
                       {trip.distanceKm.toFixed(2)} km · {new Date(trip.createdAt).toLocaleDateString('en-PH')}
                     </Text>
-                  </View>
-                ))}
-              </View>
-            )}
-
-            <View style={s.section}>
-              <Text style={s.sectionTitle}>Enforcement Transparency</Text>
-
-              {stats !== null && (
-                <View style={s.statsStrip}>
-                  <View style={s.statCell}>
-                    <Text style={[s.statNum, { color: colors.textStrong }]}>{stats.totalIncidents}</Text>
-                    <Text style={s.statLabel}>Total Reports</Text>
-                  </View>
-                  <View style={[s.statCell, s.statCellBorder]}>
-                    <Text style={[s.statNum, { color: colors.primary }]}>{stats.resolvedIncidents}</Text>
-                    <Text style={s.statLabel}>Resolved</Text>
-                  </View>
-                  <View style={[s.statCell, s.statCellBorder]}>
-                    <Text style={[s.statNum, { color: colors.warning }]}>{stats.pendingIncidents}</Text>
-                    <Text style={s.statLabel}>Under Review</Text>
+                    <Text style={s.tripFare}>₱{Number(trip.fare).toFixed(2)}</Text>
                   </View>
                 </View>
-              )}
-
-              {activity.map((item) => (
-                <ActivityRow key={item.id} item={item} />
               ))}
-
-              {activity.length === 0 && (
-                <Text style={s.emptyText}>No enforcement actions recorded yet.</Text>
-              )}
             </View>
+          )}
 
-            {announcements.length === 0 && trips.length === 0 && (
-              <View style={s.emptyState}>
-                <Text style={s.emptyText}>No activity yet. Try the Fare Calculator!</Text>
+          <View style={s.section}>
+            <Text style={s.sectionTitle}>Enforcement Transparency</Text>
+
+            {stats !== null && (
+              <View style={s.enforceCard}>
+                <DonutRing
+                  percent={resolutionRate}
+                  size={116}
+                  color={colors.primary}
+                  centerLabel="Resolved"
+                />
+                <View style={s.enforceStats}>
+                  <MiniStat icon="document-text" tone={colors.info} value={stats.totalIncidents} label="Total Reports" />
+                  <MiniStat icon="checkmark-circle" tone={colors.primary} value={stats.resolvedIncidents} label="Resolved" />
+                  <MiniStat icon="hourglass" tone={colors.warning} value={stats.pendingIncidents} label="Under Review" />
+                </View>
               </View>
             )}
+
+            {activity.map((item) => (
+              <ActivityRow key={item.id} item={item} />
+            ))}
+
+            {activity.length === 0 && (
+              <Text style={s.emptyText}>No enforcement actions recorded yet.</Text>
+            )}
           </View>
-        }
-        renderItem={() => null}
-      />
-    </SafeAreaView>
+
+          {announcements.length === 0 && trips.length === 0 && (
+            <View style={s.emptyState}>
+              <Text style={s.emptyText}>No activity yet. Try the Fare Calculator!</Text>
+            </View>
+          )}
+        </ScrollView>
+      )}
+    </View>
+  );
+}
+
+function MiniStat({ icon, tone, value, label }: { icon: IoniconName; tone: string; value: number; label: string }) {
+  return (
+    <View style={s.miniStat}>
+      <View style={[s.miniIcon, { backgroundColor: tone + '1a' }]}>
+        <Ionicons name={icon} size={15} color={tone} />
+      </View>
+      <Text style={[s.miniValue, { color: tone }]}>{value}</Text>
+      <Text style={s.miniLabel} numberOfLines={1}>{label}</Text>
+    </View>
   );
 }
 
@@ -183,38 +194,43 @@ function ActivityRow({ item }: { item: DashboardActivityItem }) {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f1f5f9' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: { padding: 24, paddingBottom: 8 },
-  greeting: { fontSize: 24, fontWeight: '800', color: '#0f172a' },
-  sub: { fontSize: 13, color: '#64748b', marginTop: 2 },
+  container: { flex: 1, backgroundColor: colors.bg },
+  loadingBody: { paddingTop: spacing.lg },
+  listContent: { paddingTop: spacing.lg, paddingBottom: spacing.xl },
   section: { paddingHorizontal: 16, marginBottom: 16 },
-  sectionTitle: { fontSize: 13, fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10 },
-  annCard: { flexDirection: 'row', backgroundColor: '#fff', borderRadius: 12, padding: 14, marginBottom: 8, gap: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, elevation: 1 },
-  annDot: { width: 4, borderRadius: 2, alignSelf: 'stretch' },
+  sectionTitle: { fontSize: 13, fontWeight: '700', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10 },
+
+  annCard: { flexDirection: 'row', backgroundColor: colors.surface, borderRadius: radii.md, padding: 14, marginBottom: 8, gap: 12, alignItems: 'center', ...shadow.card },
+  annIcon: { width: 36, height: 36, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
   annBody: { flex: 1 },
-  annTitle: { fontWeight: '700', color: '#0f172a', fontSize: 14, marginBottom: 4 },
-  annContent: { color: '#64748b', fontSize: 13 },
-  annCat: { color: '#94a3b8', fontSize: 11, marginTop: 4 },
-  tripCard: { backgroundColor: '#fff', borderRadius: 12, padding: 14, marginBottom: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, elevation: 1 },
-  tripRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
-  tripRoute: { flex: 1, fontWeight: '600', color: '#0f172a', fontSize: 14 },
-  tripFare: { fontWeight: '800', color: '#16a34a', fontSize: 15 },
-  tripMeta: { color: '#94a3b8', fontSize: 12 },
+  annTitle: { fontWeight: '700', color: colors.textStrong, fontSize: 14, marginBottom: 4 },
+  annContent: { color: colors.textMuted, fontSize: 13 },
+  annCat: { fontSize: 11, fontWeight: '700', marginTop: 4, textTransform: 'uppercase', letterSpacing: 0.5 },
+
+  tripCard: { backgroundColor: colors.surface, borderRadius: radii.md, padding: 14, marginBottom: 8, ...shadow.card },
+  tripRoute: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
+  tripRouteText: { flex: 1, fontWeight: '600', color: colors.textStrong, fontSize: 14 },
+  tripFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  tripMeta: { color: colors.textFaint, fontSize: 12 },
+  tripFare: { fontWeight: '800', color: colors.primary, fontSize: 16 },
+
+  enforceCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg, backgroundColor: colors.surface, borderRadius: radii.lg, padding: spacing.lg, marginBottom: spacing.md, ...shadow.card },
+  enforceStats: { flex: 1, gap: spacing.sm },
+  miniStat: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  miniIcon: { width: 28, height: 28, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
+  miniValue: { fontSize: 18, fontWeight: '800', minWidth: 36 },
+  miniLabel: { fontSize: 12, color: colors.textMuted, fontWeight: '600', flexShrink: 1 },
+
   emptyState: { margin: 32, alignItems: 'center' },
-  emptyText: { color: '#94a3b8', fontSize: 14, textAlign: 'center' },
-  statsStrip: { flexDirection: 'row', backgroundColor: '#fff', borderRadius: 12, marginBottom: 10, ...shadow.card },
-  statCell: { flex: 1, alignItems: 'center', paddingVertical: 12 },
-  statCellBorder: { borderLeftWidth: 1, borderLeftColor: colors.border },
-  statNum: { fontSize: 22, fontWeight: '800' as const },
-  statLabel: { fontSize: 11, color: colors.textMuted, marginTop: 2 },
-  activityCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', backgroundColor: '#fff', borderRadius: 12, padding: 14, marginBottom: 8, gap: 10, ...shadow.card },
+  emptyText: { color: colors.textFaint, fontSize: 14, textAlign: 'center' },
+
+  activityCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', backgroundColor: colors.surface, borderRadius: radii.md, padding: 14, marginBottom: 8, gap: 10, ...shadow.card },
   activityBody: { flex: 1 },
-  activityType: { fontWeight: '700' as const, color: colors.textStrong, fontSize: 14 },
+  activityType: { fontWeight: '700', color: colors.textStrong, fontSize: 14 },
   activityLocation: { color: colors.textMuted, fontSize: 13, marginTop: 2 },
   activityHandler: { color: colors.textFaint, fontSize: 11, marginTop: 3 },
-  activityRight: { alignItems: 'flex-end' as const, gap: 4 },
+  activityRight: { alignItems: 'flex-end', gap: 4 },
   badge: { borderRadius: 20, paddingHorizontal: 8, paddingVertical: 3 },
-  badgeText: { fontSize: 11, fontWeight: '700' as const },
+  badgeText: { fontSize: 11, fontWeight: '700' },
   ticketNum: { fontFamily: 'monospace', fontSize: 11, color: colors.textMuted },
 });

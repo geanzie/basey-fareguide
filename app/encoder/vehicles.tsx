@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   View, Text, FlatList, StyleSheet, RefreshControl, ActivityIndicator,
-  TouchableOpacity, Alert, Pressable, TextInput, type TextInputProps,
+  TouchableOpacity, Pressable, TextInput, type TextInputProps,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import GradientHeader from '@/ui/GradientHeader';
 import { api } from '@/services/api';
 import { setVehicleActive } from '@/services/vehicles';
 import { colors, radii } from '@/ui/theme';
@@ -13,6 +13,7 @@ import Badge from '@/ui/Badge';
 import Button from '@/ui/Button';
 import SearchBar from '@/ui/SearchBar';
 import FilterChips from '@/ui/FilterChips';
+import { useFeedback } from '@/ui/FeedbackProvider';
 import AppModal from '@/ui/AppModal';
 import { StatGridSkeleton, ListSkeleton } from '@/ui/Skeleton';
 
@@ -66,6 +67,7 @@ const EMPTY_FORM = {
 };
 
 export default function VehiclesScreen() {
+  const { showSuccess, showError, showConfirm } = useFeedback();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
@@ -148,7 +150,7 @@ export default function VehiclesScreen() {
       });
       setShowAdd(false);
       await load();
-      Alert.alert('Success', 'Vehicle registered successfully.');
+      showSuccess('Vehicle registered successfully.');
     } catch (err) {
       setAddError(err instanceof Error ? err.message : 'Failed to register vehicle.');
     } finally {
@@ -165,29 +167,42 @@ export default function VehiclesScreen() {
         setDetail((d) => (d ? { ...d, isActive: next } : d));
         await load();
       } catch (err) {
-        Alert.alert('Error', err instanceof Error ? err.message : 'Failed to update vehicle.');
+        showError(err instanceof Error ? err.message : 'Failed to update vehicle.');
       } finally {
         setStatusBusy(false);
       }
     };
     if (next) void apply();
-    else Alert.alert('Deactivate Vehicle', `Deactivate ${v.plateNumber}?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Deactivate', style: 'destructive', onPress: apply },
-    ]);
+    else
+      showConfirm({
+        title: 'Deactivate Vehicle',
+        message: `Deactivate ${v.plateNumber}?`,
+        confirmLabel: 'Deactivate',
+        destructive: true,
+        onConfirm: apply,
+      });
   };
 
   if (loading) {
     return (
-      <SafeAreaView style={s.container}>
+      <View style={s.container}>
+        <GradientHeader title="Vehicle Registry" />
         <StatGridSkeleton count={3} />
         <ListSkeleton count={4} />
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={s.container} edges={['top']}>
+    <View style={s.container}>
+      <GradientHeader
+        title="Vehicle Registry"
+        right={
+          <TouchableOpacity style={s.headerAddBtn} onPress={openAdd}>
+            <Ionicons name="add" size={24} color="#fff" />
+          </TouchableOpacity>
+        }
+      />
       <FlatList
         data={filtered}
         keyExtractor={(v) => v.id}
@@ -195,12 +210,6 @@ export default function VehiclesScreen() {
         contentContainerStyle={s.list}
         ListHeaderComponent={
           <View style={s.headerBlock}>
-            <View style={s.headerRow}>
-              <Text style={s.title}>Vehicle Registry</Text>
-              <TouchableOpacity style={s.addBtn} onPress={openAdd}>
-                <Ionicons name="add" size={22} color={colors.onPrimary} />
-              </TouchableOpacity>
-            </View>
             <View style={s.statsRow}>
               <Stat label="Total" value={stats.total} />
               <Stat label="Active" value={stats.active} tint={colors.primary} />
@@ -315,7 +324,7 @@ export default function VehiclesScreen() {
 
         {addError ? <Text style={s.error}>{addError}</Text> : null}
       </AppModal>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -349,6 +358,7 @@ const s = StyleSheet.create({
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { fontSize: 22, fontWeight: '700', color: colors.textStrong },
   addBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' },
+  headerAddBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
   statsRow: { flexDirection: 'row', gap: 8 },
   stat: { flex: 1, backgroundColor: colors.surface, borderRadius: radii.md, padding: 12, alignItems: 'center' },
   statValue: { fontSize: 20, fontWeight: '800', color: colors.textStrong },

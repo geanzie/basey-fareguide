@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import GradientHeader from '@/ui/GradientHeader';
 
 const SECTIONS = [
   {
@@ -52,18 +53,18 @@ const SECTIONS = [
 ];
 
 export default function OrdinanceScreen() {
+  const router = useRouter();
   return (
-    <SafeAreaView style={s.container}>
+    <View style={s.container}>
+      <GradientHeader
+        title="Ordinance No. 105"
+        subtitle="Series of 2023 · Basey, Samar"
+        onBack={() => router.back()}
+      />
       <ScrollView contentContainerStyle={s.content}>
-        <View style={s.headerCard}>
-          <Text style={s.ordinanceNo}>Municipal Ordinance No. 105</Text>
-          <Text style={s.series}>Series of 2023</Text>
-          <Text style={s.municipality}>Basey, Samar — Philippines</Text>
-          <View style={s.divider} />
-          <Text style={s.subtitle}>
-            An Ordinance Regulating Fare Rates for Public Utility Vehicles in the Municipality of Basey
-          </Text>
-        </View>
+        <Text style={s.lead}>
+          An Ordinance Regulating Fare Rates for Public Utility Vehicles in the Municipality of Basey.
+        </Text>
 
         {SECTIONS.map((section) => (
           <View key={section.title} style={s.section}>
@@ -78,19 +79,14 @@ export default function OrdinanceScreen() {
           </Text>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f1f5f9' },
-  content: { padding: 16, paddingBottom: 40 },
-  headerCard: { backgroundColor: '#16a34a', borderRadius: 16, padding: 20, marginBottom: 16, alignItems: 'center' },
-  ordinanceNo: { fontSize: 13, fontWeight: '700', color: '#bbf7d0', letterSpacing: 1, textTransform: 'uppercase' },
-  series: { fontSize: 22, fontWeight: '900', color: '#fff', marginTop: 4 },
-  municipality: { fontSize: 13, color: '#bbf7d0', marginTop: 4 },
-  divider: { width: 40, height: 2, backgroundColor: 'rgba(255,255,255,0.3)', borderRadius: 1, marginVertical: 14 },
-  subtitle: { fontSize: 13, color: '#f0fdf4', textAlign: 'center', lineHeight: 20 },
+  content: { padding: 16, paddingTop: 20, paddingBottom: 40 },
+  lead: { fontSize: 14, color: '#475569', lineHeight: 21, marginBottom: 16, fontWeight: '500' },
   section: { backgroundColor: '#fff', borderRadius: 14, padding: 16, marginBottom: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, elevation: 1 },
   sectionTitle: { fontSize: 14, fontWeight: '700', color: '#0f172a', marginBottom: 8 },
   sectionBody: { fontSize: 14, color: '#374151', lineHeight: 22 },

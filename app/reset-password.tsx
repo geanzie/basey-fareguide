@@ -9,13 +9,14 @@ import {
   Platform,
   ActivityIndicator,
   ScrollView,
-  Alert,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { resetPasswordWithOtp } from '@/services/auth';
+import { useFeedback } from '@/ui/FeedbackProvider';
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
+  const { showSuccess } = useFeedback();
   const params = useLocalSearchParams<{ email?: string }>();
   const [email, setEmail] = useState(params.email ?? '');
   const [otp, setOtp] = useState('');
@@ -35,11 +36,11 @@ export default function ResetPasswordScreen() {
     setLoading(true);
     try {
       await resetPasswordWithOtp(trimmedEmail, otp.trim(), newPassword);
-      Alert.alert(
-        'Password Updated',
-        'Your password has been reset. Please sign in with your new password.',
-        [{ text: 'Sign In', onPress: () => router.replace('/login' as never) }],
-      );
+      showSuccess('Your password has been reset. Please sign in with your new password.', {
+        title: 'Password Updated',
+        actionLabel: 'Sign In',
+        onClose: () => router.replace('/login' as never),
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Reset failed. Check the code and try again.');
     } finally {

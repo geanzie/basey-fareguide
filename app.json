@@ -6,7 +6,9 @@
     "orientation": "portrait",
     "scheme": "baseyfare",
     "userInterfaceStyle": "light",
+    "icon": "./assets/logo.png",
     "splash": {
+      "image": "./assets/logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#0f172a"
     },
@@ -16,6 +18,7 @@
     },
     "android": {
       "adaptiveIcon": {
+        "foregroundImage": "./assets/logo.png",
         "backgroundColor": "#0f172a"
       },
       "package": "com.basey.farecheck",

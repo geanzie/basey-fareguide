@@ -5,33 +5,28 @@ import {
   FlatList,
   StyleSheet,
   RefreshControl,
-  ActivityIndicator,
   Pressable,
   TextInput,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import GradientHeader from '@/ui/GradientHeader';
 import { useRouter } from 'expo-router';
 import { api } from '@/services/api';
 import { ListSkeleton } from '@/ui/Skeleton';
 
+// Ticketed incidents from the shared incidents endpoint; there is no dedicated
+// ticket-payments API. Mirrors app/encoder/ticket-payments.tsx.
 interface TicketPayment {
   id: string;
-  ticketNumber: string;
-  amount: number;
-  receiptNumber: string;
-  paidAt: string;
-  recordedBy: string;
+  ticketNumber: string | null;
+  penaltyAmount?: number | null;
+  officialReceiptNumber?: string | null;
+  paymentStatus?: string | null;
+  paidAt?: string | null;
   incidentType?: string;
-  plateNumber?: string;
+  type?: string;
+  plateNumber?: string | null;
+  handledBy?: { firstName?: string; lastName?: string } | null;
 }
-
-interface PaymentsResponse {
-  payments: TicketPayment[];
-  total: number;
-  hasMore: boolean;
-}
-
-const PAGE_SIZE = 20;
 
 export default function AdminTicketPaymentsScreen() {
   const router = useRouter();
@@ -39,23 +34,18 @@ export default function AdminTicketPaymentsScreen() {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(false);
+  const [error, setError] = useState('');
 
-  const load = useCallback(async (pageNum = 1, replace = true) => {
+  const load = useCallback(async () => {
     try {
-      const res = await api.get<PaymentsResponse>(
-        `/api/admin/ticket-payments?page=${pageNum}&pageSize=${PAGE_SIZE}`,
-      );
-      const items = res.payments ?? [];
-      setPayments((prev) => replace ? items : [...prev, ...items]);
-      setHasMore(res.hasMore ?? false);
-      setPage(pageNum);
-    } catch {} finally {
+      const res = await api.get<{ incidents: TicketPayment[] }>('/api/incidents?limit=200');
+      setPayments((res.incidents ?? []).filter((i) => Boolean(i.ticketNumber)));
+      setError('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load ticket payments.');
+    } finally {
       setLoading(false);
       setRefreshing(false);
-      setLoadingMore(false);
     }
   }, []);
 
@@ -63,47 +53,43 @@ export default function AdminTicketPaymentsScreen() {
 
   const onRefresh = () => {
     setRefreshing(true);
-    void load(1, true);
-  };
-
-  const loadMore = () => {
-    if (!hasMore || loadingMore) return;
-    setLoadingMore(true);
-    void load(page + 1, false);
+    void load();
   };
 
   const filtered = search.trim()
     ? payments.filter((p) =>
-        p.ticketNumber.toLowerCase().includes(search.toLowerCase()) ||
-        (p.receiptNumber ?? '').toLowerCase().includes(search.toLowerCase()),
+        (p.ticketNumber ?? '').toLowerCase().includes(search.toLowerCase()) ||
+        (p.officialReceiptNumber ?? '').toLowerCase().includes(search.toLowerCase()),
       )
     : payments;
 
   if (loading) {
     return (
-      <SafeAreaView style={s.container}>
+      <View style={s.container}>
+        <GradientHeader title="Ticket Payments" onBack={() => router.back()} />
         <ListSkeleton count={4} />
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={s.container}>
+    <View style={s.container}>
+      <GradientHeader title="Ticket Payments" onBack={() => router.back()} />
       <FlatList
         data={filtered}
         keyExtractor={(p) => p.id}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        onEndReached={loadMore}
-        onEndReachedThreshold={0.3}
         contentContainerStyle={s.list}
         ListHeaderComponent={
           <View>
-            <View style={s.headerRow}>
-              <Pressable onPress={() => router.back()}>
-                <Text style={s.backBtn}>Back</Text>
-              </Pressable>
-              <Text style={s.title}>Ticket Payments</Text>
-            </View>
+            {error ? (
+              <View style={s.errorBox}>
+                <Text style={s.errorText}>{error}</Text>
+                <Pressable style={s.retryBtn} onPress={() => { setLoading(true); void load(); }}>
+                  <Text style={s.retryText}>Retry</Text>
+                </Pressable>
+              </View>
+            ) : null}
             <TextInput
               style={s.search}
               value={search}
@@ -115,34 +101,49 @@ export default function AdminTicketPaymentsScreen() {
           </View>
         }
         ListEmptyComponent={<Text style={s.empty}>No ticket payments found.</Text>}
-        ListFooterComponent={loadingMore ? <ActivityIndicator color="#16a34a" style={s.loadMore} /> : null}
-        renderItem={({ item }) => (
-          <View style={s.card}>
-            <View style={s.cardRow}>
-              <Text style={s.ticketNum}>#{item.ticketNumber}</Text>
-              <Text style={s.amount}>₱{item.amount.toFixed(2)}</Text>
+        renderItem={({ item }) => {
+          const isPaid = item.paymentStatus === 'PAID' || Boolean(item.paidAt);
+          const handler = item.handledBy
+            ? `${item.handledBy.firstName ?? ''} ${item.handledBy.lastName ?? ''}`.trim()
+            : '';
+          const incType = item.incidentType ?? item.type;
+          return (
+            <View style={s.card}>
+              <View style={s.cardRow}>
+                <Text style={s.ticketNum}>#{item.ticketNumber}</Text>
+                <Text style={s.amount}>₱{(item.penaltyAmount ?? 0).toFixed(2)}</Text>
+              </View>
+              {incType && (
+                <Text style={s.type}>{incType.replace(/_/g, ' ')}</Text>
+              )}
+              {item.plateNumber && (
+                <Text style={s.plate}>{item.plateNumber}</Text>
+              )}
+              <View style={s.metaRow}>
+                <Text style={[s.meta, { fontWeight: '700', color: isPaid ? '#16a34a' : '#f59e0b' }]}>
+                  {isPaid ? 'PAID' : 'UNPAID'}
+                </Text>
+                {item.paidAt && (
+                  <Text style={s.meta}>{new Date(item.paidAt).toLocaleDateString('en-PH')}</Text>
+                )}
+              </View>
+              <Text style={s.meta}>Receipt: {item.officialReceiptNumber || '—'}</Text>
+              {handler ? <Text style={s.recorder}>Handled by {handler}</Text> : null}
             </View>
-            {item.incidentType && (
-              <Text style={s.type}>{item.incidentType.replace(/_/g, ' ')}</Text>
-            )}
-            {item.plateNumber && (
-              <Text style={s.plate}>{item.plateNumber}</Text>
-            )}
-            <View style={s.metaRow}>
-              <Text style={s.meta}>Receipt: {item.receiptNumber || '—'}</Text>
-              <Text style={s.meta}>{new Date(item.paidAt).toLocaleDateString('en-PH')}</Text>
-            </View>
-            <Text style={s.recorder}>Recorded by {item.recordedBy}</Text>
-          </View>
-        )}
+          );
+        }}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f1f5f9' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  errorBox: { marginBottom: 12, backgroundColor: '#fef2f2', borderRadius: 12, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  errorText: { color: '#dc2626', fontSize: 13, fontWeight: '500', flex: 1, marginRight: 12 },
+  retryBtn: { backgroundColor: '#dc2626', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 16 },
+  retryText: { color: '#fff', fontWeight: '700', fontSize: 13 },
   list: { padding: 16, gap: 8 },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
   backBtn: { color: '#3b82f6', fontSize: 15 },

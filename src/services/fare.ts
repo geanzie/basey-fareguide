@@ -1,6 +1,7 @@
 import { api } from './api';
 import type {
-  RouteCalculationRequest,
+  DiscountType,
+  PassengerType,
   RouteCalculationResponse,
   FareCalculation,
   FareRate,
@@ -11,8 +12,27 @@ import type { PaginatedResponse } from '@/types/common';
 
 export type { FareRatesResponse } from '@/types/fare';
 
-export async function calculateRoute(req: RouteCalculationRequest): Promise<RouteCalculationResponse> {
-  return api.post<RouteCalculationResponse>('/api/routes/calculate', req);
+function discountTypeToPassengerType(discountType: DiscountType): PassengerType {
+  switch (discountType) {
+    case 'STUDENT': return 'STUDENT';
+    case 'SENIOR_CITIZEN': return 'SENIOR';
+    case 'PWD': return 'PWD';
+    default: return 'REGULAR';
+  }
+}
+
+export async function calculateRoute(params: {
+  originLat: number;
+  originLng: number;
+  destinationLat: number;
+  destinationLng: number;
+  discountType?: DiscountType;
+}): Promise<RouteCalculationResponse> {
+  return api.post<RouteCalculationResponse>('/api/routes/calculate', {
+    origin: { type: 'pin', lat: params.originLat, lng: params.originLng },
+    destination: { type: 'pin', lat: params.destinationLat, lng: params.destinationLng },
+    passengerType: discountTypeToPassengerType(params.discountType ?? 'NONE'),
+  });
 }
 
 export async function saveFareCalculation(payload: {
@@ -24,10 +44,34 @@ export async function saveFareCalculation(payload: {
   destinationLabel: string;
   distanceKm: number;
   fare: number;
-  discountType: string;
+  discountType: DiscountType;
   isEstimate: boolean;
-}): Promise<FareCalculation> {
-  return api.post<FareCalculation>('/api/fare-calculations', payload);
+  vehicleId: string;
+  method: 'ors' | 'google_routes' | null;
+  provider: 'ors' | 'google_routes' | null;
+  polyline: string | null;
+  farePolicySnapshot: { baseFare: number; baseDistanceKm: number; perKmRate: number };
+}): Promise<{ success: boolean; tripRequestId?: string }> {
+  return api.post<{ success: boolean; tripRequestId?: string }>('/api/fare-calculations', {
+    fromLocation: payload.originLabel,
+    toLocation: payload.destinationLabel,
+    distance: payload.distanceKm,
+    calculatedFare: payload.fare,
+    calculationType: 'route',
+    vehicleId: payload.vehicleId,
+    discountType: payload.discountType !== 'NONE' ? payload.discountType : null,
+    routeData: {
+      method: payload.method,
+      provider: payload.provider,
+      isEstimate: payload.isEstimate,
+      polyline: payload.polyline,
+      originLat: payload.originLat,
+      originLng: payload.originLng,
+      destinationLat: payload.destinationLat,
+      destinationLng: payload.destinationLng,
+    },
+    farePolicySnapshot: payload.farePolicySnapshot,
+  });
 }
 
 function normalizeFareCalc(raw: Record<string, unknown>): FareCalculation {

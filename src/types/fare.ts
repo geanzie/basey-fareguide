@@ -15,11 +15,9 @@ export interface FareBreakdown {
 }
 
 export interface RouteCalculationRequest {
-  originLat: number;
-  originLng: number;
-  destinationLat: number;
-  destinationLng: number;
-  discountType?: DiscountType;
+  origin: { type: 'pin'; lat: number; lng: number };
+  destination: { type: 'pin'; lat: number; lng: number };
+  passengerType: PassengerType;
 }
 
 export interface RouteCalculationResponse {
@@ -29,6 +27,15 @@ export interface RouteCalculationResponse {
   isEstimate: boolean;
   fareBreakdown: FareBreakdown;
   farePolicy: FarePolicySnapshot;
+  method: 'ors' | 'google_routes' | null;
+  provider: 'ors' | 'google_routes' | null;
+  fallbackReason: string | null;
+  polyline: string | null;
+  snappedOrigin: { lat: number; lng: number } | null;
+  snappedDestination: { lat: number; lng: number } | null;
+  passengerType: PassengerType;
+  origin: string;
+  destination: string;
 }
 
 export interface VehicleLookup {

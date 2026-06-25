@@ -28,8 +28,18 @@ export const colors = {
   bg: '#f1f5f9',
   surface: '#ffffff',
   surfaceAlt: '#f8fafc',
+  surfaceTint: '#f0fdf4', // light green wash (cards, active chips, avatars)
   border: '#e2e8f0',
   onPrimary: '#ffffff',
+} as const;
+
+/**
+ * Brand gradients. `brand` is the slate→green hero used on every screen header,
+ * extending the login screen's color story (#0f172a background + #16a34a accent).
+ */
+export const gradients = {
+  brand: ['#0f172a', '#15803d', '#16a34a'] as [string, string, string],
+  brandSoft: ['#16a34a', '#15803d'] as [string, string],
 } as const;
 
 export const spacing = {

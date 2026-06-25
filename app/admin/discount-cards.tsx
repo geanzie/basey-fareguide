@@ -7,12 +7,12 @@ import {
   RefreshControl,
   ActivityIndicator,
   Pressable,
-  Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import GradientHeader from '@/ui/GradientHeader';
 import { useRouter } from 'expo-router';
 import { api } from '@/services/api';
 import { ListSkeleton } from '@/ui/Skeleton';
+import { useFeedback } from '@/ui/FeedbackProvider';
 
 interface DiscountCardUser {
   id: string;
@@ -45,18 +45,23 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function AdminDiscountCardsScreen() {
   const router = useRouter();
+  const { showError, showConfirm } = useFeedback();
   const [cards, setCards] = useState<DiscountCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<StatusFilter>('PENDING');
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+  const [error, setError] = useState('');
 
   const load = useCallback(async () => {
     try {
       const q = filter !== 'ALL' ? `?verificationStatus=${filter}` : '';
       const res = await api.get<{ discountCards: DiscountCard[] }>(`/api/admin/discount-cards${q}`);
       setCards(res.discountCards ?? []);
-    } catch {} finally {
+      setError('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load discount cards.');
+    } finally {
       setLoading(false);
     }
   }, [filter]);
@@ -70,48 +75,39 @@ export default function AdminDiscountCardsScreen() {
   };
 
   const handleAction = (cardId: string, fullName: string, action: 'approve' | 'reject') => {
-    Alert.alert(
-      action === 'approve' ? 'Approve Application' : 'Reject Application',
-      `${action === 'approve' ? 'Approve' : 'Reject'} discount card application for ${fullName}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: action === 'approve' ? 'Approve' : 'Reject',
-          style: action === 'reject' ? 'destructive' : 'default',
-          onPress: async () => {
-            setActionLoadingId(cardId);
-            try {
-              await api.patch('/api/admin/discount-cards', { discountCardId: cardId, action });
-              await load();
-            } catch (err) {
-              Alert.alert('Error', err instanceof Error ? err.message : 'Action failed.');
-            } finally {
-              setActionLoadingId(null);
-            }
-          },
-        },
-      ],
-    );
+    showConfirm({
+      title: action === 'approve' ? 'Approve Application' : 'Reject Application',
+      message: `${action === 'approve' ? 'Approve' : 'Reject'} discount card application for ${fullName}?`,
+      confirmLabel: action === 'approve' ? 'Approve' : 'Reject',
+      destructive: action === 'reject',
+      onConfirm: async () => {
+        setActionLoadingId(cardId);
+        try {
+          await api.patch('/api/admin/discount-cards', { discountCardId: cardId, action });
+          await load();
+        } catch (err) {
+          showError(err instanceof Error ? err.message : 'Action failed.');
+        } finally {
+          setActionLoadingId(null);
+        }
+      },
+    });
   };
 
   const FILTERS: StatusFilter[] = ['PENDING', 'APPROVED', 'REJECTED', 'ALL'];
 
   if (loading) {
     return (
-      <SafeAreaView style={s.container}>
+      <View style={s.container}>
+        <GradientHeader title="Discount Cards" onBack={() => router.back()} />
         <ListSkeleton count={4} />
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={s.container}>
-      <View style={s.headerRow}>
-        <Pressable style={s.backBtn} onPress={() => router.back()}>
-          <Text style={s.backBtnText}>Back</Text>
-        </Pressable>
-        <Text style={s.title}>Discount Cards</Text>
-      </View>
+    <View style={s.container}>
+      <GradientHeader title="Discount Cards" onBack={() => router.back()} />
 
       <View style={s.filterBar}>
         {FILTERS.map((f) => (
@@ -126,6 +122,16 @@ export default function AdminDiscountCardsScreen() {
         keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         contentContainerStyle={s.list}
+        ListHeaderComponent={
+          error ? (
+            <View style={s.errorBox}>
+              <Text style={s.errorText}>{error}</Text>
+              <Pressable style={s.retryBtn} onPress={() => { setLoading(true); void load(); }}>
+                <Text style={s.retryText}>Retry</Text>
+              </Pressable>
+            </View>
+          ) : null
+        }
         ListEmptyComponent={<Text style={s.empty}>No {filter !== 'ALL' ? filter.toLowerCase() : ''} applications.</Text>}
         renderItem={({ item }) => {
           const statusColor = STATUS_COLORS[item.verificationStatus] ?? '#64748b';
@@ -172,7 +178,7 @@ export default function AdminDiscountCardsScreen() {
           );
         }}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -189,6 +195,10 @@ const s = StyleSheet.create({
   filterBtnText: { fontSize: 12, fontWeight: '600', color: '#64748b' },
   filterBtnTextActive: { color: '#fff' },
   list: { padding: 16, gap: 10 },
+  errorBox: { backgroundColor: '#fef2f2', borderRadius: 12, padding: 16, marginBottom: 4, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  errorText: { color: '#dc2626', fontSize: 13, fontWeight: '500', flex: 1, marginRight: 12 },
+  retryBtn: { backgroundColor: '#dc2626', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 16 },
+  retryText: { color: '#fff', fontWeight: '700', fontSize: 13 },
   empty: { textAlign: 'center', color: '#94a3b8', marginTop: 40 },
   card: { backgroundColor: '#fff', borderRadius: 12, padding: 14, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, elevation: 1, gap: 4 },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },

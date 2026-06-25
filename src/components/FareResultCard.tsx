@@ -1,4 +1,6 @@
 import { View, Text, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { colors, radii, spacing } from '@/ui/theme';
 import type { RouteCalculationResponse } from '@/types/fare';
 
 interface Props {
@@ -7,52 +9,63 @@ interface Props {
   destinationLabel: string;
 }
 
+type IoniconName = keyof typeof Ionicons.glyphMap;
+
+function getProviderLabel(method: 'ors' | 'google_routes' | null): string | null {
+  if (method === 'ors') return 'Via OpenRouteService';
+  if (method === 'google_routes') return 'Via Google Routes';
+  return null;
+}
+
 export default function FareResultCard({ result, originLabel, destinationLabel }: Props) {
   const isDiscounted = (result.fareBreakdown.discount ?? 0) > 0;
   const regularFare = result.fareBreakdown.baseFare + result.fareBreakdown.additionalFare;
+  const providerLabel = getProviderLabel(result.method);
 
   return (
     <View style={s.card}>
+      {/* Route row */}
       <View style={s.routeRow}>
         <Text style={s.routeText} numberOfLines={1}>{originLabel}</Text>
-        <Text style={s.arrow}>→</Text>
+        <Ionicons name="arrow-forward" size={12} color={colors.textFaint} />
         <Text style={s.routeText} numberOfLines={1}>{destinationLabel}</Text>
       </View>
 
+      {/* Fare hero: label left, amount right */}
       <View style={s.fareBox}>
         <Text style={s.fareLabel}>FARE</Text>
         <Text style={s.fareAmount}>₱{result.fare.toFixed(2)}</Text>
       </View>
 
+      {/* Stats grid */}
       <View style={s.grid}>
-        <View style={s.gridItem}>
-          <Text style={s.gridLabel}>Distance</Text>
-          <Text style={s.gridValue}>{result.distanceKm.toFixed(2)} km</Text>
-        </View>
+        <Stat icon="navigate" label="Dist" value={`${result.distanceKm.toFixed(2)} km`} />
         {result.durationMin != null && (
-          <View style={s.gridItem}>
-            <Text style={s.gridLabel}>Duration</Text>
-            <Text style={s.gridValue}>{Math.round(result.durationMin)} min</Text>
-          </View>
+          <Stat icon="time" label="Time" value={`${Math.round(result.durationMin)} min`} />
         )}
-        <View style={s.gridItem}>
-          <Text style={s.gridLabel}>Regular</Text>
-          <Text style={s.gridValue}>₱{regularFare.toFixed(2)}</Text>
-        </View>
+        <Stat icon="cash" label="Regular" value={`₱${regularFare.toFixed(2)}`} />
         {isDiscounted && (
-          <View style={s.gridItem}>
-            <Text style={s.gridLabel}>Discount</Text>
-            <Text style={[s.gridValue, s.discount]}>-₱{result.fareBreakdown.discount.toFixed(2)}</Text>
-          </View>
+          <Stat icon="pricetag" label="Discount" value={`-₱${result.fareBreakdown.discount.toFixed(2)}`} valueColor={colors.primary} />
         )}
       </View>
 
-      {result.isEstimate && (
-        <View style={s.estimateBadge}>
-          <Text style={s.estimateText}>Straight-line estimate — no road route found</Text>
+      {/* Badges row */}
+      {(result.isEstimate || providerLabel) && (
+        <View style={s.badgeRow}>
+          {result.isEstimate && (
+            <View style={s.estimateBadge}>
+              <Text style={s.estimateText}>Estimated (straight-line)</Text>
+            </View>
+          )}
+          {providerLabel && (
+            <View style={s.providerBadge}>
+              <Text style={s.providerText}>{providerLabel}</Text>
+            </View>
+          )}
         </View>
       )}
 
+      {/* Formula */}
       <View style={s.breakdown}>
         <Text style={s.breakdownText}>
           Base ₱{result.fareBreakdown.baseFare.toFixed(2)} + {result.fareBreakdown.additionalKm.toFixed(2)} km × ₱{result.farePolicy.perKmRate}/km
@@ -62,36 +75,58 @@ export default function FareResultCard({ result, originLabel, destinationLabel }
   );
 }
 
+function Stat({ icon, label, value, valueColor }: { icon: IoniconName; label: string; value: string; valueColor?: string }) {
+  return (
+    <View style={s.gridItem}>
+      <View style={s.gridLabelRow}>
+        <Ionicons name={icon} size={11} color={colors.textFaint} />
+        <Text style={s.gridLabel}>{label}</Text>
+      </View>
+      <Text style={[s.gridValue, valueColor ? { color: valueColor } : null]}>{value}</Text>
+    </View>
+  );
+}
+
 const s = StyleSheet.create({
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
+    backgroundColor: colors.surface,
+    borderRadius: radii.xl,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    elevation: 4,
+    shadowOpacity: 0.07,
+    elevation: 3,
   },
   routeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     gap: 6,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: colors.bg,
   },
-  routeText: { flex: 1, fontSize: 14, fontWeight: '600', color: '#374151' },
-  arrow: { color: '#94a3b8', fontSize: 14 },
-  fareBox: { backgroundColor: '#0f172a', padding: 20, alignItems: 'center' },
-  fareLabel: { color: '#94a3b8', fontSize: 11, fontWeight: '700', letterSpacing: 1.5 },
-  fareAmount: { color: '#fff', fontSize: 40, fontWeight: '900', marginTop: 4 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', padding: 12, gap: 8 },
-  gridItem: { width: '47%', backgroundColor: '#f8fafc', borderRadius: 10, padding: 12 },
-  gridLabel: { fontSize: 10, color: '#94a3b8', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8 },
-  gridValue: { fontSize: 16, fontWeight: '700', color: '#0f172a', marginTop: 2 },
-  discount: { color: '#16a34a' },
-  estimateBadge: { marginHorizontal: 12, marginBottom: 8, backgroundColor: '#fff7ed', borderRadius: 8, padding: 10 },
-  estimateText: { color: '#b45309', fontSize: 12 },
-  breakdown: { padding: 12, paddingTop: 0 },
-  breakdownText: { color: '#94a3b8', fontSize: 11 },
+  routeText: { flex: 1, fontSize: 12, fontWeight: '600', color: colors.textBody },
+  fareBox: {
+    backgroundColor: colors.textStrong,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  fareLabel: { color: colors.textFaint, fontSize: 11, fontWeight: '700', letterSpacing: 1.5 },
+  fareAmount: { color: colors.onPrimary, fontSize: 26, fontWeight: '900' },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: spacing.sm, paddingVertical: 6, gap: 6 },
+  gridItem: { flex: 1, minWidth: '22%', backgroundColor: colors.surfaceAlt, borderRadius: radii.sm, padding: 7 },
+  gridLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  gridLabel: { fontSize: 9, color: colors.textFaint, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6 },
+  gridValue: { fontSize: 13, fontWeight: '700', color: colors.textStrong, marginTop: 1 },
+  badgeRow: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: spacing.sm, gap: 4 },
+  estimateBadge: { backgroundColor: '#fff7ed', borderRadius: 6, paddingHorizontal: spacing.sm, paddingVertical: 4 },
+  estimateText: { color: colors.warningDark, fontSize: 10 },
+  providerBadge: { backgroundColor: '#eff6ff', borderRadius: 6, paddingHorizontal: spacing.sm, paddingVertical: 4 },
+  providerText: { color: colors.info, fontSize: 10 },
+  breakdown: { paddingHorizontal: spacing.md, paddingVertical: 6 },
+  breakdownText: { color: colors.textFaint, fontSize: 10 },
 });

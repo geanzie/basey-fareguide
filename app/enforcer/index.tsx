@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, RefreshControl, ScrollView, ActivityIndicator, Pressable } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/store/authStore';
+import GradientHeader from '@/ui/GradientHeader';
 import { fetchEnforcerStats, fetchEnforcerIncidents } from '@/services/incidents';
 import type { EnforcerStats, Incident } from '@/types/incidents';
 import QrComplianceScanModal from '@/components/QrComplianceScanModal';
@@ -65,16 +65,12 @@ export default function EnforcerDashboard() {
     : [];
 
   return (
-    <SafeAreaView style={s.container}>
+    <View style={s.container}>
+      <GradientHeader title="Enforcement Dashboard" subtitle={`${user?.firstName ?? ''} ${user?.lastName ?? ''}`} />
       <ScrollView
         contentContainerStyle={s.scroll}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-
-        <View style={s.header}>
-          <Text style={s.title}>Enforcement Dashboard</Text>
-          <Text style={s.sub}>{user?.firstName} {user?.lastName}</Text>
-        </View>
 
         {loading ? (
           <>
@@ -132,7 +128,7 @@ export default function EnforcerDashboard() {
         onClose={() => setScanModalVisible(false)}
         onReviewIncidents={handleReviewIncidents}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 

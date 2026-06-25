@@ -6,12 +6,15 @@ import {
   ScrollView,
   Pressable,
   ActivityIndicator,
-  Alert,
   TextInput,
   Image,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { FormSkeleton } from '@/ui/Skeleton';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFeedback } from '@/ui/FeedbackProvider';
+import GradientHeader from '@/ui/GradientHeader';
+import EmptyState from '@/ui/EmptyState';
+import { gradients } from '@/ui/theme';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { api } from '@/services/api';
@@ -50,6 +53,7 @@ const STATUS_COLOR: Record<string, string> = {
 export default function DiscountCardScreen() {
   const { token } = useAuthStore();
   const router = useRouter();
+  const { showSuccess, showError, showWarning } = useFeedback();
   const [cardStatus, setCardStatus] = useState<CardStatusResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -82,7 +86,7 @@ export default function DiscountCardScreen() {
   const pickPhoto = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission Required', 'Photo library access is needed to upload your ID photo.');
+      showWarning('Photo library access is needed to upload your ID photo.', { title: 'Permission Required' });
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -98,18 +102,18 @@ export default function DiscountCardScreen() {
   };
 
   const submit = async () => {
-    if (!fullName.trim()) { Alert.alert('Required', 'Full name is required.'); return; }
-    if (!dateOfBirth.trim()) { Alert.alert('Required', 'Date of birth is required (YYYY-MM-DD).'); return; }
-    if (!photoUri || !photoFileName) { Alert.alert('Required', 'Please upload a photo of your ID.'); return; }
+    if (!fullName.trim()) { showWarning('Full name is required.', { title: 'Required' }); return; }
+    if (!dateOfBirth.trim()) { showWarning('Date of birth is required (YYYY-MM-DD).', { title: 'Required' }); return; }
+    if (!photoUri || !photoFileName) { showWarning('Please upload a photo of your ID.', { title: 'Required' }); return; }
     if (discountType === 'STUDENT') {
-      if (!schoolName.trim()) { Alert.alert('Required', 'School name is required.'); return; }
-      if (!gradeLevel.trim()) { Alert.alert('Required', 'Grade/Year level is required.'); return; }
-      if (!schoolIdExpiry.trim()) { Alert.alert('Required', 'School ID expiry is required (YYYY-MM-DD).'); return; }
+      if (!schoolName.trim()) { showWarning('School name is required.', { title: 'Required' }); return; }
+      if (!gradeLevel.trim()) { showWarning('Grade/Year level is required.', { title: 'Required' }); return; }
+      if (!schoolIdExpiry.trim()) { showWarning('School ID expiry is required (YYYY-MM-DD).', { title: 'Required' }); return; }
     }
     if (discountType === 'PWD') {
-      if (!disabilityType.trim()) { Alert.alert('Required', 'Disability type is required.'); return; }
-      if (!pwdIdExpiry.trim()) { Alert.alert('Required', 'PWD ID expiry is required (YYYY-MM-DD).'); return; }
-      if (!idNumber.trim()) { Alert.alert('Required', 'PWD ID number is required.'); return; }
+      if (!disabilityType.trim()) { showWarning('Disability type is required.', { title: 'Required' }); return; }
+      if (!pwdIdExpiry.trim()) { showWarning('PWD ID expiry is required (YYYY-MM-DD).', { title: 'Required' }); return; }
+      if (!idNumber.trim()) { showWarning('PWD ID number is required.', { title: 'Required' }); return; }
     }
 
     setSubmitting(true);
@@ -151,11 +155,11 @@ export default function DiscountCardScreen() {
         throw new Error(json.error ?? json.message ?? `HTTP ${res.status}`);
       }
 
-      Alert.alert('Application Submitted', 'Your discount card application has been submitted for review.');
+      showSuccess('Your discount card application has been submitted for review.', { title: 'Application Submitted' });
       setShowForm(false);
       await load();
     } catch (err) {
-      Alert.alert('Error', err instanceof Error ? err.message : 'Submission failed.');
+      showError(err instanceof Error ? err.message : 'Submission failed.');
     } finally {
       setSubmitting(false);
     }
@@ -163,9 +167,12 @@ export default function DiscountCardScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={s.container}>
-        <FormSkeleton fields={3} />
-      </SafeAreaView>
+      <View style={s.container}>
+        <GradientHeader title="Discount Card" onBack={() => router.back()} />
+        <View style={s.content}>
+          <FormSkeleton fields={3} />
+        </View>
+      </View>
     );
   }
 
@@ -173,50 +180,49 @@ export default function DiscountCardScreen() {
     const card = cardStatus.discountCard;
     const statusColor = STATUS_COLOR[card.verificationStatus] ?? '#64748b';
     return (
-      <SafeAreaView style={s.container}>
+      <View style={s.container}>
+        <GradientHeader title="Discount Card" onBack={() => router.back()} />
         <ScrollView contentContainerStyle={s.content}>
-          <Pressable style={s.backBtn} onPress={() => router.back()}>
-            <Text style={s.backBtnText}>Back</Text>
-          </Pressable>
-          <Text style={s.title}>Discount Card</Text>
-          <View style={s.statusCard}>
-            <View style={[s.statusBadge, { backgroundColor: statusColor + '22' }]}>
-              <Text style={[s.statusBadgeText, { color: statusColor }]}>
-                {card.verificationStatus}
-              </Text>
+          <LinearGradient
+            colors={gradients.brandSoft}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={s.cardFace}
+          >
+            <View style={s.cardFaceTop}>
+              <Text style={s.cardFaceBrand}>Basey FareCheck</Text>
+              <View style={[s.statusBadge, { backgroundColor: '#ffffff' }]}>
+                <Text style={[s.statusBadgeText, { color: statusColor }]}>
+                  {card.verificationStatus}
+                </Text>
+              </View>
             </View>
-            <Text style={s.cardType}>{card.discountType.replace('_', ' ')}</Text>
+            <Text style={s.cardFaceType}>{card.discountType.replace('_', ' ')}</Text>
             {cardStatus.isValid !== undefined && (
-              <Text style={[s.validText, { color: cardStatus.isValid ? '#16a34a' : '#dc2626' }]}>
-                {cardStatus.isValid ? 'Valid' : 'Invalid / Expired'}
+              <Text style={s.cardFaceValid}>
+                {cardStatus.isValid ? '● Valid for 20% discount' : '○ Invalid / Expired'}
               </Text>
             )}
-            <View style={s.dateRow}>
-              <Text style={s.dateMeta}>Valid from: {new Date(card.validFrom).toLocaleDateString('en-PH')}</Text>
-              <Text style={s.dateMeta}>Valid until: {new Date(card.validUntil).toLocaleDateString('en-PH')}</Text>
+            <View style={s.cardFaceDates}>
+              <Text style={s.cardFaceDate}>From {new Date(card.validFrom).toLocaleDateString('en-PH')}</Text>
+              <Text style={s.cardFaceDate}>Until {new Date(card.validUntil).toLocaleDateString('en-PH')}</Text>
             </View>
-          </View>
+          </LinearGradient>
           {card.verificationStatus === 'PENDING' && (
             <View style={s.infoBox}>
               <Text style={s.infoText}>Your application is under review. We will notify you once it is processed.</Text>
             </View>
           )}
         </ScrollView>
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (showForm) {
     return (
-      <SafeAreaView style={s.container}>
+      <View style={s.container}>
+        <GradientHeader title="Apply for Discount Card" onBack={() => setShowForm(false)} />
         <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
-          <View style={s.formHeader}>
-            <Text style={s.title}>Apply for Discount Card</Text>
-            <Pressable onPress={() => setShowForm(false)}>
-              <Text style={s.cancelText}>Cancel</Text>
-            </Pressable>
-          </View>
-
           <Text style={s.sectionLabel}>Discount Type</Text>
           <View style={s.chipRow}>
             {DISCOUNT_OPTIONS.map((opt) => (
@@ -289,49 +295,40 @@ export default function DiscountCardScreen() {
               : <Text style={s.submitBtnText}>Submit Application</Text>}
           </Pressable>
         </ScrollView>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={s.container}>
+    <View style={s.container}>
+      <GradientHeader title="Discount Card" onBack={() => router.back()} />
       <ScrollView contentContainerStyle={s.content}>
-        <Pressable style={s.backBtn} onPress={() => router.back()}>
-          <Text style={s.backBtnText}>Back</Text>
-        </Pressable>
-        <Text style={s.title}>Discount Card</Text>
-        <View style={s.emptyState}>
-          <Text style={s.emptyTitle}>No Discount Card</Text>
-          <Text style={s.emptyDesc}>
-            Apply for a Senior Citizen, PWD, or Student discount card to get 20% off on fares.
-          </Text>
-        </View>
-        <Pressable style={s.applyBtn} onPress={() => setShowForm(true)}>
-          <Text style={s.applyBtnText}>Apply for Discount Card</Text>
-        </Pressable>
+        <EmptyState
+          icon="card-outline"
+          title="No Discount Card"
+          message="Apply for a Senior Citizen, PWD, or Student discount card to get 20% off on fares."
+          actionLabel="Apply for Discount Card"
+          onAction={() => setShowForm(true)}
+        />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f1f5f9' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  content: { padding: 20, paddingBottom: 40 },
-  backBtn: { marginBottom: 8 },
-  backBtnText: { color: '#3b82f6', fontSize: 15 },
-  title: { fontSize: 22, fontWeight: '700', color: '#0f172a', marginBottom: 20 },
-  statusCard: { backgroundColor: '#fff', borderRadius: 16, padding: 20, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, elevation: 2, gap: 8 },
-  statusBadge: { borderRadius: 10, paddingHorizontal: 14, paddingVertical: 4 },
-  statusBadgeText: { fontWeight: '800', fontSize: 12, letterSpacing: 0.5 },
-  cardType: { fontSize: 18, fontWeight: '700', color: '#0f172a' },
-  validText: { fontSize: 14, fontWeight: '600' },
-  dateRow: { gap: 4, alignItems: 'center' },
-  dateMeta: { fontSize: 12, color: '#64748b' },
+  content: { padding: 20, paddingTop: 20, paddingBottom: 40 },
+  cardFace: { borderRadius: 20, padding: 22, gap: 6, minHeight: 180, justifyContent: 'space-between' },
+  cardFaceTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  cardFaceBrand: { color: 'rgba(255,255,255,0.9)', fontSize: 13, fontWeight: '700', letterSpacing: 0.5 },
+  cardFaceType: { color: '#fff', fontSize: 26, fontWeight: '800', marginTop: 16 },
+  cardFaceValid: { color: '#dcfce7', fontSize: 14, fontWeight: '600' },
+  cardFaceDates: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 12 },
+  cardFaceDate: { color: 'rgba(255,255,255,0.85)', fontSize: 12, fontWeight: '600' },
+  statusBadge: { borderRadius: 10, paddingHorizontal: 12, paddingVertical: 4 },
+  statusBadgeText: { fontWeight: '800', fontSize: 11, letterSpacing: 0.5 },
   infoBox: { marginTop: 16, backgroundColor: '#fef3c7', borderRadius: 12, padding: 14 },
   infoText: { color: '#92400e', fontSize: 13 },
-  formHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  cancelText: { color: '#3b82f6', fontSize: 15 },
   sectionLabel: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 10 },
   chipRow: { gap: 8, marginBottom: 20 },
   chip: { borderRadius: 12, padding: 12, backgroundColor: '#f1f5f9', borderWidth: 1.5, borderColor: '#e2e8f0' },
@@ -350,9 +347,4 @@ const s = StyleSheet.create({
   submitBtn: { marginTop: 24, backgroundColor: '#16a34a', borderRadius: 14, padding: 16, alignItems: 'center' },
   submitBtnDisabled: { opacity: 0.6 },
   submitBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
-  emptyState: { backgroundColor: '#fff', borderRadius: 16, padding: 24, alignItems: 'center', marginBottom: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, elevation: 2 },
-  emptyTitle: { fontSize: 17, fontWeight: '700', color: '#0f172a', marginBottom: 8 },
-  emptyDesc: { fontSize: 13, color: '#64748b', textAlign: 'center', lineHeight: 20 },
-  applyBtn: { backgroundColor: '#16a34a', borderRadius: 14, padding: 16, alignItems: 'center' },
-  applyBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
 });

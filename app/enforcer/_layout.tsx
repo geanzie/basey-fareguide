@@ -2,11 +2,13 @@ import { useEffect } from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/store/authStore';
 
 export default function EnforcerLayout() {
   const { user, status } = useAuthStore();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     if (status === 'unauthenticated') router.replace('/login');
@@ -19,7 +21,13 @@ export default function EnforcerLayout() {
         headerShown: false,
         tabBarActiveTintColor: '#16a34a',
         tabBarInactiveTintColor: '#64748b',
-        tabBarStyle: { backgroundColor: '#fff', borderTopColor: '#e2e8f0' },
+        tabBarStyle: {
+          backgroundColor: '#fff',
+          borderTopColor: '#e2e8f0',
+          height: 64 + insets.bottom,
+          paddingTop: 6,
+          paddingBottom: 8 + insets.bottom,
+        },
       }}
     >
       <Tabs.Screen

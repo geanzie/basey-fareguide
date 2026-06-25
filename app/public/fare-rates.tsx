@@ -4,10 +4,10 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  ActivityIndicator,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { ListSkeleton } from '@/ui/Skeleton';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import GradientHeader from '@/ui/GradientHeader';
 import { fetchCurrentFareRates, type FareRatesResponse } from '@/services/fare';
 
 function formatDate(iso: string | null): string {
@@ -68,6 +68,7 @@ function RateCard({ label, baseFare, baseDistanceKm, perKmRate, effectiveAt, isU
 }
 
 export default function FareRatesScreen() {
+  const router = useRouter();
   const [rates, setRates] = useState<FareRatesResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -80,11 +81,13 @@ export default function FareRatesScreen() {
   }, []);
 
   return (
-    <SafeAreaView style={s.container}>
+    <View style={s.container}>
+      <GradientHeader
+        title="Fare Rates"
+        subtitle="Municipal Ordinance 105, Series of 2023"
+        onBack={() => router.back()}
+      />
       <ScrollView contentContainerStyle={s.content}>
-        <Text style={s.title}>Fare Rates</Text>
-        <Text style={s.subtitle}>Municipal Ordinance 105, Series of 2023</Text>
-
         {loading && <ListSkeleton count={2} />}
 
         {error && (
@@ -123,16 +126,13 @@ export default function FareRatesScreen() {
           </Text>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f1f5f9' },
-  content: { padding: 16, paddingBottom: 40 },
-  title: { fontSize: 22, fontWeight: '700', color: '#0f172a', marginBottom: 4 },
-  subtitle: { fontSize: 13, color: '#64748b', marginBottom: 20 },
-  spinner: { marginTop: 40 },
+  content: { padding: 16, paddingTop: 20, paddingBottom: 40 },
   errorBox: { backgroundColor: '#fef2f2', borderRadius: 12, padding: 16, marginBottom: 16 },
   errorText: { color: '#dc2626', fontSize: 14 },
   card: {

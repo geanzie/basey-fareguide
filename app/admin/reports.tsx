@@ -9,7 +9,7 @@ import {
   Pressable,
   Share,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import GradientHeader from '@/ui/GradientHeader';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@/services/api';
@@ -17,19 +17,30 @@ import { StatGridSkeleton, ListSkeleton } from '@/ui/Skeleton';
 
 type Period = '7d' | '30d' | '90d' | '1y';
 
-interface StatusCount { status: string; _count: number }
-interface TypeCount { incidentType?: string; type?: string; _count: number }
-interface UserTypeCount { userType: string; _count: number }
+interface CountRow { label: string; count: number }
 
+/** Raw shape returned by GET /api/admin/reports. */
+interface ReportsApiResponse {
+  data: {
+    incidents: { total: number; byStatus: Record<string, number>; byType: Record<string, number> };
+    users: { total: number; active: number; byType: Record<string, number> };
+    storage: { totalFiles: number };
+  };
+}
+
+/** Normalized shape this screen renders. */
 interface ReportsData {
   totalIncidents: number;
-  incidentsByStatus: StatusCount[];
-  incidentsByType: TypeCount[];
+  incidentsByStatus: CountRow[];
+  incidentsByType: CountRow[];
   totalUsers: number;
   activeUsers: number;
-  usersByType: UserTypeCount[];
-  evidenceTotals?: { total: number };
+  usersByType: CountRow[];
+  evidenceFiles: number;
 }
+
+const toRows = (obj: Record<string, number>): CountRow[] =>
+  Object.entries(obj).map(([label, count]) => ({ label, count }));
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -45,13 +56,26 @@ export default function AdminReportsScreen() {
   const [data, setData] = useState<ReportsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState('');
   const [period, setPeriod] = useState<Period>('30d');
 
   const load = useCallback(async () => {
     try {
-      const res = await api.get<ReportsData>(`/api/admin/reports?period=${period}`);
-      setData(res);
-    } catch {} finally {
+      const res = await api.get<ReportsApiResponse>(`/api/admin/reports?period=${period}`);
+      const d = res.data;
+      setData({
+        totalIncidents: d.incidents.total,
+        incidentsByStatus: toRows(d.incidents.byStatus),
+        incidentsByType: toRows(d.incidents.byType),
+        totalUsers: d.users.total,
+        activeUsers: d.users.active,
+        usersByType: toRows(d.users.byType),
+        evidenceFiles: d.storage.totalFiles,
+      });
+      setError('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load reports.');
+    } finally {
       setLoading(false);
     }
   }, [period]);
@@ -68,46 +92,43 @@ export default function AdminReportsScreen() {
     if (!data) return;
     const lines: string[] = [`Basey FareCheck Report - ${period}`, ''];
     lines.push('Incidents by Status', 'Status,Count');
-    data.incidentsByStatus.forEach((r) => lines.push(`${r.status},${r._count}`));
+    data.incidentsByStatus.forEach((r) => lines.push(`${r.label},${r.count}`));
     lines.push('', 'Incidents by Type', 'Type,Count');
-    data.incidentsByType.forEach((r) => {
-      const label = (r.incidentType ?? r.type ?? 'UNKNOWN').replace(/_/g, ' ');
-      lines.push(`${label},${r._count}`);
-    });
+    data.incidentsByType.forEach((r) => lines.push(`${r.label.replace(/_/g, ' ')},${r.count}`));
     lines.push('', 'Users by Role', 'Role,Count');
-    data.usersByType.forEach((r) => lines.push(`${r.userType.replace(/_/g, ' ')},${r._count}`));
+    data.usersByType.forEach((r) => lines.push(`${r.label.replace(/_/g, ' ')},${r.count}`));
     await Share.share({ message: lines.join('\n'), title: `Basey FareCheck Report ${period}` });
   };
 
   if (loading) {
     return (
-      <SafeAreaView style={s.container}>
+      <View style={s.container}>
+        <GradientHeader title="Reports" onBack={() => router.back()} />
         <StatGridSkeleton count={4} />
         <ListSkeleton count={3} />
-      </SafeAreaView>
+      </View>
     );
   }
 
   const statCards: { label: string; value: string | number; color: string; icon: IoniconName }[] = data ? [
     { label: 'Total Incidents', value: data.totalIncidents, color: '#dc2626', icon: 'alert-circle' },
     { label: 'Total Users', value: data.totalUsers, color: '#3b82f6', icon: 'people' },
-    { label: 'Active Users', value: data.activeUsers, color: '#16a34a', icon: 'person-check' as IoniconName },
-    { label: 'Evidence Files', value: data.evidenceTotals?.total ?? '—', color: '#8b5cf6', icon: 'attach' },
+    { label: 'Active Users', value: data.activeUsers, color: '#16a34a', icon: 'people-circle' },
+    { label: 'Evidence Files', value: data.evidenceFiles, color: '#8b5cf6', icon: 'attach' },
   ] : [];
 
   return (
-    <SafeAreaView style={s.container}>
-      <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
-        <View style={s.headerRow}>
-          <Pressable style={s.backBtn} onPress={() => router.back()}>
-            <Text style={s.backBtnText}>Back</Text>
-          </Pressable>
-          <Text style={s.title}>Reports</Text>
+    <View style={s.container}>
+      <GradientHeader
+        title="Reports"
+        onBack={() => router.back()}
+        right={
           <Pressable style={[s.exportBtn, !data && s.exportBtnDisabled]} onPress={exportCsv} disabled={!data}>
             <Text style={s.exportBtnText}>Export CSV</Text>
           </Pressable>
-        </View>
-
+        }
+      />
+      <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
         <View style={s.periodBar}>
           {PERIODS.map((p) => (
             <Pressable
@@ -130,13 +151,22 @@ export default function AdminReportsScreen() {
           ))}
         </View>
 
+        {error ? (
+          <View style={s.errorBox}>
+            <Text style={s.errorText}>{error}</Text>
+            <Pressable style={s.retryBtn} onPress={() => { setLoading(true); void load(); }}>
+              <Text style={s.retryText}>Retry</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
         {data && data.incidentsByStatus.length > 0 && (
           <View style={s.section}>
             <Text style={s.sectionTitle}>Incidents by Status</Text>
             {data.incidentsByStatus.map((row) => (
-              <View key={row.status} style={s.row}>
-                <Text style={s.rowLabel}>{row.status}</Text>
-                <Text style={s.rowVal}>{row._count}</Text>
+              <View key={row.label} style={s.row}>
+                <Text style={s.rowLabel}>{row.label}</Text>
+                <Text style={s.rowVal}>{row.count}</Text>
               </View>
             ))}
           </View>
@@ -145,16 +175,12 @@ export default function AdminReportsScreen() {
         {data && data.incidentsByType.length > 0 && (
           <View style={s.section}>
             <Text style={s.sectionTitle}>Incidents by Type</Text>
-            {data.incidentsByType.map((row, i) => {
-              const key = (row.incidentType ?? row.type ?? '') + i;
-              const label = (row.incidentType ?? row.type ?? 'UNKNOWN').replace(/_/g, ' ');
-              return (
-                <View key={key} style={s.row}>
-                  <Text style={s.rowLabel}>{label}</Text>
-                  <Text style={s.rowVal}>{row._count}</Text>
-                </View>
-              );
-            })}
+            {data.incidentsByType.map((row) => (
+              <View key={row.label} style={s.row}>
+                <Text style={s.rowLabel}>{row.label.replace(/_/g, ' ')}</Text>
+                <Text style={s.rowVal}>{row.count}</Text>
+              </View>
+            ))}
           </View>
         )}
 
@@ -162,25 +188,29 @@ export default function AdminReportsScreen() {
           <View style={s.section}>
             <Text style={s.sectionTitle}>Users by Role</Text>
             {data.usersByType.map((row) => (
-              <View key={row.userType} style={s.row}>
-                <Text style={s.rowLabel}>{row.userType.replace(/_/g, ' ')}</Text>
-                <Text style={s.rowVal}>{row._count}</Text>
+              <View key={row.label} style={s.row}>
+                <Text style={s.rowLabel}>{row.label.replace(/_/g, ' ')}</Text>
+                <Text style={s.rowVal}>{row.count}</Text>
               </View>
             ))}
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f1f5f9' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  errorBox: { marginHorizontal: 16, marginBottom: 12, backgroundColor: '#fef2f2', borderRadius: 12, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  errorText: { color: '#dc2626', fontSize: 13, fontWeight: '500', flex: 1, marginRight: 12 },
+  retryBtn: { backgroundColor: '#dc2626', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 16 },
+  retryText: { color: '#fff', fontWeight: '700', fontSize: 13 },
   headerRow: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 12 },
   backBtn: {},
   backBtnText: { color: '#3b82f6', fontSize: 15 },
-  exportBtn: { marginLeft: 'auto' as never, backgroundColor: '#0f172a', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7 },
+  exportBtn: { marginLeft: 'auto' as never, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7 },
   exportBtnDisabled: { opacity: 0.4 },
   exportBtnText: { color: '#fff', fontWeight: '700', fontSize: 12 },
   title: { fontSize: 20, fontWeight: '700', color: '#0f172a' },

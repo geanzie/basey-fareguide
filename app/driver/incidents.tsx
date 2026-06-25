@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, RefreshControl, ActivityIndicator } from 'react-native';
 import { ListSkeleton } from '@/ui/Skeleton';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import GradientHeader from '@/ui/GradientHeader';
 import { api } from '@/services/api';
 import type { Incident, IncidentType } from '@/types/incidents';
 import IncidentCard from '@/components/IncidentCard';
@@ -34,24 +34,25 @@ export default function DriverIncidentsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={s.container}>
+      <View style={s.container}>
+        <GradientHeader title="Vehicle Incidents" />
         <ListSkeleton count={4} />
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={s.container}>
+    <View style={s.container}>
+      <GradientHeader title="Vehicle Incidents" />
       <FlatList
         data={incidents}
         keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         contentContainerStyle={s.list}
-        ListHeaderComponent={<Text style={s.title}>Vehicle Incidents</Text>}
         ListEmptyComponent={<Text style={s.empty}>No incidents on record.</Text>}
         renderItem={({ item }) => <IncidentCard incident={item} />}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 

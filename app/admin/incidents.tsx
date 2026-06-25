@@ -3,7 +3,7 @@ import {
   View, Text, FlatList, StyleSheet, RefreshControl,
   ActivityIndicator, Pressable, ScrollView,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import GradientHeader from '@/ui/GradientHeader';
 import { fetchAllIncidents } from '@/services/incidents';
 import type { Incident, IncidentStatus } from '@/types/incidents';
 import IncidentCard from '@/components/IncidentCard';
@@ -43,16 +43,17 @@ export default function AdminIncidentsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={s.container}>
+      <View style={s.container}>
+        <GradientHeader title="All Incidents" />
         <ListSkeleton count={4} />
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={s.container}>
-      <Text style={s.title}>All Incidents</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filterRow}>
+    <View style={s.container}>
+      <GradientHeader title="All Incidents" />
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.filterScroll} contentContainerStyle={s.filterRow}>
         {STATUSES.map((st) => (
           <Pressable
             key={st.value}
@@ -74,7 +75,7 @@ export default function AdminIncidentsScreen() {
         ListEmptyComponent={<Text style={s.empty}>No incidents found.</Text>}
         renderItem={({ item }) => <IncidentCard incident={item} />}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -82,7 +83,8 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f1f5f9' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   title: { fontSize: 22, fontWeight: '700', color: '#0f172a', padding: 16, paddingBottom: 8 },
-  filterRow: { paddingHorizontal: 12, paddingBottom: 12, gap: 8 },
+  filterScroll: { flexGrow: 0, flexShrink: 0 },
+  filterRow: { paddingHorizontal: 12, paddingTop: 12, paddingBottom: 12, gap: 8, alignItems: 'center' },
   filterChip: { borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8, backgroundColor: '#e2e8f0' },
   filterChipActive: { backgroundColor: '#0f172a' },
   filterChipText: { fontSize: 13, fontWeight: '600', color: '#64748b' },

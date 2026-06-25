@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, RefreshControl, ActivityIndicator } from 'react-native';
 import { ListSkeleton } from '@/ui/Skeleton';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import GradientHeader from '@/ui/GradientHeader';
 import { api } from '@/services/api';
 
 interface TripSession {
@@ -36,20 +36,21 @@ export default function DriverHistoryScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={s.container}>
+      <View style={s.container}>
+        <GradientHeader title="Trip History" />
         <ListSkeleton count={5} />
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={s.container}>
+    <View style={s.container}>
+      <GradientHeader title="Trip History" />
       <FlatList
         data={sessions}
         keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         contentContainerStyle={s.list}
-        ListHeaderComponent={<Text style={s.title}>Trip History</Text>}
         ListEmptyComponent={<Text style={s.empty}>No trips completed yet.</Text>}
         renderItem={({ item }) => (
           <View style={s.card}>
@@ -66,7 +67,7 @@ export default function DriverHistoryScreen() {
           </View>
         )}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 

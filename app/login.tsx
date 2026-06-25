@@ -9,6 +9,7 @@ import {
   Platform,
   ActivityIndicator,
   ScrollView,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { loginRequest } from '@/services/auth';
@@ -58,9 +59,7 @@ export default function LoginScreen() {
     >
       <ScrollView contentContainerStyle={s.container} keyboardShouldPersistTaps="handled">
         <View style={s.header}>
-          <View style={s.logo}>
-            <Text style={s.logoText}>BF</Text>
-          </View>
+          <Image source={require('../assets/logo.png')} style={s.logo} resizeMode="contain" />
           <Text style={s.title}>Basey FareCheck</Text>
           <Text style={s.sub}>Municipal Ordinance 105, Series of 2023</Text>
         </View>
@@ -128,15 +127,10 @@ const s = StyleSheet.create({
   container: { flexGrow: 1, justifyContent: 'center', padding: 24 },
   header: { alignItems: 'center', marginBottom: 32 },
   logo: {
-    width: 72,
-    height: 72,
-    borderRadius: 20,
-    backgroundColor: '#16a34a',
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: 120,
+    height: 120,
     marginBottom: 16,
   },
-  logoText: { color: '#fff', fontSize: 26, fontWeight: '900' },
   title: { fontSize: 26, fontWeight: '800', color: '#fff' },
   sub: { fontSize: 12, color: '#64748b', marginTop: 4, textAlign: 'center' },
   card: {

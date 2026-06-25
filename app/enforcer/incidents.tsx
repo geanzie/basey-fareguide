@@ -8,10 +8,12 @@ import {
   RefreshControl,
   ActivityIndicator,
   Pressable,
-  Alert,
   TextInput,
+  Modal,
+  Image,
+  Linking,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import GradientHeader from '@/ui/GradientHeader';
 import {
   fetchEnforcerIncidents,
   issueTicket,
@@ -19,11 +21,13 @@ import {
   verifyEvidence,
   getTicketPreview,
   getIncidentEvidence,
+  getEvidenceDownloadUrl,
 } from '@/services/incidents';
 import type { Incident, TicketPenaltyPreview, EvidenceFile } from '@/types/incidents';
 import AppModal from '@/ui/AppModal';
 import Button from '@/ui/Button';
 import { ListSkeleton } from '@/ui/Skeleton';
+import { useFeedback } from '@/ui/FeedbackProvider';
 
 const STATUS_COLORS: Record<string, string> = {
   PENDING: '#f59e0b',
@@ -59,6 +63,7 @@ interface TicketModalState {
 
 export default function EnforcerIncidentsScreen() {
   const { plate } = useLocalSearchParams<{ plate?: string }>();
+  const { showError, showWarning, showConfirm } = useFeedback();
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -79,6 +84,13 @@ export default function EnforcerIncidentsScreen() {
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
   const [expandedEvidence, setExpandedEvidence] = useState<Record<string, EvidenceFile[] | null>>({});
   const [loadingEvidenceId, setLoadingEvidenceId] = useState<string | null>(null);
+  const [loadingEvidenceFileId, setLoadingEvidenceFileId] = useState<string | null>(null);
+  const [viewingEvidence, setViewingEvidence] = useState<{
+    url: string; fileType: string; fileName: string;
+  } | null>(null);
+  const [viewingEvidenceError, setViewingEvidenceError] = useState(false);
+  const [evidenceModalIncident, setEvidenceModalIncident] = useState<Incident | null>(null);
+  const [evidenceFileUrls, setEvidenceFileUrls] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     try {
@@ -110,28 +122,49 @@ export default function EnforcerIncidentsScreen() {
     });
   }, [incidents, statusFilter, search]);
 
+  const handleOpenEvidence = async (file: EvidenceFile) => {
+    if (file.fileType.startsWith('image/')) {
+      const cached = evidenceFileUrls[file.id];
+      if (cached) {
+        setViewingEvidenceError(false);
+        setViewingEvidence({ url: cached, fileType: file.fileType, fileName: file.fileName });
+        return;
+      }
+    }
+    setLoadingEvidenceFileId(file.id);
+    try {
+      const url = await getEvidenceDownloadUrl(file.id);
+      if (file.fileType.startsWith('image/')) {
+        setViewingEvidenceError(false);
+        setViewingEvidence({ url, fileType: file.fileType, fileName: file.fileName });
+      } else {
+        await Linking.openURL(url);
+      }
+    } catch (err) {
+      showError(err instanceof Error ? err.message : 'Failed to open evidence.');
+    } finally {
+      setLoadingEvidenceFileId(null);
+    }
+  };
+
   const handleVerifyEvidence = (id: string) => {
-    Alert.alert(
-      'Verify Evidence',
-      'Confirm you have reviewed all submitted evidence and it is sufficient to proceed.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Verify',
-          onPress: async () => {
-            setVerifyingId(id);
-            try {
-              await verifyEvidence(id);
-              await load();
-            } catch (err) {
-              Alert.alert('Error', err instanceof Error ? err.message : 'Failed to verify evidence.');
-            } finally {
-              setVerifyingId(null);
-            }
-          },
-        },
-      ],
-    );
+    showConfirm({
+      title: 'Verify Evidence',
+      message: 'Confirm you have reviewed all submitted evidence and it is sufficient to proceed.',
+      confirmLabel: 'Verify',
+      onConfirm: async () => {
+        setVerifyingId(id);
+        try {
+          await verifyEvidence(id);
+          setEvidenceModalIncident(null);
+          await load();
+        } catch (err) {
+          showError(err instanceof Error ? err.message : 'Failed to verify evidence.');
+        } finally {
+          setVerifyingId(null);
+        }
+      },
+    });
   };
 
   const handleOpenTicketModal = async (incident: Incident) => {
@@ -143,7 +176,7 @@ export default function EnforcerIncidentsScreen() {
       setTicketModal((prev) => prev ? { ...prev, penalty: preview.penalty, loadingPreview: false } : null);
     } catch (err) {
       setTicketModal(null);
-      Alert.alert('Cannot Issue Ticket', err instanceof Error ? err.message : 'Failed to load ticket details.');
+      showWarning(err instanceof Error ? err.message : 'Failed to load ticket details.', { title: 'Cannot Issue Ticket' });
     }
   };
 
@@ -156,7 +189,7 @@ export default function EnforcerIncidentsScreen() {
   const submitTicket = async () => {
     if (!ticketModal) return;
     if (!inputValue.trim()) {
-      Alert.alert('Required', 'Enter a ticket number.');
+      showWarning('Enter a ticket number.', { title: 'Required' });
       return;
     }
     setModalLoading(true);
@@ -168,7 +201,7 @@ export default function EnforcerIncidentsScreen() {
       closeTicketModal();
       await load();
     } catch (err) {
-      Alert.alert('Error', err instanceof Error ? err.message : 'Failed to issue ticket.');
+      showError(err instanceof Error ? err.message : 'Failed to issue ticket.');
     } finally {
       setModalLoading(false);
     }
@@ -189,7 +222,7 @@ export default function EnforcerIncidentsScreen() {
   const submitDismiss = async () => {
     if (!activeId) return;
     if (!inputValue.trim()) {
-      Alert.alert('Required', 'Enter a reason for dismissal.');
+      showWarning('Enter a reason for dismissal.', { title: 'Required' });
       return;
     }
     setModalLoading(true);
@@ -198,27 +231,38 @@ export default function EnforcerIncidentsScreen() {
       closeDismissModal();
       await load();
     } catch (err) {
-      Alert.alert('Error', err instanceof Error ? err.message : 'Failed to dismiss incident.');
+      showError(err instanceof Error ? err.message : 'Failed to dismiss incident.');
     } finally {
       setModalLoading(false);
     }
   };
 
-  const toggleEvidence = async (id: string) => {
-    if (expandedEvidence[id] !== undefined) {
-      setExpandedEvidence((prev) => {
-        const next = { ...prev };
-        delete next[id];
-        return next;
-      });
+  const fetchThumbnailUrls = useCallback(async (files: EvidenceFile[]) => {
+    const imageFiles = files.filter((f) => f.fileType.startsWith('image/') && !evidenceFileUrls[f.id]);
+    await Promise.allSettled(
+      imageFiles.map(async (f) => {
+        try {
+          const url = await getEvidenceDownloadUrl(f.id);
+          setEvidenceFileUrls((prev) => ({ ...prev, [f.id]: url }));
+        } catch { /* no-op — thumbnail stays hidden */ }
+      }),
+    );
+  }, [evidenceFileUrls]);
+
+  const handleOpenEvidenceModal = async (incident: Incident) => {
+    setEvidenceModalIncident(incident);
+    if (expandedEvidence[incident.id] !== undefined) {
+      void fetchThumbnailUrls(expandedEvidence[incident.id] ?? []);
       return;
     }
-    setLoadingEvidenceId(id);
+    setLoadingEvidenceId(incident.id);
     try {
-      const res = await getIncidentEvidence(id);
-      setExpandedEvidence((prev) => ({ ...prev, [id]: res.evidence ?? [] }));
+      const res = await getIncidentEvidence(incident.id);
+      const files = res.evidence ?? [];
+      setExpandedEvidence((prev) => ({ ...prev, [incident.id]: files }));
+      void fetchThumbnailUrls(files);
     } catch {
-      setExpandedEvidence((prev) => ({ ...prev, [id]: [] }));
+      setExpandedEvidence((prev) => ({ ...prev, [incident.id]: [] }));
     } finally {
       setLoadingEvidenceId(null);
     }
@@ -226,14 +270,19 @@ export default function EnforcerIncidentsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={s.container}>
+      <View style={s.container}>
+        <GradientHeader title="Incident Queue" />
         <ListSkeleton count={4} variant="complex" />
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={s.container}>
+    <View style={s.container}>
+      <GradientHeader
+        title="Incident Queue"
+        subtitle={filtered.length > 0 ? `${filtered.length} in queue` : undefined}
+      />
       {/* Search */}
       <View style={s.searchRow}>
         <TextInput
@@ -266,11 +315,6 @@ export default function EnforcerIncidentsScreen() {
         keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         contentContainerStyle={s.list}
-        ListHeaderComponent={
-          <Text style={s.title}>
-            Incident Queue{filtered.length > 0 ? ` (${filtered.length})` : ''}
-          </Text>
-        }
         ListEmptyComponent={<Text style={s.empty}>No incidents in queue.</Text>}
         renderItem={({ item }) => {
           const color = STATUS_COLORS[item.status] ?? '#64748b';
@@ -278,10 +322,6 @@ export default function EnforcerIncidentsScreen() {
           const isTicketIssued = item.status === 'TICKET_ISSUED';
           const evidenceVerified = !!item.evidenceVerifiedAt;
           const hasEvidence = (item.evidenceCount ?? 0) > 0;
-          const isVerifying = verifyingId === item.id;
-          const evidenceExpanded = expandedEvidence[item.id] !== undefined;
-          const evidenceFiles = expandedEvidence[item.id] ?? [];
-          const isLoadingEvidence = loadingEvidenceId === item.id;
 
           return (
             <View style={s.card}>
@@ -296,37 +336,14 @@ export default function EnforcerIncidentsScreen() {
               <Text style={s.meta}>{item.location} · {new Date(item.incidentDate).toLocaleDateString('en-PH')}</Text>
               {item.plateNumber ? <Text style={s.plate}>{item.plateNumber}</Text> : null}
 
-              {/* Evidence summary + toggle */}
-              <Pressable style={s.evidenceRow} onPress={() => toggleEvidence(item.id)}>
-                {isLoadingEvidence ? (
-                  <ActivityIndicator size="small" color="#64748b" />
-                ) : (
-                  <Text style={s.evidenceMeta}>
-                    {hasEvidence
-                      ? `${item.evidenceCount} evidence file${item.evidenceCount !== 1 ? 's' : ''} · ${evidenceVerified ? 'Verified ✓' : 'Pending verification'}`
-                      : 'No evidence attached'}
-                    {hasEvidence ? ` ${evidenceExpanded ? '▲' : '▼'}` : ''}
-                  </Text>
-                )}
-              </Pressable>
-
-              {/* Evidence file list */}
-              {evidenceExpanded && (
-                <View style={s.evidenceList}>
-                  {evidenceFiles.length === 0 ? (
-                    <Text style={s.evidenceEmpty}>No evidence files.</Text>
-                  ) : (
-                    evidenceFiles.map((f) => (
-                      <View key={f.id} style={s.evidenceItem}>
-                        <Text style={s.evidenceFileName} numberOfLines={1}>{f.fileName}</Text>
-                        <Text style={[s.evidenceStatus, { color: EVIDENCE_STATUS_COLORS[f.status] ?? '#64748b' }]}>
-                          {EVIDENCE_STATUS_LABELS[f.status] ?? f.status}
-                        </Text>
-                      </View>
-                    ))
-                  )}
-                </View>
-              )}
+              {/* Evidence summary — informational only */}
+              <View style={s.evidenceRow}>
+                <Text style={s.evidenceMeta}>
+                  {hasEvidence
+                    ? `${item.evidenceCount} evidence file${item.evidenceCount !== 1 ? 's' : ''} · ${evidenceVerified ? 'Verified ✓' : 'Pending verification'}`
+                    : 'No evidence attached'}
+                </Text>
+              </View>
 
               {/* TICKET_ISSUED info */}
               {isTicketIssued && (
@@ -352,20 +369,9 @@ export default function EnforcerIncidentsScreen() {
                       </Pressable>
                     </>
                   ) : !evidenceVerified ? (
-                    <>
-                      <Pressable
-                        style={[s.btn, s.btnBlue, isVerifying && s.btnDisabled]}
-                        onPress={() => handleVerifyEvidence(item.id)}
-                        disabled={isVerifying}
-                      >
-                        {isVerifying
-                          ? <ActivityIndicator color="#fff" size="small" />
-                          : <Text style={s.btnText}>Verify Evidence</Text>}
-                      </Pressable>
-                      <Pressable style={[s.btn, s.btnGray]} onPress={() => openDismissModal(item.id)}>
-                        <Text style={s.btnText}>Dismiss</Text>
-                      </Pressable>
-                    </>
+                    <Pressable style={[s.btn, s.btnBlue]} onPress={() => handleOpenEvidenceModal(item)}>
+                      <Text style={s.btnText}>View Evidence</Text>
+                    </Pressable>
                   ) : (
                     <>
                       <Pressable style={[s.btn, s.btnGreen]} onPress={() => handleOpenTicketModal(item)}>
@@ -486,7 +492,132 @@ export default function EnforcerIncidentsScreen() {
           autoFocus
         />
       </AppModal>
-    </SafeAreaView>
+
+      {/* Evidence files modal */}
+      <AppModal
+        visible={evidenceModalIncident !== null}
+        onClose={() => setEvidenceModalIncident(null)}
+        title="Evidence Files"
+        closeLabel="Close"
+        footer={
+          <>
+            <Pressable
+              style={[s.btn, s.btnBlue, (verifyingId === evidenceModalIncident?.id) && s.btnDisabled]}
+              onPress={() => evidenceModalIncident && handleVerifyEvidence(evidenceModalIncident.id)}
+              disabled={verifyingId === evidenceModalIncident?.id}
+            >
+              {verifyingId === evidenceModalIncident?.id
+                ? <ActivityIndicator color="#fff" size="small" />
+                : <Text style={s.btnText}>Verify Evidence</Text>}
+            </Pressable>
+            <Pressable
+              style={[s.btn, s.btnGray]}
+              onPress={() => {
+                if (!evidenceModalIncident) return;
+                const id = evidenceModalIncident.id;
+                setEvidenceModalIncident(null);
+                openDismissModal(id);
+              }}
+            >
+              <Text style={s.btnText}>Dismiss</Text>
+            </Pressable>
+          </>
+        }
+      >
+        {evidenceModalIncident && (
+          <View style={s.modalFields}>
+            <View style={s.evidenceModalMeta}>
+              <Text style={s.evidenceModalType}>{evidenceModalIncident.incidentType.replace(/_/g, ' ')}</Text>
+              {evidenceModalIncident.plateNumber ? (
+                <Text style={s.evidenceModalPlate}>{evidenceModalIncident.plateNumber}</Text>
+              ) : null}
+              <Text style={s.evidenceModalDate}>
+                {evidenceModalIncident.location} · {new Date(evidenceModalIncident.incidentDate).toLocaleDateString('en-PH')}
+              </Text>
+            </View>
+
+            {loadingEvidenceId === evidenceModalIncident.id ? (
+              <View style={s.evidenceModalLoading}>
+                <ActivityIndicator color="#3b82f6" />
+                <Text style={s.evidenceModalLoadingText}>Loading evidence...</Text>
+              </View>
+            ) : (
+              <View style={s.evidenceList}>
+                {(expandedEvidence[evidenceModalIncident.id] ?? []).length === 0 ? (
+                  <Text style={s.evidenceEmpty}>No evidence files found.</Text>
+                ) : (
+                  (expandedEvidence[evidenceModalIncident.id] ?? []).map((f) => (
+                    <Pressable
+                      key={f.id}
+                      style={s.evidenceFileCard}
+                      onPress={() => handleOpenEvidence(f)}
+                      disabled={loadingEvidenceFileId === f.id}
+                    >
+                      {f.fileType.startsWith('image/') && evidenceFileUrls[f.id] ? (
+                        <Image
+                          source={{ uri: evidenceFileUrls[f.id] }}
+                          style={s.evidenceThumbnail}
+                          resizeMode="cover"
+                        />
+                      ) : f.fileType.startsWith('image/') ? (
+                        <View style={s.evidenceThumbnailPlaceholder}>
+                          <ActivityIndicator color="#94a3b8" />
+                        </View>
+                      ) : null}
+                      <View style={[s.evidenceItem, s.evidenceItemPadded]}>
+                        <Text style={s.evidenceFileName} numberOfLines={1}>{f.fileName}</Text>
+                        {loadingEvidenceFileId === f.id ? (
+                          <ActivityIndicator size="small" color="#3b82f6" />
+                        ) : (
+                          <View style={s.evidenceRight}>
+                            <Text style={[s.evidenceStatus, { color: EVIDENCE_STATUS_COLORS[f.status] ?? '#64748b' }]}>
+                              {EVIDENCE_STATUS_LABELS[f.status] ?? f.status}
+                            </Text>
+                            <Text style={s.evidenceViewHint}> ›</Text>
+                          </View>
+                        )}
+                      </View>
+                    </Pressable>
+                  ))
+                )}
+              </View>
+            )}
+          </View>
+        )}
+      </AppModal>
+
+      {/* Evidence image viewer */}
+      <Modal
+        visible={viewingEvidence !== null}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setViewingEvidence(null)}
+      >
+        <View style={s.imgViewerOverlay}>
+          <View style={s.imgViewerHeader}>
+            <Text style={s.imgViewerTitle} numberOfLines={1}>{viewingEvidence?.fileName}</Text>
+            <Pressable style={s.imgViewerClose} onPress={() => setViewingEvidence(null)}>
+              <Text style={s.imgViewerCloseText}>✕</Text>
+            </Pressable>
+          </View>
+          {viewingEvidence && (
+            viewingEvidenceError ? (
+              <View style={s.imgViewerError}>
+                <Text style={s.imgViewerErrorText}>Could not load file.</Text>
+                <Text style={s.imgViewerErrorSub}>The file may not have been successfully uploaded.</Text>
+              </View>
+            ) : (
+              <Image
+                source={{ uri: viewingEvidence.url }}
+                style={s.imgViewerImage}
+                resizeMode="contain"
+                onError={() => setViewingEvidenceError(true)}
+              />
+            )
+          )}
+        </View>
+      </Modal>
+    </View>
   );
 }
 
@@ -536,11 +667,40 @@ const s = StyleSheet.create({
 
   evidenceRow: { paddingVertical: 2 },
   evidenceMeta: { color: '#64748b', fontSize: 12, fontStyle: 'italic' },
-  evidenceList: { backgroundColor: '#f8fafc', borderRadius: 8, padding: 10, gap: 6 },
+  evidenceList: { backgroundColor: '#f8fafc', borderRadius: 8, padding: 10, gap: 10 },
   evidenceEmpty: { color: '#94a3b8', fontSize: 12, textAlign: 'center' },
-  evidenceItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  evidenceFileCard: { borderRadius: 8, overflow: 'hidden', backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e2e8f0', gap: 0 },
+  evidenceThumbnail: { width: '100%', height: 180 },
+  evidenceThumbnailPlaceholder: { width: '100%', height: 180, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f1f5f9' },
+  evidenceItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 2 },
+  evidenceItemPadded: { paddingHorizontal: 10, paddingVertical: 8 },
   evidenceFileName: { fontSize: 12, color: '#374151', flex: 1, marginRight: 8 },
+  evidenceRight: { flexDirection: 'row', alignItems: 'center' },
   evidenceStatus: { fontSize: 11, fontWeight: '600' },
+  evidenceViewHint: { fontSize: 14, color: '#94a3b8', fontWeight: '600' },
+
+  evidenceModalMeta: { gap: 2, paddingBottom: 4 },
+  evidenceModalType: { fontWeight: '700', color: '#0f172a', fontSize: 14 },
+  evidenceModalPlate: { fontWeight: '800', color: '#0f172a', letterSpacing: 1, fontSize: 13 },
+  evidenceModalDate: { color: '#94a3b8', fontSize: 12 },
+  evidenceModalLoading: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 16 },
+  evidenceModalLoadingText: { color: '#64748b', fontSize: 14 },
+
+  imgViewerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)' },
+  imgViewerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 52,
+    paddingBottom: 12,
+  },
+  imgViewerTitle: { flex: 1, color: '#fff', fontSize: 14, fontWeight: '600' },
+  imgViewerClose: { padding: 8 },
+  imgViewerCloseText: { color: '#fff', fontSize: 18, fontWeight: '700' },
+  imgViewerImage: { flex: 1 },
+  imgViewerError: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 8, padding: 32 },
+  imgViewerErrorText: { color: '#fff', fontSize: 16, fontWeight: '700', textAlign: 'center' },
+  imgViewerErrorSub: { color: 'rgba(255,255,255,0.7)', fontSize: 13, textAlign: 'center' },
 
   ticketIssuedBox: { backgroundColor: '#ede9fe', borderRadius: 8, padding: 10, gap: 2 },
   ticketIssuedLabel: { fontSize: 13, fontWeight: '700', color: '#7c3aed' },

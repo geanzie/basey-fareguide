@@ -117,6 +117,20 @@ export async function verifyEvidence(id: string): Promise<Incident> {
   return api.patch<Incident>(`/api/incidents/${id}/verify-evidence`, {});
 }
 
+export async function getEvidenceDownloadUrl(evidenceId: string): Promise<string> {
+  const { token } = useAuthStore.getState();
+  const requestUrl = `${API_BASE}/api/evidence/${evidenceId}/download`;
+  const res = await fetch(requestUrl, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (res.status === 401 || res.status === 403) {
+    throw new Error('Access denied to this evidence file.');
+  }
+  // For all other statuses (including S3 errors after redirect), return the
+  // resolved URL. Image.onError handles load failure inline without a toast.
+  return res.url || requestUrl;
+}
+
 export async function fetchDashboardStats(): Promise<DashboardStats> {
   const res = await api.get<{ stats: DashboardStats }>('/api/dashboard/stats');
   return res.stats;

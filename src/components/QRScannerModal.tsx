@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Pressable, Alert, Modal } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Modal } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { lookupByRideTag } from '@/services/vehicles';
+import { useFeedback } from '@/ui/FeedbackProvider';
 import type { VehicleLookup } from '@/types/fare';
 
 interface Props {
@@ -12,6 +13,7 @@ interface Props {
 
 export default function QRScannerModal({ visible, onVehicleFound, onClose }: Props) {
   const [permission, requestPermission] = useCameraPermissions();
+  const { showConfirm } = useFeedback();
   const scannedRef = useRef(false);
 
   useEffect(() => {
@@ -31,16 +33,24 @@ export default function QRScannerModal({ visible, onVehicleFound, onClose }: Pro
         onVehicleFound(vehicle);
         onClose();
       } else {
-        Alert.alert('Not Found', 'No active vehicle matched this QR code.', [
-          { text: 'Try Again', onPress: () => { scannedRef.current = false; } },
-          { text: 'Cancel', onPress: onClose },
-        ]);
+        showConfirm({
+          title: 'Not Found',
+          message: 'No active vehicle matched this QR code.',
+          confirmLabel: 'Try Again',
+          cancelLabel: 'Cancel',
+          onConfirm: () => { scannedRef.current = false; },
+          onClose,
+        });
       }
     } catch {
-      Alert.alert('Error', 'Could not look up this QR code.', [
-        { text: 'Retry', onPress: () => { scannedRef.current = false; } },
-        { text: 'Cancel', onPress: onClose },
-      ]);
+      showConfirm({
+        title: 'Could not scan',
+        message: 'Could not look up this QR code.',
+        confirmLabel: 'Retry',
+        cancelLabel: 'Cancel',
+        onConfirm: () => { scannedRef.current = false; },
+        onClose,
+      });
     }
   };
 

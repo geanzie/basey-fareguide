@@ -47,6 +47,14 @@ export interface TerminalVehicleSummary {
   isActive: boolean;
 }
 
+export interface TerminalUnlockResult {
+  unlocked: boolean;
+  expiresAt: string | null;
+  lastActivityAt: string | null;
+  message?: string;
+  unlockToken?: string;
+}
+
 export interface TerminalLookupResult {
   scannedToken: string;
   matchFound: boolean;

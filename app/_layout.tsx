@@ -3,6 +3,7 @@ import { Stack } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import { useAuthStore } from '@/store/authStore';
+import { FeedbackProvider } from '@/ui/FeedbackProvider';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -19,7 +20,9 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#0f172a' } }} />
+      <FeedbackProvider>
+        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#0f172a' } }} />
+      </FeedbackProvider>
     </SafeAreaProvider>
   );
 }

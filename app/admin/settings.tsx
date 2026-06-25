@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
-  View, Text, StyleSheet, ActivityIndicator, Pressable, Alert, ScrollView, RefreshControl,
+  View, Text, StyleSheet, ActivityIndicator, Pressable, ScrollView, RefreshControl,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import GradientHeader from '@/ui/GradientHeader';
 import { api } from '@/services/api';
 import { FormSkeleton } from '@/ui/Skeleton';
+import { useFeedback } from '@/ui/FeedbackProvider';
 
 type Provider = 'ors' | 'google_routes';
 
@@ -23,6 +24,7 @@ const PROVIDER_LABELS: Record<Provider, string> = {
 };
 
 export default function AdminSettingsScreen() {
+  const { showSuccess, showError, showConfirm } = useFeedback();
   const [settings, setSettings] = useState<RoutingSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -47,57 +49,55 @@ export default function AdminSettingsScreen() {
 
   const handleSwitch = (provider: Provider) => {
     if (!settings || settings.primaryProvider === provider) return;
-    Alert.alert(
-      'Switch Routing Provider',
-      `Set primary provider to ${PROVIDER_LABELS[provider]}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Switch',
-          onPress: async () => {
-            setSaving(true);
-            try {
-              const res = await api.patch<{ settings: RoutingSettings }>('/api/admin/settings/routing', { primaryProvider: provider });
-              setSettings(res.settings);
-              Alert.alert('Saved', `Primary provider set to ${PROVIDER_LABELS[provider]}.`);
-            } catch (err) {
-              Alert.alert('Error', err instanceof Error ? err.message : 'Update failed.');
-            } finally {
-              setSaving(false);
-            }
-          },
-        },
-      ],
-    );
+    showConfirm({
+      title: 'Switch Routing Provider',
+      message: `Set primary provider to ${PROVIDER_LABELS[provider]}?`,
+      confirmLabel: 'Switch',
+      onConfirm: async () => {
+        setSaving(true);
+        try {
+          const res = await api.patch<{ settings: RoutingSettings }>('/api/admin/settings/routing', { primaryProvider: provider });
+          setSettings(res.settings);
+          showSuccess(`Primary provider set to ${PROVIDER_LABELS[provider]}.`, { title: 'Saved' });
+        } catch (err) {
+          showError(err instanceof Error ? err.message : 'Update failed.');
+        } finally {
+          setSaving(false);
+        }
+      },
+    });
   };
 
   if (loading) {
     return (
-      <SafeAreaView style={s.container}>
+      <View style={s.container}>
+        <GradientHeader title="Routing Settings" subtitle="Select primary route calculation provider" />
         <FormSkeleton fields={4} />
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (!settings) {
     return (
-      <SafeAreaView style={s.center}>
-        <Text style={s.errorText}>Failed to load routing settings.</Text>
-        <Pressable style={s.retryBtn} onPress={() => { setLoading(true); void load(); }}>
-          <Text style={s.retryBtnText}>Retry</Text>
-        </Pressable>
-      </SafeAreaView>
+      <View style={s.container}>
+        <GradientHeader title="Routing Settings" subtitle="Select primary route calculation provider" />
+        <View style={s.center}>
+          <Text style={s.errorText}>Failed to load routing settings.</Text>
+          <Pressable style={s.retryBtn} onPress={() => { setLoading(true); void load(); }}>
+            <Text style={s.retryBtnText}>Retry</Text>
+          </Pressable>
+        </View>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={s.container}>
+    <View style={s.container}>
+      <GradientHeader title="Routing Settings" subtitle="Select primary route calculation provider" />
       <ScrollView
         contentContainerStyle={s.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        <Text style={s.title}>Routing Settings</Text>
-        <Text style={s.subtitle}>Select primary route calculation provider</Text>
 
         <View style={s.section}>
           <Text style={s.sectionLabel}>PRIMARY PROVIDER</Text>
@@ -162,7 +162,7 @@ export default function AdminSettingsScreen() {
           GPS/Haversine fallback always active as final fallback. Road providers used first for accuracy.
         </Text>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

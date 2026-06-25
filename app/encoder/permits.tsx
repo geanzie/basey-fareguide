@@ -7,11 +7,10 @@ import {
   RefreshControl,
   ActivityIndicator,
   TouchableOpacity,
-  Alert,
   TextInput,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import GradientHeader from '@/ui/GradientHeader';
 import {
   fetchPermits,
   createPermit,
@@ -29,6 +28,7 @@ import Badge from '@/ui/Badge';
 import Button from '@/ui/Button';
 import SearchBar from '@/ui/SearchBar';
 import FilterChips from '@/ui/FilterChips';
+import { useFeedback } from '@/ui/FeedbackProvider';
 import RowActions from '@/ui/RowActions';
 import AppModal from '@/ui/AppModal';
 import VehiclePickerField from '@/components/VehiclePickerField';
@@ -56,6 +56,7 @@ const EMPTY_FORM = {
 };
 
 export default function PermitsScreen() {
+  const { showSuccess, showError, showConfirm } = useFeedback();
   const [permits, setPermits] = useState<Permit[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -173,7 +174,7 @@ export default function PermitsScreen() {
       }
       setShowForm(false);
       await load();
-      Alert.alert('Success', editingId ? 'Permit updated.' : 'Permit created.');
+      showSuccess(editingId ? 'Permit updated.' : 'Permit created.');
     } catch (err) {
       setFormError(err instanceof Error ? err.message : 'Failed to save permit.');
     } finally {
@@ -187,29 +188,30 @@ export default function PermitsScreen() {
     try {
       await fn();
       await load();
-      Alert.alert('Done', successMsg);
+      showSuccess(successMsg, { title: 'Done' });
     } catch (err) {
-      Alert.alert('Error', err instanceof Error ? err.message : 'Action failed.');
+      showError(err instanceof Error ? err.message : 'Action failed.');
     } finally {
       setBusyId(null);
     }
   };
 
   const onRenew = (p: Permit) =>
-    Alert.alert('Renew Permit', `Extend ${p.permitPlateNumber} by one year?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Renew', onPress: () => runAction(p.id, () => renewPermit(p.id), 'Permit renewed.') },
-    ]);
+    showConfirm({
+      title: 'Renew Permit',
+      message: `Extend ${p.permitPlateNumber} by one year?`,
+      confirmLabel: 'Renew',
+      onConfirm: () => runAction(p.id, () => renewPermit(p.id), 'Permit renewed.'),
+    });
 
   const onSuspend = (p: Permit) =>
-    Alert.alert('Suspend Permit', `Suspend ${p.permitPlateNumber}?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Suspend',
-        style: 'destructive',
-        onPress: () => runAction(p.id, () => setPermitStatus(p.id, 'SUSPENDED'), 'Permit suspended.'),
-      },
-    ]);
+    showConfirm({
+      title: 'Suspend Permit',
+      message: `Suspend ${p.permitPlateNumber}?`,
+      confirmLabel: 'Suspend',
+      destructive: true,
+      onConfirm: () => runAction(p.id, () => setPermitStatus(p.id, 'SUSPENDED'), 'Permit suspended.'),
+    });
 
   const onActivate = (p: Permit) =>
     runAction(p.id, () => setPermitStatus(p.id, 'ACTIVE'), 'Permit activated.');
@@ -226,10 +228,13 @@ export default function PermitsScreen() {
         rotating ? 'QR code rotated.' : 'QR code issued.',
       );
     if (rotating) {
-      Alert.alert('Rotate QR', 'The current QR code will stop working. Continue?', [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Rotate', style: 'destructive', onPress: go },
-      ]);
+      showConfirm({
+        title: 'Rotate QR',
+        message: 'The current QR code will stop working. Continue?',
+        confirmLabel: 'Rotate',
+        destructive: true,
+        onConfirm: go,
+      });
     } else {
       void go();
     }
@@ -237,14 +242,23 @@ export default function PermitsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={s.container}>
+      <View style={s.container}>
+        <GradientHeader title="Permit Management" />
         <ListSkeleton count={3} variant="complex" />
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={s.container} edges={['top']}>
+    <View style={s.container}>
+      <GradientHeader
+        title="Permit Management"
+        right={
+          <TouchableOpacity style={s.headerAddBtn} onPress={openAdd}>
+            <Ionicons name="add" size={24} color="#fff" />
+          </TouchableOpacity>
+        }
+      />
       <FlatList
         data={filtered}
         keyExtractor={(p) => p.id}
@@ -252,12 +266,6 @@ export default function PermitsScreen() {
         contentContainerStyle={s.list}
         ListHeaderComponent={
           <View style={s.headerBlock}>
-            <View style={s.headerRow}>
-              <Text style={s.title}>Permit Management</Text>
-              <TouchableOpacity style={s.addBtn} onPress={openAdd}>
-                <Ionicons name="add" size={22} color={colors.onPrimary} />
-              </TouchableOpacity>
-            </View>
             <SearchBar
               value={search}
               onChangeText={setSearch}
@@ -422,7 +430,7 @@ export default function PermitsScreen() {
           </View>
         ) : null}
       </AppModal>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -442,6 +450,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
   },
   filters: { gap: 8 },
+  headerAddBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
   empty: { textAlign: 'center', color: colors.textFaint, marginTop: 40 },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
   plate: { fontSize: 16, fontWeight: '800', color: colors.textStrong, letterSpacing: 1 },

@@ -9,7 +9,10 @@ import {
   TextInput,
   ActivityIndicator,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { searchVehicles } from '@/services/vehicles';
+import EmptyState from '@/ui/EmptyState';
+import { colors, radii, spacing, shadow } from '@/ui/theme';
 import type { VehicleLookup } from '@/types/fare';
 
 interface Props {
@@ -81,13 +84,14 @@ export default function VehiclePickerField({ selected, onSelect, onClear, open: 
             style={({ pressed }) => [s.selector, pressed && s.selectorPressed]}
             onPress={() => setOpen(true)}
           >
+            <Ionicons name="search" size={16} color={colors.textFaint} />
             <Text style={selected ? s.selectedText : s.placeholder} numberOfLines={1}>
               {displayLabel ?? 'Search by plate or permit number'}
             </Text>
           </Pressable>
           {selected && (
             <Pressable style={s.clearBtn} onPress={onClear}>
-              <Text style={s.clearBtnText}>✕</Text>
+              <Ionicons name="close" size={16} color={colors.danger} />
             </Pressable>
           )}
         </View>
@@ -109,32 +113,46 @@ export default function VehiclePickerField({ selected, onSelect, onClear, open: 
         <View style={s.modal}>
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>Select Vehicle</Text>
-            <Pressable onPress={close} style={s.closeBtn}>
+            <Pressable onPress={close} style={s.closeBtn} hitSlop={8}>
               <Text style={s.closeBtnText}>Cancel</Text>
             </Pressable>
           </View>
-          <TextInput
-            style={s.search}
-            placeholder="Type plate or permit number (min. 2 chars)…"
-            placeholderTextColor="#94a3b8"
-            value={query}
-            onChangeText={setQuery}
-            autoFocus
-            clearButtonMode="while-editing"
-            autoCapitalize="characters"
-          />
+
+          <View style={s.searchWrap}>
+            <Ionicons name="search" size={18} color={colors.textFaint} />
+            <TextInput
+              style={s.search}
+              placeholder="Plate or permit number (min. 2 chars)…"
+              placeholderTextColor={colors.textFaint}
+              value={query}
+              onChangeText={setQuery}
+              autoFocus
+              autoCapitalize="characters"
+              returnKeyType="search"
+            />
+            {query.length > 0 ? (
+              <Pressable onPress={() => setQuery('')} hitSlop={8}>
+                <Ionicons name="close-circle" size={18} color={colors.textFaint} />
+              </Pressable>
+            ) : null}
+          </View>
+
           {loading ? (
-            <ActivityIndicator color="#16a34a" style={s.loadingSpinner} />
+            <View style={s.statePad}>
+              <ActivityIndicator color={colors.primary} />
+              <Text style={s.loadingText}>Searching…</Text>
+            </View>
           ) : (
             <FlatList
               data={results}
               keyExtractor={(item, index) => item.id ?? item.plateNumber ?? String(index)}
               contentContainerStyle={s.listContainer}
+              keyboardShouldPersistTaps="handled"
               ListEmptyComponent={
                 query.trim().length >= 2 ? (
-                  <Text style={s.empty}>No vehicles found.</Text>
+                  <EmptyState icon="car-outline" title="No vehicles found" message="Check the plate or permit number and try again." />
                 ) : (
-                  <Text style={s.hint}>Enter at least 2 characters to search.</Text>
+                  <EmptyState icon="search-outline" title="Search for a vehicle" message="Enter at least 2 characters of the plate or permit number." />
                 )
               }
               renderItem={({ item }) => (
@@ -142,15 +160,21 @@ export default function VehiclePickerField({ selected, onSelect, onClear, open: 
                   style={({ pressed }) => [s.vehicleItem, pressed && s.vehicleItemPressed]}
                   onPress={() => pick(item)}
                 >
-                  <View style={s.vehicleRow}>
-                    <Text style={s.plateText}>
-                      {item.permitPlateNumber ?? item.plateNumber}
-                    </Text>
-                    <Text style={s.vehicleTypeBadge}>{item.vehicleType}</Text>
+                  <View style={s.vehicleIcon}>
+                    <Ionicons name="car" size={20} color={colors.primary} />
                   </View>
-                  <Text style={s.vehicleDetail}>
-                    {[item.make, item.model, item.color].filter(Boolean).join(' · ')}
-                  </Text>
+                  <View style={s.vehicleBody}>
+                    <View style={s.vehicleRow}>
+                      <Text style={s.plateText}>{item.permitPlateNumber ?? item.plateNumber}</Text>
+                      {item.vehicleType ? (
+                        <Text style={s.vehicleTypeBadge}>{item.vehicleType}</Text>
+                      ) : null}
+                    </View>
+                    <Text style={s.vehicleDetail} numberOfLines={1}>
+                      {[item.make, item.model, item.color].filter(Boolean).join(' · ') || 'No details'}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={colors.textFaint} />
                 </Pressable>
               )}
             />
@@ -162,71 +186,90 @@ export default function VehiclePickerField({ selected, onSelect, onClear, open: 
 }
 
 const s = StyleSheet.create({
-  container: { marginBottom: 16 },
-  label: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 8 },
-  row: { flexDirection: 'row', gap: 8 },
+  container: { marginBottom: spacing.lg },
+  label: { fontSize: 13, fontWeight: '600', color: colors.textBody, marginBottom: spacing.sm },
+  row: { flexDirection: 'row', gap: spacing.sm },
   selector: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
-    borderRadius: 12,
+    borderColor: colors.border,
+    borderRadius: radii.md,
     padding: 14,
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
   },
-  selectorPressed: { backgroundColor: '#f8fafc' },
-  placeholder: { color: '#94a3b8', fontSize: 15 },
-  selectedText: { color: '#0f172a', fontSize: 15, fontWeight: '600' },
+  selectorPressed: { backgroundColor: colors.surfaceAlt },
+  placeholder: { flex: 1, color: colors.textFaint, fontSize: 15 },
+  selectedText: { flex: 1, color: colors.textStrong, fontSize: 15, fontWeight: '600' },
   clearBtn: {
-    borderRadius: 12,
+    borderRadius: radii.md,
     paddingHorizontal: 14,
-    paddingVertical: 14,
-    backgroundColor: '#fef2f2',
+    backgroundColor: colors.dangerSoftBg,
     borderWidth: 1,
-    borderColor: '#fecaca',
+    borderColor: colors.dangerSoftBorder,
     justifyContent: 'center',
   },
-  clearBtnText: { color: '#ef4444', fontWeight: '700', fontSize: 13 },
-  subtext: { fontSize: 12, color: '#64748b', marginTop: 4, marginLeft: 2 },
-  modal: { flex: 1, backgroundColor: '#f8fafc' },
+  subtext: { fontSize: 12, color: colors.textMuted, marginTop: spacing.xs, marginLeft: 2 },
+
+  modal: { flex: 1, backgroundColor: colors.bg },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    padding: spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
-    backgroundColor: '#fff',
+    borderBottomColor: colors.border,
+    backgroundColor: colors.surface,
   },
-  modalTitle: { fontSize: 17, fontWeight: '700', color: '#0f172a' },
+  modalTitle: { fontSize: 17, fontWeight: '700', color: colors.textStrong },
   closeBtn: { padding: 4 },
-  closeBtnText: { color: '#3b82f6', fontSize: 15 },
-  search: {
-    margin: 12,
+  closeBtnText: { color: colors.info, fontSize: 15, fontWeight: '600' },
+
+  searchWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    margin: spacing.md,
+    paddingHorizontal: 14,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
-    borderRadius: 12,
-    padding: 12,
-    fontSize: 15,
-    color: '#0f172a',
-    backgroundColor: '#fff',
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    backgroundColor: colors.surface,
+    ...shadow.card,
   },
-  loadingSpinner: { marginTop: 40 },
-  listContainer: { paddingHorizontal: 12, paddingBottom: 40 },
-  empty: { textAlign: 'center', color: '#94a3b8', marginTop: 40 },
-  hint: { textAlign: 'center', color: '#94a3b8', marginTop: 40, fontSize: 13 },
-  vehicleItem: { backgroundColor: '#fff', borderRadius: 10, padding: 14, marginBottom: 6 },
-  vehicleItemPressed: { backgroundColor: '#f0fdf4' },
-  vehicleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  plateText: { fontSize: 15, fontWeight: '700', color: '#0f172a' },
+  search: { flex: 1, paddingVertical: 12, fontSize: 15, color: colors.textStrong },
+
+  statePad: { marginTop: 56, alignItems: 'center', gap: spacing.md },
+  loadingText: { color: colors.textMuted, fontSize: 13, fontWeight: '600' },
+
+  listContainer: { paddingHorizontal: spacing.md, paddingBottom: 40 },
+  vehicleItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radii.md,
+    padding: 14,
+    marginBottom: spacing.sm,
+    ...shadow.card,
+  },
+  vehicleItemPressed: { backgroundColor: colors.surfaceTint },
+  vehicleIcon: { width: 40, height: 40, borderRadius: radii.md, backgroundColor: colors.surfaceTint, alignItems: 'center', justifyContent: 'center' },
+  vehicleBody: { flex: 1 },
+  vehicleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm },
+  plateText: { fontSize: 15, fontWeight: '700', color: colors.textStrong },
   vehicleTypeBadge: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#16a34a',
-    backgroundColor: '#dcfce7',
-    paddingHorizontal: 8,
+    color: colors.primary,
+    backgroundColor: colors.surfaceTint,
+    paddingHorizontal: spacing.sm,
     paddingVertical: 3,
     borderRadius: 6,
     textTransform: 'uppercase',
+    overflow: 'hidden',
   },
-  vehicleDetail: { fontSize: 12, color: '#64748b', marginTop: 3 },
+  vehicleDetail: { fontSize: 12, color: colors.textMuted, marginTop: 3 },
 });

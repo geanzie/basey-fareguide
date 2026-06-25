@@ -7,9 +7,14 @@ import {
   Modal,
   ScrollView,
   ActivityIndicator,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { terminalLookup } from '@/services/terminal';
+import { terminalLookup, terminalUnlock } from '@/services/terminal';
+import { ApiError } from '@/services/api';
+import { useTerminalUnlockStore } from '@/store/terminalUnlockStore';
 import type {
   TerminalLookupResult,
   TerminalScanDisposition,
@@ -22,7 +27,7 @@ interface Props {
   onReviewIncidents: (plateNumber: string) => void;
 }
 
-type ViewState = 'scanner' | 'loading' | 'result' | 'error';
+type ViewState = 'locked' | 'unlocking' | 'scanner' | 'loading' | 'result' | 'error';
 
 const DISPOSITION_CONFIG: Record<
   TerminalScanDisposition,
@@ -67,21 +72,44 @@ function ViolationStat({
 
 export default function QrComplianceScanModal({ visible, onClose, onReviewIncidents }: Props) {
   const [permission, requestPermission] = useCameraPermissions();
-  const [view, setView] = useState<ViewState>('scanner');
+  const [view, setView] = useState<ViewState>('locked');
   const [result, setResult] = useState<TerminalLookupResult | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
+  const [password, setPassword] = useState('');
+  const [unlockError, setUnlockError] = useState('');
   const scannedRef = useRef(false);
 
   useEffect(() => {
     if (visible) {
       scannedRef.current = false;
-      setView('scanner');
       setResult(null);
       setErrorMsg('');
+      setPassword('');
+      setUnlockError('');
+      // Skip the password gate if a valid unlock token is still in memory.
+      setView(useTerminalUnlockStore.getState().isUnlocked() ? 'scanner' : 'locked');
       if (!permission?.granted) requestPermission();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
+
+  const handleUnlock = async () => {
+    if (!password.trim()) {
+      setUnlockError('Enter your password to unlock the terminal.');
+      return;
+    }
+    setUnlockError('');
+    setView('unlocking');
+    try {
+      await terminalUnlock(password);
+      setPassword('');
+      scannedRef.current = false;
+      setView('scanner');
+    } catch (err) {
+      setUnlockError(err instanceof Error ? err.message : 'Unable to unlock the terminal.');
+      setView('locked');
+    }
+  };
 
   const handleScan = async ({ data }: { data: string }) => {
     if (scannedRef.current) return;
@@ -93,6 +121,14 @@ export default function QrComplianceScanModal({ visible, onClose, onReviewIncide
       setResult(res);
       setView('result');
     } catch (err) {
+      // Unlock expired mid-session — drop the stale token and re-prompt.
+      if (err instanceof ApiError && err.status === 403) {
+        useTerminalUnlockStore.getState().clearUnlock();
+        setUnlockError('The terminal unlock expired. Re-enter your password to continue.');
+        scannedRef.current = false;
+        setView('locked');
+        return;
+      }
       setErrorMsg(err instanceof Error ? err.message : 'Scan failed. Try again.');
       setView('error');
     }
@@ -119,6 +155,47 @@ export default function QrComplianceScanModal({ visible, onClose, onReviewIncide
       onRequestClose={onClose}
     >
       <View style={s.container}>
+
+        {/* ── Locked gate ── */}
+        {(view === 'locked' || view === 'unlocking') && (
+          <KeyboardAvoidingView
+            style={s.lockWrap}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          >
+            <Text style={s.lockTitle}>Terminal Locked</Text>
+            <Text style={s.lockSubtitle}>
+              Re-enter your password to unlock the QR compliance terminal.
+            </Text>
+            <TextInput
+              style={s.lockInput}
+              placeholder="Password"
+              placeholderTextColor="#64748b"
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+              value={password}
+              onChangeText={setPassword}
+              editable={view === 'locked'}
+              onSubmitEditing={handleUnlock}
+              returnKeyType="go"
+            />
+            {unlockError ? <Text style={s.lockError}>{unlockError}</Text> : null}
+            <Pressable
+              style={[s.lockBtn, view === 'unlocking' && s.lockBtnDisabled]}
+              onPress={handleUnlock}
+              disabled={view === 'unlocking'}
+            >
+              {view === 'unlocking' ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={s.lockBtnText}>Unlock Terminal</Text>
+              )}
+            </Pressable>
+            <Pressable style={s.cancelTextBtn} onPress={onClose}>
+              <Text style={s.cancelTextBtnText}>Cancel</Text>
+            </Pressable>
+          </KeyboardAvoidingView>
+        )}
 
         {/* ── Scanner view ── */}
         {view === 'scanner' && (
@@ -366,6 +443,44 @@ const s = StyleSheet.create({
   cornerBL: { bottom: 0, left: 0, borderBottomWidth: CORNER_THICKNESS, borderLeftWidth: CORNER_THICKNESS },
   cornerBR: { bottom: 0, right: 0, borderBottomWidth: CORNER_THICKNESS, borderRightWidth: CORNER_THICKNESS },
   hint: { color: '#fff', textAlign: 'center', fontSize: 14, paddingBottom: 60 },
+
+  lockWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 32,
+    backgroundColor: '#0f172a',
+  },
+  lockTitle: { color: '#fff', fontSize: 22, fontWeight: '800', marginBottom: 8 },
+  lockSubtitle: {
+    color: '#94a3b8',
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 20,
+  },
+  lockInput: {
+    width: '100%',
+    backgroundColor: '#1e293b',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    color: '#fff',
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  lockError: { color: '#f87171', fontSize: 13, marginTop: 12, textAlign: 'center' },
+  lockBtn: {
+    width: '100%',
+    backgroundColor: '#16a34a',
+    borderRadius: 12,
+    paddingVertical: 15,
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  lockBtnDisabled: { opacity: 0.6 },
+  lockBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
 
   permissionWrap: {
     flex: 1,

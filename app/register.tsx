@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import {
   View, Text, TextInput, Pressable, StyleSheet, KeyboardAvoidingView,
-  Platform, ActivityIndicator, ScrollView, Modal, FlatList, Alert,
+  Platform, ActivityIndicator, ScrollView, Modal, FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { registerRequest } from '@/services/auth';
+import { useFeedback } from '@/ui/FeedbackProvider';
 
 const ID_TYPES = [
   'NATIONAL_ID', 'DRIVERS_LICENSE', 'PASSPORT', 'VOTERS_ID',
@@ -61,6 +62,7 @@ const EMPTY: FormState = {
 
 export default function RegisterScreen() {
   const router = useRouter();
+  const { showSuccess } = useFeedback();
   const [form, setForm] = useState<FormState>(EMPTY);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -108,11 +110,11 @@ export default function RegisterScreen() {
         privacyNoticeAcknowledged: true,
         privacyNoticeVersion: PRIVACY_NOTICE_VERSION,
       });
-      Alert.alert(
-        'Registration Successful',
-        'Your account has been created. You can now log in.',
-        [{ text: 'Sign In', onPress: () => router.replace('/login') }],
-      );
+      showSuccess('Your account has been created. You can now log in.', {
+        title: 'Registration Successful',
+        actionLabel: 'Sign In',
+        onClose: () => router.replace('/login'),
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Registration failed. Please try again.');
     } finally {

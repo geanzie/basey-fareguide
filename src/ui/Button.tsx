@@ -1,4 +1,4 @@
-import { Pressable, Text, ActivityIndicator, StyleSheet, type ViewStyle } from 'react-native';
+import { Pressable, Text, ActivityIndicator, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 import { colors, radii } from './theme';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'success' | 'ghost';
@@ -11,7 +11,7 @@ interface Props {
   size?: ButtonSize;
   loading?: boolean;
   disabled?: boolean;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }
 
 export default function Button({

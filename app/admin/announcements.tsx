@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   View, Text, FlatList, StyleSheet, RefreshControl,
-  ActivityIndicator, Pressable, TextInput, Alert,
+  ActivityIndicator, Pressable, TextInput,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import GradientHeader from '@/ui/GradientHeader';
 import { fetchActiveAnnouncements, createAnnouncement, archiveAnnouncement } from '@/services/announcements';
 import type { Announcement, AnnouncementCategory } from '@/types/common';
 import { ListSkeleton } from '@/ui/Skeleton';
+import { useFeedback } from '@/ui/FeedbackProvider';
 
 const CATEGORIES: AnnouncementCategory[] = [
   'EMERGENCY_NOTICE', 'ROAD_CLOSURE', 'ROAD_WORK', 'TRAFFIC_ADVISORY', 'GENERAL_INFORMATION',
@@ -21,6 +22,7 @@ const CATEGORY_COLORS: Record<AnnouncementCategory, string> = {
 };
 
 export default function AdminAnnouncementsScreen() {
+  const { showError, showWarning, showConfirm } = useFeedback();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -46,9 +48,9 @@ export default function AdminAnnouncementsScreen() {
   };
 
   const handleCreate = async () => {
-    if (!form.title.trim()) { Alert.alert('Required', 'Enter a title.'); return; }
-    if (!form.body.trim()) { Alert.alert('Required', 'Enter content.'); return; }
-    if (!form.category) { Alert.alert('Required', 'Select a category.'); return; }
+    if (!form.title.trim()) { showWarning('Enter a title.', { title: 'Required' }); return; }
+    if (!form.body.trim()) { showWarning('Enter content.', { title: 'Required' }); return; }
+    if (!form.category) { showWarning('Select a category.', { title: 'Required' }); return; }
 
     setCreating(true);
     try {
@@ -62,40 +64,48 @@ export default function AdminAnnouncementsScreen() {
       setForm({ title: '', body: '', category: '', startsAt: new Date().toISOString() });
       await load();
     } catch (err) {
-      Alert.alert('Error', err instanceof Error ? err.message : 'Creation failed.');
+      showError(err instanceof Error ? err.message : 'Creation failed.');
     } finally {
       setCreating(false);
     }
   };
 
   const handleArchive = (id: string, title: string) => {
-    Alert.alert('Archive Announcement', `Archive "${title}"?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Archive',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await archiveAnnouncement(id);
-            await load();
-          } catch (err) {
-            Alert.alert('Error', err instanceof Error ? err.message : 'Failed.');
-          }
-        },
+    showConfirm({
+      title: 'Archive Announcement',
+      message: `Archive "${title}"?`,
+      confirmLabel: 'Archive',
+      destructive: true,
+      onConfirm: async () => {
+        try {
+          await archiveAnnouncement(id);
+          await load();
+        } catch (err) {
+          showError(err instanceof Error ? err.message : 'Failed.');
+        }
       },
-    ]);
+    });
   };
 
   if (loading) {
     return (
-      <SafeAreaView style={s.container}>
+      <View style={s.container}>
+        <GradientHeader title="Announcements" />
         <ListSkeleton count={4} />
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={s.container}>
+    <View style={s.container}>
+      <GradientHeader
+        title="Announcements"
+        right={
+          <Pressable style={s.headerAddBtn} onPress={() => setShowForm((v) => !v)}>
+            <Text style={s.headerAddBtnText}>{showForm ? 'Cancel' : '+ New'}</Text>
+          </Pressable>
+        }
+      />
       <FlatList
         data={announcements}
         keyExtractor={(item) => item.id}
@@ -103,12 +113,6 @@ export default function AdminAnnouncementsScreen() {
         contentContainerStyle={s.list}
         ListHeaderComponent={
           <View>
-            <View style={s.titleRow}>
-              <Text style={s.title}>Announcements</Text>
-              <Pressable style={s.addBtn} onPress={() => setShowForm((v) => !v)}>
-                <Text style={s.addBtnText}>{showForm ? 'Cancel' : '+ New'}</Text>
-              </Pressable>
-            </View>
             {showForm && (
               <View style={s.formCard}>
                 <Text style={s.formLabel}>Title</Text>
@@ -173,7 +177,7 @@ export default function AdminAnnouncementsScreen() {
           );
         }}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -185,6 +189,8 @@ const s = StyleSheet.create({
   title: { fontSize: 22, fontWeight: '700', color: '#0f172a' },
   addBtn: { backgroundColor: '#16a34a', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 },
   addBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  headerAddBtn: { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 },
+  headerAddBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
   formCard: { backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 12, gap: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, elevation: 2 },
   formLabel: { fontSize: 12, fontWeight: '600', color: '#64748b', marginBottom: 6, marginTop: 8 },
   formInput: { borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 10, padding: 12, fontSize: 14, color: '#0f172a', backgroundColor: '#f8fafc' },
