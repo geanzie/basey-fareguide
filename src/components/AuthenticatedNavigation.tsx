@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 
 import type { SessionUserDto } from '@/lib/contracts'
@@ -150,9 +150,11 @@ export function AuthenticatedMobileProfileSheet({
   isLoggingOut: boolean
 }) {
   const navigation = getAuthenticatedNavigationConfig(user.userType)
+  const [confirmOpen, setConfirmOpen] = useState(false)
 
   useEffect(() => {
     if (!open) {
+      setConfirmOpen(false)
       return undefined
     }
 
@@ -213,7 +215,7 @@ export function AuthenticatedMobileProfileSheet({
 
           <button
             type="button"
-            onClick={onLogout}
+            onClick={() => setConfirmOpen(true)}
             disabled={isLoggingOut}
             className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50 disabled:opacity-60"
           >
@@ -222,6 +224,51 @@ export function AuthenticatedMobileProfileSheet({
           </button>
         </div>
       </section>
+
+      {confirmOpen && (
+        <div className="fixed inset-0 z-60 flex items-end justify-center px-4 pb-8">
+          <button
+            type="button"
+            aria-label="Cancel sign out"
+            className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm"
+            onClick={() => setConfirmOpen(false)}
+          />
+          <div className="app-surface-overlay relative w-full max-w-sm rounded-3xl border border-slate-200/80 p-6 shadow-2xl">
+            <div className="mb-5 flex flex-col items-center gap-3 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-red-100">
+                <DashboardIconSlot icon={DASHBOARD_ICONS.logout} size={26} className="text-red-600" />
+              </div>
+              <div>
+                <p className="text-base font-semibold text-slate-900">Sign out?</p>
+                <p className="mt-1 text-sm text-slate-500">
+                  You&apos;ll need to sign back in to access your account.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmOpen(false)}
+                className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 active:bg-slate-100"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={onLogout}
+                disabled={isLoggingOut}
+                className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-red-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-red-700 active:bg-red-800 disabled:opacity-60"
+              >
+                {isLoggingOut ? (
+                  <DashboardIconSlot icon={DASHBOARD_ICONS.loader} size={16} className="animate-spin" />
+                ) : null}
+                <span>{isLoggingOut ? 'Signing out...' : 'Sign out'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

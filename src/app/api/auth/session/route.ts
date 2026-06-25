@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     const authErrorResponse = createAuthErrorResponse(error)
 
     if (authErrorResponse.status === 401) {
-      return NextResponse.json({ user: null })
+      return NextResponse.json({ user: null }, { status: 401 })
     }
 
     return authErrorResponse

@@ -248,7 +248,7 @@ const EvidenceManager = ({ incidentId, onClose, onVerified, incidentVerifiedAt }
 
                       <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
                         <a
-                          href={item.storageStatus === 'DELETED' ? undefined : item.fileUrl}
+                          href={item.storageStatus === 'DELETED' ? undefined : `/api/evidence/${item.id}/download`}
                           target={item.storageStatus === 'DELETED' ? undefined : '_blank'}
                           rel={item.storageStatus === 'DELETED' ? undefined : 'noopener noreferrer'}
                           className={`inline-flex w-full items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium sm:w-auto ${

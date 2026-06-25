@@ -35,6 +35,7 @@ const prismaMock = vi.hoisted(() => ({
   vehicleTripSessionRider: {
     findUnique: vi.fn(),
     create: vi.fn(),
+    updateMany: vi.fn(),
   },
   vehicleTripSessionRiderEvent: {
     create: vi.fn(),
@@ -110,6 +111,7 @@ beforeEach(() => {
   prismaMock.vehicleTripSession.findUnique.mockResolvedValue(makeSession())
   prismaMock.vehicleTripSession.create.mockResolvedValue({ id: 'session-1' })
   prismaMock.vehicleTripSession.count.mockResolvedValue(0)
+  prismaMock.vehicleTripSessionRider.updateMany.mockResolvedValue({ count: 0 })
   transactionMock.vehicleTripSessionRider.updateMany.mockResolvedValue({ count: 1 })
   transactionMock.fareCalculation.create.mockResolvedValue({ id: 'calc-new-1' })
 })

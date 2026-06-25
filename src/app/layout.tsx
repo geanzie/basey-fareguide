@@ -14,11 +14,22 @@ export const metadata: Metadata = {
   description: 'Official fare standardization system for Basey Municipality, Samar. Enhanced distance calculation for fair transportation pricing.',
   keywords: 'Basey, Samar, fare guide, transportation, Municipal Ordinance 105, jeepney, tricycle, habal-habal',
   authors: [{ name: 'Basey Municipality' }],
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Basey FareCheck',
+  },
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/icons/icon-192.png',
+  },
 }
 
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
+  themeColor: '#16a34a',
 }
 
 export default async function RootLayout({

@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import 'leaflet/dist/leaflet.css'
 
+import { addBaseTileLayer } from '@/lib/map/baseTileLayer'
 import { resolvePinLabel } from '@/lib/locations/pinLabelResolver'
 import type { PlannerPoint, PlannerViewState } from '@/lib/planner/routePlanner'
 
@@ -104,19 +105,15 @@ export default function RoutePlannerMap({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       delete (L.Icon.Default.prototype as any)._getIconUrl
       L.Icon.Default.mergeOptions({
-        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+        iconRetinaUrl: '/leaflet/marker-icon-2x.png',
+        iconUrl: '/leaflet/marker-icon.png',
+        shadowUrl: '/leaflet/marker-shadow.png',
       })
 
       const map = L.map(containerRef.current, { zoomControl: true })
       mapRef.current = map
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 19,
-      }).addTo(map)
+      addBaseTileLayer(L, map)
 
       map.setView(BASEY_CENTER, DEFAULT_ZOOM)
 
@@ -243,6 +240,16 @@ export default function RoutePlannerMap({
           }).addTo(mapRef.current)
           fitCoordinates.push(...decoded)
         }
+      } else if (origin && destination) {
+        // No road polyline (offline estimate / GPS) — draw a dashed straight
+        // line so the estimated connection is visible.
+        routeLayerRef.current = L.polyline(
+          [
+            [origin.lat, origin.lng],
+            [destination.lat, destination.lng],
+          ],
+          { color: '#f59e0b', weight: 4, opacity: 0.85, dashArray: '8 8' },
+        ).addTo(mapRef.current)
       }
 
       if (origin) {

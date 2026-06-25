@@ -85,6 +85,8 @@ describe('POST /api/terminal/unlock', () => {
     expect(sessionMock.createTerminalUnlockSession).toHaveBeenCalledWith('enforcer-1')
     expect(sessionMock.applyTerminalUnlockCookie).toHaveBeenCalled()
     expect(json.unlocked).toBe(true)
+    // Raw token returned for non-browser clients (mobile) that can't hold the cookie.
+    expect(json.unlockToken).toBe('unlock-token')
   })
 
   it('maps auth failures through the shared auth error response', async () => {

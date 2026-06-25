@@ -34,6 +34,9 @@ export interface TerminalUnlockStatusDto {
 
 export interface TerminalUnlockResponseDto extends TerminalUnlockStatusDto {
   message?: string;
+  // Raw unlock token for non-browser clients (mobile) that cannot hold the
+  // httpOnly cookie. Browser clients ignore this and rely on the cookie.
+  unlockToken?: string;
 }
 
 export interface TerminalComplianceChecklistItemDto {

@@ -1,7 +1,9 @@
-import { put, del } from "@vercel/blob";
+import { DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { Upload } from "@aws-sdk/lib-storage";
 import { EvidenceType, Prisma } from "@prisma/client";
 import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
+import { ensureS3Configured, getS3Bucket, getS3Client } from "@/lib/s3Client";
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 const MAX_VIDEO_SIZE = 50 * 1024 * 1024;
@@ -50,7 +52,7 @@ const evidenceInclude = {
   },
 } as const;
 
-const VERCEL_BLOB_EVIDENCE_PREFIX = "evidence";
+const S3_EVIDENCE_PREFIX = "evidence";
 
 type UploadedEvidenceRecord = Prisma.EvidenceGetPayload<{
   include: typeof evidenceInclude;
@@ -64,22 +66,8 @@ function getEvidenceFileType(mimeType: string): EvidenceType {
   return "OTHER";
 }
 
-function getEvidenceBlobPathname(fileName: string) {
-  return `${VERCEL_BLOB_EVIDENCE_PREFIX}/${fileName}`;
-}
-
-function ensureEvidenceBlobConfigured() {
-  if (process.env.NODE_ENV === "test") {
-    return;
-  }
-
-  if (process.env.BLOB_READ_WRITE_TOKEN) {
-    return;
-  }
-
-  throw new Error(
-    "Evidence storage is not configured. Connect Vercel Blob to this project or set BLOB_READ_WRITE_TOKEN.",
-  );
+function getEvidenceObjectKey(fileName: string): string {
+  return `${S3_EVIDENCE_PREFIX}/${fileName}`;
 }
 
 function validateEvidenceFile(file: File) {
@@ -104,31 +92,57 @@ function validateEvidenceFile(file: File) {
   return fileExtension;
 }
 
-async function removeStoredFile(fileUrl: string) {
-  if (!fileUrl) {
+/**
+ * Delete an evidence object from S3/MinIO by its object key.
+ * S3 DeleteObject is idempotent — deleting a missing object is not an error.
+ */
+async function removeStoredFile(objectKey: string) {
+  if (!objectKey) {
     return;
   }
 
-  ensureEvidenceBlobConfigured();
-  await del(fileUrl);
+  ensureS3Configured();
+  await getS3Client().send(
+    new DeleteObjectCommand({
+      Bucket: getS3Bucket(),
+      Key: objectKey,
+    }),
+  );
 }
 
+/**
+ * Upload a validated evidence file to S3/MinIO.
+ * Returns the object key (not a public URL) which is stored in `fileUrl`.
+ */
 async function storeEvidenceFile(incidentId: string, file: File) {
   const fileExtension = validateEvidenceFile(file);
-  ensureEvidenceBlobConfigured();
+  ensureS3Configured();
 
   const randomBytes = crypto.randomBytes(16).toString("hex");
   const timestamp = Date.now();
   const fileName = `evidence_${incidentId}_${timestamp}_${randomBytes}.${fileExtension}`.replace(/[\\/]/g, "");
-  const blob = await put(getEvidenceBlobPathname(fileName), file, {
-    access: "public",
-    addRandomSuffix: false,
-    contentType: file.type,
+  const objectKey = getEvidenceObjectKey(fileName);
+
+  const fileBuffer = Buffer.from(await file.arrayBuffer());
+
+  const upload = new Upload({
+    client: getS3Client(),
+    params: {
+      Bucket: getS3Bucket(),
+      Key: objectKey,
+      Body: fileBuffer,
+      ContentType: file.type,
+      // Object is private — no ACL set
+    },
   });
+
+  await upload.done();
 
   return {
     fileName,
-    fileUrl: blob.url,
+    // fileUrl stores the S3 object key, NOT a public URL.
+    // Access is via /api/evidence/[id]/download (authenticated presigned URL).
+    fileUrl: objectKey,
     fileType: getEvidenceFileType(file.type),
     fileSize: file.size,
   };

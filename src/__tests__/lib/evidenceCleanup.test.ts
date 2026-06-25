@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 
 const prismaMock = vi.hoisted(() => ({
   incident: {
@@ -13,19 +14,28 @@ const prismaMock = vi.hoisted(() => ({
   },
 }));
 
-const delMock = vi.hoisted(() => vi.fn());
+const s3SendMock = vi.hoisted(() => vi.fn().mockResolvedValue({}));
 
 vi.mock("@/lib/prisma", () => ({
   prisma: prismaMock,
 }));
 
-vi.mock("@vercel/blob", async () => {
-  const actual = await vi.importActual<typeof import("@vercel/blob")>("@vercel/blob");
+vi.mock("@aws-sdk/client-s3", async () => {
+  const actual = await vi.importActual<typeof import("@aws-sdk/client-s3")>("@aws-sdk/client-s3");
   return {
     ...actual,
-    del: delMock,
+    S3Client: vi.fn().mockImplementation(() => ({
+      send: s3SendMock,
+    })),
   };
 });
+
+vi.mock("@/lib/s3Client", () => ({
+  getS3Client: () => ({ send: s3SendMock }),
+  getS3Bucket: () => "incident-evidence",
+  ensureS3Configured: vi.fn(),
+  getSignedUrlTtl: () => 300,
+}));
 
 import {
   cleanupEvidenceFiles,
@@ -53,7 +63,14 @@ describe("evidence cleanup", () => {
 
     await cleanupEvidenceFiles("inc-1");
 
-    expect(delMock).toHaveBeenCalledWith("/uploads/evidence/evidence_1.jpg");
+    expect(s3SendMock).toHaveBeenCalledWith(
+      expect.any(DeleteObjectCommand),
+    );
+    const callArg = s3SendMock.mock.calls[0][0] as DeleteObjectCommand;
+    expect(callArg.input).toMatchObject({
+      Bucket: "incident-evidence",
+      Key: "/uploads/evidence/evidence_1.jpg",
+    });
     expect(prismaMock.evidence.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {

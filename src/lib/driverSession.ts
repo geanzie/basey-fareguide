@@ -36,6 +36,13 @@ const CLOSURE_BLOCKING_RIDER_STATUSES: readonly DriverTripSessionRiderStatus[] =
   DriverTripSessionRiderStatus.ACCEPTED,
   DriverTripSessionRiderStatus.BOARDED,
 ]
+// Only riders the driver has committed to (accepted) or that are onboard should
+// block going offline. An unanswered PENDING request must never trap the driver —
+// closing the session expires it instead (see closeDriverSession).
+const CLOSE_BLOCKING_RIDER_STATUSES: readonly DriverTripSessionRiderStatus[] = [
+  DriverTripSessionRiderStatus.ACCEPTED,
+  DriverTripSessionRiderStatus.BOARDED,
+]
 const PENDING_SECTION_RIDER_STATUSES: readonly DriverTripSessionRiderStatus[] = [
   DriverTripSessionRiderStatus.PENDING,
   DriverTripSessionRiderStatus.ACCEPTED,
@@ -430,7 +437,7 @@ function buildSessionSummary(session: DriverSessionRecord | null): DriverSession
     closedAt: toIsoString(session.closedAt),
     canStartSession: false,
     canCloseSession: session.riders.every(
-      (rider) => !CLOSURE_BLOCKING_RIDER_STATUSES.includes(rider.status),
+      (rider) => !CLOSE_BLOCKING_RIDER_STATUSES.includes(rider.status),
     ),
   }
 }
@@ -831,6 +838,10 @@ async function findDriverSessionOrThrow(driverContext: DriverVehicleContext, ses
 
 export async function getDriverSessionActiveResponse(request: NextRequest): Promise<DriverSessionActiveResponseDto> {
   const driverContext = await requireAssignedDriverContext(request)
+  // Lazily expire TTL-elapsed PENDING requests before reading, so the driver
+  // never sees a stale "pending" card they can't act on (expiry is otherwise
+  // only enforced on action or by the background sweeper).
+  await expireAllStalePendingRequests()
   const session = await findActiveSessionByVehicle(driverContext.vehicle.id)
 
   return {
@@ -931,7 +942,20 @@ export async function closeDriverSession(request: NextRequest, sessionId: string
   const driverContext = await requireAssignedDriverContext(request)
   const session = await findDriverSessionOrThrow(driverContext, sessionId)
 
-  if (session.riders.some((rider) => CLOSURE_BLOCKING_RIDER_STATUSES.includes(rider.status))) {
+  // Going offline never waits on unanswered requests: expire any PENDING riders
+  // up front so a stale/expired public request can't trap the driver online.
+  if (session.riders.some((rider) => rider.status === DriverTripSessionRiderStatus.PENDING)) {
+    await prisma.vehicleTripSessionRider.updateMany({
+      where: { sessionId: session.id, status: DriverTripSessionRiderStatus.PENDING },
+      data: {
+        status: DriverTripSessionRiderStatus.EXPIRED,
+        activeRequestKey: null,
+        finalisedAt: new Date(),
+      },
+    })
+  }
+
+  if (session.riders.some((rider) => CLOSE_BLOCKING_RIDER_STATUSES.includes(rider.status))) {
     throw new DriverSessionError('Finish or clear active riders before closing this trip.', 409, 'SESSION_HAS_ACTIVE_RIDERS')
   }
 

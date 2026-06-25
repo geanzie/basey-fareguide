@@ -27,7 +27,13 @@ function buildCookieOptions(maxAge: number) {
 }
 
 export function getTerminalUnlockToken(request: NextRequest): string | null {
-  return request.cookies.get(TERMINAL_UNLOCK_COOKIE_NAME)?.value ?? null
+  // Browser clients carry the unlock secret in an httpOnly cookie. Non-browser
+  // clients (mobile app uses Bearer auth, no cookie jar) send it via header.
+  return (
+    request.cookies.get(TERMINAL_UNLOCK_COOKIE_NAME)?.value ??
+    request.headers.get('x-terminal-unlock-token') ??
+    null
+  )
 }
 
 export async function createTerminalUnlockSession(userId: string) {

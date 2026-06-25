@@ -26,7 +26,21 @@ import {
   type PlannerPoint,
   type PlannerViewState,
 } from '@/lib/planner/routePlanner'
-import type { LocationInput } from '@/lib/routing/types'
+import {
+  buildOfflineRouteFromCache,
+  resolveOfflineRoute,
+  OFFLINE_CACHE_REASON,
+  OFFLINE_FALLBACK_REASON,
+  OFFLINE_GRAPH_REASON,
+} from '@/lib/routing/offlineRoute'
+import type { CalculatedRouteResponse, LocationInput, PassengerType } from '@/lib/routing/types'
+import { loadLastFarePolicy, saveLastFarePolicy } from '@/lib/offline/farePolicyCache'
+import {
+  loadCachedRoute,
+  routePairKey,
+  saveCachedRoute,
+} from '@/lib/offline/routeCache'
+import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 
 const DynamicRoutePlannerMap = dynamic(() => import('./RoutePlannerMap'), { ssr: false }) as ComponentType<RoutePlannerMapProps>
 const DynamicGoogleRoutePlannerMap = dynamic(() => import('./GoogleRoutePlannerMap'), {
@@ -192,6 +206,7 @@ const RoutePlannerCalculator = ({
     destination: PlannerPoint
   } | null>(null)
   const { user } = useAuth()
+  const isOnline = useOnlineStatus()
 
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
@@ -287,10 +302,10 @@ const RoutePlannerCalculator = ({
     }
   }, [])
 
-  const passengerType = userDiscountCard
+  const passengerType: PassengerType = userDiscountCard
     ? userDiscountCard.discountType === 'SENIOR_CITIZEN'
       ? 'SENIOR'
-      : userDiscountCard.discountType
+      : (userDiscountCard.discountType as PassengerType)
     : 'REGULAR'
 
   const resetRoute = () => {
@@ -323,6 +338,84 @@ const RoutePlannerCalculator = ({
     setFitBoundsToken((current) => current + 1)
   }
 
+  const applyOfflineEstimate = async (
+    nextPair: { origin: PlannerPoint; destination: PlannerPoint },
+    requestId: number,
+  ) => {
+    if (requestId !== requestSequenceRef.current) return
+
+    const originCoord = { lat: nextPair.origin.lat, lng: nextPair.origin.lng }
+    const destCoord = { lat: nextPair.destination.lat, lng: nextPair.destination.lng }
+    const farePolicy = loadLastFarePolicy()
+    const offlineInput = { origin: originCoord, destination: destCoord, passengerType, farePolicy }
+
+    // Resolution order: exact cached online result -> on-device road graph ->
+    // straight-line heuristic.
+    let estimate: CalculatedRouteResponse
+    const cached = await loadCachedRoute(routePairKey(originCoord, destCoord))
+    if (cached) {
+      estimate = buildOfflineRouteFromCache(
+        { ...offlineInput, farePolicy: cached.farePolicy ?? farePolicy },
+        cached,
+      )
+    } else {
+      estimate = await resolveOfflineRoute(offlineInput)
+    }
+
+    // A newer request superseded this one while awaiting.
+    if (requestId !== requestSequenceRef.current) return
+
+    const subtotal = estimate.fareBreakdown.baseFare + estimate.fareBreakdown.additionalFare
+    const hasDiscount = estimate.fareBreakdown.discount > 0
+
+    const nextResult: RouteResult = {
+      fare: estimate.fare,
+      distanceKm: estimate.distanceKm,
+      durationMin: estimate.durationMin ?? 0,
+      durationText: buildDurationText(estimate.durationMin),
+      polyline: estimate.polyline,
+      method: null,
+      provider: null,
+      isEstimate: true,
+      fallbackReason: estimate.fallbackReason,
+      sourceBadge:
+        estimate.fallbackReason === OFFLINE_CACHE_REASON
+          ? 'Offline (cached route)'
+          : estimate.fallbackReason === OFFLINE_GRAPH_REASON
+            ? 'Offline road estimate'
+            : 'Offline straight-line estimate',
+      originalFare: hasDiscount ? subtotal : undefined,
+      discountApplied: hasDiscount ? estimate.fareBreakdown.discount : undefined,
+      discountCard: userDiscountCard,
+      farePolicy: estimate.farePolicy,
+      breakdown: {
+        baseFare: estimate.fareBreakdown.baseFare,
+        additionalDistance: estimate.fareBreakdown.additionalKm,
+        additionalFare: estimate.fareBreakdown.additionalFare,
+      },
+      originLabel: nextPair.origin.label || estimate.origin,
+      destinationLabel: nextPair.destination.label || estimate.destination,
+    }
+
+    setRouteResult(nextResult)
+    displayedRouteVersionRef.current += 1
+    setDisplayedRoutePair(nextPair)
+    setSaveStatus('idle')
+    setPlannerState('route_ready')
+    setRouteMessage(
+      estimate.fallbackReason === OFFLINE_FALLBACK_REASON
+        ? 'Offline — straight-line estimate (pin off the road network).'
+        : estimate.fallbackReason === OFFLINE_CACHE_REASON
+          ? 'Offline — replaying your last verified route for this pair.'
+          : 'Offline — estimated road route from the on-device map.',
+    )
+
+    if (shouldFitNextSuccessRef.current) {
+      setFitBoundsToken((current) => current + 1)
+      shouldFitNextSuccessRef.current = false
+    }
+  }
+
   const calculateRoute = async (force = false) => {
     if (!origin || !destination || !originSelection || !destinationSelection) return
 
@@ -346,6 +439,15 @@ const RoutePlannerCalculator = ({
     setIsCalculating(true)
     setPlannerState('calculating')
     setRouteMessage(routeResult ? 'Keeping your last good route visible while recalculating.' : null)
+
+    // No connection: skip the network round-trip and estimate locally.
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      await applyOfflineEstimate(nextPair, requestId)
+      if (requestId === requestSequenceRef.current) {
+        setIsCalculating(false)
+      }
+      return
+    }
 
     try {
       const response = await fetch('/api/routes/calculate', {
@@ -385,6 +487,8 @@ const RoutePlannerCalculator = ({
 
       const subtotal = (data.fareBreakdown?.baseFare || 0) + (data.fareBreakdown?.additionalFare || 0)
       const farePolicy = resolveFarePolicySnapshot(data.farePolicy)
+      // Cache the live policy so offline estimates price with the real rates.
+      saveLastFarePolicy(farePolicy)
       const nextResult: RouteResult = {
         fare: data.fare || 0,
         distanceKm: data.distanceKm || 0,
@@ -414,6 +518,22 @@ const RoutePlannerCalculator = ({
       setDisplayedRoutePair(nextPair)
       setSaveStatus('idle')
       setPlannerState('route_ready')
+
+      // Persist verified routes for exact offline replay of the same pin pair.
+      if (nextResult.method != null) {
+        void saveCachedRoute(
+          routePairKey(
+            { lat: nextPair.origin.lat, lng: nextPair.origin.lng },
+            { lat: nextPair.destination.lat, lng: nextPair.destination.lng },
+          ),
+          {
+            distanceKm: nextResult.distanceKm,
+            durationMin: data.durationMin ?? null,
+            polyline: nextResult.polyline,
+            farePolicy,
+          },
+        )
+      }
       setRouteMessage(
         nextResult.method == null && nextResult.distanceKm === 0
           ? 'Origin and destination are the same point, so no road segment is needed.'
@@ -434,8 +554,9 @@ const RoutePlannerCalculator = ({
         return
       }
 
-      setPlannerState('network_error')
-      setRouteMessage('Route service unavailable right now.')
+      // Network/API unreachable — degrade to a local offline estimate
+      // (cached route -> road graph -> straight-line) instead of blocking.
+      await applyOfflineEstimate(nextPair, requestId)
       if (onError) onError(message)
     } finally {
       if (requestId === requestSequenceRef.current) {
@@ -510,6 +631,11 @@ const RoutePlannerCalculator = ({
   return (
     <div className="mx-auto max-w-6xl">
       <div className="space-y-4 sm:space-y-5">
+        {!isOnline ? (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 sm:text-sm">
+            Offline — the map and a straight-line fare estimate still work. Routes show as estimates until you reconnect.
+          </div>
+        ) : null}
         {user ? (
           <section className="app-surface-card-strong rounded-[2rem] border border-slate-200/80 p-3 sm:p-4">
             {identityInputMode === 'idle' ? (

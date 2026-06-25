@@ -1,5 +1,6 @@
-import { del } from '@vercel/blob'
+import { DeleteObjectCommand } from '@aws-sdk/client-s3'
 import { prisma } from '@/lib/prisma'
+import { getS3Bucket, getS3Client } from '@/lib/s3Client'
 
 export const DEFAULT_EVIDENCE_CLEANUP_BATCH_SIZE = 100
 export const MAX_EVIDENCE_CLEANUP_BATCH_SIZE = 500
@@ -160,8 +161,15 @@ export async function cleanupEvidenceFiles(incidentId: string): Promise<Evidence
     for (const evidence of evidenceList) {
       try {
         if (evidence.fileUrl) {
-          await del(evidence.fileUrl)
-          deletedCount++        } else {        }
+          // evidence.fileUrl stores the S3 object key (e.g. "evidence/filename.jpg")
+          await getS3Client().send(
+            new DeleteObjectCommand({
+              Bucket: getS3Bucket(),
+              Key: evidence.fileUrl,
+            }),
+          )
+          deletedCount++
+        }
       } catch (fileError) {
         errorCount++      }
     }

@@ -45,3 +45,39 @@ export function decodePolyline(encoded: string): [number, number][] {
 
   return points;
 }
+
+function encodeSignedNumber(num: number): string {
+  let sgnNum = num << 1;
+  if (num < 0) {
+    sgnNum = ~sgnNum;
+  }
+  let output = "";
+  while (sgnNum >= 0x20) {
+    output += String.fromCharCode((0x20 | (sgnNum & 0x1f)) + 63);
+    sgnNum >>= 5;
+  }
+  output += String.fromCharCode(sgnNum + 63);
+  return output;
+}
+
+/**
+ * Encode an array of [lat, lng] coordinate pairs into a Google polyline string.
+ * Inverse of decodePolyline — lets locally computed (offline) routes flow
+ * through the same polyline draw + fit-bounds pipeline as provider routes.
+ */
+export function encodePolyline(coordinates: [number, number][]): string {
+  let output = "";
+  let prevLat = 0;
+  let prevLng = 0;
+
+  for (const [lat, lng] of coordinates) {
+    const iLat = Math.round(lat * 1e5);
+    const iLng = Math.round(lng * 1e5);
+    output += encodeSignedNumber(iLat - prevLat);
+    output += encodeSignedNumber(iLng - prevLng);
+    prevLat = iLat;
+    prevLng = iLng;
+  }
+
+  return output;
+}

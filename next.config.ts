@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import withSerwistInit from "@serwist/next";
 // Remove any need for eval-based client source maps so CSP can stay strict.
 // Importing CJS export; type cast applied below to avoid TS issues
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -12,6 +13,7 @@ const isVercelBuild = process.env.VERCEL === '1';
 const distDir = isNextDevCommand && !isVercelBuild ? '.next-dev' : '.next';
 
 const nextConfig: NextConfig = {
+  output: 'standalone',
   reactStrictMode: true,
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
@@ -84,7 +86,7 @@ const nextConfig: NextConfig = {
                   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
                   "img-src 'self' data: https: https://maps.gstatic.com https://maps.googleapis.com blob:",
                   "font-src 'self' data: https://fonts.gstatic.com",
-                  "connect-src 'self' https://maps.googleapis.com ws: wss:",
+                  "connect-src 'self' https://maps.googleapis.com https://a.tile.openstreetmap.org https://b.tile.openstreetmap.org https://c.tile.openstreetmap.org ws: wss:",
                   "frame-src 'none'",
                   "object-src 'none'",
                   "base-uri 'self'",
@@ -96,7 +98,7 @@ const nextConfig: NextConfig = {
                   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
                   "img-src 'self' data: https: https://maps.gstatic.com https://maps.googleapis.com blob:",
                   "font-src 'self' data: https://fonts.gstatic.com",
-                  "connect-src 'self' https://maps.googleapis.com",
+                  "connect-src 'self' https://maps.googleapis.com https://a.tile.openstreetmap.org https://b.tile.openstreetmap.org https://c.tile.openstreetmap.org",
                   "frame-src 'none'",
                   "object-src 'none'",
                   "base-uri 'self'",
@@ -123,4 +125,13 @@ const withBundleAnalyzer = (bundleAnalyzer as any)({
   enabled: process.env.ANALYZE === 'true',
 })
 
-export default withBundleAnalyzer(nextConfig as any);
+// Service worker is built from src/app/sw.ts to public/sw.js. Disabled in dev so
+// caching never interferes with `next dev`; registers only in production builds.
+const withSerwist = withSerwistInit({
+  swSrc: 'src/app/sw.ts',
+  swDest: 'public/sw.js',
+  disable: process.env.NODE_ENV === 'development',
+  reloadOnOnline: true,
+})
+
+export default withSerwist(withBundleAnalyzer(nextConfig as any) as any);

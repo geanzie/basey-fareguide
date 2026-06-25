@@ -64,6 +64,7 @@ export async function POST(request: NextRequest) {
       expiresAt: session.expiresAt.toISOString(),
       lastActivityAt: session.lastActivityAt.toISOString(),
       message: 'QR terminal unlocked.',
+      unlockToken: session.token,
     })
     applyTerminalUnlockCookie(response, session.token)
 
