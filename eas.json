@@ -14,7 +14,8 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://baseyfareguide.vercel.app"
+        "EXPO_PUBLIC_API_BASE_URL": "https://baseyfareguide.vercel.app",
+        "EXPO_PUBLIC_AUTH_IDLE_TIMEOUT_MS": "10000"
       }
     },
     "production": {
