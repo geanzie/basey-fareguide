@@ -63,7 +63,6 @@ export default function DiscountCardScreen() {
   const [fullName, setFullName] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [idNumber, setIdNumber] = useState('');
-  const [idType, setIdType] = useState('');
   const [schoolName, setSchoolName] = useState('');
   const [gradeLevel, setGradeLevel] = useState('');
   const [schoolIdExpiry, setSchoolIdExpiry] = useState('');
@@ -105,6 +104,9 @@ export default function DiscountCardScreen() {
     if (!fullName.trim()) { showWarning('Full name is required.', { title: 'Required' }); return; }
     if (!dateOfBirth.trim()) { showWarning('Date of birth is required (YYYY-MM-DD).', { title: 'Required' }); return; }
     if (!photoUri || !photoFileName) { showWarning('Please upload a photo of your ID.', { title: 'Required' }); return; }
+    if (discountType === 'SENIOR_CITIZEN' && !idNumber.trim()) {
+      showWarning('Senior Citizen ID number is required.', { title: 'Required' }); return;
+    }
     if (discountType === 'STUDENT') {
       if (!schoolName.trim()) { showWarning('School name is required.', { title: 'Required' }); return; }
       if (!gradeLevel.trim()) { showWarning('Grade/Year level is required.', { title: 'Required' }); return; }
@@ -123,7 +125,6 @@ export default function DiscountCardScreen() {
       formData.append('fullName', fullName.trim());
       formData.append('dateOfBirth', dateOfBirth.trim());
       if (idNumber.trim()) formData.append('idNumber', idNumber.trim());
-      if (idType.trim()) formData.append('idType', idType.trim());
       if (discountType === 'STUDENT') {
         formData.append('schoolName', schoolName.trim());
         formData.append('gradeLevel', gradeLevel.trim());
@@ -243,11 +244,12 @@ export default function DiscountCardScreen() {
           <Text style={s.fieldLabel}>Date of Birth (YYYY-MM-DD)</Text>
           <TextInput style={s.input} value={dateOfBirth} onChangeText={setDateOfBirth} placeholder="e.g. 1960-01-15" placeholderTextColor="#94a3b8" keyboardType="numeric" />
 
-          <Text style={s.fieldLabel}>ID Number (optional)</Text>
-          <TextInput style={s.input} value={idNumber} onChangeText={setIdNumber} placeholder="Government ID number" placeholderTextColor="#94a3b8" />
-
-          <Text style={s.fieldLabel}>ID Type (optional)</Text>
-          <TextInput style={s.input} value={idType} onChangeText={setIdType} placeholder="e.g. SSS, PhilHealth, UMID" placeholderTextColor="#94a3b8" />
+          {discountType === 'SENIOR_CITIZEN' && (
+            <>
+              <Text style={s.fieldLabel}>Senior Citizen ID Number</Text>
+              <TextInput style={s.input} value={idNumber} onChangeText={setIdNumber} placeholder="OSCA / Senior Citizen ID number" placeholderTextColor="#94a3b8" />
+            </>
+          )}
 
           {discountType === 'STUDENT' && (
             <>
