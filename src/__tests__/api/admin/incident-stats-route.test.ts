@@ -16,6 +16,7 @@ const prismaMock = vi.hoisted(() => ({
     count: vi.fn(),
     findMany: vi.fn(),
   },
+  $queryRaw: vi.fn(),
 }))
 
 vi.mock('@/lib/auth', () => ({
@@ -42,24 +43,22 @@ beforeEach(() => {
     { status: 'RESOLVED', _count: { id: 5 } },
   ])
   prismaMock.incident.count.mockResolvedValue(10)
-  prismaMock.incident.findMany
-    .mockResolvedValueOnce([
-      {
-        id: 'incident-1',
-        incidentType: 'FARE_OVERCHARGE',
-        description: 'Collected more than the posted fare',
-        status: 'PENDING',
-        location: 'Basey Terminal',
-        createdAt: new Date('2026-04-09T00:00:00.000Z'),
-        reportedBy: { firstName: 'Ana', lastName: 'Santos' },
-        handledBy: null,
-      },
-    ])
-    .mockResolvedValueOnce([
-      { createdAt: new Date('2026-04-02T00:00:00.000Z'), status: 'RESOLVED' },
-      { createdAt: new Date('2026-04-01T00:00:00.000Z'), status: 'PENDING' },
-      { createdAt: new Date('2026-03-15T00:00:00.000Z'), status: 'PENDING' },
-    ])
+  prismaMock.incident.findMany.mockResolvedValue([
+    {
+      id: 'incident-1',
+      incidentType: 'FARE_OVERCHARGE',
+      description: 'Collected more than the posted fare',
+      status: 'PENDING',
+      location: 'Basey Terminal',
+      createdAt: new Date('2026-04-09T00:00:00.000Z'),
+      reportedBy: { firstName: 'Ana', lastName: 'Santos' },
+      handledBy: null,
+    },
+  ])
+  prismaMock.$queryRaw.mockResolvedValue([
+    { month: '2026-04', total: BigInt(2), resolved: BigInt(1), pending: BigInt(1) },
+    { month: '2026-03', total: BigInt(1), resolved: BigInt(0), pending: BigInt(1) },
+  ])
 })
 
 afterEach(() => {
@@ -67,7 +66,7 @@ afterEach(() => {
 })
 
 describe('GET /api/admin/incidents/stats', () => {
-  it('caps the six-month trend scan and computes the current-month summary from the correct month', async () => {
+  it('aggregates the six-month trend in the database and computes the current-month summary', async () => {
     const res = await GET(new Request('http://localhost/api/admin/incidents/stats') as never)
     const json = await res.json()
 
@@ -78,26 +77,20 @@ describe('GET /api/admin/incidents/stats', () => {
       resolvedThisMonth: 1,
       averageResolutionTime: null,
     })
+    expect(json.monthlyTrends).toEqual({
+      '2026-04': { total: 2, resolved: 1, pending: 1 },
+      '2026-03': { total: 1, resolved: 0, pending: 1 },
+    })
     expect(json.recent).toHaveLength(1)
 
-    expect(prismaMock.incident.findMany).toHaveBeenNthCalledWith(
-      1,
+    // Recent incidents stay a bounded findMany; trend buckets come from one aggregate query.
+    expect(prismaMock.incident.findMany).toHaveBeenCalledTimes(1)
+    expect(prismaMock.incident.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         take: 10,
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       }),
     )
-    expect(prismaMock.incident.findMany).toHaveBeenNthCalledWith(
-      2,
-      expect.objectContaining({
-        take: 5000,
-        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-        where: {
-          createdAt: {
-            gte: expect.any(Date),
-          },
-        },
-      }),
-    )
+    expect(prismaMock.$queryRaw).toHaveBeenCalledTimes(1)
   })
 })

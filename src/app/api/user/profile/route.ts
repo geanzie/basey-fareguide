@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { createAuthErrorResponse, requireRequestUser, verifyAuthWithSelect } from '@/lib/auth'
+import { createAuthErrorResponse, invalidateAuthUserCache, requireRequestUser, verifyAuthWithSelect } from '@/lib/auth'
 import { serializeUserProfile } from '@/lib/serializers'
 
 export async function GET(request: NextRequest) {
@@ -107,9 +107,11 @@ export async function PUT(request: NextRequest) {
       }
     })
 
-    return NextResponse.json({ 
+    invalidateAuthUserCache(user.id)
+
+    return NextResponse.json({
       message: 'Profile updated successfully',
-      user: serializeUserProfile(updatedUser) 
+      user: serializeUserProfile(updatedUser)
     })
   } catch (error) {
     return createAuthErrorResponse(error)

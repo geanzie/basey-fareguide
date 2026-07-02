@@ -43,6 +43,23 @@ export function getJWTSecret(): string {
   return secret
 }
 
+// Per-worker cache for the auth user lookup that otherwise hits the DB on
+// every authenticated request. Deactivation/role changes can take up to the
+// TTL to propagate on a warm worker; mutation routes call
+// invalidateAuthUserCache for same-worker freshness.
+const AUTH_USER_CACHE_TTL_MS = 30_000
+const AUTH_USER_CACHE_MAX_ENTRIES = 500
+
+const authUserCache = new Map<string, { user: AuthUser; expiresAt: number }>()
+
+export function invalidateAuthUserCache(userId?: string) {
+  if (userId) {
+    authUserCache.delete(userId)
+  } else {
+    authUserCache.clear()
+  }
+}
+
 export async function resolveAuthUserFromToken(token: string | undefined): Promise<AuthUser | null> {
   if (!token) {
     return null
@@ -51,10 +68,27 @@ export async function resolveAuthUserFromToken(token: string | undefined): Promi
   try {
     const decoded = jwt.verify(token, getJWTSecret()) as { userId: string }
 
+    const cached = authUserCache.get(decoded.userId)
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.user.isActive ? cached.user : null
+    }
+
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       select: authUserSelect,
     })
+
+    if (user) {
+      if (authUserCache.size >= AUTH_USER_CACHE_MAX_ENTRIES) {
+        const oldestKey = authUserCache.keys().next().value
+        if (oldestKey !== undefined) {
+          authUserCache.delete(oldestKey)
+        }
+      }
+      authUserCache.set(decoded.userId, { user, expiresAt: Date.now() + AUTH_USER_CACHE_TTL_MS })
+    } else {
+      authUserCache.delete(decoded.userId)
+    }
 
     return user?.isActive ? user : null
   } catch {

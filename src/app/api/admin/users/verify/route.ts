@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { ADMIN_ONLY, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
+import { ADMIN_ONLY, createAuthErrorResponse, invalidateAuthUserCache, requireRequestRole } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
   try {
@@ -48,6 +48,8 @@ export async function POST(request: NextRequest) {
         }
       })
 
+      invalidateAuthUserCache(userId)
+
       return NextResponse.json({
         success: true,
         message: 'User approved successfully'
@@ -71,6 +73,8 @@ export async function POST(request: NextRequest) {
           reason: reason?.trim() || 'User verification rejected'
         }
       })
+
+      invalidateAuthUserCache(userId)
 
       return NextResponse.json({
         success: true,

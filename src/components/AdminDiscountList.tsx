@@ -204,7 +204,7 @@ export default function AdminDiscountList({ onRefresh }: DiscountListProps) {
   return (
     <div className="space-y-6">
       {/* Header with Stats */}
-      <div className="app-surface-card rounded-2xl p-6">
+      <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-4">Discount Cards List</h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-blue-50 rounded-lg p-4">
@@ -233,7 +233,7 @@ export default function AdminDiscountList({ onRefresh }: DiscountListProps) {
       </div>
 
       {/* Search and Filters */}
-      <div className="app-surface-card rounded-2xl p-6">
+      <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
         <form onSubmit={handleSearch} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-3">
@@ -363,7 +363,7 @@ export default function AdminDiscountList({ onRefresh }: DiscountListProps) {
       )}
 
       {/* Discount Cards Table */}
-      <div className="app-surface-card rounded-2xl overflow-hidden">
+      <div className="border border-surface-border bg-surface shadow-card rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -578,6 +578,8 @@ export default function AdminDiscountList({ onRefresh }: DiscountListProps) {
                         <img
                           src={selectedCard.photoUrl}
                           alt="Discount Card Photo"
+                          loading="lazy"
+                          decoding="async"
                           className="max-w-md max-h-96 object-contain rounded-lg border-2 border-gray-300 shadow-sm"
                           onError={(e) => {
                             (e.target as HTMLImageElement).src = '/placeholder-image.png'

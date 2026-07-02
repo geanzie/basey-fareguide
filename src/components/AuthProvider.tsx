@@ -1,12 +1,15 @@
 'use client'
 
-import { createContext, useContext, useEffect, useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import useSWR, { useSWRConfig } from 'swr'
 
 import AuthStateShell from './AuthStateShell'
-import QrComplianceTerminal from './QrComplianceTerminal'
-import UnifiedLayout from './UnifiedLayout'
+import AppShell from './AppShell'
+
+// Enforcer-only panel; dynamic so its code stays out of the shared bundle.
+const QrComplianceTerminal = dynamic(() => import('./QrComplianceTerminal'), { ssr: false })
 import type { SessionResponseDto, SessionUserDto } from '@/lib/contracts'
 import { isAuthRoute, POST_LOGOUT_ROUTE } from '@/lib/authRoutes'
 import { SWR_KEYS } from '@/lib/swrKeys'
@@ -85,21 +88,21 @@ export function AuthProvider({
     }
   }, [pathname, transitionState])
 
-  const refreshUser = async () => {
+  const refreshUser = useCallback(async () => {
     const nextData = await mutate()
     return nextData?.user ?? null
-  }
+  }, [mutate])
 
-  const login = (userData: SessionUserDto) => {
+  const login = useCallback((userData: SessionUserDto) => {
     setTransitionState('idle')
     void mutateCache(
       SWR_KEYS.authSession,
       { user: userData },
       { populateCache: true, revalidate: true },
     )
-  }
+  }, [mutateCache])
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     if (transitionState === 'logging_out') {
       return
     }
@@ -121,7 +124,7 @@ export function AuthProvider({
     ])
     router.replace(POST_LOGOUT_ROUTE)
     router.refresh()
-  }
+  }, [transitionState, mutateCache, router])
 
   useEffect(() => {
     logoutRef.current = logout
@@ -248,8 +251,13 @@ export function AuthProvider({
     }
   }, [isAuthenticated, transitionState])
 
+  const contextValue = useMemo(
+    () => ({ user, status, loading, login, logout, refreshUser }),
+    [user, status, loading, login, logout, refreshUser],
+  )
+
   return (
-    <AuthContext.Provider value={{ user, status, loading, login, logout, refreshUser }}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   )
@@ -261,12 +269,12 @@ export function AuthAwareLayout({ children }: { children: React.ReactNode }) {
   const shouldShowTerminal = user?.userType === 'ENFORCER'
 
   if (isAuthRoute(pathname)) {
-    return <main className="app-page-bg flex-1">{children}</main>
+    return <main className="flex-1">{children}</main>
   }
 
   if (status === 'logging_out') {
     return (
-      <main className="app-page-bg flex-1">
+      <main className="flex-1">
         <AuthStateShell
           title="Signing out"
           message="Please wait while we close your session."
@@ -278,7 +286,7 @@ export function AuthAwareLayout({ children }: { children: React.ReactNode }) {
   if (status === 'loading' || !user) {
     return (
       <>
-        <main className="app-page-bg flex-1">{children}</main>
+        <main className="flex-1">{children}</main>
         {shouldShowTerminal ? <QrComplianceTerminal /> : null}
       </>
     )
@@ -286,9 +294,9 @@ export function AuthAwareLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <UnifiedLayout user={user}>
+      <AppShell user={user}>
         {children}
-      </UnifiedLayout>
+      </AppShell>
       {shouldShowTerminal ? <QrComplianceTerminal /> : null}
     </>
   )

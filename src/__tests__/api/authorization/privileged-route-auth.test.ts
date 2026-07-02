@@ -43,6 +43,7 @@ vi.mock("@/lib/auth", () => ({
   ADMIN_OR_ENFORCER: ["ADMIN", "ENFORCER"],
   requireRequestRole: authMocks.requireRequestRole,
   createAuthErrorResponse: authMocks.createAuthErrorResponse,
+  invalidateAuthUserCache: vi.fn(),
 }));
 
 vi.mock("@/lib/prisma", () => ({

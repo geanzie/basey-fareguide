@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { ADMIN_ONLY, requireRequestRole } from '@/lib/auth'
+import { ADMIN_ONLY, invalidateAuthUserCache, requireRequestRole } from '@/lib/auth'
 import { type AdminToggleUserStatusData } from '@/lib/admin/user-management-contract'
 import {
   createAdminRouteAuthError,
@@ -54,6 +54,8 @@ export async function POST(request: NextRequest) {
         isActive: newStatus,
       }
     })
+
+    invalidateAuthUserCache(result.userId)
 
     const data: AdminToggleUserStatusData = result
 

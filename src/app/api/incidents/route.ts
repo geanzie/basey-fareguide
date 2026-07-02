@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const pagination = parsePaginationParams(searchParams, {
-      defaultLimit: 100,
+      defaultLimit: 25,
       maxLimit: 100,
     })
     

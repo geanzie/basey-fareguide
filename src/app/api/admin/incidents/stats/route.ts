@@ -3,48 +3,61 @@ import { prisma } from '@/lib/prisma'
 import { ADMIN_OR_ENFORCER, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
 
 const RECENT_INCIDENT_LIMIT = 10
-const INCIDENT_STATS_TREND_ROW_LIMIT = 5000
 
 export async function GET(request: NextRequest) {
   try {
     await requireRequestRole(request, [...ADMIN_OR_ENFORCER])
 
-    // Get incident counts by status
-    const incidentStats = await prisma.incident.groupBy({
-      by: ['status'],
-      _count: {
-        id: true
-      }
-    })
+    // Monthly trends window (last 6 months)
+    const sixMonthsAgo = new Date()
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
 
-    // Get total count
-    const totalIncidents = await prisma.incident.count()
-
-    // Get recent incidents (last 10)
-    const recentIncidents = await prisma.incident.findMany({
-      take: RECENT_INCIDENT_LIMIT,
-      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-      select: {
-        id: true,
-        incidentType: true,
-        description: true,
-        status: true,
-        location: true,
-        createdAt: true,
-        reportedBy: {
-          select: {
-            firstName: true,
-            lastName: true
-          }
-        },
-        handledBy: {
-          select: {
-            firstName: true,
-            lastName: true
+    const [incidentStats, totalIncidents, recentIncidents, monthlyRows] = await Promise.all([
+      // Incident counts by status
+      prisma.incident.groupBy({
+        by: ['status'],
+        _count: {
+          id: true
+        }
+      }),
+      prisma.incident.count(),
+      // Recent incidents (last 10)
+      prisma.incident.findMany({
+        take: RECENT_INCIDENT_LIMIT,
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        select: {
+          id: true,
+          incidentType: true,
+          description: true,
+          status: true,
+          location: true,
+          createdAt: true,
+          reportedBy: {
+            select: {
+              firstName: true,
+              lastName: true
+            }
+          },
+          handledBy: {
+            select: {
+              firstName: true,
+              lastName: true
+            }
           }
         }
-      }
-    })
+      }),
+      // Month buckets aggregated in the DB (UTC months, matching the stored timestamps)
+      prisma.$queryRaw<Array<{ month: string; total: bigint; resolved: bigint; pending: bigint }>>`
+        SELECT
+          to_char(date_trunc('month', "createdAt"), 'YYYY-MM') AS month,
+          COUNT(*) AS total,
+          COUNT(*) FILTER (WHERE status = 'RESOLVED') AS resolved,
+          COUNT(*) FILTER (WHERE status = 'PENDING') AS pending
+        FROM incidents
+        WHERE "createdAt" >= ${sixMonthsAgo}
+        GROUP BY 1
+      `
+    ])
 
     // Process stats into a more usable format
     const statusCounts = incidentStats.reduce((acc, stat) => {
@@ -52,38 +65,12 @@ export async function GET(request: NextRequest) {
       return acc
     }, {} as Record<string, number>)
 
-    // Get monthly trends (last 6 months)
-    const sixMonthsAgo = new Date()
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
-
-    const monthlyStats = await prisma.incident.findMany({
-      where: {
-        createdAt: {
-          gte: sixMonthsAgo
-        }
-      },
-      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-      take: INCIDENT_STATS_TREND_ROW_LIMIT,
-      select: {
-        createdAt: true,
-        status: true
-      }
-    })
-
-    // Process monthly data
-    const monthlyTrends = monthlyStats.reduce((acc, incident) => {
-      const month = incident.createdAt.toISOString().slice(0, 7) // YYYY-MM format
-      if (!acc[month]) {
-        acc[month] = { total: 0, resolved: 0, pending: 0 }
-      }
-      acc[month].total++
-      if (incident.status === 'RESOLVED') {
-        acc[month].resolved++
-      } else if (incident.status === 'PENDING') {
-        acc[month].pending++
-      }
-      return acc
-    }, {} as Record<string, { total: number; resolved: number; pending: number }>)
+    const monthlyTrends = Object.fromEntries(
+      monthlyRows.map((row) => [
+        row.month,
+        { total: Number(row.total), resolved: Number(row.resolved), pending: Number(row.pending) },
+      ]),
+    )
 
     const currentMonthKey = new Date().toISOString().slice(0, 7)
     const currentMonthSummary = monthlyTrends[currentMonthKey] || { total: 0, resolved: 0, pending: 0 }

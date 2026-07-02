@@ -23,6 +23,7 @@ vi.mock('jsonwebtoken', () => ({
 import {
   ADMIN_ONLY,
   createAuthErrorResponse,
+  invalidateAuthUserCache,
   requireRequestRole,
   requireRequestUser,
   verifyAuth,
@@ -30,6 +31,7 @@ import {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  invalidateAuthUserCache()
   process.env.JWT_SECRET = 'test-secret'
 })
 
