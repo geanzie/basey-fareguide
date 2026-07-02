@@ -40,8 +40,8 @@ export default function TrafficAnnouncementsFeed({
 
   const wrapperClasses =
     variant === 'landing'
-      ? 'app-surface-card-strong rounded-2xl p-5'
-      : 'app-surface-card rounded-2xl p-5'
+      ? 'border border-surface-border bg-surface shadow-card rounded-2xl p-5'
+      : 'border border-surface-border bg-surface shadow-card rounded-2xl p-5'
 
   return (
     <section className={`${wrapperClasses} ${className}`.trim()}>
@@ -50,7 +50,7 @@ export default function TrafficAnnouncementsFeed({
           <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
           <p className="mt-1 text-sm text-slate-600">{description}</p>
         </div>
-        <div className="app-surface-inner rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700">
+        <div className="border border-surface-border bg-surface-alt rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700">
           Latest active advisories
         </div>
       </div>

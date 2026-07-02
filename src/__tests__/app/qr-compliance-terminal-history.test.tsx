@@ -113,7 +113,7 @@ function setInputValue(element: HTMLInputElement, value: string) {
 }
 
 function getTerminalShell(container: HTMLDivElement) {
-  return container.querySelector('.app-surface-overlay') as HTMLDivElement | null
+  return container.querySelector('.shadow-raised') as HTMLDivElement | null
 }
 
 function makeLookupResult(overrides?: {

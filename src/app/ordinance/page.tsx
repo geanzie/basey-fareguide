@@ -27,13 +27,13 @@ export const metadata: Metadata = {
 
 export default function OrdinancePage() {
   return (
-    <div className="app-page-bg min-h-screen py-10 lg:py-12">
+    <div className="min-h-screen py-10 lg:py-12">
       <div className="container mx-auto px-4">
         <div className="mx-auto max-w-6xl space-y-6">
-          <section className="app-surface-card rounded-3xl p-6 shadow-sm lg:p-8">
+          <section className="rounded-card border border-surface-border bg-surface p-6 shadow-card lg:p-8">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
               <div className="max-w-3xl">
-                <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">
+                <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary-dark">
                   <DashboardIconSlot icon={DASHBOARD_ICONS.fileText} size={16} />
                   <p>Public Legal Reference</p>
                 </div>
@@ -106,7 +106,7 @@ export default function OrdinancePage() {
             </div>
           </section>
 
-          <section className="app-surface-card overflow-hidden rounded-3xl shadow-sm">
+          <section className="overflow-hidden rounded-card border border-surface-border bg-surface shadow-card">
             <div className="border-b border-slate-200 bg-slate-50 px-5 py-4 lg:px-6">
               <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                 <DashboardIconSlot icon={DASHBOARD_ICONS.fileText} size={DASHBOARD_ICON_POLICY.sizes.button} />

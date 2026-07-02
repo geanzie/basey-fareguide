@@ -110,7 +110,7 @@ const AdminPasswordReset = ({ users, onRefresh }: AdminPasswordResetProps) => {
   }
 
   return (
-    <div className="app-surface-card rounded-2xl p-6">
+    <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
       <div className="mb-6">
         <h3 className="mb-2 flex items-center gap-3 text-lg font-semibold text-gray-900">
           <span className={getDashboardIconChipClasses('blue')}>
@@ -143,7 +143,7 @@ const AdminPasswordReset = ({ users, onRefresh }: AdminPasswordResetProps) => {
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1">
                 <h4 className="mb-2 text-sm font-medium text-blue-800">Reset Token Generated</h4>
-                <div className="app-surface-inner rounded border border-blue-300 p-3">
+                <div className="border border-surface-border bg-surface-alt rounded border border-blue-300 p-3">
                   <code className="break-all text-xs text-blue-900">{resetOutput.token}</code>
                 </div>
                 <p className="mt-2 text-xs text-blue-700">
@@ -177,7 +177,7 @@ const AdminPasswordReset = ({ users, onRefresh }: AdminPasswordResetProps) => {
               type="text"
               autoComplete="off"
               placeholder="Search users..."
-              className="w-full rounded-md border border-gray-300 px-3 py-2 pl-10 focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 sm:text-sm"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 pl-10 focus:border-primary focus:outline-none focus:ring-primary sm:text-sm"
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
             />
@@ -189,7 +189,7 @@ const AdminPasswordReset = ({ users, onRefresh }: AdminPasswordResetProps) => {
             id="admin-password-reset-user-select"
             name="selectedUserId"
             autoComplete="off"
-            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 sm:text-sm"
+            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-primary sm:text-sm"
             value={selectedUserId}
             onChange={(event) => setSelectedUserId(event.target.value)}
             required
@@ -235,7 +235,7 @@ const AdminPasswordReset = ({ users, onRefresh }: AdminPasswordResetProps) => {
                 value="generate-token"
                 checked={action === 'generate-token'}
                 onChange={(event) => setAction(event.target.value as 'generate-token')}
-                className="h-4 w-4 border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                className="h-4 w-4 border-gray-300 text-primary focus:ring-primary"
               />
               <span className="ml-2 text-sm text-gray-700">Generate Reset Token (User sets their own password)</span>
             </label>
@@ -247,7 +247,7 @@ const AdminPasswordReset = ({ users, onRefresh }: AdminPasswordResetProps) => {
                 value="set-password"
                 checked={action === 'set-password'}
                 onChange={(event) => setAction(event.target.value as 'set-password')}
-                className="h-4 w-4 border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                className="h-4 w-4 border-gray-300 text-primary focus:ring-primary"
               />
               <span className="ml-2 text-sm text-gray-700">Set Password Directly (Admin sets the password)</span>
             </label>
@@ -265,7 +265,7 @@ const AdminPasswordReset = ({ users, onRefresh }: AdminPasswordResetProps) => {
                 name="newPassword"
                 autoComplete="new-password"
                 required
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 sm:text-sm"
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-primary sm:text-sm"
                 placeholder="Enter new password (min 8 characters)"
                 value={newPassword}
                 onChange={(event) => setNewPassword(event.target.value)}
@@ -280,7 +280,7 @@ const AdminPasswordReset = ({ users, onRefresh }: AdminPasswordResetProps) => {
                 name="confirmPassword"
                 autoComplete="new-password"
                 required
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 sm:text-sm"
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-primary sm:text-sm"
                 placeholder="Re-enter new password"
                 value={confirmPassword}
                 onChange={(event) => setConfirmPassword(event.target.value)}
@@ -300,14 +300,14 @@ const AdminPasswordReset = ({ users, onRefresh }: AdminPasswordResetProps) => {
               setSuccess(null)
               setResetOutput(null)
             }}
-            className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+            className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
           >
             Clear
           </button>
           <button
             type="submit"
             disabled={loading || !selectedUserId}
-            className="inline-flex items-center rounded-md border border-transparent bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center rounded-md border border-transparent bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading ? (action === 'generate-token' ? 'Generating...' : 'Resetting...') : action === 'generate-token' ? 'Generate Reset Token' : 'Set New Password'}
           </button>

@@ -101,8 +101,8 @@ export function AuthenticatedMobileBottomNavigation({
               href={item.href}
               className={`flex min-w-0 flex-col items-center justify-center rounded-2xl px-1 py-2 text-[11px] font-medium transition-colors ${
                 active
-                  ? 'bg-emerald-100 text-emerald-700'
-                  : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
+                  ? 'bg-surface-tint text-primary'
+                  : 'text-ink-muted hover:bg-surface-alt hover:text-ink-body'
               }`}
             >
               <div className="relative">
@@ -124,8 +124,8 @@ export function AuthenticatedMobileBottomNavigation({
           onClick={onOpenProfileSheet}
           className={`flex min-w-0 flex-col items-center justify-center rounded-2xl px-1 py-2 text-[11px] font-medium transition-colors ${
             profileSheetActive
-              ? 'bg-emerald-100 text-emerald-700'
-              : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
+              ? 'bg-surface-tint text-primary'
+              : 'text-ink-muted hover:bg-surface-alt hover:text-ink-body'
           }`}
         >
           <DashboardIconSlot icon={MOBILE_PROFILE_LAUNCHER.icon} size={20} />
@@ -179,10 +179,10 @@ export function AuthenticatedMobileProfileSheet({
         onClick={onClose}
       />
 
-      <section className="app-surface-overlay app-mobile-sheet-safe fixed inset-x-0 bottom-0 z-50 rounded-t-[28px] border border-slate-200/80 px-4 pt-4 shadow-2xl">
-        <div className="mx-auto mb-4 h-1.5 w-14 rounded-full bg-slate-200" />
+      <section className="app-mobile-sheet-safe fixed inset-x-0 bottom-0 z-50 rounded-t-[28px] border border-surface-border bg-surface px-4 pt-4 shadow-raised">
+        <div className="mx-auto mb-4 h-1.5 w-14 rounded-full bg-surface-border" />
 
-        <div className="mb-4 rounded-2xl border border-slate-200/80 bg-white/80 px-4 py-3">
+        <div className="mb-4 rounded-2xl border border-surface-border bg-surface-alt px-4 py-3">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
             Signed in
           </p>
@@ -203,8 +203,8 @@ export function AuthenticatedMobileProfileSheet({
                 onClick={onClose}
                 className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-colors ${
                   active
-                    ? 'bg-emerald-100 text-emerald-700'
-                    : 'text-slate-700 hover:bg-slate-100'
+                    ? 'bg-surface-tint text-primary-dark'
+                    : 'text-ink-body hover:bg-surface-alt'
                 }`}
               >
                 <DashboardIconSlot icon={item.icon} size={DASHBOARD_ICON_POLICY.sizes.button} />
@@ -233,7 +233,7 @@ export function AuthenticatedMobileProfileSheet({
             className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm"
             onClick={() => setConfirmOpen(false)}
           />
-          <div className="app-surface-overlay relative w-full max-w-sm rounded-3xl border border-slate-200/80 p-6 shadow-2xl">
+          <div className="relative w-full max-w-sm rounded-3xl border border-surface-border bg-surface p-6 shadow-raised">
             <div className="mb-5 flex flex-col items-center gap-3 text-center">
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-red-100">
                 <DashboardIconSlot icon={DASHBOARD_ICONS.logout} size={26} className="text-red-600" />
@@ -294,8 +294,8 @@ function SidebarNavigationLink({
       onClick={onNavigate}
       className={`flex items-center space-x-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors ${
         active
-          ? 'bg-emerald-100/90 text-emerald-700 ring-1 ring-emerald-200'
-          : 'text-gray-600 hover:bg-white/70 hover:text-gray-900'
+          ? 'bg-surface-tint text-primary-dark'
+          : 'text-ink-muted hover:bg-surface-alt hover:text-ink-strong'
       }`}
     >
       <div className="relative shrink-0">

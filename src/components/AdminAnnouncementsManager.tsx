@@ -18,7 +18,7 @@ import { formatManilaDateTimeInput, formatManilaDateTimeLabel } from '@/lib/mani
 function getStatusClasses(status: AdminAnnouncementDto['status']) {
   switch (status) {
     case 'active':
-      return 'border-emerald-200 bg-emerald-50 text-emerald-800'
+      return 'border-primary/20 bg-surface-tint text-primary-dark'
     case 'scheduled':
       return 'border-blue-200 bg-blue-50 text-blue-800'
     case 'archived':
@@ -269,7 +269,7 @@ export default function AdminAnnouncementsManager() {
 
   if (loading && !data) {
     return (
-      <div className="app-surface-card rounded-2xl p-6">
+      <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
         <p className="text-sm text-slate-500">Loading traffic announcement management...</p>
       </div>
     )
@@ -290,12 +290,12 @@ export default function AdminAnnouncementsManager() {
       )}
 
       {success && (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <div className="rounded-2xl border border-primary/20 bg-surface-tint px-4 py-3 text-sm text-primary-dark">
           {success}
         </div>
       )}
 
-      <section className="app-surface-card rounded-2xl p-6">
+      <section className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
         <div className="mb-5">
           <h2 className="text-xl font-semibold text-slate-900">
             {editingAnnouncement ? 'Edit Traffic Announcement' : 'Publish a Traffic Announcement'}
@@ -327,7 +327,7 @@ export default function AdminAnnouncementsManager() {
               onChange={(event) => setTitle(event.target.value)}
               maxLength={ANNOUNCEMENT_TITLE_MAX_LENGTH}
               required
-              className="w-full rounded-xl border border-slate-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+              className="w-full rounded-xl border border-slate-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-2 focus:ring-surface-tint"
             />
           </label>
 
@@ -339,7 +339,7 @@ export default function AdminAnnouncementsManager() {
               autoComplete="off"
               value={category}
               onChange={(event) => setCategory(event.target.value as AnnouncementCategoryDto)}
-              className="w-full rounded-xl border border-slate-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+              className="w-full rounded-xl border border-slate-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-2 focus:ring-surface-tint"
             >
               {ANNOUNCEMENT_CATEGORIES.map((value) => (
                 <option key={value} value={value}>
@@ -365,7 +365,7 @@ export default function AdminAnnouncementsManager() {
               maxLength={ANNOUNCEMENT_BODY_MAX_LENGTH}
               rows={5}
               required
-              className="w-full rounded-xl border border-slate-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+              className="w-full rounded-xl border border-slate-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-2 focus:ring-surface-tint"
             />
           </label>
 
@@ -380,7 +380,7 @@ export default function AdminAnnouncementsManager() {
                 value={startsAt}
                 onChange={(event) => setStartsAt(event.target.value)}
                 required
-                className="w-full rounded-xl border border-slate-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                className="w-full rounded-xl border border-slate-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-2 focus:ring-surface-tint"
               />
             </label>
 
@@ -395,7 +395,7 @@ export default function AdminAnnouncementsManager() {
                 autoComplete="off"
                 value={endsAt}
                 onChange={(event) => setEndsAt(event.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                className="w-full rounded-xl border border-slate-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-2 focus:ring-surface-tint"
               />
             </label>
           </div>
@@ -404,7 +404,7 @@ export default function AdminAnnouncementsManager() {
             <button
               type="submit"
               disabled={saving || setupRequired}
-              className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+              className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark disabled:cursor-not-allowed disabled:bg-slate-300"
             >
               {saving
                 ? 'Saving announcement...'
@@ -426,7 +426,7 @@ export default function AdminAnnouncementsManager() {
         </form>
       </section>
 
-      <section className="app-surface-card rounded-2xl p-6">
+      <section className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
         <div className="mb-5">
           <h2 className="text-xl font-semibold text-slate-900">Active Announcements</h2>
           <p className="mt-1 text-sm text-slate-600">
@@ -451,7 +451,7 @@ export default function AdminAnnouncementsManager() {
         </div>
       </section>
 
-      <section className="app-surface-card rounded-2xl p-6">
+      <section className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
         <div className="mb-5">
           <h2 className="text-xl font-semibold text-slate-900">Scheduled Announcements</h2>
           <p className="mt-1 text-sm text-slate-600">
@@ -476,7 +476,7 @@ export default function AdminAnnouncementsManager() {
         </div>
       </section>
 
-      <section className="app-surface-card rounded-2xl p-6">
+      <section className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
         <div className="mb-5">
           <h2 className="text-xl font-semibold text-slate-900">Announcement History</h2>
           <p className="mt-1 text-sm text-slate-600">

@@ -229,7 +229,7 @@ function toneClasses(tone: 'slate' | 'amber' | 'emerald' | 'orange' | 'red' | 'b
     case 'amber':
       return 'border-amber-200 bg-amber-50 text-amber-900'
     case 'emerald':
-      return 'border-emerald-200 bg-emerald-50 text-emerald-900'
+      return 'border-primary/20 bg-surface-tint text-primary-dark'
     case 'orange':
       return 'border-orange-200 bg-orange-50 text-orange-900'
     case 'red':
@@ -802,7 +802,7 @@ const TripTrackerCalculator = () => {
                   type="button"
                   onClick={startTrip}
                   disabled={!readyToStart}
-                  className="rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                  className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark disabled:cursor-not-allowed disabled:bg-slate-300"
                 >
                   Start tracking
                 </button>

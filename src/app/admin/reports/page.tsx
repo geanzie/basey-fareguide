@@ -1,9 +1,17 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import useSWR from 'swr'
+import { FileWarning } from 'lucide-react'
 import { useAuth } from '@/components/AuthProvider'
 import RoleGuard from '@/components/RoleGuard'
-import PageWrapper from '@/components/PageWrapper'
+import Button from '@/ui/Button'
+import Card from '@/ui/Card'
+import EmptyState from '@/ui/EmptyState'
+import GradientHeader from '@/ui/GradientHeader'
+import { Select } from '@/ui/Field'
+import { ListSkeleton } from '@/ui/Skeleton'
+import { swrFetcher } from '@/lib/swr'
 
 interface ReportData {
   generatedAt: string
@@ -26,44 +34,30 @@ interface ReportData {
   }
 }
 
+interface ReportsResponse {
+  success: boolean
+  data?: ReportData
+  error?: string
+}
+
+type Period = '7d' | '30d' | '90d' | '1y'
+
 export default function AdminReportsPage() {
   const { status, user } = useAuth()
-  const [reportData, setReportData] = useState<ReportData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [selectedPeriod, setSelectedPeriod] = useState<'7d' | '30d' | '90d' | '1y'>('30d')
+  const [selectedPeriod, setSelectedPeriod] = useState<Period>('30d')
   const canLoadReports = status === 'authenticated' && user?.userType === 'ADMIN'
 
-  useEffect(() => {
-    if (!canLoadReports) {
-      return
-    }
+  const { data: response, error: fetchError, isLoading } = useSWR<ReportsResponse>(
+    canLoadReports ? `/api/admin/reports?period=${selectedPeriod}` : null,
+    swrFetcher,
+  )
 
-    void fetchReportData()
-  }, [canLoadReports, selectedPeriod])
-
-  const fetchReportData = async () => {
-    if (!canLoadReports) {
-      return
-    }
-
-    try {
-      setLoading(true)
-      const response = await fetch(`/api/admin/reports?period=${selectedPeriod}`)
-      const result = await response.json()
-
-      if (result.success) {
-        setReportData(result.data)
-        setError(null)
-      } else {
-        setError(result.error || 'Failed to load system reports')
-      }
-    } catch (_error) {
-      setError('Failed to load system reports')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const reportData = response?.success ? (response.data ?? null) : null
+  const error = fetchError
+    ? 'Failed to load system reports'
+    : response && !response.success
+      ? response.error || 'Failed to load system reports'
+      : null
 
   const exportReport = () => {
     if (!reportData) return
@@ -101,154 +95,148 @@ export default function AdminReportsPage() {
     window.URL.revokeObjectURL(url)
   }
 
-  if (loading) {
-    return (
-      <RoleGuard allowedRoles={['ADMIN']}>
-        <PageWrapper title="System Reports" subtitle="Analytics and operational reporting">
-          <div className="animate-pulse space-y-6">
-            <div className="h-8 bg-gray-200 rounded"></div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {[...Array(3)].map((_, index) => (
-                <div key={index} className="h-48 bg-gray-200 rounded"></div>
-              ))}
-            </div>
-          </div>
-        </PageWrapper>
-      </RoleGuard>
-    )
-  }
-
   return (
     <RoleGuard allowedRoles={['ADMIN']}>
-      <PageWrapper
-        title="System Reports"
-        subtitle="Analytics and operational reporting based on live data only"
-      >
-        {error ? (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <p className="text-red-700">{error}</p>
-          </div>
-        ) : null}
+      <div className="mx-auto max-w-6xl">
+        <GradientHeader
+          title="System Reports"
+          subtitle="Analytics and operational reporting based on live data only"
+          backHref="/admin"
+          compact
+        />
+        <div className="-mt-6 space-y-4 px-4 pb-8 lg:px-8">
+          {isLoading ? (
+            <ListSkeleton count={4} variant="complex" />
+          ) : error ? (
+            <Card>
+              <EmptyState icon={FileWarning} title="Unable to load reports" message={error} />
+            </Card>
+          ) : reportData ? (
+            <>
+              <Card>
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h3 className="text-lg font-bold text-ink-strong">Operations Report</h3>
+                    <p className="text-sm text-ink-muted">
+                      Generated: {new Date(reportData.generatedAt).toLocaleString()}
+                    </p>
+                  </div>
 
-        {reportData ? (
-          <>
-            <div className="app-surface-card mb-6 rounded-2xl p-4 sm:p-6">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Operations Report</h3>
-                  <p className="text-sm text-gray-600">
-                    Generated: {new Date(reportData.generatedAt).toLocaleString()}
+                  <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+                    <Select
+                      value={selectedPeriod}
+                      onChange={(e) => setSelectedPeriod(e.target.value as Period)}
+                      className="sm:w-auto"
+                    >
+                      <option value="7d">Last 7 days</option>
+                      <option value="30d">Last 30 days</option>
+                      <option value="90d">Last 90 days</option>
+                      <option value="1y">Last year</option>
+                    </Select>
+
+                    <Button size="sm" onClick={exportReport}>
+                      Export CSV
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <Card>
+                  <h3 className="mb-4 text-lg font-bold text-ink-strong">Incident Analytics</h3>
+
+                  <section className="mb-6 space-y-2">
+                    <h4 className="font-semibold text-ink-body">By Status</h4>
+                    {Object.entries(reportData.incidents.byStatus).map(([status, count]) => (
+                      <div key={status} className="flex items-center justify-between">
+                        <span className="text-sm capitalize text-ink-muted">
+                          {status.toLowerCase().replace('_', ' ')}
+                        </span>
+                        <span className="text-sm font-bold text-ink-strong">{count}</span>
+                      </div>
+                    ))}
+                  </section>
+
+                  <section className="space-y-2">
+                    <h4 className="font-semibold text-ink-body">By Type</h4>
+                    {Object.entries(reportData.incidents.byType).map(([type, count]) => (
+                      <div key={type} className="flex items-center justify-between">
+                        <span className="text-sm capitalize text-ink-muted">
+                          {type.toLowerCase().replace('_', ' ')}
+                        </span>
+                        <span className="text-sm font-bold text-ink-strong">{count}</span>
+                      </div>
+                    ))}
+                  </section>
+                </Card>
+
+                <Card>
+                  <h3 className="mb-4 text-lg font-bold text-ink-strong">User Analytics</h3>
+                  <p className="mb-6 text-sm text-ink-muted">
+                    {reportData.users.total} total users, {reportData.users.active} active in the selected period.
                   </p>
-                </div>
 
-                <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-                  <select
-                    value={selectedPeriod}
-                    onChange={(e) => setSelectedPeriod(e.target.value as '7d' | '30d' | '90d' | '1y')}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 sm:w-auto"
-                  >
-                    <option value="7d">Last 7 days</option>
-                    <option value="30d">Last 30 days</option>
-                    <option value="90d">Last 90 days</option>
-                    <option value="1y">Last year</option>
-                  </select>
-
-                  <button
-                    onClick={exportReport}
-                    className="w-full rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 sm:w-auto"
-                  >
-                    Export CSV
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-8">
-              <div className="app-surface-card rounded-2xl p-4 sm:p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Incident Analytics</h3>
-
-                <section className="space-y-2 mb-6">
-                  <h4 className="font-medium text-gray-700">By Status</h4>
-                  {Object.entries(reportData.incidents.byStatus).map(([status, count]) => (
-                    <div key={status} className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600 capitalize">{status.toLowerCase().replace('_', ' ')}</span>
-                      <span className="text-sm font-semibold text-gray-900">{count}</span>
-                    </div>
-                  ))}
-                </section>
-
-                <section className="space-y-2">
-                  <h4 className="font-medium text-gray-700">By Type</h4>
-                  {Object.entries(reportData.incidents.byType).map(([type, count]) => (
-                    <div key={type} className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600 capitalize">{type.toLowerCase().replace('_', ' ')}</span>
-                      <span className="text-sm font-semibold text-gray-900">{count}</span>
-                    </div>
-                  ))}
-                </section>
-              </div>
-
-              <div className="app-surface-card rounded-2xl p-4 sm:p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">User Analytics</h3>
-                <p className="text-sm text-gray-600 mb-6">
-                  {reportData.users.total} total users, {reportData.users.active} active in the selected period.
-                </p>
-
-                <div className="space-y-2">
-                  <h4 className="font-medium text-gray-700">By User Type</h4>
-                  {Object.entries(reportData.users.byType).map(([type, count]) => (
-                    <div key={type} className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600 capitalize">{type.toLowerCase().replace('_', ' ')}</span>
-                      <span className="text-sm font-semibold text-gray-900">{count}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="app-surface-card rounded-2xl p-4 sm:p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Storage Analytics</h3>
-                <p className="text-sm text-gray-600 mb-6">
-                  {reportData.storage.totalFiles} stored file{reportData.storage.totalFiles === 1 ? '' : 's'} using{' '}
-                  {reportData.storage.totalSizeMB.toFixed(1)} MB.
-                </p>
-
-                <div className="space-y-2">
-                  <h4 className="font-medium text-gray-700">By File Type</h4>
-                  {Object.entries(reportData.storage.byType).map(([type, data]) => (
-                    <div key={type} className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">{type}</span>
-                      <div className="text-right">
-                        <div className="text-sm font-semibold text-gray-900">{data.files} files</div>
-                        <div className="text-xs text-gray-500">{data.sizeMB.toFixed(1)} MB</div>
+                  <div className="space-y-2">
+                    <h4 className="font-semibold text-ink-body">By User Type</h4>
+                    {Object.entries(reportData.users.byType).map(([type, count]) => (
+                      <div key={type} className="flex items-center justify-between">
+                        <span className="text-sm capitalize text-ink-muted">
+                          {type.toLowerCase().replace('_', ' ')}
+                        </span>
+                        <span className="text-sm font-bold text-ink-strong">{count}</span>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+                    ))}
+                  </div>
+                </Card>
 
-              <div className="app-surface-card rounded-2xl p-4 sm:p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Monthly Incident Trends</h3>
+                <Card>
+                  <h3 className="mb-4 text-lg font-bold text-ink-strong">Storage Analytics</h3>
+                  <p className="mb-6 text-sm text-ink-muted">
+                    {reportData.storage.totalFiles} stored file{reportData.storage.totalFiles === 1 ? '' : 's'} using{' '}
+                    {reportData.storage.totalSizeMB.toFixed(1)} MB.
+                  </p>
 
-                <div className="space-y-3">
-                  {Object.entries(reportData.incidents.monthlyTrends).length > 0 ? (
-                    Object.entries(reportData.incidents.monthlyTrends).map(([month, data]) => (
-                      <div key={month} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                        <div>
-                          <div className="text-sm font-semibold text-gray-900">{month}</div>
-                          <div className="text-xs text-gray-500">Resolved: {data.resolved}</div>
+                  <div className="space-y-2">
+                    <h4 className="font-semibold text-ink-body">By File Type</h4>
+                    {Object.entries(reportData.storage.byType).map(([type, data]) => (
+                      <div key={type} className="flex items-center justify-between">
+                        <span className="text-sm text-ink-muted">{type}</span>
+                        <div className="text-right">
+                          <div className="text-sm font-bold text-ink-strong">{data.files} files</div>
+                          <div className="text-xs text-ink-faint">{data.sizeMB.toFixed(1)} MB</div>
                         </div>
-                        <div className="text-sm font-semibold text-gray-900">{data.total} total</div>
                       </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-gray-500">No incident trend data is available for this period.</p>
-                  )}
-                </div>
+                    ))}
+                  </div>
+                </Card>
+
+                <Card>
+                  <h3 className="mb-4 text-lg font-bold text-ink-strong">Monthly Incident Trends</h3>
+
+                  <div className="space-y-3">
+                    {Object.entries(reportData.incidents.monthlyTrends).length > 0 ? (
+                      Object.entries(reportData.incidents.monthlyTrends).map(([month, data]) => (
+                        <div
+                          key={month}
+                          className="flex items-center justify-between rounded-xl bg-surface-alt p-3"
+                        >
+                          <div>
+                            <div className="text-sm font-bold text-ink-strong">{month}</div>
+                            <div className="text-xs text-ink-faint">Resolved: {data.resolved}</div>
+                          </div>
+                          <div className="text-sm font-bold text-ink-strong">{data.total} total</div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-ink-faint">No incident trend data is available for this period.</p>
+                    )}
+                  </div>
+                </Card>
               </div>
-            </div>
-          </>
-        ) : null}
-      </PageWrapper>
+            </>
+          ) : null}
+        </div>
+      </div>
     </RoleGuard>
   )
 }

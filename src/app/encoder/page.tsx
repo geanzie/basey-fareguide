@@ -1,9 +1,9 @@
-﻿'use client'
+'use client'
 
 import RoleGuard from '@/components/RoleGuard'
 import PermitManagement from '@/components/PermitManagement'
 import PermitStatistics from '@/components/PermitStatistics'
-import PageWrapper from '@/components/PageWrapper'
+import GradientHeader from '@/ui/GradientHeader'
 import Link from 'next/link'
 import {
   DASHBOARD_ICONS,
@@ -22,18 +22,20 @@ export default function EncoderPage() {
 
 function EncoderContent() {
   return (
-    <PageWrapper 
-      title="Data Encoder Dashboard"
-      subtitle="Manage vehicle permits for Basey Municipality"
-    >
-      <div className="space-y-8">
+    <div className="mx-auto max-w-6xl">
+      <GradientHeader
+        title="Data Encoder Dashboard"
+        subtitle="Manage vehicle permits for Basey Municipality"
+        compact
+      />
+      <div className="-mt-6 space-y-6 px-4 pb-8 lg:px-8">
         {/* Quick Actions */}
-        <div className="app-surface-card rounded-2xl p-6">
+        <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <Link
               href="/encoder/permits"
-              className="bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg p-4 transition-colors group"
+              className="bg-surface-tint hover:bg-surface-tint border border-primary/20 rounded-lg p-4 transition-colors group"
             >
               <div className="text-center">
                 <div className="mb-3 flex justify-center">
@@ -41,8 +43,8 @@ function EncoderContent() {
                     <DashboardIconSlot icon={DASHBOARD_ICONS.fileText} size={DASHBOARD_ICON_POLICY.sizes.hero} />
                   </div>
                 </div>
-                <h3 className="font-semibold text-emerald-700">Manage Permits</h3>
-                <p className="text-sm text-emerald-600 mt-1">View and manage all permits</p>
+                <h3 className="font-semibold text-primary-dark">Manage Permits</h3>
+                <p className="text-sm text-primary mt-1">View and manage all permits</p>
               </div>
             </Link>
 
@@ -96,6 +98,6 @@ function EncoderContent() {
         <PermitStatistics />
         <PermitManagement />
       </div>
-    </PageWrapper>
+    </div>
   )
 }

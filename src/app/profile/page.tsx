@@ -2,26 +2,27 @@
 
 import UserProfile from '@/components/UserProfile'
 import ChangePasswordForm from '@/components/auth/ChangePasswordForm'
-import PageWrapper from '@/components/PageWrapper'
 import RoleGuard from '@/components/RoleGuard'
+import Card from '@/ui/Card'
+import GradientHeader from '@/ui/GradientHeader'
 import { AUTHENTICATED_ROLES } from '@/lib/authRoutes'
 
 export default function ProfilePage() {
   return (
     <RoleGuard allowedRoles={AUTHENTICATED_ROLES}>
-      <PageWrapper
-        title="My Profile"
-        subtitle="Manage your account information and preferences"
-      >
-        <div className="max-w-4xl mx-auto space-y-6">
-          <div className="app-surface-card rounded-2xl">
-            <UserProfile />
-          </div>
-          <div className="app-surface-card rounded-2xl">
+      <div className="mx-auto max-w-4xl">
+        <GradientHeader
+          title="My Profile"
+          subtitle="Manage your account information and preferences"
+          compact
+        />
+        <div className="-mt-6 space-y-4 px-4 pb-8 lg:px-8">
+          <UserProfile />
+          <Card padded={false}>
             <ChangePasswordForm />
-          </div>
+          </Card>
         </div>
-      </PageWrapper>
+      </div>
     </RoleGuard>
   )
 }

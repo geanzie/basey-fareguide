@@ -57,7 +57,7 @@ export default function PermitQrCard({
 
       <div className="space-y-3">
         <div>
-          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">Permit QR</div>
+          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-dark">Permit QR</div>
           <h4 className="mt-1 text-lg font-semibold text-slate-900">{permitPlateNumber}</h4>
           <p className="text-sm text-slate-600">Assigned driver: {driverFullName}</p>
         </div>
@@ -71,7 +71,7 @@ export default function PermitQrCard({
           <button
             type="button"
             onClick={() => window.print()}
-            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
+            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark"
           >
             Print QR
           </button>

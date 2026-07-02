@@ -8,6 +8,7 @@ import BulkQrPrintSheet from '@/components/BulkQrPrintSheet'
 import { VehicleType, PermitStatus } from '@prisma/client'
 import ResponsiveTable, { StatusBadge, ActionButton } from './ResponsiveTable'
 import VehicleLookupField from './VehicleLookupField'
+import { useFeedback } from '@/ui/FeedbackProvider'
 import type {
   PermitDto,
   PermitsResponseDto,
@@ -25,6 +26,7 @@ interface PermitQrReadResponse {
 
 export default function PermitManagement() {
   const { user } = useAuth()
+  const { confirm } = useFeedback()
   const searchParams = useSearchParams()
   const [permits, setPermits] = useState<PermitDto[]>([])
   const [loading, setLoading] = useState(true)
@@ -221,11 +223,15 @@ export default function PermitManagement() {
   }
 
   const handlePermitQrAction = async (permit: PermitDto, action: 'issue' | 'rotate') => {
-    if (
-      action === 'rotate' &&
-      !window.confirm(`Rotate the QR token for permit ${permit.permitPlateNumber}? Existing printed QR copies will stop working.`)
-    ) {
-      return
+    if (action === 'rotate') {
+      const confirmed = await confirm({
+        title: 'Rotate QR token',
+        message: `Rotate the QR token for permit ${permit.permitPlateNumber}? Existing printed QR copies will stop working.`,
+        destructive: true,
+      })
+      if (!confirmed) {
+        return
+      }
     }
 
     try {
@@ -341,13 +347,13 @@ export default function PermitManagement() {
         <div className="flex gap-2">
           <button
             onClick={() => setShowBulkPrint(true)}
-            className="border border-emerald-600 text-emerald-700 px-4 py-2 rounded-lg hover:bg-emerald-50 transition-colors text-sm"
+            className="border border-primary text-primary-dark px-4 py-2 rounded-lg hover:bg-surface-tint transition-colors text-sm"
           >
             Bulk Print QR
           </button>
           <button
             onClick={() => setShowAddForm(true)}
-            className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors text-sm"
+            className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark transition-colors text-sm"
           >
             Add New Permit
           </button>
@@ -355,7 +361,7 @@ export default function PermitManagement() {
       </div>
 
       {lastCreatedPermit?.qrToken ? (
-        <div className="app-surface-card rounded-2xl p-4">
+        <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-4">
           <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h3 className="text-lg font-semibold text-gray-900">Latest QR-issued permit</h3>
@@ -366,7 +372,7 @@ export default function PermitManagement() {
             <button
               type="button"
               onClick={() => void handleViewPermitQr(lastCreatedPermit)}
-              className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
+              className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark"
             >
               View QR
             </button>
@@ -380,24 +386,24 @@ export default function PermitManagement() {
       ) : null}
 
       {newDriverAccount ? (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+        <div className="rounded-2xl border border-primary/20 bg-surface-tint p-4">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h3 className="text-lg font-semibold text-emerald-900">
+              <h3 className="text-lg font-semibold text-primary-dark">
                 {newDriverAccount.created ? 'Driver account created' : 'Driver account already exists'}
               </h3>
               {newDriverAccount.created ? (
                 <>
-                  <p className="text-sm text-emerald-800">
+                  <p className="text-sm text-primary-dark">
                     Share these one-time credentials with the driver. The temporary password is shown only now.
                   </p>
-                  <div className="mt-3 space-y-1 font-mono text-sm text-emerald-900">
+                  <div className="mt-3 space-y-1 font-mono text-sm text-primary-dark">
                     <div>
-                      <span className="font-sans font-medium text-emerald-700">Username:</span>{' '}
+                      <span className="font-sans font-medium text-primary-dark">Username:</span>{' '}
                       {newDriverAccount.username}
                     </div>
                     <div>
-                      <span className="font-sans font-medium text-emerald-700">Temp password:</span>{' '}
+                      <span className="font-sans font-medium text-primary-dark">Temp password:</span>{' '}
                       {newDriverAccount.tempPassword}
                     </div>
                   </div>
@@ -408,13 +414,13 @@ export default function PermitManagement() {
                         `Username: ${newDriverAccount.username}\nTemporary password: ${newDriverAccount.tempPassword}`,
                       )
                     }
-                    className="mt-3 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
+                    className="mt-3 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark"
                   >
                     Copy credentials
                   </button>
                 </>
               ) : (
-                <p className="text-sm text-emerald-800">
+                <p className="text-sm text-primary-dark">
                   Username <span className="font-mono">{newDriverAccount.username}</span> already has a driver
                   login. The permit was created without changing the existing account.
                 </p>
@@ -423,7 +429,7 @@ export default function PermitManagement() {
             <button
               type="button"
               onClick={() => setNewDriverAccount(null)}
-              className="text-2xl leading-none text-emerald-400 transition-colors hover:text-emerald-600"
+              className="text-2xl leading-none text-primary transition-colors hover:text-primary"
               aria-label="Dismiss driver account notice"
             >
               ×
@@ -433,7 +439,7 @@ export default function PermitManagement() {
       ) : null}
 
       {/* Filters */}
-      <div className="app-surface-card rounded-2xl p-4">
+      <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label htmlFor="permit-management-search" className="block text-sm font-medium text-gray-700 mb-1">
@@ -500,7 +506,7 @@ export default function PermitManagement() {
       {/* Add/Edit Form Modal */}
       {(showAddForm || editingPermit) && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="app-surface-overlay mx-4 w-full max-w-md rounded-2xl p-6">
+          <div className="border border-surface-border bg-surface shadow-raised mx-4 w-full max-w-md rounded-2xl p-6">
             <h3 className="text-lg font-semibold mb-4">
               {editingPermit ? 'Edit Permit' : 'Add New Permit'}
             </h3>
@@ -583,7 +589,7 @@ export default function PermitManagement() {
               <div className="flex gap-2 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 bg-emerald-600 text-white py-2 rounded-md hover:bg-emerald-700 transition-colors"
+                  className="flex-1 bg-primary text-white py-2 rounded-md hover:bg-primary-dark transition-colors"
                 >
                   {editingPermit ? 'Update Permit' : 'Create Permit'}
                 </button>
@@ -601,19 +607,19 @@ export default function PermitManagement() {
       )}
 
       {/* Permits Table */}
-      <div className="app-surface-card rounded-2xl overflow-hidden">
+      <div className="border border-surface-border bg-surface shadow-card rounded-2xl overflow-hidden">
         <ResponsiveTable
           columns={[
             {
               key: 'permitPlateNumber',
               label: 'Permit Plate',
-              className: 'font-medium text-emerald-600',
+              className: 'font-medium text-primary',
               render: (permitPlateNumber) => (
                 <div>
-                  <div className="font-mono font-medium text-emerald-900">
+                  <div className="font-mono font-medium text-primary-dark">
                     {permitPlateNumber}
                   </div>
-                  <div className="text-xs text-emerald-600">Permit ID</div>
+                  <div className="text-xs text-primary">Permit ID</div>
                 </div>
               )
             },
@@ -822,7 +828,7 @@ export default function PermitManagement() {
                           onClick={() => setPagination({ ...pagination, page })}
                           className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
                             page === pagination.page
-                              ? 'z-10 bg-emerald-50 border-emerald-500 text-emerald-600'
+                              ? 'z-10 bg-surface-tint border-primary text-primary'
                               : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
                           }`}
                         >
@@ -845,7 +851,7 @@ export default function PermitManagement() {
 
       {selectedQrPermit?.qrToken ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="app-surface-overlay mx-4 w-full max-w-lg rounded-2xl p-6">
+          <div className="border border-surface-border bg-surface shadow-raised mx-4 w-full max-w-lg rounded-2xl p-6">
             <div className="mb-4 flex items-start justify-between gap-4">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">Permit QR</h3>

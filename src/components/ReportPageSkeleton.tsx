@@ -1,8 +1,8 @@
 export default function ReportPageSkeleton() {
   return (
-    <div className="app-page-bg min-h-screen">
+    <div className="min-h-screen">
       <div className="mx-auto max-w-4xl px-4 py-6">
-        <div className="app-surface-card animate-pulse rounded-3xl p-8">
+        <div className="border border-surface-border bg-surface shadow-card animate-pulse rounded-3xl p-8">
           <div className="mb-8 text-center">
             <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-red-100" />
             <div className="mx-auto mb-3 h-8 w-56 rounded bg-gray-300" />

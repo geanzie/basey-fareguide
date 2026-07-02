@@ -86,7 +86,7 @@ export default function AdminRoutingSettingsManager() {
 
   if (loading && !data) {
     return (
-      <div className="app-surface-card rounded-2xl p-6">
+      <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
         <p className="text-sm text-slate-500">Loading routing settings...</p>
       </div>
     )
@@ -110,7 +110,7 @@ export default function AdminRoutingSettingsManager() {
       )}
 
       {success && (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <div className="rounded-2xl border border-primary/20 bg-surface-tint px-4 py-3 text-sm text-primary-dark">
           {success}
         </div>
       )}
@@ -152,7 +152,7 @@ export default function AdminRoutingSettingsManager() {
         </div>
       </section>
 
-      <section className="app-surface-card rounded-2xl p-6">
+      <section className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
         <div className="mb-5">
           <h2 className="text-xl font-semibold text-slate-900">Primary routing provider</h2>
           <p className="mt-1 text-sm text-slate-600">
@@ -204,7 +204,7 @@ export default function AdminRoutingSettingsManager() {
             </label>
           </div>
 
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+          <div className="rounded-2xl border border-primary/20 bg-surface-tint px-4 py-3 text-sm text-primary-dark">
             <p className="font-medium">Fallback behavior</p>
             <p className="mt-1">{data?.fallbackDescription || 'Automatic fallback to the other provider is enabled.'}</p>
           </div>
@@ -217,7 +217,7 @@ export default function AdminRoutingSettingsManager() {
             <button
               type="submit"
               disabled={setupRequired || saving || !hasPendingChange}
-              className="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+              className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-dark disabled:cursor-not-allowed disabled:bg-slate-300"
             >
               {saving ? 'Saving...' : 'Save setting'}
             </button>

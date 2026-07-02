@@ -222,7 +222,7 @@ export default function VehicleLookupField({
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       {isOpen && hasSearched && query.trim().length >= DEFAULT_MIN_QUERY_LENGTH && !error && (
-        <div className="app-surface-overlay rounded-lg">
+        <div className="border border-surface-border bg-surface shadow-raised rounded-lg">
           {filteredOptions.length === 0 ? (
             <div className="px-4 py-3 text-sm text-gray-500">{noResultsText}</div>
           ) : (

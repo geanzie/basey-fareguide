@@ -307,7 +307,7 @@ export default function QrComplianceTerminal() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom,0px))] right-4 z-[45] inline-flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-xl transition hover:bg-emerald-700 lg:bottom-6 lg:right-6"
+        className="fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom,0px))] right-4 z-[45] inline-flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-xl transition hover:bg-primary-dark lg:bottom-6 lg:right-6"
         aria-label="Open QR compliance terminal"
       >
         <DashboardIconSlot icon={DASHBOARD_ICONS.camera} size={22} className="text-white" />
@@ -316,11 +316,11 @@ export default function QrComplianceTerminal() {
       {open ? (
         <div className="fixed inset-0 z-[70] bg-slate-950/50 backdrop-blur-sm">
           <div className="flex min-h-full items-end justify-center p-4 sm:items-center">
-            <div className={`app-surface-overlay flex w-full max-w-5xl flex-col rounded-[1.5rem] p-4 shadow-2xl sm:rounded-3xl sm:p-5 ${shouldMaximizeTerminal ? 'h-[calc(100dvh-1rem)] overflow-hidden sm:h-[min(92dvh,860px)]' : 'max-h-[calc(100dvh-1rem)] overflow-y-auto sm:max-h-[min(92dvh,860px)]'}`}>
+            <div className={`border border-surface-border bg-surface shadow-raised flex w-full max-w-5xl flex-col rounded-[1.5rem] p-4 shadow-2xl sm:rounded-3xl sm:p-5 ${shouldMaximizeTerminal ? 'h-[calc(100dvh-1rem)] overflow-hidden sm:h-[min(92dvh,860px)]' : 'max-h-[calc(100dvh-1rem)] overflow-y-auto sm:max-h-[min(92dvh,860px)]'}`}>
               <div className="mb-4 flex items-start justify-between gap-4">
                 <div className="flex items-start gap-3">
                   <div className={getDashboardIconChipClasses('emerald')}>
-                    <DashboardIconSlot icon={DASHBOARD_ICONS.camera} size={DASHBOARD_ICON_POLICY.sizes.section} className="text-emerald-700" />
+                    <DashboardIconSlot icon={DASHBOARD_ICONS.camera} size={DASHBOARD_ICON_POLICY.sizes.section} className="text-primary-dark" />
                   </div>
                   <div>
                     <h2 className="text-xl font-semibold text-slate-900">QR Compliance Terminal</h2>
@@ -328,7 +328,7 @@ export default function QrComplianceTerminal() {
                       Scan a permit QR or enter the token manually to validate permit and compliance status.
                     </p>
                     {unlockSummary ? (
-                      <p className="mt-1 text-xs text-emerald-700">Unlocked until {unlockSummary}</p>
+                      <p className="mt-1 text-xs text-primary-dark">Unlocked until {unlockSummary}</p>
                     ) : null}
                   </div>
                 </div>
@@ -357,7 +357,7 @@ export default function QrComplianceTerminal() {
                     <button
                       type="button"
                       onClick={() => router.push('/auth')}
-                      className="w-full rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700 sm:w-auto"
+                      className="w-full rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark sm:w-auto"
                     >
                       Login as Enforcer
                     </button>
@@ -387,7 +387,7 @@ export default function QrComplianceTerminal() {
                       type="button"
                       onClick={() => void handleUnlock()}
                       disabled={view === 'unlocking'}
-                      className="w-full rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto"
+                      className="w-full rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto"
                     >
                       {view === 'unlocking' ? 'Unlocking...' : 'Unlock Terminal'}
                     </button>
@@ -402,7 +402,7 @@ export default function QrComplianceTerminal() {
                       onClick={() => setView('camera-ready')}
                       aria-label="Camera Scan"
                       title="Camera Scan"
-                      className={`min-w-0 rounded-lg px-2 py-2 text-xs font-medium sm:px-3 sm:text-sm ${view === 'camera-ready' ? 'bg-emerald-600 text-white' : 'border border-slate-300 text-slate-700 hover:bg-slate-50'}`}
+                      className={`min-w-0 rounded-lg px-2 py-2 text-xs font-medium sm:px-3 sm:text-sm ${view === 'camera-ready' ? 'bg-primary text-white' : 'border border-slate-300 text-slate-700 hover:bg-slate-50'}`}
                     >
                       <span className="flex items-center justify-center gap-1.5">
                         <DashboardIconSlot icon={DASHBOARD_ICONS.camera} size={14} className={view === 'camera-ready' ? 'text-white' : 'text-slate-500'} />
@@ -414,7 +414,7 @@ export default function QrComplianceTerminal() {
                       onClick={() => setView('manual-entry')}
                       aria-label="Manual Entry"
                       title="Manual Entry"
-                      className={`min-w-0 rounded-lg px-2 py-2 text-xs font-medium sm:px-3 sm:text-sm ${view === 'manual-entry' ? 'bg-emerald-600 text-white' : 'border border-slate-300 text-slate-700 hover:bg-slate-50'}`}
+                      className={`min-w-0 rounded-lg px-2 py-2 text-xs font-medium sm:px-3 sm:text-sm ${view === 'manual-entry' ? 'bg-primary text-white' : 'border border-slate-300 text-slate-700 hover:bg-slate-50'}`}
                     >
                       <span className="flex items-center justify-center gap-1.5">
                         <DashboardIconSlot icon={DASHBOARD_ICONS.fileText} size={14} className={view === 'manual-entry' ? 'text-white' : 'text-slate-500'} />
@@ -494,7 +494,7 @@ export default function QrComplianceTerminal() {
                                   </div>
                                 </div>
                                 <div className="mt-2 flex flex-wrap items-center gap-2">
-                                  <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${item.disposition === 'CLEAR' ? 'bg-emerald-100 text-emerald-800' : item.disposition === 'BLOCKED' ? 'bg-red-100 text-red-800' : item.disposition === 'FLAGGED' ? 'bg-amber-100 text-amber-800' : 'bg-slate-200 text-slate-700'}`}>
+                                  <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${item.disposition === 'CLEAR' ? 'bg-surface-tint text-primary-dark' : item.disposition === 'BLOCKED' ? 'bg-red-100 text-red-800' : item.disposition === 'FLAGGED' ? 'bg-amber-100 text-amber-800' : 'bg-slate-200 text-slate-700'}`}>
                                     {item.disposition || item.resultType}
                                   </span>
                                   <span className="inline-flex rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700">
@@ -562,7 +562,7 @@ export default function QrComplianceTerminal() {
                           type="button"
                           onClick={() => void handleLookup(manualToken, 'MANUAL')}
                           disabled={isSubmittingLookup}
-                          className="w-full rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
+                          className="w-full rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-70"
                         >
                           {isSubmittingLookup ? 'Checking...' : 'Check Permit'}
                         </button>
@@ -571,14 +571,14 @@ export default function QrComplianceTerminal() {
 
                       {view === 'incident-queue' && result?.incidentHandoff ? (
                         <div className="flex min-h-0 flex-1 flex-col gap-4">
-                          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                          <div className="rounded-2xl border border-primary/20 bg-surface-tint p-4">
                             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                               <div>
-                                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">Enforcement workflow</div>
-                                <h3 className="mt-2 text-lg font-semibold text-emerald-950">
+                                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-dark">Enforcement workflow</div>
+                                <h3 className="mt-2 text-lg font-semibold text-primary-dark">
                                   {result.incidentHandoff.vehicle?.plateNumber || 'Scanned vehicle'} incident review
                                 </h3>
-                                <p className="mt-1 text-sm text-emerald-900">
+                                <p className="mt-1 text-sm text-primary-dark">
                                   {result.violationSummary?.openIncidents ?? 0} matched incident{(result.violationSummary?.openIncidents ?? 0) === 1 ? '' : 's'} ready for action.
                                 </p>
                               </div>
@@ -586,14 +586,14 @@ export default function QrComplianceTerminal() {
                                 <button
                                   type="button"
                                   onClick={handleReturnToResult}
-                                  className="rounded-lg border border-emerald-300 px-4 py-2 text-sm font-medium text-emerald-900 transition-colors hover:bg-white/70"
+                                  className="rounded-lg border border-primary/40 px-4 py-2 text-sm font-medium text-primary-dark transition-colors hover:bg-white/70"
                                 >
                                   Back to Result
                                 </button>
                                 <button
                                   type="button"
                                   onClick={handleEmbeddedWorkflowComplete}
-                                  className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
+                                  className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark"
                                 >
                                   Finish and Scan Again
                                 </button>
@@ -614,7 +614,7 @@ export default function QrComplianceTerminal() {
                       {view === 'result' && result ? (
                         <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
                       <div className="flex flex-wrap items-center gap-3">
-                        <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${result.scanDisposition === 'CLEAR' ? 'bg-emerald-100 text-emerald-800' : result.scanDisposition === 'BLOCKED' ? 'bg-red-100 text-red-800' : result.scanDisposition === 'NOT_FOUND' ? 'bg-slate-200 text-slate-700' : 'bg-amber-100 text-amber-800'}`}>
+                        <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${result.scanDisposition === 'CLEAR' ? 'bg-surface-tint text-primary-dark' : result.scanDisposition === 'BLOCKED' ? 'bg-red-100 text-red-800' : result.scanDisposition === 'NOT_FOUND' ? 'bg-slate-200 text-slate-700' : 'bg-amber-100 text-amber-800'}`}>
                           {result.scanDisposition}
                         </span>
                       </div>
@@ -672,7 +672,7 @@ export default function QrComplianceTerminal() {
                           <button
                             type="button"
                             onClick={resetToScanner}
-                            className="w-full rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700 sm:w-auto"
+                            className="w-full rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark sm:w-auto"
                           >
                             Scan Another
                           </button>

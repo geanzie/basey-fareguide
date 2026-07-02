@@ -13,7 +13,7 @@ export default function BrandMark({
 
   return (
     <div
-      className={`inline-flex items-center justify-center bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-sm ${sizeClasses}`}
+      className={`inline-flex items-center justify-center bg-gradient-to-br from-primary to-green-600 text-white shadow-sm ${sizeClasses}`}
     >
       <DashboardIconSlot
         icon={DASHBOARD_ICONS.brand}

@@ -12,7 +12,7 @@ import {
   type DashboardIcon,
   type DashboardIconTone,
 } from '@/components/dashboardIcons'
-import PageWrapper from '@/components/PageWrapper'
+import GradientHeader from '@/ui/GradientHeader'
 
 const AdminUserManagement = dynamic(() => import('@/components/AdminUserManagement'), {
   loading: () => <div className="p-6">Loading users...</div>,
@@ -88,11 +88,11 @@ const SHORTCUT_CARD_STYLES: Record<DashboardIconTone, {
     button: 'bg-blue-600 hover:bg-blue-700 text-white',
   },
   emerald: {
-    border: 'border-emerald-200/80',
-    eyebrow: 'text-emerald-700',
-    title: 'text-emerald-950',
-    description: 'text-emerald-800',
-    button: 'bg-emerald-600 hover:bg-emerald-700 text-white',
+    border: 'border-primary/20',
+    eyebrow: 'text-primary-dark',
+    title: 'text-primary-dark',
+    description: 'text-primary-dark',
+    button: 'bg-primary hover:bg-primary-dark text-white',
   },
   red: {
     border: 'border-red-200/80',
@@ -152,10 +152,13 @@ export default function AdminPage() {
 
   return (
     <RoleGuard allowedRoles={['ADMIN']}>
-      <PageWrapper
-        title="Admin Dashboard"
-        subtitle="Administration, oversight, storage, and location management"
-      >
+      <div className="mx-auto max-w-6xl">
+        <GradientHeader
+          title="Admin Dashboard"
+          subtitle="Administration, oversight, storage, and location management"
+          compact
+        />
+        <div className="-mt-6 px-4 pb-8 lg:px-8">
         <section className="mb-8 space-y-3">
           <div className="flex items-end justify-between gap-3">
             <div>
@@ -176,7 +179,7 @@ export default function AdminPage() {
               return (
                 <article
                   key={shortcut.href}
-                  className={`app-surface-card-strong flex h-full flex-col justify-between rounded-3xl border p-5 transition-transform duration-200 hover:-translate-y-0.5 ${cardStyles.border}`}
+                  className={`border border-surface-border bg-surface shadow-card flex h-full flex-col justify-between rounded-3xl border p-5 transition-transform duration-200 hover:-translate-y-0.5 ${cardStyles.border}`}
                 >
                   <div className="space-y-4">
                     <div className="flex items-start gap-3">
@@ -223,14 +226,14 @@ export default function AdminPage() {
         </section>
 
         <div className="mb-8">
-          <nav className="app-surface-card flex flex-wrap gap-2 rounded-2xl p-2">
+          <nav className="border border-surface-border bg-surface shadow-card flex flex-wrap gap-2 rounded-2xl p-2">
             {tabs.map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
                 className={`inline-flex items-center gap-2 rounded-xl px-4 py-3 font-medium text-sm whitespace-nowrap transition-colors ${
                   activeTab === tab.key
-                    ? 'app-surface-inner text-emerald-700'
+                    ? 'border border-surface-border bg-surface-alt text-primary-dark'
                     : 'text-gray-500 hover:bg-white/60 hover:text-gray-700'
                 }`}
               >
@@ -248,7 +251,8 @@ export default function AdminPage() {
         {activeTab === 'storage' && <StorageManagement />}
         {activeTab === 'locations' && <AdminLocationManager />}
         {activeTab === 'dashboard' && <AdminDashboard />}
-      </PageWrapper>
+        </div>
+      </div>
     </RoleGuard>
   )
 }

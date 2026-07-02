@@ -1,26 +1,19 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { List, Plus } from 'lucide-react'
 import RoleGuard from '@/components/RoleGuard'
-import PageWrapper from '@/components/PageWrapper'
 import AdminDiscountOverride from '@/components/AdminDiscountOverride'
 import AdminDiscountList from '@/components/AdminDiscountList'
-import {
-  DASHBOARD_ICONS,
-  DASHBOARD_ICON_POLICY,
-  DashboardIconSlot,
-} from '@/components/dashboardIcons'
+import GradientHeader from '@/ui/GradientHeader'
 
 type TabType = 'list' | 'create'
 
 export default function AdminDiscountCardsPage() {
-  const router = useRouter()
   const [activeTab, setActiveTab] = useState<TabType>('list')
   const [refreshKey, setRefreshKey] = useState(0)
 
-  const handleSuccess = (discountCard: any) => {
-    // Show success notification    // Switch to list tab and refresh the list
+  const handleSuccess = () => {
     setActiveTab('list')
     setRefreshKey(prev => prev + 1)
   }
@@ -31,69 +24,42 @@ export default function AdminDiscountCardsPage() {
 
   return (
     <RoleGuard allowedRoles={['ADMIN']}>
-      <PageWrapper 
-        title="Discount Card Management"
-        subtitle="Create and manage discount cards for eligible users"
-      >
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-6">
+      <div className="mx-auto max-w-6xl">
+        <GradientHeader
+          title="Discount Card Management"
+          subtitle="Create and manage discount cards for eligible users"
+          backHref="/admin"
+          compact
+        >
+          <div className="mt-4 flex gap-2">
             <button
-              onClick={() => router.push('/admin')}
-              className="text-blue-600 hover:text-blue-800 inline-flex items-center gap-2 mb-4"
+              onClick={() => setActiveTab('list')}
+              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                activeTab === 'list' ? 'bg-white text-primary-dark' : 'bg-white/15 text-white hover:bg-white/25'
+              }`}
             >
-              <DashboardIconSlot icon={DASHBOARD_ICONS.back} size={DASHBOARD_ICON_POLICY.sizes.button} />
-              <span>Back to Admin Dashboard</span>
+              <List className="h-4 w-4" />
+              Discount Cards List
+            </button>
+            <button
+              onClick={() => setActiveTab('create')}
+              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                activeTab === 'create' ? 'bg-white text-primary-dark' : 'bg-white/15 text-white hover:bg-white/25'
+              }`}
+            >
+              <Plus className="h-4 w-4" />
+              Create Discount Card
             </button>
           </div>
+        </GradientHeader>
 
-          {/* Tabs */}
-          <div className="bg-white rounded-t-lg shadow-sm border-b border-gray-200">
-            <div className="flex">
-              <button
-                onClick={() => setActiveTab('list')}
-                className={`px-6 py-4 font-medium text-sm transition-colors ${
-                  activeTab === 'list'
-                    ? 'text-blue-600 border-b-2 border-blue-600'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <DashboardIconSlot icon={DASHBOARD_ICONS.list} size={DASHBOARD_ICON_POLICY.sizes.button} />
-                  Discount Cards List
-                </div>
-              </button>
-              <button
-                onClick={() => setActiveTab('create')}
-                className={`px-6 py-4 font-medium text-sm transition-colors ${
-                  activeTab === 'create'
-                    ? 'text-blue-600 border-b-2 border-blue-600'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <DashboardIconSlot icon={DASHBOARD_ICONS.plus} size={DASHBOARD_ICON_POLICY.sizes.button} />
-                  Create Discount Card
-                </div>
-              </button>
-            </div>
-          </div>
-
-          {/* Tab Content */}
-          <div className="mt-6">
-            {activeTab === 'list' && (
-              <AdminDiscountList key={refreshKey} />
-            )}
-            {activeTab === 'create' && (
-              <div className="max-w-6xl mx-auto">
-                <AdminDiscountOverride
-                  onSuccess={handleSuccess}
-                  onCancel={handleCancel}
-                />
-              </div>
-            )}
-          </div>
+        <div className="-mt-6 px-4 pb-8 lg:px-8">
+          {activeTab === 'list' && <AdminDiscountList key={refreshKey} />}
+          {activeTab === 'create' && (
+            <AdminDiscountOverride onSuccess={handleSuccess} onCancel={handleCancel} />
+          )}
         </div>
-      </PageWrapper>
+      </div>
     </RoleGuard>
   )
 }

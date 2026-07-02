@@ -172,7 +172,7 @@ export default function BulkQrPrintSheet({ onClose }: BulkQrPrintSheetProps) {
               type="button"
               onClick={() => window.print()}
               disabled={!isReady || permits.length === 0}
-              className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-50"
             >
               Print All
             </button>
@@ -191,7 +191,7 @@ export default function BulkQrPrintSheet({ onClose }: BulkQrPrintSheetProps) {
           {/* Fetching */}
           {fetchState === 'loading' && (
             <div className="flex flex-col items-center justify-center py-24 text-slate-500">
-              <div className="mb-3 h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-emerald-600" />
+              <div className="mb-3 h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-primary" />
               <p className="text-sm">Loading permits…</p>
             </div>
           )}
@@ -207,7 +207,7 @@ export default function BulkQrPrintSheet({ onClose }: BulkQrPrintSheetProps) {
           {/* QR generation progress */}
           {fetchState === 'done' && genProgress !== null && (
             <div className="flex flex-col items-center justify-center py-24 text-slate-500">
-              <div className="mb-3 h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-emerald-600" />
+              <div className="mb-3 h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-primary" />
               <p className="text-sm">
                 Generating QR {genProgress.done} / {genProgress.total}
               </p>

@@ -2,15 +2,11 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { CheckCircle2, KeyRound } from 'lucide-react'
 
-import LoadingSpinner from '@/components/LoadingSpinner'
-import PasswordInput from '@/components/PasswordInput'
-import {
-  DASHBOARD_ICONS,
-  DASHBOARD_ICON_POLICY,
-  DashboardIconSlot,
-  getDashboardIconChipClasses,
-} from '@/components/dashboardIcons'
+import Button from '@/ui/Button'
+import { Field, Input } from '@/ui/Field'
+import PasswordInput from '@/ui/PasswordInput'
 
 const ResetPasswordForm = () => {
   const [email, setEmail] = useState('')
@@ -22,7 +18,7 @@ const ResetPasswordForm = () => {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const [otpValid, setOtpValid] = useState(false)
-  const [userInfo, setUserInfo] = useState<any>(null)
+  const [userInfo, setUserInfo] = useState<{ firstName?: string; lastName?: string } | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -107,81 +103,67 @@ const ResetPasswordForm = () => {
   }
 
   return (
-    <div className="app-page-bg min-h-screen px-4 py-12 sm:px-6 lg:px-8">
-      <div className="flex min-h-[calc(100vh-6rem)] items-center justify-center">
-        <div className="w-full max-w-md">
-          <div className="app-surface-card-strong space-y-8 rounded-3xl p-8 sm:p-10">
-            <div>
-              <div className="flex justify-center">
-                <div className={`${getDashboardIconChipClasses('blue')} h-16 w-16 rounded-2xl`}>
-                  <DashboardIconSlot icon={DASHBOARD_ICONS.key} size={DASHBOARD_ICON_POLICY.sizes.hero} />
-                </div>
-              </div>
-              <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-                Reset Your Password
-              </h2>
-              <p className="mt-2 text-center text-sm text-gray-600">
-                Enter the OTP code sent to your email
-              </p>
-            </div>
-
-            {success ? (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <DashboardIconSlot icon={DASHBOARD_ICONS.check} size={DASHBOARD_ICON_POLICY.sizes.card} className="text-green-500" />
-              </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-green-800">
-                  Password Reset Successful!
-                </h3>
-                <div className="mt-2 text-sm text-green-700">
-                  <p>Your password has been reset successfully. Redirecting to login...</p>
-                </div>
-              </div>
-            </div>
+    <div className="flex min-h-screen items-center justify-center bg-ink-strong px-4 py-12">
+      <div className="w-full max-w-md">
+        <div className="mb-8 flex flex-col items-center text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/10">
+            <KeyRound className="h-8 w-8 text-primary" />
           </div>
-            ) : (
-          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-            {error ? (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-                {error}
-              </div>
-            ) : null}
+          <h1 className="mt-4 text-[26px] font-extrabold text-white">Reset Your Password</h1>
+          <p className="mt-1 text-xs text-ink-muted">Enter the OTP code sent to your email</p>
+        </div>
 
-            {otpValid && userInfo ? (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-sm text-blue-800 inline-flex items-center gap-2">
-                  <DashboardIconSlot icon={DASHBOARD_ICONS.check} size={DASHBOARD_ICON_POLICY.sizes.button} />
-                  <span>OTP Verified! Resetting password for: <strong>{userInfo.firstName} {userInfo.lastName}</strong></span>
-                </p>
+        <div className="rounded-3xl bg-surface p-6 shadow-raised sm:p-8">
+          {success ? (
+            <div className="rounded-xl bg-surface-tint p-6">
+              <div className="flex gap-3">
+                <CheckCircle2 className="h-5 w-5 shrink-0 text-primary" />
+                <div>
+                  <h3 className="text-sm font-bold text-primary-dark">Password Reset Successful!</h3>
+                  <p className="mt-1 text-sm text-ink-body">
+                    Your password has been reset successfully. Redirecting to login...
+                  </p>
+                </div>
               </div>
-            ) : null}
+            </div>
+          ) : (
+            <form className="space-y-4" onSubmit={handleSubmit}>
+              {error ? (
+                <div className="rounded-xl bg-danger-soft px-4 py-3 text-[13px] font-medium text-danger">
+                  {error}
+                </div>
+              ) : null}
 
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                  Email Address
-                </label>
-                <input
+              {otpValid && userInfo ? (
+                <div className="rounded-xl bg-info/10 p-4">
+                  <p className="inline-flex items-center gap-2 text-sm text-ink-body">
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-info" />
+                    <span>
+                      OTP Verified! Resetting password for:{' '}
+                      <strong>
+                        {userInfo.firstName} {userInfo.lastName}
+                      </strong>
+                    </span>
+                  </p>
+                </div>
+              ) : null}
+
+              <Field label="Email Address" htmlFor="email">
+                <Input
                   id="email"
                   name="email"
                   type="email"
                   autoComplete="email"
                   required
-                  className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 focus:z-10 sm:text-sm"
                   placeholder="Enter your email address"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
-              </div>
+              </Field>
 
-              <div>
-                <label htmlFor="otp" className="block text-sm font-medium text-gray-700">
-                  OTP Code
-                </label>
-                <div className="mt-1 flex space-x-2">
-                  <input
+              <Field label="OTP Code" htmlFor="otp" hint="Enter the 6-digit code sent to your email">
+                <div className="flex gap-2">
+                  <Input
                     id="otp"
                     name="otp"
                     type="text"
@@ -189,94 +171,58 @@ const ResetPasswordForm = () => {
                     inputMode="numeric"
                     required
                     maxLength={6}
-                    className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 focus:z-10 sm:text-sm"
                     placeholder="Enter 6-digit OTP code"
                     value={otp}
                     onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
                   />
-                  <button
-                    type="button"
+                  <Button
+                    variant="secondary"
+                    loading={verifying}
+                    disabled={otp.length !== 6}
                     onClick={() => verifyOtp(otp, email)}
-                    disabled={verifying || otp.length !== 6}
-                    className="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap inline-flex items-center"
+                    className="shrink-0"
                   >
-                    {verifying ? (
-                      <>
-                        <LoadingSpinner size={16} className="mr-2 text-white" />
-                        Verifying...
-                      </>
-                    ) : (
-                      'Verify'
-                    )}
-                  </button>
+                    {verifying ? 'Verifying...' : 'Verify'}
+                  </Button>
                 </div>
-                <p className="mt-1 text-xs text-gray-500">
-                  Enter the 6-digit code sent to your email
-                </p>
-              </div>
+              </Field>
 
-              <div>
-                <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">
-                  New Password
-                </label>
+              <Field label="New Password" htmlFor="newPassword">
                 <PasswordInput
                   id="newPassword"
                   name="newPassword"
                   autoComplete="new-password"
                   required
                   disabled={!otpValid}
-                  className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 focus:z-10 sm:text-sm disabled:bg-gray-100"
                   placeholder="Enter new password (min 8 characters)"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                 />
-              </div>
+              </Field>
 
-              <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-                  Confirm Password
-                </label>
+              <Field label="Confirm Password" htmlFor="confirmPassword">
                 <PasswordInput
                   id="confirmPassword"
                   name="confirmPassword"
                   autoComplete="new-password"
                   required
                   disabled={!otpValid}
-                  className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 focus:z-10 sm:text-sm disabled:bg-gray-100"
                   placeholder="Re-enter new password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                 />
+              </Field>
+
+              <div className="space-y-2 pt-2">
+                <Button type="submit" loading={loading} disabled={!otpValid} className="w-full">
+                  {loading ? 'Resetting...' : 'Reset Password'}
+                </Button>
+                <Button variant="secondary" className="w-full" onClick={() => router.push('/auth')}>
+                  Back to Login
+                </Button>
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <button
-                type="submit"
-                disabled={loading || !otpValid}
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? (
-                  <span className="flex items-center">
-                    <LoadingSpinner size={20} className="mr-3 text-white" />
-                    Resetting...
-                  </span>
-                ) : (
-                  'Reset Password'
-                )}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => router.push('/auth')}
-                className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
-              >
-                Back to Login
-              </button>
-            </div>
-          </form>
-            )}
-          </div>
+            </form>
+          )}
         </div>
       </div>
     </div>

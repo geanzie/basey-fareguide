@@ -125,10 +125,10 @@ export default function VehiclesList() {
         }
         return (
           <div>
-            <div className="font-mono font-medium text-emerald-900">
+            <div className="font-mono font-medium text-primary-dark">
               {vehicle.permit.permitPlateNumber}
             </div>
-            <div className="text-xs text-emerald-600">
+            <div className="text-xs text-primary">
               Permit ID
             </div>
           </div>
@@ -287,7 +287,7 @@ export default function VehiclesList() {
   return (
     <div className="space-y-6 max-w-full">
       {/* Filters and Search */}
-      <div className="app-surface-card rounded-2xl p-4 sm:p-6">
+      <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-4 sm:p-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {/* Search */}
           <div>
@@ -302,7 +302,7 @@ export default function VehiclesList() {
               placeholder="Search vehicles..."
               value={filters.search}
               onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 min-w-0"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary min-w-0"
             />
           </div>
 
@@ -317,7 +317,7 @@ export default function VehiclesList() {
               autoComplete="off"
               value={filters.vehicleType}
               onChange={(e) => setFilters(prev => ({ ...prev, vehicleType: e.target.value as VehicleType | '' }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
             >
               <option value="">All Types</option>
               <option value={VehicleType.JEEPNEY}>Jeepney</option>
@@ -337,7 +337,7 @@ export default function VehiclesList() {
               autoComplete="off"
               value={filters.isActive}
               onChange={(e) => setFilters(prev => ({ ...prev, isActive: e.target.value as 'true' | 'false' | '' }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
             >
               <option value="">All Status</option>
               <option value="true">Active</option>
@@ -364,9 +364,9 @@ export default function VehiclesList() {
               {vehicles.filter(v => v.isActive).length}
             </div>
           </div>
-          <div className="bg-emerald-50 p-3 rounded-lg min-w-0">
-            <div className="text-sm text-emerald-600 font-medium truncate">With Permits</div>
-            <div className="text-lg font-bold text-emerald-800">
+          <div className="bg-surface-tint p-3 rounded-lg min-w-0">
+            <div className="text-sm text-primary font-medium truncate">With Permits</div>
+            <div className="text-lg font-bold text-primary-dark">
               {vehicles.filter(v => v.permit?.permitPlateNumber).length}
             </div>
           </div>
@@ -398,7 +398,7 @@ export default function VehiclesList() {
       </div>
 
       {/* Vehicles Table */}
-      <div className="app-surface-card rounded-2xl">
+      <div className="border border-surface-border bg-surface shadow-card rounded-2xl">
         <ResponsiveTable
           columns={columns}
           data={vehicles || []}
@@ -418,7 +418,7 @@ export default function VehiclesList() {
               <button
                 onClick={() => setPagination(prev => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
                 disabled={pagination.page === 1}
-                className="app-surface-inner px-3 py-1 text-sm border border-gray-300/80 rounded-md hover:bg-white/80 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="border border-surface-border bg-surface-alt px-3 py-1 text-sm border border-gray-300/80 rounded-md hover:bg-white/80 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Previous
               </button>
@@ -428,7 +428,7 @@ export default function VehiclesList() {
               <button
                 onClick={() => setPagination(prev => ({ ...prev, page: Math.min(pagination.totalPages, prev.page + 1) }))}
                 disabled={pagination.page === pagination.totalPages}
-                className="app-surface-inner px-3 py-1 text-sm border border-gray-300/80 rounded-md hover:bg-white/80 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="border border-surface-border bg-surface-alt px-3 py-1 text-sm border border-gray-300/80 rounded-md hover:bg-white/80 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Next
               </button>
@@ -440,7 +440,7 @@ export default function VehiclesList() {
       {/* Vehicle Details Modal */}
       {showDetails && selectedVehicle && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 p-4 backdrop-blur-sm">
-          <div className="app-surface-overlay max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-3xl">
+          <div className="border border-surface-border bg-surface shadow-raised max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-3xl">
             <div className="p-6">
               <div className="flex justify-between items-start mb-6">
                 <h3 className="text-lg font-semibold text-gray-900">
@@ -466,7 +466,7 @@ export default function VehiclesList() {
                     <div>
                       <span className="text-sm text-gray-500">Permit Plate Number:</span>
                       {selectedVehicle.permit?.permitPlateNumber ? (
-                        <div className="font-mono font-medium text-emerald-900">
+                        <div className="font-mono font-medium text-primary-dark">
                           {selectedVehicle.permit.permitPlateNumber}
                         </div>
                       ) : (
@@ -604,7 +604,7 @@ export default function VehiclesList() {
               <div className="mt-6 flex justify-end">
                 <button
                   onClick={() => setShowDetails(false)}
-                  className="app-surface-inner px-4 py-2 rounded-lg text-gray-700 transition-colors hover:bg-white/80"
+                  className="border border-surface-border bg-surface-alt px-4 py-2 rounded-lg text-gray-700 transition-colors hover:bg-white/80"
                 >
                   Close
                 </button>

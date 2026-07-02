@@ -637,7 +637,7 @@ const RoutePlannerCalculator = ({
           </div>
         ) : null}
         {user ? (
-          <section className="app-surface-card-strong rounded-[2rem] border border-slate-200/80 p-3 sm:p-4">
+          <section className="border border-surface-border bg-surface shadow-card rounded-[2rem] border border-slate-200/80 p-3 sm:p-4">
             {identityInputMode === 'idle' ? (
               <div className="grid gap-2 sm:grid-cols-2">
                 <button
@@ -721,7 +721,7 @@ const RoutePlannerCalculator = ({
           </section>
         ) : null}
 
-        <section className="app-surface-card overflow-hidden rounded-[2rem] p-2 sm:p-3">
+        <section className="border border-surface-border bg-surface shadow-card overflow-hidden rounded-[2rem] p-2 sm:p-3">
           <div className="relative">
             <ResolvedMapComponent
               origin={origin}
@@ -785,12 +785,12 @@ const RoutePlannerCalculator = ({
                     </div>
                     <div className="bg-slate-50 px-4 py-3">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Your fare</p>
-                      <p className="mt-1 text-2xl font-bold text-emerald-700">{formatCurrency(routeResult.fare)}</p>
+                      <p className="mt-1 text-2xl font-bold text-primary-dark">{formatCurrency(routeResult.fare)}</p>
                     </div>
                     {routeResult.discountApplied ? (
                       <div className="bg-slate-50 px-4 py-3">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Discount</p>
-                        <p className="mt-1 text-2xl font-bold text-emerald-700">-{formatCurrency(routeResult.discountApplied)}</p>
+                        <p className="mt-1 text-2xl font-bold text-primary-dark">-{formatCurrency(routeResult.discountApplied)}</p>
                       </div>
                     ) : null}
                   </div>
@@ -811,7 +811,7 @@ const RoutePlannerCalculator = ({
                         type="button"
                         onClick={() => void saveCurrentRoute()}
                         disabled={!canSaveDisplayedRoute || saveStatus === 'saving' || saveStatus === 'saved'}
-                        className="rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-emerald-300"
+                        className="rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-primary disabled:cursor-not-allowed disabled:bg-primary/40"
                       >
                         {!user
                           ? 'Log in to request'
@@ -864,7 +864,7 @@ const RoutePlannerCalculator = ({
         </section>
 
         {errorPanelVisible ? (
-          <section className="app-surface-card-strong rounded-[2rem] border border-slate-200/80 p-3 sm:p-4">
+          <section className="border border-surface-border bg-surface shadow-card rounded-[2rem] border border-slate-200/80 p-3 sm:p-4">
             <div className="rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800">
               <p>
                 {plannerState === 'out_of_service_area'

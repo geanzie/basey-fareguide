@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { Inter } from 'next/font/google'
 import { AuthProvider, AuthAwareLayout } from '@/components/AuthProvider'
 import { SWRProvider } from '@/components/SWRProvider'
+import { FeedbackProvider } from '@/ui/FeedbackProvider'
 import { resolveAuthUserFromToken } from '@/lib/auth'
 import { serializeSessionUser } from '@/lib/serializers'
 import './globals.css'
@@ -48,9 +49,10 @@ export default async function RootLayout({
         <meta name="theme-color" content="#16a34a" />
         <link rel="icon" href="/favicon.ico" />
       </head>
-      <body className={`${inter.className} app-page-bg antialiased overflow-x-hidden`} suppressHydrationWarning>
+      <body className={`${inter.className} bg-surface-bg antialiased overflow-x-hidden`} suppressHydrationWarning>
         <SWRProvider>
           <AuthProvider initialSession={initialSession}>
+          <FeedbackProvider>
           <div className="min-h-screen flex flex-col max-w-full">
 
             {/* Main Content with Conditional Sidebar */}
@@ -67,6 +69,7 @@ export default async function RootLayout({
               </div>
             </footer>
           </div>
+          </FeedbackProvider>
           </AuthProvider>
         </SWRProvider>
       </body>

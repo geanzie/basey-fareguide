@@ -53,7 +53,7 @@ function getActivityIcon(status: string) {
   if (status === 'RESOLVED') {
     return {
       icon: DASHBOARD_ICONS.check,
-      iconClassName: 'text-emerald-600',
+      iconClassName: 'text-primary',
     }
   }
 
@@ -130,7 +130,7 @@ export default function AdminDashboard() {
       <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[...Array(4)].map((_, index) => (
-            <div key={index} className="app-surface-card rounded-xl p-6 animate-pulse">
+            <div key={index} className="border border-surface-border bg-surface shadow-card rounded-xl p-6 animate-pulse">
               <div className="h-4 bg-gray-200 rounded mb-2"></div>
               <div className="h-8 bg-gray-200 rounded"></div>
             </div>
@@ -158,13 +158,13 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-8">
-      <div className="app-surface-card-strong rounded-2xl p-6 border border-gray-200/80">
+      <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-6 border border-gray-200/80">
         <div className="flex items-start gap-4">
           <div className={getDashboardIconChipClasses('emerald')}>
             <DashboardIconSlot
               icon={DASHBOARD_ICONS.dashboard}
               size={DASHBOARD_ICON_POLICY.sizes.hero}
-              className="text-emerald-700"
+              className="text-primary-dark"
             />
           </div>
           <div>
@@ -205,7 +205,7 @@ export default function AdminDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="app-surface-card rounded-2xl p-6">
+        <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
           <div className="mb-4 flex items-center gap-2">
             <DashboardIconSlot
               icon={DASHBOARD_ICONS.users}
@@ -228,7 +228,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div className="app-surface-card rounded-2xl p-6">
+        <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
           <div className="mb-4 flex items-center gap-2">
             <DashboardIconSlot
               icon={DASHBOARD_ICONS.list}
@@ -245,7 +245,7 @@ export default function AdminDashboard() {
                 return (
                   <div
                     key={incident.id}
-                    className="app-surface-inner rounded-xl p-4"
+                    className="border border-surface-border bg-surface-alt rounded-xl p-4"
                   >
                     <div className="flex items-start gap-3">
                       <DashboardIconSlot
@@ -276,7 +276,7 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      <div className="app-surface-card rounded-2xl p-6">
+      <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
         <div className="mb-4 flex items-center gap-2">
           <DashboardIconSlot
             icon={DASHBOARD_ICONS.dashboard}
@@ -318,7 +318,7 @@ export default function AdminDashboard() {
               const event = new CustomEvent('adminTabChange', { detail: 'users' as const })
               window.dispatchEvent(event)
             }}
-            className="flex items-center justify-center gap-2 px-4 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+            className="flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors"
           >
             <DashboardIconSlot
               icon={DASHBOARD_ICONS.users}
@@ -359,7 +359,7 @@ function StatCard({
   detail?: string
 }) {
   return (
-    <div className="app-surface-card-strong rounded-2xl p-6">
+    <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <div className="text-sm font-medium text-gray-500">{label}</div>

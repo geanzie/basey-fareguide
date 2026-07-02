@@ -65,7 +65,7 @@ export default function AdminUserDetailModal({
                 />
                 <StatusBadge
                   status={user.isActive ? 'Active' : 'Inactive'}
-                  className={user.isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}
+                  className={user.isActive ? 'bg-surface-tint text-primary-dark' : 'bg-rose-100 text-rose-800'}
                 />
               </div>
             </div>

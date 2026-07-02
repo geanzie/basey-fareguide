@@ -1,34 +1,35 @@
 'use client'
 
 import Link from 'next/link'
+import { Plus } from 'lucide-react'
 
-import PageWrapper, { ActionButton } from '@/components/PageWrapper'
 import RoleGuard from '@/components/RoleGuard'
 import VehiclesList from '@/components/VehiclesList'
-import {
-  DASHBOARD_ICONS,
-  DASHBOARD_ICON_POLICY,
-  DashboardIconSlot,
-} from '@/components/dashboardIcons'
+import Button from '@/ui/Button'
+import GradientHeader from '@/ui/GradientHeader'
 
 export default function VehiclesListPage() {
   return (
     <RoleGuard allowedRoles={['DATA_ENCODER']}>
-      <PageWrapper
-        title="Vehicle Registry"
-        subtitle="Browse and manage all registered vehicles"
-        headerContent={(
-          <Link href="/encoder/vehicles/new">
-            <ActionButton variant="primary">
-              <DashboardIconSlot icon={DASHBOARD_ICONS.plus} size={DASHBOARD_ICON_POLICY.sizes.button} className="mr-2" />
-              <span className="sm:hidden">Register</span>
-              <span className="hidden sm:inline">Register Vehicle</span>
-            </ActionButton>
-          </Link>
-        )}
-      >
-        <VehiclesList />
-      </PageWrapper>
+      <div className="mx-auto max-w-6xl">
+        <GradientHeader
+          title="Vehicle Registry"
+          subtitle="Browse and manage all registered vehicles"
+          compact
+          right={
+            <Link href="/encoder/vehicles/new">
+              <Button size="sm">
+                <Plus className="h-4 w-4" />
+                <span className="sm:hidden">Register</span>
+                <span className="hidden sm:inline">Register Vehicle</span>
+              </Button>
+            </Link>
+          }
+        />
+        <div className="-mt-6 px-4 pb-8 lg:px-8">
+          <VehiclesList />
+        </div>
+      </div>
     </RoleGuard>
   )
 }

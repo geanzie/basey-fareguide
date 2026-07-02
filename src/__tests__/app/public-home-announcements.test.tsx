@@ -134,7 +134,7 @@ describe("public home page announcements", () => {
     expect(container.textContent).toContain("Traffic Announcements");
     expect(container.textContent).toContain("Road closure");
     expect(container.textContent).toContain("Fare Announcement");
-    expect(container.querySelector(".app-page-bg")).not.toBeNull();
+    expect(container.querySelector(".bg-brand")).not.toBeNull();
     expect(routerMock.replace).not.toHaveBeenCalled();
   });
 

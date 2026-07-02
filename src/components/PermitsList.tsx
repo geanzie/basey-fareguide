@@ -195,7 +195,7 @@ export default function PermitsList() {
   return (
     <div className="space-y-6">
       {/* Filters and Search */}
-      <div className="app-surface-card rounded-2xl p-6">
+      <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {/* Search */}
           <div>
@@ -210,7 +210,7 @@ export default function PermitsList() {
               placeholder="Search plate number or driver name..."
               value={filters.search}
               onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
             />
           </div>
 
@@ -225,7 +225,7 @@ export default function PermitsList() {
               autoComplete="off"
               value={filters.status}
               onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value as PermitStatus | '' }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
             >
               <option value="">All Statuses</option>
               <option value={PermitStatus.ACTIVE}>Active</option>
@@ -246,7 +246,7 @@ export default function PermitsList() {
               autoComplete="off"
               value={filters.vehicleType}
               onChange={(e) => setFilters(prev => ({ ...prev, vehicleType: e.target.value as VehicleType | '' }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
             >
               <option value="">All Types</option>
               <option value={VehicleType.JEEPNEY}>Jeepney</option>
@@ -302,7 +302,7 @@ export default function PermitsList() {
       </div>
 
       {/* Permits Table */}
-      <div className="app-surface-card rounded-2xl">
+      <div className="border border-surface-border bg-surface shadow-card rounded-2xl">
         <ResponsiveTable
           columns={columns}
           data={permits || []}
@@ -320,7 +320,7 @@ export default function PermitsList() {
               <button
                 onClick={() => setPagination(prev => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
                 disabled={pagination.page === 1}
-                className="app-surface-inner px-3 py-1 text-sm border border-gray-300/80 rounded-md hover:bg-white/80 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="border border-surface-border bg-surface-alt px-3 py-1 text-sm border border-gray-300/80 rounded-md hover:bg-white/80 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Previous
               </button>
@@ -330,7 +330,7 @@ export default function PermitsList() {
               <button
                 onClick={() => setPagination(prev => ({ ...prev, page: Math.min(pagination.totalPages, prev.page + 1) }))}
                 disabled={pagination.page === pagination.totalPages}
-                className="app-surface-inner px-3 py-1 text-sm border border-gray-300/80 rounded-md hover:bg-white/80 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="border border-surface-border bg-surface-alt px-3 py-1 text-sm border border-gray-300/80 rounded-md hover:bg-white/80 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Next
               </button>
@@ -342,7 +342,7 @@ export default function PermitsList() {
       {/* Permit Details Modal */}
       {showDetails && selectedPermit && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 p-4 backdrop-blur-sm">
-          <div className="app-surface-overlay max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl">
+          <div className="border border-surface-border bg-surface shadow-raised max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl">
             <div className="p-6">
               <div className="flex justify-between items-start mb-6">
                 <h3 className="text-lg font-semibold text-gray-900">
@@ -415,7 +415,7 @@ export default function PermitsList() {
               {selectedPermit.remarks && (
                 <div className="mt-6">
                   <h4 className="font-medium text-gray-900 mb-2">Remarks</h4>
-                  <p className="app-surface-inner rounded-lg p-3 text-gray-700">
+                  <p className="border border-surface-border bg-surface-alt rounded-lg p-3 text-gray-700">
                     {selectedPermit.remarks}
                   </p>
                 </div>
@@ -426,7 +426,7 @@ export default function PermitsList() {
                   <h4 className="font-medium text-gray-900 mb-3">Renewal History</h4>
                   <div className="space-y-3">
                     {selectedPermit.renewalHistory.map((renewal) => (
-                      <div key={renewal.id} className="app-surface-inner rounded-lg p-3">
+                      <div key={renewal.id} className="border border-surface-border bg-surface-alt rounded-lg p-3">
                         <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
                           <div>
                             <span className="text-gray-500">Previous Expiry:</span>
@@ -460,7 +460,7 @@ export default function PermitsList() {
               <div className="mt-6 flex justify-end">
                 <button
                   onClick={() => setShowDetails(false)}
-                  className="app-surface-inner px-4 py-2 rounded-lg text-gray-700 transition-colors hover:bg-white/80"
+                  className="border border-surface-border bg-surface-alt px-4 py-2 rounded-lg text-gray-700 transition-colors hover:bg-white/80"
                 >
                   Close
                 </button>

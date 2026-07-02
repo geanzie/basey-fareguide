@@ -79,7 +79,7 @@ export default function AdminUserManagement() {
 
   return (
     <div className="mx-auto max-w-7xl p-6">
-      <div className="app-surface-card rounded-2xl">
+      <div className="border border-surface-border bg-surface shadow-card rounded-2xl">
         <div className="border-b border-gray-200 px-6 py-4">
           <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
           <p className="mt-1 text-gray-600">
@@ -94,7 +94,7 @@ export default function AdminUserManagement() {
             <div
               className={`mb-6 rounded-2xl border px-4 py-3 text-sm ${
                 notice.tone === 'success'
-                  ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                  ? 'border-primary/20 bg-surface-tint text-primary-dark'
                   : 'border-rose-200 bg-rose-50 text-rose-700'
               }`}
             >

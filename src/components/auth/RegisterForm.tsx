@@ -1,21 +1,41 @@
 'use client'
 
 import { useState } from 'react'
-import LoadingSpinner from '@/components/LoadingSpinner'
-import PasswordInput from '@/components/PasswordInput'
+import Button from '@/ui/Button'
+import { Field, Input, Select } from '@/ui/Field'
+import PasswordInput from '@/ui/PasswordInput'
 import { CURRENT_PRIVACY_NOTICE_VERSION } from '@/lib/privacyNotice'
-import {
-  DASHBOARD_ICONS,
-  DASHBOARD_ICON_POLICY,
-  DashboardIconSlot,
-  getDashboardIconChipClasses,
-} from '@/components/dashboardIcons'
 
 interface RegisterFormProps {
   onSwitchToLogin: () => void
 }
 
 type UserType = 'PUBLIC' | 'ENFORCER' | 'DATA_ENCODER'
+
+const BARANGAYS = [
+  'Amandayehan', 'Anglit', 'Bacubac', 'Baloog', 'Basiao', 'Buenavista', 'Burgos',
+  'Cambayan', 'Can-abay', 'Cancaiyas', 'Canmanila', 'Catadman', 'Cogon', 'Dolongan',
+  'Guintigui-an', 'Guirang', 'Balante', 'Iba', 'Inuntan', 'Loog', 'Mabini',
+  'Magallanes', 'Manlilinab', 'Del Pilar', 'May-it', 'Mongabong', 'New San Agustin',
+  'Nouvelas Occidental', 'Old San Agustin', 'Panugmonon', 'Pelit',
+  'Baybay (Poblacion)', 'Buscada (Poblacion)', 'Lawa-an (Poblacion)',
+  'Loyo (Poblacion)', 'Mercado (Poblacion)', 'Palaypay (Poblacion)',
+  'Sulod (Poblacion)', 'Roxas', 'Salvacion', 'San Antonio', 'San Fernando', 'Sawa',
+  'Serum', 'Sugca', 'Sugponon', 'Tinaogan', 'Tingib', 'Villa Aurora', 'Binongtu-an',
+  'Bulao',
+]
+
+const ID_TYPES: Array<[string, string]> = [
+  ['NATIONAL_ID', 'National ID (PhilID)'],
+  ['DRIVERS_LICENSE', "Driver's License"],
+  ['PASSPORT', 'Passport'],
+  ['VOTERS_ID', "Voter's ID"],
+  ['SSS_ID', 'SSS ID'],
+  ['PHILHEALTH_ID', 'PhilHealth ID'],
+  ['TIN_ID', 'TIN ID'],
+  ['POSTAL_ID', 'Postal ID'],
+  ['STUDENT_ID', 'Student ID'],
+]
 
 const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
   const [formData, setFormData] = useState({
@@ -135,322 +155,222 @@ const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
   }
 
   return (
-    <div className="app-page-bg min-h-screen px-4 py-10 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-ink-strong px-4 py-10 sm:px-6 lg:px-8">
       <div className="mx-auto w-full max-w-lg">
-        <div className="app-surface-card-strong space-y-6 rounded-3xl p-8 sm:p-10">
-          {/* Header */}
-          <div className="text-center">
-            <div className="flex justify-center">
-              <div className={getDashboardIconChipClasses('emerald')}>
-                <DashboardIconSlot icon={DASHBOARD_ICONS.user} size={DASHBOARD_ICON_POLICY.sizes.hero} />
-              </div>
-            </div>
-            <h2 className="mt-4 text-2xl font-extrabold text-gray-900">
-              Create your account
-            </h2>
-            <p className="mt-1 text-sm text-gray-500">
-              Basey Fare Check &mdash; Transportation Fare Reference System
-            </p>
-          </div>
+        <div className="mb-6 text-center">
+          <h1 className="text-[26px] font-extrabold text-white">Create your account</h1>
+          <p className="mt-1 text-xs text-ink-muted">
+            Basey FareCheck — Municipal Ordinance 105, Series of 2023
+          </p>
+        </div>
 
+        <div className="rounded-3xl bg-surface p-6 shadow-raised sm:p-8">
           <form className="space-y-4" onSubmit={handleSubmit} suppressHydrationWarning>
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+              <div className="rounded-xl bg-danger-soft px-4 py-3 text-[13px] font-medium text-danger">
                 {error}
               </div>
             )}
 
             {success && (
-              <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
+              <div className="rounded-xl bg-surface-tint px-4 py-3 text-[13px] font-medium text-primary-dark">
                 {success}
               </div>
             )}
 
             {/* ── Personal info ── */}
             <div className="space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Personal Information</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-ink-faint">Personal Information</p>
 
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
-                    First Name <span className="text-red-500">*</span>
-                  </label>
-                  <input
+                <Field label="First Name" htmlFor="firstName" required>
+                  <Input
                     id="firstName"
                     name="firstName"
                     type="text"
                     autoComplete="given-name"
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
                     value={formData.firstName}
                     onChange={handleInputChange}
                     suppressHydrationWarning
                   />
-                </div>
-                <div>
-                  <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
-                    Last Name <span className="text-red-500">*</span>
-                  </label>
-                  <input
+                </Field>
+                <Field label="Last Name" htmlFor="lastName" required>
+                  <Input
                     id="lastName"
                     name="lastName"
                     type="text"
                     autoComplete="family-name"
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
                     value={formData.lastName}
                     onChange={handleInputChange}
                     suppressHydrationWarning
                   />
-                </div>
+                </Field>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone Number <span className="text-red-500">*</span>
-                  </label>
-                  <input
+                <Field label="Phone Number" htmlFor="phoneNumber" required>
+                  <Input
                     id="phoneNumber"
                     name="phoneNumber"
                     type="tel"
                     autoComplete="tel"
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
                     placeholder="09XXXXXXXXX"
                     value={formData.phoneNumber}
                     onChange={handleInputChange}
                     suppressHydrationWarning
                   />
-                </div>
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                    Email Address <span className="text-red-500">*</span>
-                  </label>
-                  <input
+                </Field>
+                <Field label="Email Address" htmlFor="email" required>
+                  <Input
                     id="email"
                     name="email"
                     type="email"
                     autoComplete="email"
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
                     placeholder="you@example.com"
                     value={formData.email}
                     onChange={handleInputChange}
                     suppressHydrationWarning
                   />
-                </div>
+                </Field>
               </div>
             </div>
 
             {/* ── Identity verification ── */}
-            <div className="space-y-3 border-t border-gray-100 pt-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Identity Verification</p>
+            <div className="space-y-3 border-t border-surface-border pt-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-ink-faint">Identity Verification</p>
 
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-700 mb-1">
-                    Date of Birth
-                  </label>
-                  <input
+                <Field label="Date of Birth" htmlFor="dateOfBirth">
+                  <Input
                     id="dateOfBirth"
                     name="dateOfBirth"
                     type="date"
                     autoComplete="bday"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
                     value={formData.dateOfBirth}
                     onChange={handleInputChange}
                     max={new Date(Date.now() - 18 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
                     suppressHydrationWarning
                   />
-                </div>
-                <div>
-                  <label htmlFor="idType" className="block text-sm font-medium text-gray-700 mb-1">
-                    ID Type <span className="text-red-500">*</span>
-                  </label>
-                  <select
+                </Field>
+                <Field label="ID Type" htmlFor="idType" required>
+                  <Select
                     id="idType"
                     name="idType"
                     autoComplete="off"
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
                     value={formData.idType}
                     onChange={handleInputChange}
                   >
                     <option value="">Select ID Type</option>
-                    <option value="NATIONAL_ID">National ID (PhilID)</option>
-                    <option value="DRIVERS_LICENSE">Driver&apos;s License</option>
-                    <option value="PASSPORT">Passport</option>
-                    <option value="VOTERS_ID">Voter&apos;s ID</option>
-                    <option value="SSS_ID">SSS ID</option>
-                    <option value="PHILHEALTH_ID">PhilHealth ID</option>
-                    <option value="TIN_ID">TIN ID</option>
-                    <option value="POSTAL_ID">Postal ID</option>
-                    <option value="STUDENT_ID">Student ID</option>
-                  </select>
-                </div>
+                    {ID_TYPES.map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
               </div>
 
-              <div>
-                <label htmlFor="governmentId" className="block text-sm font-medium text-gray-700 mb-1">
-                  Government ID Number <span className="text-red-500">*</span>
-                </label>
-                <input
+              <Field
+                label="Government ID Number"
+                htmlFor="governmentId"
+                required
+                hint="False information is punishable by law."
+              >
+                <Input
                   id="governmentId"
                   name="governmentId"
                   type="text"
                   autoComplete="off"
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
                   value={formData.governmentId}
                   onChange={handleInputChange}
                   placeholder="Enter your government ID number"
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  False information is punishable by law.
-                </p>
-              </div>
+              </Field>
 
-              <div>
-                <label htmlFor="barangayResidence" className="block text-sm font-medium text-gray-700 mb-1">
-                  Barangay of Residence <span className="text-red-500">*</span>
-                </label>
-                <select
+              <Field label="Barangay of Residence" htmlFor="barangayResidence" required>
+                <Select
                   id="barangayResidence"
                   name="barangayResidence"
                   autoComplete="off"
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
                   value={formData.barangayResidence}
                   onChange={handleInputChange}
                 >
                   <option value="">Select your barangay</option>
-                  <option value="Amandayehan">Amandayehan</option>
-                  <option value="Anglit">Anglit</option>
-                  <option value="Bacubac">Bacubac</option>
-                  <option value="Baloog">Baloog</option>
-                  <option value="Basiao">Basiao</option>
-                  <option value="Buenavista">Buenavista</option>
-                  <option value="Burgos">Burgos</option>
-                  <option value="Cambayan">Cambayan</option>
-                  <option value="Can-abay">Can-abay</option>
-                  <option value="Cancaiyas">Cancaiyas</option>
-                  <option value="Canmanila">Canmanila</option>
-                  <option value="Catadman">Catadman</option>
-                  <option value="Cogon">Cogon</option>
-                  <option value="Dolongan">Dolongan</option>
-                  <option value="Guintigui-an">Guintigui-an</option>
-                  <option value="Guirang">Guirang</option>
-                  <option value="Balante">Balante</option>
-                  <option value="Iba">Iba</option>
-                  <option value="Inuntan">Inuntan</option>
-                  <option value="Loog">Loog</option>
-                  <option value="Mabini">Mabini</option>
-                  <option value="Magallanes">Magallanes</option>
-                  <option value="Manlilinab">Manlilinab</option>
-                  <option value="Del Pilar">Del Pilar</option>
-                  <option value="May-it">May-it</option>
-                  <option value="Mongabong">Mongabong</option>
-                  <option value="New San Agustin">New San Agustin</option>
-                  <option value="Nouvelas Occidental">Nouvelas Occidental</option>
-                  <option value="Old San Agustin">Old San Agustin</option>
-                  <option value="Panugmonon">Panugmonon</option>
-                  <option value="Pelit">Pelit</option>
-                  <option value="Baybay (Poblacion)">Baybay (Poblacion)</option>
-                  <option value="Buscada (Poblacion)">Buscada (Poblacion)</option>
-                  <option value="Lawa-an (Poblacion)">Lawa-an (Poblacion)</option>
-                  <option value="Loyo (Poblacion)">Loyo (Poblacion)</option>
-                  <option value="Mercado (Poblacion)">Mercado (Poblacion)</option>
-                  <option value="Palaypay (Poblacion)">Palaypay (Poblacion)</option>
-                  <option value="Sulod (Poblacion)">Sulod (Poblacion)</option>
-                  <option value="Roxas">Roxas</option>
-                  <option value="Salvacion">Salvacion</option>
-                  <option value="San Antonio">San Antonio</option>
-                  <option value="San Fernando">San Fernando</option>
-                  <option value="Sawa">Sawa</option>
-                  <option value="Serum">Serum</option>
-                  <option value="Sugca">Sugca</option>
-                  <option value="Sugponon">Sugponon</option>
-                  <option value="Tinaogan">Tinaogan</option>
-                  <option value="Tingib">Tingib</option>
-                  <option value="Villa Aurora">Villa Aurora</option>
-                  <option value="Binongtu-an">Binongtu-an</option>
-                  <option value="Bulao">Bulao</option>
-                </select>
-              </div>
+                  {BARANGAYS.map((barangay) => (
+                    <option key={barangay} value={barangay}>
+                      {barangay}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
             </div>
 
             {/* ── Account credentials ── */}
-            <div className="space-y-3 border-t border-gray-100 pt-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Account Credentials</p>
+            <div className="space-y-3 border-t border-surface-border pt-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-ink-faint">Account Credentials</p>
 
-              <div>
-                <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
-                  Username <span className="text-red-500">*</span>
-                </label>
-                <input
+              <Field label="Username" htmlFor="username" required>
+                <Input
                   id="username"
                   name="username"
                   type="text"
                   autoComplete="username"
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
                   value={formData.username}
                   onChange={handleInputChange}
                 />
-              </div>
+              </Field>
 
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                    Password <span className="text-red-500">*</span>
-                  </label>
+                <Field label="Password" htmlFor="password" required>
                   <PasswordInput
                     id="password"
                     name="password"
                     autoComplete="new-password"
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
                     value={formData.password}
                     onChange={handleInputChange}
                   />
-                </div>
-                <div>
-                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                    Confirm Password <span className="text-red-500">*</span>
-                  </label>
+                </Field>
+                <Field label="Confirm Password" htmlFor="confirmPassword" required>
                   <PasswordInput
                     id="confirmPassword"
                     name="confirmPassword"
                     autoComplete="new-password"
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
                     value={formData.confirmPassword}
                     onChange={handleInputChange}
                   />
-                </div>
+                </Field>
               </div>
-              <p className="text-xs text-gray-500">Minimum 8 characters.</p>
+              <p className="text-xs text-ink-muted">Minimum 8 characters.</p>
             </div>
 
             {/* ── Privacy notice acknowledgment ── */}
-            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-              <label className="flex items-start gap-3 cursor-pointer">
+            <div className="rounded-xl border border-warning/40 bg-warning/10 p-4">
+              <label className="flex cursor-pointer items-start gap-3">
                 <input
                   id="privacyNoticeAcknowledged"
                   name="privacyNoticeAcknowledged"
                   type="checkbox"
-                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-amber-400 text-emerald-600 focus:ring-emerald-500"
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-warning text-primary focus:ring-primary"
                   checked={formData.privacyNoticeAcknowledged}
                   onChange={handleInputChange}
                 />
-                <span className="text-sm text-amber-900">
+                <span className="text-sm text-warning-dark">
                   I have read and acknowledge the{' '}
                   <a
                     href="/privacy-policy"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-medium underline hover:text-amber-800"
+                    className="font-medium underline"
                   >
                     Privacy Notice
                   </a>{' '}
@@ -458,32 +378,21 @@ const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
                   and related service use.
                 </span>
               </label>
-              <p className="mt-2 pl-7 text-xs text-amber-600">
+              <p className="mt-2 pl-7 text-xs text-warning-dark/80">
                 Version {CURRENT_PRIVACY_NOTICE_VERSION}
               </p>
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full flex justify-center py-2.5 px-4 border border-transparent text-sm font-semibold rounded-md text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50 transition-colors"
-            >
-              {loading ? (
-                <span className="flex items-center">
-                  <LoadingSpinner size={20} className="mr-3" />
-                  Creating account...
-                </span>
-              ) : (
-                'Create Account'
-              )}
-            </button>
+            <Button type="submit" loading={loading} className="w-full">
+              {loading ? 'Creating account...' : 'Create Account'}
+            </Button>
 
-            <p className="text-center text-sm text-gray-500">
+            <p className="text-center text-sm text-ink-muted">
               Already have an account?{' '}
               <button
                 type="button"
                 onClick={onSwitchToLogin}
-                className="font-medium text-emerald-600 hover:text-emerald-500"
+                className="font-bold text-primary"
               >
                 Sign in
               </button>

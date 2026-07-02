@@ -3,26 +3,22 @@
 import RoleGuard from '@/components/RoleGuard'
 import PermitManagement from '@/components/PermitManagement'
 import PermitStatistics from '@/components/PermitStatistics'
-import PageWrapper from '@/components/PageWrapper'
+import GradientHeader from '@/ui/GradientHeader'
 
 export default function PermitsListPage() {
   return (
     <RoleGuard allowedRoles={['DATA_ENCODER']}>
-      <PermitsListContent />
-    </RoleGuard>
-  )
-}
-
-function PermitsListContent() {
-  return (
-    <PageWrapper 
-      title="All Permits"
-      subtitle="Manage driver and vehicle permits with the full encoder action set"
-    >
-      <div className="space-y-8">
-        <PermitStatistics />
-        <PermitManagement />
+      <div className="mx-auto max-w-6xl">
+        <GradientHeader
+          title="All Permits"
+          subtitle="Manage driver and vehicle permits with the full encoder action set"
+          compact
+        />
+        <div className="-mt-6 space-y-6 px-4 pb-8 lg:px-8">
+          <PermitStatistics />
+          <PermitManagement />
+        </div>
       </div>
-    </PageWrapper>
+    </RoleGuard>
   )
 }

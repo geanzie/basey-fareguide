@@ -20,7 +20,7 @@ interface FareRateBannerProps {
 function getAnnouncementContent(data: FareRatesResponseDto) {
   if (!data.upcoming) {
     return {
-      toneClasses: 'border-emerald-200 bg-emerald-50 text-emerald-950',
+      toneClasses: 'border-primary/20 bg-surface-tint text-primary-dark',
       badge: 'No new fare change',
       headline: 'Current fare rates remain in effect',
       detail: `Base fare stays at ${formatCurrency(data.current.baseFare)} and the additional kilometer rate stays at ${formatCurrency(data.current.perKmRate)} until a new ordinance-backed update is approved.`,
@@ -79,7 +79,7 @@ export default function FareRateBanner({
 
   if (isLoading && !data) {
     return (
-      <div className={`app-surface-card rounded-2xl p-4 ${className}`.trim()}>
+      <div className={`border border-surface-border bg-surface shadow-card rounded-2xl p-4 ${className}`.trim()}>
         <p className="text-sm text-slate-500">Loading official fare rates...</p>
       </div>
     )
@@ -92,7 +92,7 @@ export default function FareRateBanner({
   const announcement = getAnnouncementContent(data)
 
   return (
-    <section className={`app-surface-card rounded-2xl p-5 ${className}`.trim()}>
+    <section className={`border border-surface-border bg-surface shadow-card rounded-2xl p-5 ${className}`.trim()}>
       {variant === 'announcement' && (
         <div className={`mb-5 rounded-2xl border px-5 py-4 ${announcement.toneClasses}`}>
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -115,15 +115,15 @@ export default function FareRateBanner({
           <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
           <p className="mt-1 text-sm text-slate-600">{description}</p>
         </div>
-        <div className="app-surface-inner rounded-xl border border-emerald-200 px-4 py-3 text-sm text-emerald-800">
+        <div className="border border-surface-border bg-surface-alt rounded-xl border border-primary/20 px-4 py-3 text-sm text-primary-dark">
           Active as of {formatManilaDateTimeLabel(data.current.effectiveAt)}
         </div>
       </div>
 
       <div className="mt-4 grid gap-4 md:grid-cols-2">
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-          <div className="text-xs font-medium uppercase tracking-wide text-emerald-700">Current fare</div>
-          <div className="mt-3 space-y-2 text-sm text-emerald-900">
+        <div className="rounded-2xl border border-primary/20 bg-surface-tint p-4">
+          <div className="text-xs font-medium uppercase tracking-wide text-primary-dark">Current fare</div>
+          <div className="mt-3 space-y-2 text-sm text-primary-dark">
             <div className="flex items-center justify-between">
               <span>Base fare ({data.current.baseDistanceKm} km)</span>
               <span className="font-semibold">{formatCurrency(data.current.baseFare)}</span>

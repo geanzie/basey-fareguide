@@ -146,7 +146,7 @@ export default function VehicleRegistrationForm() {
                   value={formData.plateNumber}
                   onChange={handleInputChange}
                   placeholder="e.g., ABC-1234"
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary ${
                     errors.plateNumber ? 'border-red-500' : 'border-gray-300'
                   }`}
                 />
@@ -163,7 +163,7 @@ export default function VehicleRegistrationForm() {
                   autoComplete="off"
                   value={formData.vehicleType}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                 >
                   <option value={VehicleType.TRICYCLE}>Tricycle</option>
                   <option value={VehicleType.JEEPNEY}>Jeepney</option>
@@ -183,7 +183,7 @@ export default function VehicleRegistrationForm() {
                   value={formData.make}
                   onChange={handleInputChange}
                   placeholder="e.g., Honda, Suzuki, Toyota"
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary ${
                     errors.make ? 'border-red-500' : 'border-gray-300'
                   }`}
                 />
@@ -202,7 +202,7 @@ export default function VehicleRegistrationForm() {
                   value={formData.model}
                   onChange={handleInputChange}
                   placeholder="e.g., TMX 155, Multicab"
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary ${
                     errors.model ? 'border-red-500' : 'border-gray-300'
                   }`}
                 />
@@ -219,7 +219,7 @@ export default function VehicleRegistrationForm() {
                   autoComplete="off"
                   value={formData.year}
                   onChange={handleInputChange}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary ${
                     errors.year ? 'border-red-500' : 'border-gray-300'
                   }`}
                 >
@@ -242,7 +242,7 @@ export default function VehicleRegistrationForm() {
                   value={formData.color}
                   onChange={handleInputChange}
                   placeholder="e.g., Red, Blue, White"
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary ${
                     errors.color ? 'border-red-500' : 'border-gray-300'
                   }`}
                 />
@@ -262,7 +262,7 @@ export default function VehicleRegistrationForm() {
                   onChange={handleInputChange}
                   min="1"
                   max="50"
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary ${
                     errors.capacity ? 'border-red-500' : 'border-gray-300'
                   }`}
                 />
@@ -287,7 +287,7 @@ export default function VehicleRegistrationForm() {
                   value={formData.ownerName}
                   onChange={handleInputChange}
                   placeholder="e.g., Juan Dela Cruz"
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary ${
                     errors.ownerName ? 'border-red-500' : 'border-gray-300'
                   }`}
                 />
@@ -306,7 +306,7 @@ export default function VehicleRegistrationForm() {
                   value={formData.ownerContact}
                   onChange={handleInputChange}
                   placeholder="Phone number or email"
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary ${
                     errors.ownerContact ? 'border-red-500' : 'border-gray-300'
                   }`}
                 />
@@ -325,7 +325,7 @@ export default function VehicleRegistrationForm() {
                   value={formData.driverName}
                   onChange={handleInputChange}
                   placeholder="e.g., Pedro Santos"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                 />
                 <p className="mt-1 text-sm text-gray-500">Leave empty if no driver assigned</p>
               </div>
@@ -342,7 +342,7 @@ export default function VehicleRegistrationForm() {
                   value={formData.driverLicense}
                   onChange={handleInputChange}
                   placeholder="e.g., A01-12-345678"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                 />
                 <p className="mt-1 text-sm text-gray-500">Driver's license number if available</p>
               </div>
@@ -365,7 +365,7 @@ export default function VehicleRegistrationForm() {
                   value={formData.registrationExpiry}
                   onChange={handleInputChange}
                   min={new Date().toISOString().split('T')[0]}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary ${
                     errors.registrationExpiry ? 'border-red-500' : 'border-gray-300'
                   }`}
                 />
@@ -383,7 +383,7 @@ export default function VehicleRegistrationForm() {
                   autoComplete="off"
                   value={formData.insuranceExpiry}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                 />
                 <p className="mt-1 text-sm text-gray-500">Leave empty if no insurance or unknown expiry</p>
               </div>
@@ -409,7 +409,7 @@ export default function VehicleRegistrationForm() {
             <button
               type="submit"
               disabled={loading}
-              className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {loading ? 'Registering...' : 'Register Vehicle'}
             </button>

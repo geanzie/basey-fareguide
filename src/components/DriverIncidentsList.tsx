@@ -46,7 +46,7 @@ function StatusBadge({ status }: { status: IncidentStatus | string }) {
     PENDING: 'bg-amber-100 text-amber-700',
     INVESTIGATING: 'bg-blue-100 text-blue-700',
     TICKET_ISSUED: 'bg-red-100 text-red-700',
-    RESOLVED: 'bg-emerald-100 text-emerald-700',
+    RESOLVED: 'bg-surface-tint text-primary-dark',
     DISMISSED: 'bg-slate-100 text-slate-600',
   }
   const label: Record<string, string> = {
@@ -105,7 +105,7 @@ export default function DriverIncidentsList() {
   const totalPages = data?.totalPages ?? 1
 
   return (
-    <section className="app-surface-card rounded-2xl p-5">
+    <section className="border border-surface-border bg-surface shadow-card rounded-2xl p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h3 className="text-lg font-semibold text-slate-900">Vehicle Incidents</h3>
@@ -180,7 +180,7 @@ export default function DriverIncidentsList() {
         {isLoading ? (
           <div className="flex justify-center py-10">
             <svg
-              className="h-6 w-6 animate-spin text-emerald-600"
+              className="h-6 w-6 animate-spin text-primary"
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"

@@ -1,18 +1,22 @@
 'use client'
 
 import RoleGuard from '@/components/RoleGuard'
-import PageWrapper from '@/components/PageWrapper'
 import EncoderTicketPayments from '@/components/EncoderTicketPayments'
+import GradientHeader from '@/ui/GradientHeader'
 
 export default function EncoderTicketPaymentsPage() {
   return (
     <RoleGuard allowedRoles={['DATA_ENCODER']}>
-      <PageWrapper
-        title="Ticket Payments"
-        subtitle="Record violation payments and official receipt notes from the treasurer's office"
-      >
-        <EncoderTicketPayments />
-      </PageWrapper>
+      <div className="mx-auto max-w-6xl">
+        <GradientHeader
+          title="Ticket Payments"
+          subtitle="Record violation payments and official receipt notes"
+          compact
+        />
+        <div className="-mt-6 px-4 pb-8 lg:px-8">
+          <EncoderTicketPayments />
+        </div>
+      </div>
     </RoleGuard>
   )
 }

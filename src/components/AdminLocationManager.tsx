@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { validateCoordinateFormat, generateMapsUrl } from '@/utils/locationValidation'
+import { useFeedback } from '@/ui/FeedbackProvider'
 
 interface Location {
   id: string
@@ -31,6 +32,7 @@ interface ValidationResult {
 }
 
 export default function AdminLocationManager() {
+  const { confirm: confirmDialog } = useFeedback()
   const [locations, setLocations] = useState<Location[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -130,14 +132,23 @@ export default function AdminLocationManager() {
       
       // For other errors, allow admin to override with confirmation
       const errorList = validationResult.errors.join('\n• ')
-      if (!confirm(`Location has validation errors:\n\n• ${errorList}\n\nContinue anyway? Only do this if you are certain the coordinates are correct.`)) {
+      const overrideErrors = await confirmDialog({
+        title: 'Validation errors',
+        message: `Location has validation errors:\n\n• ${errorList}\n\nContinue anyway? Only do this if you are certain the coordinates are correct.`,
+        destructive: true,
+      })
+      if (!overrideErrors) {
         return
       }
     } else if (validationResult.warnings.length > 0) {
       // Show warnings but allow to continue
       const warningList = validationResult.warnings.slice(0, 3).join('\n• ')
       const moreWarnings = validationResult.warnings.length > 3 ? `\n• ... and ${validationResult.warnings.length - 3} more warnings` : ''
-      if (!confirm(`Location has warnings:\n\n• ${warningList}${moreWarnings}\n\nContinue with saving?`)) {
+      const acceptWarnings = await confirmDialog({
+        title: 'Validation warnings',
+        message: `Location has warnings:\n\n• ${warningList}${moreWarnings}\n\nContinue with saving?`,
+      })
+      if (!acceptWarnings) {
         return
       }
     }
@@ -196,7 +207,12 @@ export default function AdminLocationManager() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this location?')) {
+    const confirmed = await confirmDialog({
+      title: 'Delete location',
+      message: 'Are you sure you want to delete this location?',
+      destructive: true,
+    })
+    if (!confirmed) {
       return
     }
 
@@ -240,7 +256,7 @@ export default function AdminLocationManager() {
               setValidationResult(null)
             }
           }}
-          className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg"
+          className="bg-primary hover:bg-primary text-white px-4 py-2 rounded-lg"
         >
           {showForm ? 'Cancel' : '+ Add Location'}
         </button>
@@ -248,7 +264,7 @@ export default function AdminLocationManager() {
 
       {/* Add/Edit Form */}
       {showForm && (
-        <div className="app-surface-card rounded-3xl p-6">
+        <div className="border border-surface-border bg-surface shadow-card rounded-3xl p-6">
           <h3 className="text-xl font-semibold mb-4">
             {editingLocation ? 'Edit Location' : 'Add New Location'}
           </h3>
@@ -266,7 +282,7 @@ export default function AdminLocationManager() {
                   autoComplete="off"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
                   required
                 />
               </div>
@@ -281,7 +297,7 @@ export default function AdminLocationManager() {
                   autoComplete="off"
                   value={formData.type}
                   onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
                   required
                 >
                   <option value="BARANGAY">Barangay</option>
@@ -304,7 +320,7 @@ export default function AdminLocationManager() {
                   value={formData.coordinates}
                   onChange={(e) => setFormData({ ...formData, coordinates: e.target.value })}
                   placeholder="11.2727,125.0627"
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 ${
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary ${
                     formData.coordinates && !coordinateCheck.valid ? 'border-red-500' : ''
                   }`}
                   required
@@ -330,7 +346,7 @@ export default function AdminLocationManager() {
                   autoComplete="off"
                   value={formData.barangay}
                   onChange={(e) => setFormData({ ...formData, barangay: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
                 />
               </div>
             </div>
@@ -345,7 +361,7 @@ export default function AdminLocationManager() {
                 autoComplete="off"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
                 rows={3}
               />
             </div>
@@ -430,7 +446,7 @@ export default function AdminLocationManager() {
             <div className="flex gap-4 pt-4 border-t">
               <button
                 type="submit"
-                className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2 rounded-lg"
+                className="bg-primary hover:bg-primary text-white px-6 py-2 rounded-lg"
               >
                 {editingLocation ? 'Update' : 'Create'} Location
               </button>
@@ -451,7 +467,7 @@ export default function AdminLocationManager() {
       )}
 
       {/* Search and Filter */}
-      <div className="app-surface-card rounded-2xl p-4">
+      <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <label htmlFor="admin-location-search" className="sr-only">Search locations</label>
           <input
@@ -462,7 +478,7 @@ export default function AdminLocationManager() {
             placeholder="Search locations..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+            className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
           />
           <label htmlFor="admin-location-type-filter" className="sr-only">Filter locations by type</label>
           <select
@@ -471,7 +487,7 @@ export default function AdminLocationManager() {
             autoComplete="off"
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
-            className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+            className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
           >
             <option value="">All Types</option>
             <option value="BARANGAY">Barangay</option>
@@ -489,13 +505,13 @@ export default function AdminLocationManager() {
             placeholder="Filter by barangay..."
             value={barangayFilter}
             onChange={(e) => setBarangayFilter(e.target.value)}
-            className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500"
+            className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
           />
         </div>
       </div>
 
       {/* Locations Table */}
-      <div className="app-surface-card rounded-2xl overflow-hidden">
+      <div className="border border-surface-border bg-surface shadow-card rounded-2xl overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>

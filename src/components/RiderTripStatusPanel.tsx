@@ -67,7 +67,7 @@ export default function RiderTripStatusPanel({ tripRequestId }: RiderTripStatusP
         <div className="mt-1 text-base font-semibold text-slate-900">
           {formatCurrency(trip.fare)}
           {trip.discountType ? (
-            <span className="ml-2 text-xs font-normal text-emerald-700">
+            <span className="ml-2 text-xs font-normal text-primary-dark">
               {trip.discountType.replace(/_/g, ' ')} discount
             </span>
           ) : null}
@@ -86,7 +86,7 @@ export default function RiderTripStatusPanel({ tripRequestId }: RiderTripStatusP
           aria-live="polite"
           className="absolute -top-10 left-0 right-0 z-10 flex justify-center"
         >
-          <span className="rounded-full bg-emerald-600 px-4 py-1.5 text-xs font-semibold text-white shadow-md">
+          <span className="rounded-full bg-primary px-4 py-1.5 text-xs font-semibold text-white shadow-md">
             Driver accepted your trip
           </span>
         </div>
@@ -96,14 +96,14 @@ export default function RiderTripStatusPanel({ tripRequestId }: RiderTripStatusP
       <div
         className={`rounded-2xl border p-3 sm:p-4 ${
           isAccepted
-            ? 'border-emerald-200 bg-emerald-50'
+            ? 'border-primary/20 bg-surface-tint'
             : 'border-slate-200 bg-slate-50'
         }`}
       >
         <div className="flex items-center justify-between gap-2">
           <span
             className={`text-xs font-semibold uppercase tracking-[0.14em] ${
-              isAccepted ? 'text-emerald-700' : 'text-slate-500'
+              isAccepted ? 'text-primary-dark' : 'text-slate-500'
             }`}
           >
             {trip.statusLabel}
@@ -122,7 +122,7 @@ export default function RiderTripStatusPanel({ tripRequestId }: RiderTripStatusP
         <div className="mt-1 text-base font-semibold text-slate-900">
           {formatCurrency(trip.fare)}
           {trip.discountType ? (
-            <span className="ml-2 text-xs font-normal text-emerald-700">
+            <span className="ml-2 text-xs font-normal text-primary-dark">
               {trip.discountType.replace(/_/g, ' ')} discount
             </span>
           ) : null}

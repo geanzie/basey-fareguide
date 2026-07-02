@@ -1,31 +1,23 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
-
 import RoleGuard from '@/components/RoleGuard'
-import PageWrapper from '@/components/PageWrapper'
 import AdminAnnouncementsManager from '@/components/AdminAnnouncementsManager'
+import GradientHeader from '@/ui/GradientHeader'
 
 export default function AdminAnnouncementsPage() {
-  const router = useRouter()
-
   return (
     <RoleGuard allowedRoles={['ADMIN']}>
-      <PageWrapper
-        title="Traffic Announcements"
-        subtitle="Publish, schedule, update, and archive municipal advisories"
-      >
-        <div className="space-y-6">
-          <button
-            onClick={() => router.push('/admin')}
-            className="text-sm font-medium text-blue-700 hover:text-blue-800"
-          >
-            Back to Admin Dashboard
-          </button>
-
+      <div className="mx-auto max-w-6xl">
+        <GradientHeader
+          title="Traffic Announcements"
+          subtitle="Publish, schedule, update, and archive municipal advisories"
+          backHref="/admin"
+          compact
+        />
+        <div className="-mt-6 px-4 pb-8 lg:px-8">
           <AdminAnnouncementsManager />
         </div>
-      </PageWrapper>
+      </div>
     </RoleGuard>
   )
 }

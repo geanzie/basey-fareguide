@@ -128,13 +128,13 @@ export default function PublicRideTagScanner({
       ) : null}
 
       {selectedVehicleLabel ? (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+        <div className="rounded-2xl border border-primary/20 bg-surface-tint px-4 py-3 text-sm text-primary-dark">
           <p className="font-semibold">Ride tagged</p>
           <p className="mt-1">{selectedVehicleLabel} will be saved with this trip.</p>
           <button
             type="button"
             onClick={handleClearTaggedVehicle}
-            className="mt-3 rounded-lg border border-emerald-300 px-3 py-2 text-xs font-semibold text-emerald-900 hover:bg-white/70"
+            className="mt-3 rounded-lg border border-primary/40 px-3 py-2 text-xs font-semibold text-primary-dark hover:bg-white/70"
           >
             Clear tagged vehicle
           </button>
@@ -183,7 +183,7 @@ export default function PublicRideTagScanner({
               <button
                 type="button"
                 onClick={handleUseVehicle}
-                className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-dark"
               >
                 Use this vehicle
               </button>

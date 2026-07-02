@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 
 import LoadingSpinner from '@/components/LoadingSpinner'
+import { useFeedback } from '@/ui/FeedbackProvider'
 import {
   DASHBOARD_ICONS,
   DASHBOARD_ICON_POLICY,
@@ -43,6 +44,7 @@ interface CleanupPreview {
 }
 
 export default function StorageManagement() {
+  const { confirm } = useFeedback()
   const [stats, setStats] = useState<StorageStats | null>(null)
   const [cleanupPreview, setCleanupPreview] = useState<CleanupPreview | null>(null)
   const [loading, setLoading] = useState(true)
@@ -89,7 +91,12 @@ export default function StorageManagement() {
   }
 
   const performCleanup = async () => {
-    if (!window.confirm(`Are you sure you want to delete evidence files from incidents resolved more than ${daysOld} days ago? This action cannot be undone.`)) {
+    const confirmed = await confirm({
+      title: 'Delete evidence files',
+      message: `Are you sure you want to delete evidence files from incidents resolved more than ${daysOld} days ago? This action cannot be undone.`,
+      destructive: true,
+    })
+    if (!confirmed) {
       return
     }
 
@@ -124,7 +131,7 @@ export default function StorageManagement() {
 
   if (loading) {
     return (
-      <div className="app-surface-card rounded-3xl p-8">
+      <div className="border border-surface-border bg-surface shadow-card rounded-3xl p-8">
         <div className="animate-pulse">
           <div className="h-6 bg-gray-200 rounded mb-4"></div>
           <div className="space-y-3">
@@ -138,7 +145,7 @@ export default function StorageManagement() {
 
   return (
     <div className="space-y-6">
-      <div className="app-surface-card rounded-3xl p-8">
+      <div className="border border-surface-border bg-surface shadow-card rounded-3xl p-8">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Evidence Storage Management</h2>
 
         {message ? (
@@ -192,7 +199,7 @@ export default function StorageManagement() {
               <h3 className="text-lg font-semibold text-gray-800 mb-4">Storage by File Type</h3>
               <div className="space-y-3">
                 {stats.storage.byType.map((type) => (
-                  <div key={type.fileType} className="app-surface-inner flex items-center justify-between rounded-lg p-3">
+                  <div key={type.fileType} className="border border-surface-border bg-surface-alt flex items-center justify-between rounded-lg p-3">
                     <span className="font-medium text-gray-700">{type.fileType}</span>
                     <div className="text-right">
                       <div className="text-sm text-gray-600">{type._count.id} files</div>
@@ -208,7 +215,7 @@ export default function StorageManagement() {
             <div className="border-t pt-8">
               <h3 className="text-lg font-semibold text-gray-800 mb-4">Evidence Cleanup</h3>
 
-              <div className="app-surface-inner rounded-lg p-6">
+              <div className="border border-surface-border bg-surface-alt rounded-lg p-6">
                 <p className="text-gray-600 mb-4">
                   Clean up evidence files from incidents that have been resolved for more than a specified number of days.
                 </p>
@@ -257,7 +264,7 @@ export default function StorageManagement() {
                 </div>
 
                 {cleanupPreview ? (
-                  <div className="app-surface-overlay mt-4 rounded-lg p-4">
+                  <div className="border border-surface-border bg-surface shadow-raised mt-4 rounded-lg p-4">
                     <h4 className="font-semibold text-gray-800 mb-3">Cleanup Preview</h4>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                       <div>

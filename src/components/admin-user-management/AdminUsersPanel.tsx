@@ -23,7 +23,7 @@ interface AdminUsersPanelProps {
 
 function SummaryCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="app-surface-inner rounded-2xl p-4">
+    <div className="border border-surface-border bg-surface-alt rounded-2xl p-4">
       <div className="text-xs font-medium uppercase tracking-wider text-gray-500">{label}</div>
       <div className="mt-2 text-2xl font-bold text-gray-900">{value}</div>
     </div>
@@ -44,7 +44,7 @@ function FilterChip({
       type="button"
       onClick={onClick}
       className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
-        active ? 'bg-emerald-600 text-white' : 'bg-white text-gray-700 ring-1 ring-gray-200 hover:bg-gray-50'
+        active ? 'bg-primary text-white' : 'bg-white text-gray-700 ring-1 ring-gray-200 hover:bg-gray-50'
       }`}
     >
       {label}
@@ -102,7 +102,7 @@ export default function AdminUsersPanel({
         <SummaryCard label="Self-Registered Public" value={selfRegisteredUsers} />
       </div>
 
-      <div className="app-surface-inner rounded-2xl p-5">
+      <div className="border border-surface-border bg-surface-alt rounded-2xl p-5">
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
           <div className="lg:col-span-2">
             <label htmlFor="admin-users-search" className="block text-sm font-medium text-gray-700">
@@ -116,7 +116,7 @@ export default function AdminUsersPanel({
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               placeholder="Search by name, username, phone, ID, barangay, or plate..."
-              className="mt-2 block w-full rounded-lg border border-gray-300 px-4 py-2 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
+              className="mt-2 block w-full rounded-lg border border-gray-300 px-4 py-2 shadow-sm focus:border-primary focus:ring-primary"
             />
           </div>
 
@@ -129,7 +129,7 @@ export default function AdminUsersPanel({
               name="roleFilter"
               value={roleFilter}
               onChange={(event) => setRoleFilter(event.target.value as 'all' | AdminUserType)}
-              className="mt-2 block w-full rounded-lg border border-gray-300 px-4 py-2 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
+              className="mt-2 block w-full rounded-lg border border-gray-300 px-4 py-2 shadow-sm focus:border-primary focus:ring-primary"
             >
               <option value="all">All roles</option>
               <option value="ADMIN">Administrator</option>
@@ -149,7 +149,7 @@ export default function AdminUsersPanel({
               name="creationSourceFilter"
               value={sourceFilter}
               onChange={(event) => setSourceFilter(event.target.value as 'all' | AdminUserCreationSource)}
-              className="mt-2 block w-full rounded-lg border border-gray-300 px-4 py-2 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
+              className="mt-2 block w-full rounded-lg border border-gray-300 px-4 py-2 shadow-sm focus:border-primary focus:ring-primary"
             >
               <option value="all">All sources</option>
               <option value="ADMIN_CREATED">Admin created</option>
@@ -189,7 +189,7 @@ export default function AdminUsersPanel({
                 setStatusFilter('all')
                 setSourceFilter('all')
               }}
-              className="text-sm font-medium text-emerald-700 hover:text-emerald-800"
+              className="text-sm font-medium text-primary-dark hover:text-primary-dark"
             >
               Clear filters
             </button>
@@ -231,7 +231,7 @@ export default function AdminUsersPanel({
             render: (value: boolean) => (
               <StatusBadge
                 status={value ? 'Active' : 'Inactive'}
-                className={value ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}
+                className={value ? 'bg-surface-tint text-primary-dark' : 'bg-rose-100 text-rose-800'}
               />
             ),
           },
@@ -278,7 +278,7 @@ export default function AdminUsersPanel({
         data={filteredUsers}
         loading={loading}
         emptyMessage="No users match the current filters"
-        className="app-surface-card rounded-2xl"
+        className="border border-surface-border bg-surface shadow-card rounded-2xl"
         getRowKey={(user) => user.id}
       />
     </div>

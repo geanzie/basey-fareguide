@@ -34,7 +34,7 @@ export default function HomePage() {
 
   if (status === 'authenticated' && user) {
     return (
-      <div className="app-page-bg min-h-screen">
+      <div className="min-h-screen">
         <AuthStateShell
           title="Opening dashboard"
           message="Redirecting you to the correct workspace for your account."
@@ -44,8 +44,8 @@ export default function HomePage() {
   }
 
   return (
-    <div className="app-page-bg">
-      <section className="relative bg-gradient-to-br from-emerald-600 via-emerald-700 to-emerald-800 text-white">
+    <div>
+      <section className="relative bg-brand text-white">
         <div className="absolute inset-0 bg-black bg-opacity-10" />
         <div className="relative container mx-auto px-4 py-12 lg:py-16">
           <div className="mx-auto max-w-4xl text-center">
@@ -104,7 +104,7 @@ export default function HomePage() {
       </section>
 
       {!isAuthenticated && (
-        <section className="app-page-bg border-b border-amber-100/70">
+        <section className="border-b border-surface-border">
           <div className="container mx-auto px-4 py-8">
             <div className="mx-auto max-w-6xl space-y-4">
               <div>
@@ -146,7 +146,7 @@ export default function HomePage() {
                       fare changes are announced. Riders and operators should follow the published municipal rates.
                     </p>
                   </div>
-                  <div className="app-surface-inner inline-flex items-center gap-2 rounded-xl border border-red-200 px-4 py-3 text-sm font-medium text-red-800">
+                  <div className="inline-flex items-center gap-2 rounded-xl border border-danger-softBorder bg-surface px-4 py-3 text-sm font-medium text-danger">
                     <DashboardIconSlot icon={DASHBOARD_ICONS.fare} size={DASHBOARD_ICON_POLICY.sizes.button} />
                     Official municipal penalty schedule
                   </div>
@@ -154,7 +154,7 @@ export default function HomePage() {
 
                 <div className="mt-5 grid gap-3 md:grid-cols-3">
                   {PUBLIC_PENALTY_SCHEDULE.map((penaltyTier) => (
-                    <div key={penaltyTier.offenseTier} className="app-surface-inner rounded-xl border border-red-200 p-4">
+                    <div key={penaltyTier.offenseTier} className="rounded-xl border border-danger-softBorder bg-surface p-4">
                       <div className="text-xs font-semibold uppercase tracking-wide text-red-600">{penaltyTier.label}</div>
                       <div className="mt-2 text-2xl font-bold text-red-700">
                         PHP {penaltyTier.penaltyAmount.toLocaleString()}
@@ -164,7 +164,7 @@ export default function HomePage() {
                 </div>
               </div>
 
-              <div className="app-surface-card rounded-2xl border border-slate-200 p-5 shadow-sm lg:p-6">
+              <div className="rounded-card border border-surface-border bg-surface p-5 shadow-card lg:p-6">
                 <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
                   <div className="max-w-3xl">
                     <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700">
@@ -224,7 +224,7 @@ export default function HomePage() {
         </section>
       )}
 
-      <section className="app-page-bg py-12">
+      <section className="py-12">
         <div className="container mx-auto px-4">
           <div className="mx-auto max-w-6xl">
             <div className="mb-8 text-center">
@@ -232,7 +232,7 @@ export default function HomePage() {
             </div>
 
             <div className="mb-12 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-              <div className="app-surface-card rounded-2xl p-5 text-center">
+              <div className="rounded-card border border-surface-border bg-surface p-5 text-center shadow-card">
                 <div className={`mx-auto mb-3 ${getDashboardIconChipClasses('emerald')} h-12 w-12`}>
                   <DashboardIconSlot icon={DASHBOARD_ICONS.user} size={DASHBOARD_ICON_POLICY.sizes.card} />
                 </div>
@@ -240,7 +240,7 @@ export default function HomePage() {
                 <p className="text-sm text-gray-600">Login required for calculator</p>
               </div>
 
-              <div className="app-surface-card rounded-2xl p-5 text-center">
+              <div className="rounded-card border border-surface-border bg-surface p-5 text-center shadow-card">
                 <div className={`mx-auto mb-3 ${getDashboardIconChipClasses('red')} h-12 w-12`}>
                   <DashboardIconSlot icon={DASHBOARD_ICONS.incidents} size={DASHBOARD_ICON_POLICY.sizes.card} />
                 </div>
@@ -248,7 +248,7 @@ export default function HomePage() {
                 <p className="text-sm text-gray-600">Online violation reporting</p>
               </div>
 
-              <div className="app-surface-card rounded-2xl p-5 text-center">
+              <div className="rounded-card border border-surface-border bg-surface p-5 text-center shadow-card">
                 <div className={`mx-auto mb-3 ${getDashboardIconChipClasses('blue')} h-12 w-12`}>
                   <DashboardIconSlot icon={DASHBOARD_ICONS.routes} size={DASHBOARD_ICON_POLICY.sizes.card} />
                 </div>
@@ -256,7 +256,7 @@ export default function HomePage() {
                 <p className="text-sm text-gray-600">Road-based routing</p>
               </div>
 
-              <div className="app-surface-card rounded-2xl p-5 text-center">
+              <div className="rounded-card border border-surface-border bg-surface p-5 text-center shadow-card">
                 <div className={`mx-auto mb-3 ${getDashboardIconChipClasses('amber')} h-12 w-12`}>
                   <DashboardIconSlot icon={DASHBOARD_ICONS.safe} size={DASHBOARD_ICON_POLICY.sizes.card} />
                 </div>

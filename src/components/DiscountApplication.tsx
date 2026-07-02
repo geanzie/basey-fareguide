@@ -282,7 +282,7 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
     
     return (
       <div className="max-w-3xl mx-auto">
-        <div className="app-surface-card rounded-2xl p-6 mb-6">
+        <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-6 mb-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
             Your Discount Application
           </h2>
@@ -392,7 +392,7 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
   // Show application form
   return (
     <div className="max-w-3xl mx-auto">
-      <form onSubmit={handleSubmit} className="app-surface-card rounded-2xl p-6">
+      <form onSubmit={handleSubmit} className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
         {error && (
           <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
             <DashboardIconSlot icon={DASHBOARD_ICONS.reports} size={DASHBOARD_ICON_POLICY.sizes.alert} className="text-red-600" />
@@ -438,7 +438,7 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
                   : 'border-gray-200 hover:border-gray-300'
               }`}
             >
-              <div className="mb-2 inline-flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-100 text-emerald-700">
+              <div className="mb-2 inline-flex h-10 w-10 items-center justify-center rounded-xl border border-primary/20 bg-surface-tint text-primary-dark">
                 <DashboardIconSlot icon={DASHBOARD_ICONS.safe} size={DASHBOARD_ICON_POLICY.sizes.card} />
               </div>
               <div className="font-medium text-gray-900">PWD</div>
@@ -836,7 +836,7 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
           <button
             type="button"
             onClick={() => router.push('/profile')}
-            className="app-surface-inner px-6 py-3 rounded-lg font-medium text-gray-700 transition-colors hover:bg-white/80"
+            className="border border-surface-border bg-surface-alt px-6 py-3 rounded-lg font-medium text-gray-700 transition-colors hover:bg-white/80"
           >
             Cancel
           </button>

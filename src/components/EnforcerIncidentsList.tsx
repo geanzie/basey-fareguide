@@ -551,16 +551,16 @@ export default function EnforcerIncidentsList({
           <div
             role={actionNotice.tone === 'error' ? 'alert' : 'status'}
             aria-live={actionNotice.tone === 'error' ? 'assertive' : 'polite'}
-            className={`app-surface-overlay w-full rounded-2xl border px-4 py-3 shadow-2xl ${
+            className={`border border-surface-border bg-surface shadow-raised w-full rounded-2xl border px-4 py-3 shadow-2xl ${
               actionNotice.tone === 'success'
-                ? 'border-emerald-200 bg-emerald-50/95 text-emerald-900'
+                ? 'border-primary/20 bg-surface-tint/95 text-primary-dark'
                 : 'border-red-200 bg-red-50/95 text-red-900'
             }`}
           >
             <div className="flex items-start gap-3">
               <span
                 className={`mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
-                  actionNotice.tone === 'success' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+                  actionNotice.tone === 'success' ? 'bg-surface-tint text-primary-dark' : 'bg-red-100 text-red-700'
                 }`}
               >
                 <DashboardIconSlot
@@ -586,7 +586,7 @@ export default function EnforcerIncidentsList({
       ) : null}
 
       {!isQueueMode ? (
-        <div className="app-surface-card-strong rounded-3xl">
+        <div className="border border-surface-border bg-surface shadow-card rounded-3xl">
           <div className="px-4 py-5 sm:px-6 sm:py-6">
             <div className="flex items-start gap-4">
               <div className={getDashboardIconChipClasses('red')}>
@@ -649,25 +649,25 @@ export default function EnforcerIncidentsList({
         ) : null}
 
         {isQueueMode && qrHandoffSnapshot ? (
-          <div className="app-surface-card rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4">
+          <div className="border border-surface-border bg-surface shadow-card rounded-2xl border border-primary/20 bg-surface-tint/70 p-4">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div>
-                <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
+                <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary-dark">
                   <DashboardIconSlot icon={DASHBOARD_ICONS.camera} size={16} />
                   <span>QR Handoff</span>
                 </div>
-                <h3 className="mt-2 text-lg font-semibold text-emerald-950">
+                <h3 className="mt-2 text-lg font-semibold text-primary-dark">
                   {isEmbeddedQueueMode
                     ? `Matched incidents for ${qrHandoffSnapshot.vehicle?.plateNumber || qrHandoffSnapshot.vehicle?.id || 'the scanned vehicle'}`
                     : `${qrHandoffSnapshot.vehicle?.plateNumber || qrHandoffSnapshot.vehicle?.id || 'Matched vehicle'} is loaded into the queue`}
                 </h3>
-                <p className="mt-1 text-sm text-emerald-900">
+                <p className="mt-1 text-sm text-primary-dark">
                   {isEmbeddedQueueMode
                     ? `${filteredIncidents.length} unresolved incident${filteredIncidents.length === 1 ? '' : 's'} matched to this plate number.`
                     : `Permit status: ${qrHandoffSnapshot.permitStatusAtScan}. Compliance: ${qrHandoffSnapshot.complianceStatus.replace('_', ' ')}.`}
                 </p>
                 {!isEmbeddedQueueMode ? (
-                  <p className="mt-1 text-sm text-emerald-900">
+                  <p className="mt-1 text-sm text-primary-dark">
                     Driver: {qrHandoffSnapshot.operator.driverFullName || qrHandoffSnapshot.operator.driverName || 'Unspecified'}
                     {' '}• Unpaid tickets: {qrHandoffSnapshot.violationSummary.unpaidTickets}
                   </p>
@@ -681,7 +681,7 @@ export default function EnforcerIncidentsList({
                   }
                   setQrHandoffSnapshot(null)
                 }}
-                className="rounded-lg border border-emerald-300 px-4 py-2 text-sm font-medium text-emerald-900 transition-colors hover:bg-white/70"
+                className="rounded-lg border border-primary/40 px-4 py-2 text-sm font-medium text-primary-dark transition-colors hover:bg-white/70"
               >
                 Dismiss Handoff
               </button>
@@ -719,7 +719,7 @@ export default function EnforcerIncidentsList({
         ) : null}
 
         {!isEmbeddedQueueMode ? (
-        <div className="app-surface-card rounded-2xl p-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-sm font-medium text-gray-700">
               {isQueueMode ? 'Unresolved work queue' : 'All enforcement incidents'}
@@ -744,7 +744,7 @@ export default function EnforcerIncidentsList({
         ) : null}
 
         {!isEmbeddedQueueMode ? (
-        <div className="app-surface-card rounded-2xl p-4 flex flex-col gap-4 lg:flex-row lg:items-end">
+        <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-4 flex flex-col gap-4 lg:flex-row lg:items-end">
           <div className="flex-1">
             <label htmlFor="incident-search" className="mb-2 inline-flex items-center gap-2 text-sm font-medium text-gray-700">
               <DashboardIconSlot
@@ -768,7 +768,7 @@ export default function EnforcerIncidentsList({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search by plate number, location, ticket number, description, or reporter..."
-                className="block w-full rounded-lg border border-gray-300 py-2.5 pl-11 pr-4 focus:border-transparent focus:ring-2 focus:ring-emerald-500"
+                className="block w-full rounded-lg border border-gray-300 py-2.5 pl-11 pr-4 focus:border-transparent focus:ring-2 focus:ring-primary"
               />
             </div>
           </div>
@@ -779,8 +779,8 @@ export default function EnforcerIncidentsList({
                 onClick={() => setStatusFilter(tab.key as typeof statusFilter)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium ${
                   statusFilter === tab.key
-                    ? 'bg-emerald-600 text-white'
-                    : 'app-surface-inner border border-gray-300/80 text-gray-700 hover:bg-white/80'
+                    ? 'bg-primary text-white'
+                    : 'border border-surface-border bg-surface-alt border border-gray-300/80 text-gray-700 hover:bg-white/80'
                 }`}
               >
                 {tab.label} ({getStatusTabCount(tab.key)})
@@ -790,7 +790,7 @@ export default function EnforcerIncidentsList({
         </div>
         ) : null}
 
-        <div className="app-surface-card rounded-2xl">
+        <div className="border border-surface-border bg-surface shadow-card rounded-2xl">
           <div className="p-6">
             <ResponsiveTable
               columns={[
@@ -932,7 +932,7 @@ export default function EnforcerIncidentsList({
 
       {showIncidentDetails && selectedIncident ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 p-3 backdrop-blur-sm sm:p-5">
-          <div className="app-surface-overlay app-mobile-sheet-safe relative w-full max-w-5xl overflow-hidden rounded-3xl p-4 sm:max-h-[calc(100vh-2rem)] sm:p-5">
+          <div className="border border-surface-border bg-surface shadow-raised app-mobile-sheet-safe relative w-full max-w-5xl overflow-hidden rounded-3xl p-4 sm:max-h-[calc(100vh-2rem)] sm:p-5">
             <button
               onClick={closeIncidentDetails}
               className="absolute right-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-white/80 hover:text-gray-600"
@@ -971,7 +971,7 @@ export default function EnforcerIncidentsList({
                 </div>
               </div>
 
-              <section className="app-surface-inner rounded-2xl p-3 sm:p-4">
+              <section className="border border-surface-border bg-surface-alt rounded-2xl p-3 sm:p-4">
                 <h4 className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-gray-600">Case Snapshot</h4>
                 <dl className="grid grid-cols-2 gap-x-4 gap-y-3 xl:grid-cols-4">
                   <DetailField label="Type" value={selectedIncident.typeLabel} />
@@ -1061,7 +1061,7 @@ export default function EnforcerIncidentsList({
                   ) : null}
 
                   {selectedIncident.ticketNumber ? (
-                    <div className="app-surface-inner rounded-lg border border-green-200 px-3 py-2 text-sm font-semibold text-green-800">
+                    <div className="border border-surface-border bg-surface-alt rounded-lg border border-green-200 px-3 py-2 text-sm font-semibold text-green-800">
                       Ticket Issued: {selectedIncident.ticketNumber}
                     </div>
                   ) : null}
@@ -1083,7 +1083,7 @@ export default function EnforcerIncidentsList({
 
       {showTicketModal && ticketIncident ? (
         <div className="fixed inset-0 z-50 h-full w-full overflow-y-auto bg-slate-950/35 backdrop-blur-sm">
-          <div className="app-surface-overlay app-mobile-sheet-safe relative top-4 mx-auto max-h-[calc(100vh-2rem)] w-[calc(100%-1.5rem)] max-w-2xl overflow-y-auto rounded-3xl p-4 sm:top-10 sm:max-h-[90vh] sm:w-11/12 sm:p-5">
+          <div className="border border-surface-border bg-surface shadow-raised app-mobile-sheet-safe relative top-4 mx-auto max-h-[calc(100vh-2rem)] w-[calc(100%-1.5rem)] max-w-2xl overflow-y-auto rounded-3xl p-4 sm:top-10 sm:max-h-[90vh] sm:w-11/12 sm:p-5">
             <div className="mt-3">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
@@ -1099,7 +1099,7 @@ export default function EnforcerIncidentsList({
                 </button>
               </div>
 
-              <div className="app-surface-inner mb-6 rounded-lg p-4">
+              <div className="border border-surface-border bg-surface-alt mb-6 rounded-lg p-4">
                 <h4 className="font-semibold text-gray-800 mb-2">Incident Details</h4>
                 <p className="text-sm text-gray-600"><strong>Type:</strong> {ticketIncident.typeLabel}</p>
                 <p className="text-sm text-gray-600"><strong>Plate:</strong> {ticketIncident.plateNumber || 'N/A'}</p>
@@ -1119,7 +1119,7 @@ export default function EnforcerIncidentsList({
                     autoComplete="off"
                     value={ticketData.ticketNumber}
                     onChange={(e) => setTicketData((prev) => ({ ...prev, ticketNumber: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                     placeholder="Enter ticket number"
                     required
                   />
@@ -1186,7 +1186,7 @@ export default function EnforcerIncidentsList({
                     autoComplete="off"
                     value={ticketData.remarks}
                     onChange={(e) => setTicketData((prev) => ({ ...prev, remarks: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                     rows={3}
                     placeholder="Additional notes or remarks"
                   />
@@ -1203,7 +1203,7 @@ export default function EnforcerIncidentsList({
                   <button
                     type="submit"
                     disabled={isTicketPenaltyLoading || !ticketPenaltyPreview}
-                    className="w-full rounded-lg bg-emerald-600 px-4 py-2 text-white hover:bg-emerald-700 sm:w-auto"
+                    className="w-full rounded-lg bg-primary px-4 py-2 text-white hover:bg-primary-dark sm:w-auto"
                   >
                     Issue Ticket
                   </button>
@@ -1229,7 +1229,7 @@ function MetricCard({
   value: number | string
 }) {
   return (
-    <div className="app-surface-card rounded-2xl p-6">
+    <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-medium text-gray-600">{label}</p>

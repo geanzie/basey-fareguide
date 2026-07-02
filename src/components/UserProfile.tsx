@@ -3,12 +3,32 @@
 import { useState, useEffect } from 'react'
 import useSWR, { useSWRConfig } from 'swr'
 
+import Badge from '@/ui/Badge'
+import Button from '@/ui/Button'
+import Card from '@/ui/Card'
+import { Field, Input, Select } from '@/ui/Field'
+import { FormSkeleton } from '@/ui/Skeleton'
+import { useFeedback } from '@/ui/FeedbackProvider'
 import type { UserProfileDto, UserProfileResponseDto } from '@/lib/contracts'
 import { SWR_KEYS } from '@/lib/swrKeys'
 import { fetchUserProfileResponse } from '@/lib/userProfile'
 
+const ID_TYPES = [
+  'National ID',
+  "Driver's License",
+  'Passport',
+  "Voter's ID",
+  'PhilHealth ID',
+  'SSS ID',
+  'TIN ID',
+  'Senior Citizen ID',
+  'PWD ID',
+  'Student ID',
+]
+
 export default function UserProfile() {
   const { mutate: mutateCache } = useSWRConfig()
+  const { toast } = useFeedback()
   const { data, isLoading } = useSWR<UserProfileResponseDto | null>(
     SWR_KEYS.userProfile,
     fetchUserProfileResponse,
@@ -61,19 +81,20 @@ export default function UserProfile() {
         body: JSON.stringify(formData)
       })
 
-      const data = await response.json()
+      const responseData = await response.json()
 
       if (response.ok) {
         await mutateCache(
           SWR_KEYS.userProfile,
-          { user: data.user },
+          { user: responseData.user },
           { populateCache: true, revalidate: false },
         )
         setIsEditing(false)
+        toast('Profile updated')
       } else {
-        setError(data.message || 'Failed to update profile')
+        setError(responseData.message || 'Failed to update profile')
       }
-    } catch (err) {
+    } catch {
       setError('An error occurred while updating profile')
     } finally {
       setSaving(false)
@@ -88,104 +109,90 @@ export default function UserProfile() {
     }))
   }
 
+  const resetForm = () => {
+    if (!user) return
+    setIsEditing(false)
+    setError('')
+    setFormData({
+      firstName: user.firstName || '',
+      lastName: user.lastName || '',
+      email: user.email || '',
+      phoneNumber: user.phoneNumber || '',
+      dateOfBirth: user.dateOfBirth ? user.dateOfBirth.split('T')[0] : '',
+      governmentId: user.governmentId || '',
+      idType: user.idType || '',
+      barangayResidence: user.barangayResidence || ''
+    })
+  }
+
   if (isLoading && !user) {
     return (
-      <div className="app-surface-card rounded-2xl p-6">
-        <div className="animate-pulse">
-          <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
-          <div className="space-y-3">
-            <div className="h-4 bg-gray-200 rounded"></div>
-            <div className="h-4 bg-gray-200 rounded w-5/6"></div>
-          </div>
-        </div>
-      </div>
+      <Card>
+        <FormSkeleton fields={4} />
+      </Card>
     )
   }
 
   if (!user) {
     return (
-      <div className="app-surface-card rounded-2xl p-6">
-        <p className="text-red-600">{error || 'User not found'}</p>
-      </div>
+      <Card>
+        <p className="text-danger">{error || 'User not found'}</p>
+      </Card>
     )
   }
 
   return (
-    <div className="app-surface-card rounded-2xl">
-      <div className="flex flex-col gap-3 border-b border-gray-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+    <Card padded={false}>
+      <div className="flex flex-col gap-3 border-b border-surface-border px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900 sm:text-xl">Profile details</h2>
-          <p className="mt-1 text-sm text-gray-500">Keep your account information current for fare history and support.</p>
+          <h2 className="text-lg font-bold text-ink-strong">Profile details</h2>
+          <p className="mt-1 text-sm text-ink-muted">
+            Keep your account information current for fare history and support.
+          </p>
         </div>
         {!isEditing ? (
-          <button
-            onClick={() => setIsEditing(true)}
-            className="w-full rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700 sm:w-auto"
-          >
+          <Button size="sm" onClick={() => setIsEditing(true)}>
             Edit Profile
-          </button>
+          </Button>
         ) : (
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-            <button
-              onClick={handleSaveProfile}
-              disabled={saving}
-              className="w-full rounded-lg bg-green-600 px-4 py-2 text-white transition-colors hover:bg-green-700 disabled:opacity-50 sm:w-auto"
-            >
+          <div className="flex gap-2">
+            <Button size="sm" loading={saving} onClick={handleSaveProfile}>
               {saving ? 'Saving...' : 'Save'}
-            </button>
-            <button
-              onClick={() => {
-                setIsEditing(false)
-                setError('')
-                // Reset form data
-                setFormData({
-                  firstName: user.firstName || '',
-                  lastName: user.lastName || '',
-                  email: user.email || '',
-                  phoneNumber: user.phoneNumber || '',
-                  dateOfBirth: user.dateOfBirth ? user.dateOfBirth.split('T')[0] : '',
-                  governmentId: user.governmentId || '',
-                  idType: user.idType || '',
-                  barangayResidence: user.barangayResidence || ''
-                })
-              }}
-              className="app-surface-inner w-full rounded-lg px-4 py-2 text-gray-700 transition-colors hover:bg-white/80 sm:w-auto"
-            >
+            </Button>
+            <Button size="sm" variant="secondary" onClick={resetForm}>
               Cancel
-            </button>
+            </Button>
           </div>
         )}
       </div>
 
       <div className="p-4 sm:p-6">
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          <div className="mb-4 rounded-xl bg-danger-soft px-4 py-3 text-[13px] font-medium text-danger">
             {error}
           </div>
         )}
 
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-6">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           {/* Basic Information */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Basic Information</h3>
-            
-            <div>
-              <label htmlFor="profile-username" className="block text-sm font-medium text-gray-700 mb-1">Username</label>
-              <input
+            <h3 className="border-b border-surface-border pb-2 text-base font-bold text-ink-strong">
+              Basic Information
+            </h3>
+
+            <Field label="Username" htmlFor="profile-username" hint="Username cannot be changed">
+              <Input
                 id="profile-username"
                 name="username"
                 type="text"
                 autoComplete="username"
                 value={user.username}
                 disabled
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500"
               />
-              <p className="text-xs text-gray-500 mt-1">Username cannot be changed</p>
-            </div>
+            </Field>
 
-            <div>
-              <label htmlFor="profile-first-name" className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-              <input
+            <Field label="First Name" htmlFor="profile-first-name">
+              <Input
                 id="profile-first-name"
                 type="text"
                 name="firstName"
@@ -193,17 +200,11 @@ export default function UserProfile() {
                 value={isEditing ? formData.firstName : user.firstName || ''}
                 onChange={handleInputChange}
                 disabled={!isEditing}
-                className={`w-full px-3 py-2 border rounded-lg ${
-                  isEditing 
-                    ? 'border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500' 
-                    : 'border-gray-300 bg-gray-50'
-                }`}
               />
-            </div>
+            </Field>
 
-            <div>
-              <label htmlFor="profile-last-name" className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-              <input
+            <Field label="Last Name" htmlFor="profile-last-name">
+              <Input
                 id="profile-last-name"
                 type="text"
                 name="lastName"
@@ -211,17 +212,11 @@ export default function UserProfile() {
                 value={isEditing ? formData.lastName : user.lastName || ''}
                 onChange={handleInputChange}
                 disabled={!isEditing}
-                className={`w-full px-3 py-2 border rounded-lg ${
-                  isEditing 
-                    ? 'border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500' 
-                    : 'border-gray-300 bg-gray-50'
-                }`}
               />
-            </div>
+            </Field>
 
-            <div>
-              <label htmlFor="profile-email" className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-              <input
+            <Field label="Email Address" htmlFor="profile-email" hint="Required for password reset">
+              <Input
                 id="profile-email"
                 type="email"
                 name="email"
@@ -230,18 +225,11 @@ export default function UserProfile() {
                 onChange={handleInputChange}
                 disabled={!isEditing}
                 placeholder="your@email.com"
-                className={`w-full px-3 py-2 border rounded-lg ${
-                  isEditing 
-                    ? 'border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500' 
-                    : 'border-gray-300 bg-gray-50'
-                }`}
               />
-              <p className="text-xs text-gray-500 mt-1">Required for password reset</p>
-            </div>
+            </Field>
 
-            <div>
-              <label htmlFor="profile-phone-number" className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-              <input
+            <Field label="Phone Number" htmlFor="profile-phone-number">
+              <Input
                 id="profile-phone-number"
                 type="tel"
                 name="phoneNumber"
@@ -250,22 +238,18 @@ export default function UserProfile() {
                 onChange={handleInputChange}
                 disabled={!isEditing}
                 placeholder="09xxxxxxxxx"
-                className={`w-full px-3 py-2 border rounded-lg ${
-                  isEditing 
-                    ? 'border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500' 
-                    : 'border-gray-300 bg-gray-50'
-                }`}
               />
-            </div>
+            </Field>
           </div>
 
           {/* Additional Information */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Additional Information</h3>
+            <h3 className="border-b border-surface-border pb-2 text-base font-bold text-ink-strong">
+              Additional Information
+            </h3>
 
-            <div>
-              <label htmlFor="profile-date-of-birth" className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
-              <input
+            <Field label="Date of Birth" htmlFor="profile-date-of-birth">
+              <Input
                 id="profile-date-of-birth"
                 type="date"
                 name="dateOfBirth"
@@ -273,46 +257,29 @@ export default function UserProfile() {
                 value={isEditing ? formData.dateOfBirth : user.dateOfBirth ? user.dateOfBirth.split('T')[0] : ''}
                 onChange={handleInputChange}
                 disabled={!isEditing}
-                className={`w-full px-3 py-2 border rounded-lg ${
-                  isEditing 
-                    ? 'border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500' 
-                    : 'border-gray-300 bg-gray-50'
-                }`}
               />
-            </div>
+            </Field>
 
-            <div>
-              <label htmlFor="profile-id-type" className="block text-sm font-medium text-gray-700 mb-1">Government ID Type</label>
-              <select
+            <Field label="Government ID Type" htmlFor="profile-id-type">
+              <Select
                 id="profile-id-type"
                 name="idType"
                 autoComplete="off"
                 value={isEditing ? formData.idType : user.idType || ''}
                 onChange={handleInputChange}
                 disabled={!isEditing}
-                className={`w-full px-3 py-2 border rounded-lg ${
-                  isEditing 
-                    ? 'border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500' 
-                    : 'border-gray-300 bg-gray-50'
-                }`}
               >
                 <option value="">Select ID Type</option>
-                <option value="National ID">National ID</option>
-                <option value="Driver's License">Driver's License</option>
-                <option value="Passport">Passport</option>
-                <option value="Voter's ID">Voter's ID</option>
-                <option value="PhilHealth ID">PhilHealth ID</option>
-                <option value="SSS ID">SSS ID</option>
-                <option value="TIN ID">TIN ID</option>
-                <option value="Senior Citizen ID">Senior Citizen ID</option>
-                <option value="PWD ID">PWD ID</option>
-                <option value="Student ID">Student ID</option>
-              </select>
-            </div>
+                {ID_TYPES.map((idType) => (
+                  <option key={idType} value={idType}>
+                    {idType}
+                  </option>
+                ))}
+              </Select>
+            </Field>
 
-            <div>
-              <label htmlFor="profile-government-id" className="block text-sm font-medium text-gray-700 mb-1">Government ID Number</label>
-              <input
+            <Field label="Government ID Number" htmlFor="profile-government-id">
+              <Input
                 id="profile-government-id"
                 type="text"
                 name="governmentId"
@@ -320,17 +287,11 @@ export default function UserProfile() {
                 value={isEditing ? formData.governmentId : user.governmentId || ''}
                 onChange={handleInputChange}
                 disabled={!isEditing}
-                className={`w-full px-3 py-2 border rounded-lg ${
-                  isEditing 
-                    ? 'border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500' 
-                    : 'border-gray-300 bg-gray-50'
-                }`}
               />
-            </div>
+            </Field>
 
-            <div>
-              <label htmlFor="profile-barangay-residence" className="block text-sm font-medium text-gray-700 mb-1">Barangay Residence</label>
-              <input
+            <Field label="Barangay Residence" htmlFor="profile-barangay-residence">
+              <Input
                 id="profile-barangay-residence"
                 type="text"
                 name="barangayResidence"
@@ -338,33 +299,26 @@ export default function UserProfile() {
                 value={isEditing ? formData.barangayResidence : user.barangayResidence || ''}
                 onChange={handleInputChange}
                 disabled={!isEditing}
-                className={`w-full px-3 py-2 border rounded-lg ${
-                  isEditing 
-                    ? 'border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500' 
-                    : 'border-gray-300 bg-gray-50'
-                }`}
               />
-            </div>
+            </Field>
 
             {/* Account Status */}
-            <div className="app-surface-inner mt-6 rounded-lg p-4">
-              <h4 className="text-sm font-medium text-gray-900 mb-2">Account Status</h4>
-              <div className="space-y-1">
-                <p className="text-sm text-gray-600">
-                  User Type: <span className="font-medium capitalize">{user.userType.toLowerCase()}</span>
+            <div className="mt-6 rounded-xl bg-surface-alt p-4">
+              <h4 className="mb-2 text-sm font-bold text-ink-strong">Account Status</h4>
+              <div className="space-y-2">
+                <p className="flex items-center gap-2 text-sm text-ink-muted">
+                  User Type:
+                  <span className="font-medium capitalize text-ink-body">{user.userType.toLowerCase()}</span>
                 </p>
-                <p className="text-sm text-gray-600">
-                  Status: <span className={`font-medium ${user.isActive ? 'text-green-600' : 'text-red-600'}`}>
-                    {user.isActive ? 'Active' : 'Inactive'}
-                  </span>
+                <p className="flex items-center gap-2 text-sm text-ink-muted">
+                  Status: <Badge label={user.isActive ? 'Active' : 'Inactive'} tone={user.isActive ? 'success' : 'muted'} />
                 </p>
-                <p className="text-sm text-gray-600">
-                  Verified: <span className={`font-medium ${user.isVerified ? 'text-green-600' : 'text-yellow-600'}`}>
-                    {user.isVerified ? 'Yes' : 'Pending'}
-                  </span>
+                <p className="flex items-center gap-2 text-sm text-ink-muted">
+                  Verified: <Badge label={user.isVerified ? 'Verified' : 'Pending'} tone={user.isVerified ? 'success' : 'warning'} />
                 </p>
-                <p className="text-sm text-gray-600">
-                  Member Since: <span className="font-medium">
+                <p className="text-sm text-ink-muted">
+                  Member Since:{' '}
+                  <span className="font-medium text-ink-body">
                     {new Date(user.createdAt).toLocaleDateString()}
                   </span>
                 </p>
@@ -373,6 +327,6 @@ export default function UserProfile() {
           </div>
         </div>
       </div>
-    </div>
+    </Card>
   )
 }

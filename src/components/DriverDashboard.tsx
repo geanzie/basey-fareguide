@@ -97,8 +97,42 @@ export default function DriverDashboard() {
     if (newRiders.length > 0) {
       newRiders.forEach((r) => seenRiderIds.current.add(r.id))
       setPendingModalQueue((q) => [...q, ...newRiders])
+      // Same buzz pattern as the mobile app; silently ignored where unsupported
+      navigator.vibrate?.([0, 250, 150, 250])
     }
   }, [data])
+
+  // Keep the screen awake while a trip session is open (mobile uses expo-keep-awake).
+  // Wake locks are released by the browser on tab hide, so re-acquire on visibility.
+  const sessionActive = Boolean(data?.session.id)
+  useEffect(() => {
+    if (!sessionActive || !('wakeLock' in navigator)) return
+
+    let sentinel: WakeLockSentinel | null = null
+    let cancelled = false
+
+    const acquire = async () => {
+      try {
+        sentinel = await navigator.wakeLock.request('screen')
+        if (cancelled) await sentinel.release()
+      } catch {
+        // Denied or unsupported — polling still works, screen may just sleep.
+      }
+    }
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') void acquire()
+    }
+
+    void acquire()
+    document.addEventListener('visibilitychange', handleVisibility)
+
+    return () => {
+      cancelled = true
+      document.removeEventListener('visibilitychange', handleVisibility)
+      void sentinel?.release().catch(() => {})
+    }
+  }, [sessionActive])
 
   const runSessionRequest = async (
     targetId: string,
@@ -193,7 +227,7 @@ export default function DriverDashboard() {
 
   if (loading) {
     return (
-      <div className="app-surface-card rounded-2xl p-6">
+      <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
         <p className="text-sm text-gray-600">Loading trip session...</p>
       </div>
     )
@@ -201,7 +235,7 @@ export default function DriverDashboard() {
 
   if (error) {
     return (
-      <div className="app-surface-card rounded-2xl p-6">
+      <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
         <h2 className="text-lg font-semibold text-gray-900">Trip Session</h2>
         <p className="mt-3 text-sm text-red-600">{error}</p>
         <button
@@ -223,7 +257,7 @@ export default function DriverDashboard() {
     <>
     <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_320px]">
       <section className="space-y-6">
-        <div className="app-surface-card rounded-2xl p-6">
+        <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="text-sm font-medium text-slate-500">Assigned vehicle</p>
@@ -260,7 +294,7 @@ export default function DriverDashboard() {
                   type="button"
                   onClick={() => void handleStartTrip()}
                   disabled={operation.targetId === 'session-start'}
-                  className="rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
+                  className="rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {operation.targetId === 'session-start' ? 'Starting...' : 'Start Trip'}
                 </button>
@@ -285,7 +319,7 @@ export default function DriverDashboard() {
         </div>
 
         {!data?.session.id ? (
-          <div className="app-surface-card rounded-2xl p-6">
+          <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
             <h3 className="text-lg font-semibold text-slate-900">Ready to load riders</h3>
             <p className="mt-2 text-sm text-slate-600">
               Start one trip for this vehicle, then riders who save tagged trips will appear here as pending.
@@ -294,12 +328,12 @@ export default function DriverDashboard() {
         ) : null}
 
         {visibleSections.map((section) => (
-          <section key={section.key} className="app-surface-card rounded-2xl p-5">
+          <section key={section.key} className="border border-surface-border bg-surface shadow-card rounded-2xl p-5">
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-lg font-semibold text-slate-900">{section.label}</h3>
               <div className="flex items-center gap-2">
                 <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${
-                  section.key === 'boarded' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
+                  section.key === 'boarded' ? 'bg-surface-tint text-primary-dark' : 'bg-slate-100 text-slate-600'
                 }`}>
                   {section.riders.length}
                 </span>
@@ -353,7 +387,7 @@ export default function DriverDashboard() {
                                 type="button"
                                 onClick={() => void handleRiderAction(rider.id, action.action)}
                                 disabled={isBusy}
-                                className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
                               >
                                 {isBusy && operation.action === action.action ? 'Saving...' : action.label}
                               </button>
@@ -402,7 +436,7 @@ export default function DriverDashboard() {
         ))}
 
         {archivedSection && archivedSection.riders.length > 0 ? (
-          <section className="app-surface-card rounded-2xl p-5">
+          <section className="border border-surface-border bg-surface shadow-card rounded-2xl p-5">
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-lg font-semibold text-slate-900">Archived</h3>
               <button
@@ -439,7 +473,7 @@ export default function DriverDashboard() {
         ) : null}
       </section>
 
-      <aside className="app-surface-card rounded-2xl p-6">
+      <aside className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
         <h2 className="text-lg font-semibold text-slate-900">Session Notes</h2>
         <p className="mt-2 text-sm text-slate-500">Accept, board, and drop off riders in order. Use the problem button for exceptions.</p>
 
@@ -468,8 +502,8 @@ export default function DriverDashboard() {
             >
               <div className="mb-1 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                  <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700">New ride request</p>
+                  <span className="inline-block h-2.5 w-2.5 rounded-full bg-primary" />
+                  <p className="text-xs font-semibold uppercase tracking-wider text-primary-dark">New ride request</p>
                 </div>
                 {remaining > 0 ? (
                   <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
@@ -491,7 +525,7 @@ export default function DriverDashboard() {
                       void handleRiderAction(modalRider.id, acceptAction.action)
                       setPendingModalQueue((q) => q.slice(1))
                     }}
-                    className="flex-1 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="flex-1 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {operation.targetId === modalRider.id ? 'Saving...' : acceptAction.label}
                   </button>
@@ -557,7 +591,7 @@ export default function DriverDashboard() {
                           void handleRiderAction(rider.id, acceptAction.action)
                           setShowPendingQueue(false)
                         }}
-                        className="shrink-0 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {isBusy ? 'Saving...' : acceptAction.label}
                       </button>
@@ -577,7 +611,7 @@ export default function DriverDashboard() {
         disabled={permitQrLoading}
         aria-label="View my permit QR"
         style={{ bottom: 'calc(var(--mobile-bottom-nav-height, 0px) + 1rem)' } as React.CSSProperties}
-        className="fixed right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70 sm:right-6"
+        className="fixed right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg transition hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-70 sm:right-6"
       >
         {permitQrLoading ? (
           <svg className="h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24">

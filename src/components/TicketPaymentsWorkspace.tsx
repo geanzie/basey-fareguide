@@ -199,7 +199,7 @@ export default function TicketPaymentsWorkspace({
 
   return (
     <div className="space-y-6">
-      <div className="app-surface-card rounded-2xl p-6">
+      <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
         <div className="flex items-start gap-4">
           <div className={getDashboardIconChipClasses('emerald')}>
             <DashboardIconSlot
@@ -215,25 +215,25 @@ export default function TicketPaymentsWorkspace({
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <div className="app-surface-card rounded-2xl p-5">
+        <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-5">
           <p className="text-sm text-gray-600">Ticketed Violations</p>
           <p className="mt-2 text-3xl font-bold text-gray-900">{stats.totalTicketed}</p>
         </div>
-        <div className="app-surface-card rounded-2xl border border-amber-200 p-5">
+        <div className="border border-surface-border bg-surface shadow-card rounded-2xl border border-amber-200 p-5">
           <p className="text-sm text-gray-600">Unpaid Tickets</p>
           <p className="mt-2 text-3xl font-bold text-amber-700">{stats.unpaid}</p>
         </div>
-        <div className="app-surface-card rounded-2xl border border-emerald-200 p-5">
+        <div className="border border-surface-border bg-surface shadow-card rounded-2xl border border-primary/20 p-5">
           <p className="text-sm text-gray-600">Paid Tickets</p>
-          <p className="mt-2 text-3xl font-bold text-emerald-700">{stats.paid}</p>
+          <p className="mt-2 text-3xl font-bold text-primary-dark">{stats.paid}</p>
         </div>
-        <div className="app-surface-card rounded-2xl border border-red-200 p-5">
+        <div className="border border-surface-border bg-surface shadow-card rounded-2xl border border-red-200 p-5">
           <p className="text-sm text-gray-600">Outstanding Balance</p>
           <p className="mt-2 text-3xl font-bold text-red-700">{formatCurrency(stats.outstandingBalance)}</p>
         </div>
       </div>
 
-      <div className="app-surface-card rounded-2xl p-5">
+      <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-5">
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
           <div>
             <label htmlFor="ticket-payments-search" className="mb-2 block text-sm font-medium text-gray-700">Search tickets or receipts</label>
@@ -245,7 +245,7 @@ export default function TicketPaymentsWorkspace({
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               placeholder="Search by ticket number, official receipt, plate number, location, or violation..."
-              className="w-full rounded-lg border border-gray-300 px-4 py-2.5 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+              className="w-full rounded-lg border border-gray-300 px-4 py-2.5 focus:border-primary focus:ring-2 focus:ring-primary"
             />
           </div>
           <div className="flex flex-wrap gap-2">
@@ -259,8 +259,8 @@ export default function TicketPaymentsWorkspace({
                 onClick={() => setPaymentFilter(item.key as PaymentFilter)}
                 className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
                   paymentFilter === item.key
-                    ? 'bg-emerald-600 text-white'
-                    : 'app-surface-inner border border-gray-300/80 text-gray-700 hover:bg-white/80'
+                    ? 'bg-primary text-white'
+                    : 'border border-surface-border bg-surface-alt border border-gray-300/80 text-gray-700 hover:bg-white/80'
                 }`}
               >
                 {item.label}
@@ -276,7 +276,7 @@ export default function TicketPaymentsWorkspace({
         </div>
       ) : null}
 
-      <div className="app-surface-card overflow-hidden rounded-2xl">
+      <div className="border border-surface-border bg-surface shadow-card overflow-hidden rounded-2xl">
         {loading ? (
           <div className="p-6 text-sm text-gray-600">Loading ticket payment records...</div>
         ) : filteredIncidents.length === 0 ? (
@@ -285,13 +285,13 @@ export default function TicketPaymentsWorkspace({
           <>
             <div className="space-y-3 p-4 lg:hidden">
               {filteredIncidents.map((incident) => (
-                <article key={incident.id} className="app-surface-inner rounded-xl p-4">
+                <article key={incident.id} className="border border-surface-border bg-surface-alt rounded-xl p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-sm font-semibold text-gray-900">{incident.ticketNumber}</p>
                       <p className="text-sm text-gray-600">{incident.typeLabel}</p>
                     </div>
-                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${incident.paymentStatus === 'PAID' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${incident.paymentStatus === 'PAID' ? 'bg-surface-tint text-primary-dark' : 'bg-amber-100 text-amber-800'}`}>
                       {normalizePaymentLabel(incident.paymentStatus)}
                     </span>
                   </div>
@@ -337,7 +337,7 @@ export default function TicketPaymentsWorkspace({
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-700">{incident.plateNumber || '-'}</td>
                       <td className="px-6 py-4 text-sm text-gray-700">
-                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${incident.paymentStatus === 'PAID' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${incident.paymentStatus === 'PAID' ? 'bg-surface-tint text-primary-dark' : 'bg-amber-100 text-amber-800'}`}>
                           {normalizePaymentLabel(incident.paymentStatus)}
                         </span>
                       </td>
@@ -363,7 +363,7 @@ export default function TicketPaymentsWorkspace({
 
       {selectedIncident ? (
         <div className="fixed inset-0 z-50 bg-slate-950/35 backdrop-blur-sm">
-          <div className="app-surface-overlay app-mobile-sheet-safe relative top-4 mx-auto max-h-[calc(100vh-2rem)] w-[calc(100%-1.5rem)] max-w-2xl overflow-y-auto rounded-3xl p-5 sm:top-10 sm:w-11/12">
+          <div className="border border-surface-border bg-surface shadow-raised app-mobile-sheet-safe relative top-4 mx-auto max-h-[calc(100vh-2rem)] w-[calc(100%-1.5rem)] max-w-2xl overflow-y-auto rounded-3xl p-5 sm:top-10 sm:w-11/12">
             <div className="flex items-center justify-between border-b border-slate-200 pb-4">
               <h3 className="text-lg font-semibold text-gray-900">Ticket Payment Details</h3>
               <button
@@ -406,7 +406,7 @@ export default function TicketPaymentsWorkspace({
                       }))
                     }
                     placeholder="Enter OR number"
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2.5 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2.5 focus:border-primary focus:ring-2 focus:ring-primary"
                   />
                 </div>
                 <div>
@@ -423,7 +423,7 @@ export default function TicketPaymentsWorkspace({
                         paidAt: event.target.value,
                       }))
                     }
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2.5 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2.5 focus:border-primary focus:ring-2 focus:ring-primary"
                   />
                 </div>
                 <div>
@@ -441,7 +441,7 @@ export default function TicketPaymentsWorkspace({
                     }
                     rows={3}
                     placeholder="Optional receipt remarks"
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2.5 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500"
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2.5 focus:border-primary focus:ring-2 focus:ring-primary"
                   />
                 </div>
               </div>
@@ -458,7 +458,7 @@ export default function TicketPaymentsWorkspace({
                 <button
                   onClick={() => void handleRecordPayment()}
                   disabled={isProcessingPayment}
-                  className="rounded-lg bg-emerald-600 px-4 py-2 font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="rounded-lg bg-primary px-4 py-2 font-semibold text-white hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Record Payment
                 </button>

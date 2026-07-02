@@ -1,362 +1,219 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import useSWR from 'swr'
+import { SearchX } from 'lucide-react'
 import { useAuth } from '@/components/AuthProvider'
 import RoleGuard from '@/components/RoleGuard'
-import PageWrapper from '@/components/PageWrapper'
-import type { IncidentListItemDto, IncidentsResponseDto } from '@/lib/contracts'
-import {
-  DASHBOARD_ICONS,
-  DASHBOARD_ICON_POLICY,
-  DashboardIconSlot,
-} from '@/components/dashboardIcons'
+import Badge from '@/ui/Badge'
+import Card from '@/ui/Card'
+import EmptyState from '@/ui/EmptyState'
+import FilterChips from '@/ui/FilterChips'
+import GradientHeader from '@/ui/GradientHeader'
+import SearchBar from '@/ui/SearchBar'
+import { ListSkeleton, StatGridSkeleton } from '@/ui/Skeleton'
+import StatTile from '@/ui/StatTile'
+import { swrFetcher } from '@/lib/swr'
+import { SWR_KEYS } from '@/lib/swrKeys'
+import type { IncidentsResponseDto } from '@/lib/contracts'
+
+const STATUSES = ['PENDING', 'INVESTIGATING', 'RESOLVED', 'DISMISSED'] as const
 
 export default function AdminIncidentsPage() {
   const { status, user } = useAuth()
-  const [incidents, setIncidents] = useState<IncidentListItemDto[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [searchQuery, setSearchQuery] = useState<string>('')
   const canLoadIncidents = status === 'authenticated' && user?.userType === 'ADMIN'
 
-  useEffect(() => {
-    if (!canLoadIncidents) {
-      return
-    }
+  const { data, error, isLoading } = useSWR<IncidentsResponseDto>(
+    canLoadIncidents ? SWR_KEYS.incidents : null,
+    swrFetcher,
+  )
+  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [searchQuery, setSearchQuery] = useState<string>('')
 
-    void fetchIncidents()
-  }, [canLoadIncidents])
-
-  const fetchIncidents = async () => {
-    if (!canLoadIncidents) {
-      return
-    }
-
-    try {
-      setLoading(true)
-      const response = await fetch('/api/incidents')
-      
-      if (response.ok) {
-        const data: IncidentsResponseDto = await response.json()
-        setIncidents(data.incidents || [])
-      } else {
-        throw new Error('Failed to fetch incidents')
-      }
-    } catch (error) {      setError('Failed to load incidents')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      PENDING: { color: 'bg-yellow-100 text-yellow-800', label: 'Pending' },
-      INVESTIGATING: { color: 'bg-blue-100 text-blue-800', label: 'Investigating' },
-      RESOLVED: { color: 'bg-green-100 text-green-800', label: 'Resolved' },
-      DISMISSED: { color: 'bg-gray-100 text-gray-800', label: 'Dismissed' }
-    }
-    
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.PENDING
-    
-    return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${config.color}`}>
-        {config.label}
-      </span>
-    )
-  }
+  const incidents = data?.incidents ?? []
 
   const filteredIncidents = incidents.filter(incident => {
-    // Status filter
     const matchesStatus = statusFilter === 'all' || incident.status === statusFilter
-    
-    // Search filter
+
     if (!searchQuery.trim()) {
       return matchesStatus
     }
-    
+
     const query = searchQuery.toLowerCase()
-    const matchesSearch = 
+    const matchesSearch =
       incident.ticketNumber?.toLowerCase().includes(query) ||
       incident.type.toLowerCase().includes(query) ||
       incident.description.toLowerCase().includes(query) ||
       incident.location.toLowerCase().includes(query) ||
       `${incident.reportedBy?.firstName || ''} ${incident.reportedBy?.lastName || ''}`.toLowerCase().includes(query) ||
       (incident.handledBy && `${incident.handledBy.firstName} ${incident.handledBy.lastName}`.toLowerCase().includes(query))
-    
+
     return matchesStatus && matchesSearch
   })
 
-  const incidentCounts = {
+  const incidentCounts: Record<string, number> = {
     all: incidents.length,
     PENDING: incidents.filter(i => i.status === 'PENDING').length,
     INVESTIGATING: incidents.filter(i => i.status === 'INVESTIGATING').length,
     RESOLVED: incidents.filter(i => i.status === 'RESOLVED').length,
-    DISMISSED: incidents.filter(i => i.status === 'DISMISSED').length
-  }
-
-  if (loading) {
-    return (
-      <RoleGuard allowedRoles={['ADMIN']}>
-        <PageWrapper title="All Incidents" subtitle="System-wide incident management">
-          <div className="animate-pulse space-y-4">
-            <div className="h-8 bg-gray-200 rounded"></div>
-            <div className="h-64 bg-gray-200 rounded"></div>
-          </div>
-        </PageWrapper>
-      </RoleGuard>
-    )
+    DISMISSED: incidents.filter(i => i.status === 'DISMISSED').length,
   }
 
   return (
     <RoleGuard allowedRoles={['ADMIN']}>
-      <PageWrapper 
-        title="All Incidents"
-        subtitle="System-wide incident management and oversight"
-      >
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <div className="flex items-center">
-              <DashboardIconSlot icon={DASHBOARD_ICONS.close} size={DASHBOARD_ICON_POLICY.sizes.hero} className="mr-3 text-red-500" />
-              <p className="text-red-700">{error}</p>
-            </div>
-          </div>
-        )}
-
-        {/* Statistics Cards */}
-        <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
-          <div className="app-surface-card rounded-2xl p-4">
-            <div className="text-2xl font-bold text-gray-900">{incidentCounts.all}</div>
-            <div className="text-sm text-gray-600">Total Incidents</div>
-          </div>
-          <div className="bg-yellow-50 rounded-lg shadow p-4">
-            <div className="text-2xl font-bold text-yellow-600">{incidentCounts.PENDING}</div>
-            <div className="text-sm text-gray-600">Pending</div>
-          </div>
-          <div className="bg-blue-50 rounded-lg shadow p-4">
-            <div className="text-2xl font-bold text-blue-600">{incidentCounts.INVESTIGATING}</div>
-            <div className="text-sm text-gray-600">Investigating</div>
-          </div>
-          <div className="bg-green-50 rounded-lg shadow p-4">
-            <div className="text-2xl font-bold text-green-600">{incidentCounts.RESOLVED}</div>
-            <div className="text-sm text-gray-600">Resolved</div>
-          </div>
-          <div className="bg-gray-50 rounded-lg shadow p-4">
-            <div className="text-2xl font-bold text-gray-600">{incidentCounts.DISMISSED}</div>
-            <div className="text-sm text-gray-600">Dismissed</div>
-          </div>
-        </div>
-
-        {/* Search and Filter Controls */}
-        <div className="app-surface-card mb-6 space-y-4 rounded-2xl p-4 sm:p-5">
-          {/* Search Bar */}
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <DashboardIconSlot icon={DASHBOARD_ICONS.inspect} size={DASHBOARD_ICON_POLICY.sizes.button} className="text-gray-400" />
-            </div>
-            <input
-              type="text"
-              placeholder="Search ticket, type, location, or reporter..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-              >
-                <DashboardIconSlot icon={DASHBOARD_ICONS.searchX} size={DASHBOARD_ICON_POLICY.sizes.button} />
-              </button>
-            )}
-          </div>
-          
-          {/* Status Filter Buttons */}
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setStatusFilter('all')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                statusFilter === 'all' 
-                  ? 'bg-emerald-600 text-white' 
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              All ({incidentCounts.all})
-            </button>
-            {['PENDING', 'INVESTIGATING', 'RESOLVED', 'DISMISSED'].map((status) => (
-              <button
-                key={status}
-                onClick={() => setStatusFilter(status)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  statusFilter === status 
-                    ? 'bg-emerald-600 text-white' 
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                {status.charAt(0) + status.slice(1).toLowerCase()} ({incidentCounts[status as keyof typeof incidentCounts]})
-              </button>
-            ))}
-          </div>
-          
-          {/* Active Filters Display */}
-          {(searchQuery || statusFilter !== 'all') && (
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-gray-600">Active filters:</span>
-              {statusFilter !== 'all' && (
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
-                  Status: {statusFilter}
-                  <button
-                    onClick={() => setStatusFilter('all')}
-                    className="ml-1 hover:text-emerald-900"
-                  >
-                    <DashboardIconSlot icon={DASHBOARD_ICONS.close} size={14} />
-                  </button>
-                </span>
-              )}
-              {searchQuery && (
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                  Search: "{searchQuery}"
-                  <button
-                    onClick={() => setSearchQuery('')}
-                    className="ml-1 hover:text-blue-900"
-                  >
-                    <DashboardIconSlot icon={DASHBOARD_ICONS.close} size={14} />
-                  </button>
-                </span>
-              )}
-              <button
-                onClick={() => {
-                  setStatusFilter('all')
-                  setSearchQuery('')
-                }}
-                className="text-emerald-600 hover:text-emerald-700 font-medium"
-              >
-                Clear all
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Incidents Table */}
-        <div className="app-surface-card overflow-hidden rounded-2xl">
-          <div className="space-y-3 p-4 lg:hidden">
-            {filteredIncidents.map((incident) => (
-              <article key={incident.id} className="app-surface-inner rounded-xl p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-gray-900">{incident.typeLabel}</p>
-                    <p className="mt-1 text-sm text-gray-600">{incident.location}</p>
-                  </div>
-                  {getStatusBadge(incident.status)}
-                </div>
-                <div className="mt-3 space-y-2 text-sm text-gray-600">
-                  <p>{incident.description}</p>
-                  <p>
-                    Reported by:{' '}
-                    <span className="font-medium text-gray-900">
-                      {incident.reportedBy ? `${incident.reportedBy.firstName} ${incident.reportedBy.lastName}` : '-'}
-                    </span>
-                  </p>
-                  <p>
-                    Handled by:{' '}
-                    <span className="font-medium text-gray-900">
-                      {incident.handledBy ? `${incident.handledBy.firstName} ${incident.handledBy.lastName}` : '-'}
-                    </span>
-                  </p>
-                  <p>
-                    Date: <span className="font-medium text-gray-900">{new Date(incident.createdAt).toLocaleDateString()}</span>
-                  </p>
-                  <p>
-                    Ticket: <span className="font-medium text-gray-900">{incident.ticketNumber || '-'}</span>
-                  </p>
-                </div>
-              </article>
-            ))}
-          </div>
-
-          <div className="hidden overflow-x-auto lg:block">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Incident
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Location
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Reported By
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Handled By
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Ticket #
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredIncidents.map((incident) => (
-                  <tr key={incident.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {incident.typeLabel}
-                        </div>
-                        <div className="text-sm text-gray-500 truncate max-w-xs">
-                          {incident.description}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      {getStatusBadge(incident.status)}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      {incident.location}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      {incident.reportedBy ? `${incident.reportedBy.firstName} ${incident.reportedBy.lastName}` : '-'}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      {incident.handledBy 
-                        ? `${incident.handledBy.firstName} ${incident.handledBy.lastName}` 
-                        : '-'
-                      }
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      {new Date(incident.createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      {incident.ticketNumber || '-'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          
-          {filteredIncidents.length === 0 && (
-            <div className="text-center py-12">
-              <div className="mb-4 flex justify-center">
-                <DashboardIconSlot icon={DASHBOARD_ICONS.inspect} size={40} className="text-gray-300" />
+      <div className="mx-auto max-w-6xl">
+        <GradientHeader
+          title="All Incidents"
+          subtitle="System-wide incident management and oversight"
+          backHref="/admin"
+          compact
+        />
+        <div className="-mt-6 space-y-4 px-4 pb-8 lg:px-8">
+          {isLoading ? (
+            <>
+              <StatGridSkeleton count={5} />
+              <ListSkeleton count={4} />
+            </>
+          ) : error ? (
+            <Card>
+              <EmptyState icon={SearchX} title="Failed to load incidents" message="Please try again." />
+            </Card>
+          ) : (
+            <>
+              {/* Statistics */}
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
+                <StatTile label="Total Incidents" value={incidentCounts.all} tone="muted" />
+                <StatTile label="Pending" value={incidentCounts.PENDING} tone="warning" />
+                <StatTile label="Investigating" value={incidentCounts.INVESTIGATING} tone="info" />
+                <StatTile label="Resolved" value={incidentCounts.RESOLVED} tone="success" />
+                <StatTile label="Dismissed" value={incidentCounts.DISMISSED} tone="muted" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No incidents found</h3>
-              <p className="text-gray-600">
-                {statusFilter === 'all' 
-                  ? 'No incidents have been reported yet.' 
-                  : `No incidents with status "${statusFilter}" found.`
-                }
-              </p>
-            </div>
+
+              {/* Search + filter */}
+              <Card>
+                <SearchBar
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  placeholder="Search ticket, type, location, or reporter..."
+                />
+                <div className="mt-4">
+                  <FilterChips
+                    options={[
+                      { value: 'all', label: 'All', count: incidentCounts.all },
+                      ...STATUSES.map((s) => ({
+                        value: s,
+                        label: s.charAt(0) + s.slice(1).toLowerCase(),
+                        count: incidentCounts[s],
+                      })),
+                    ]}
+                    value={statusFilter}
+                    onChange={setStatusFilter}
+                  />
+                </div>
+              </Card>
+
+              {/* Incident list */}
+              {filteredIncidents.length === 0 ? (
+                <Card>
+                  <EmptyState
+                    icon={SearchX}
+                    title="No incidents found"
+                    message={
+                      statusFilter === 'all'
+                        ? 'No incidents have been reported yet.'
+                        : `No incidents with status "${statusFilter}" found.`
+                    }
+                  />
+                </Card>
+              ) : (
+                <>
+                  {/* Stacked cards below lg */}
+                  <div className="space-y-2.5 lg:hidden">
+                    {filteredIncidents.map((incident) => (
+                      <Card key={incident.id}>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-bold text-ink-strong">{incident.typeLabel}</p>
+                            <p className="mt-1 text-sm text-ink-muted">{incident.location}</p>
+                          </div>
+                          <Badge label={incident.status} />
+                        </div>
+                        <div className="mt-3 space-y-1.5 text-sm text-ink-muted">
+                          <p>{incident.description}</p>
+                          <p>
+                            Reported by:{' '}
+                            <span className="font-medium text-ink-strong">
+                              {incident.reportedBy ? `${incident.reportedBy.firstName} ${incident.reportedBy.lastName}` : '-'}
+                            </span>
+                          </p>
+                          <p>
+                            Handled by:{' '}
+                            <span className="font-medium text-ink-strong">
+                              {incident.handledBy ? `${incident.handledBy.firstName} ${incident.handledBy.lastName}` : '-'}
+                            </span>
+                          </p>
+                          <p>
+                            Date:{' '}
+                            <span className="font-medium text-ink-strong">
+                              {new Date(incident.createdAt).toLocaleDateString()}
+                            </span>
+                          </p>
+                          <p>
+                            Ticket:{' '}
+                            <span className="font-medium text-ink-strong">{incident.ticketNumber || '-'}</span>
+                          </p>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+
+                  {/* Table on lg+ */}
+                  <Card padded={false} className="hidden overflow-x-auto lg:block">
+                    <table className="min-w-full divide-y divide-surface-border">
+                      <thead className="bg-surface-alt">
+                        <tr>
+                          {['Incident', 'Status', 'Location', 'Reported By', 'Handled By', 'Date', 'Ticket #'].map((h) => (
+                            <th
+                              key={h}
+                              className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-ink-muted"
+                            >
+                              {h}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-surface-border">
+                        {filteredIncidents.map((incident) => (
+                          <tr key={incident.id} className="hover:bg-surface-alt">
+                            <td className="px-6 py-4">
+                              <div className="text-sm font-medium text-ink-strong">{incident.typeLabel}</div>
+                              <div className="max-w-xs truncate text-sm text-ink-muted">{incident.description}</div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <Badge label={incident.status} />
+                            </td>
+                            <td className="px-6 py-4 text-sm text-ink-body">{incident.location}</td>
+                            <td className="px-6 py-4 text-sm text-ink-body">
+                              {incident.reportedBy ? `${incident.reportedBy.firstName} ${incident.reportedBy.lastName}` : '-'}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-ink-body">
+                              {incident.handledBy ? `${incident.handledBy.firstName} ${incident.handledBy.lastName}` : '-'}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-ink-body">
+                              {new Date(incident.createdAt).toLocaleDateString()}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-ink-body">{incident.ticketNumber || '-'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </Card>
+                </>
+              )}
+            </>
           )}
         </div>
-      </PageWrapper>
+      </div>
     </RoleGuard>
   )
 }

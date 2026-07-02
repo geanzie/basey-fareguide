@@ -1,4 +1,5 @@
 import { CURRENT_PRIVACY_NOTICE_VERSION } from '@/lib/privacyNotice'
+import GradientHeader from '@/ui/GradientHeader'
 
 export const metadata = {
   title: 'Privacy Notice — Basey Fare Check',
@@ -8,15 +9,17 @@ export const metadata = {
 
 export default function PrivacyPolicyPage() {
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-surface-bg">
       <div className="mx-auto max-w-3xl">
-        {/* Header */}
+        <GradientHeader
+          title="Privacy Notice"
+          subtitle={`Version ${CURRENT_PRIVACY_NOTICE_VERSION} — Basey FareCheck`}
+          backHref="/"
+        />
+        <div className="-mt-6 px-4 pb-12 lg:px-8">
+        <div className="rounded-card border border-surface-border bg-surface p-6 shadow-card sm:p-8">
         <div className="mb-10">
-          <h1 className="text-3xl font-extrabold text-gray-900">Privacy Notice</h1>
-          <p className="mt-2 text-sm text-gray-500">
-            Version: {CURRENT_PRIVACY_NOTICE_VERSION} &mdash; Basey Fare Check
-          </p>
-          <p className="mt-4 text-base text-gray-700">
+          <p className="text-base text-gray-700">
             This Privacy Notice explains how Basey Fare Check collects, uses, and handles your
             personal data when you register for and use this service. It is issued in accordance
             with the <strong>Data Privacy Act of 2012 (Republic Act No. 10173)</strong> of the
@@ -230,6 +233,8 @@ export default function PrivacyPolicyPage() {
           Basey Fare Check &mdash; Transportation Fare Reference System
           <br />
           Privacy Notice version {CURRENT_PRIVACY_NOTICE_VERSION}
+        </div>
+        </div>
         </div>
       </div>
     </div>

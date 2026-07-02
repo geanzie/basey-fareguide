@@ -31,7 +31,7 @@ export function getRoleBadgeClass(userType: AdminUserType | string) {
     case 'ENFORCER':
       return 'bg-amber-100 text-amber-800'
     case 'DRIVER':
-      return 'bg-emerald-100 text-emerald-800'
+      return 'bg-surface-tint text-primary-dark'
     default:
       return 'bg-gray-100 text-gray-800'
   }

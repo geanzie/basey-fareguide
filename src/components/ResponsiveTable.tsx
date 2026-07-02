@@ -36,7 +36,7 @@ function ResponsiveTable({
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
-          <LoadingSpinner className="justify-center text-emerald-600" size={28} />
+          <LoadingSpinner className="justify-center text-primary" size={28} />
           <p className="text-gray-600 mt-2">Loading...</p>
         </div>
       </div>
@@ -60,7 +60,7 @@ function ResponsiveTable({
       <div className="hidden md:block">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="app-surface-inner">
+            <thead className="border border-surface-border bg-surface-alt">
               <tr>
                 {columns.map((column) => (
                   <th
@@ -90,7 +90,7 @@ function ResponsiveTable({
       {/* Mobile Stacked Card Layout */}
       <div className="md:hidden space-y-4">
         {data.map((row, rowIndex) => (
-          <div key={getRowKey ? getRowKey(row, rowIndex) : rowIndex} className={`app-surface-inner rounded-lg p-4 ${mobileCardClassName}`.trim()}>
+          <div key={getRowKey ? getRowKey(row, rowIndex) : rowIndex} className={`border border-surface-border bg-surface-alt rounded-lg p-4 ${mobileCardClassName}`.trim()}>
             {columns.map((column) => {
               const value = column.render ? column.render(row[column.key], row) : row[column.key]
               
@@ -171,9 +171,9 @@ export function ActionButton({
       case 'danger':
         return 'bg-red-600 hover:bg-red-700 text-white'
       case 'secondary':
-        return 'app-surface-inner hover:bg-white/80 text-gray-700 border border-gray-300/80'
+        return 'border border-surface-border bg-surface-alt hover:bg-white/80 text-gray-700 border border-gray-300/80'
       default:
-        return 'bg-emerald-600 hover:bg-emerald-700 text-white'
+        return 'bg-primary hover:bg-primary-dark text-white'
     }
   }
 
@@ -194,7 +194,7 @@ export function ActionButton({
       disabled={disabled}
       className={`
         inline-flex items-center rounded-md font-medium transition-colors
-        focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500
+        focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary
         disabled:cursor-not-allowed disabled:opacity-60
         ${getVariantClasses()} ${getSizeClasses()} ${className}
       `}

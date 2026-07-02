@@ -144,7 +144,7 @@ export default function FeaturesPage() {
     const tones: Record<DashboardIconTone, string> = {
       slate: 'border-slate-200 bg-slate-50',
       blue: 'border-blue-200 bg-blue-50',
-      emerald: 'border-emerald-200 bg-emerald-50',
+      emerald: 'border-primary/20 bg-surface-tint',
       red: 'border-red-200 bg-red-50',
       violet: 'border-violet-200 bg-violet-50',
       amber: 'border-amber-200 bg-amber-50',
@@ -155,7 +155,7 @@ export default function FeaturesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-surface-bg">
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -167,14 +167,14 @@ export default function FeaturesPage() {
             <div className="flex space-x-4">
               <Link
                 href="/"
-                className="inline-flex items-center gap-2 text-gray-600 hover:text-emerald-600 px-3 py-2 font-medium"
+                className="inline-flex items-center gap-2 text-ink-muted hover:text-primary px-3 py-2 font-medium"
               >
                 <DashboardIconSlot icon={DASHBOARD_ICONS.home} size={DASHBOARD_ICON_POLICY.sizes.button} />
                 <span>Home</span>
               </Link>
               <Link
                 href="/auth"
-                className="inline-flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg font-medium"
+                className="inline-flex items-center gap-2 bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg font-medium"
               >
                 <DashboardIconSlot icon={DASHBOARD_ICONS.arrowRight} size={DASHBOARD_ICON_POLICY.sizes.button} className="-rotate-45" />
                 <span>Get Started</span>
@@ -184,26 +184,26 @@ export default function FeaturesPage() {
         </div>
       </header>
 
-      <section className="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white py-16">
+      <section className="bg-brand text-white py-16">
         <div className="max-w-7xl mx-auto px-4 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
             Complete Transportation Management
           </h1>
-          <p className="text-xl text-emerald-100 mb-8 max-w-3xl mx-auto">
+          <p className="text-xl text-green-200 mb-8 max-w-3xl mx-auto">
             Explore all features of the Basey Fare Check system, from accurate fare calculation
             to comprehensive incident management and user administration.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="/auth"
-              className="inline-flex items-center justify-center gap-2 bg-white text-emerald-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
+              className="inline-flex items-center justify-center gap-2 bg-white text-primary-dark px-8 py-3 rounded-lg font-semibold hover:bg-surface-alt transition-colors"
             >
               <DashboardIconSlot icon={DASHBOARD_ICONS.user} size={DASHBOARD_ICON_POLICY.sizes.button} />
               <span>Sign Up Now</span>
             </Link>
             <Link
               href="/report"
-              className="inline-flex items-center justify-center gap-2 bg-emerald-800 text-white px-8 py-3 rounded-lg font-semibold hover:bg-emerald-900 transition-colors"
+              className="inline-flex items-center justify-center gap-2 bg-primary-dark text-white px-8 py-3 rounded-lg font-semibold hover:bg-primary transition-colors"
             >
               <DashboardIconSlot icon={DASHBOARD_ICONS.incidents} size={DASHBOARD_ICON_POLICY.sizes.button} />
               <span>Report Incident</span>
@@ -243,7 +243,7 @@ export default function FeaturesPage() {
                         <DashboardIconSlot
                           icon={DASHBOARD_ICONS.checkmark}
                           size={DASHBOARD_ICON_POLICY.sizes.button}
-                          className="mt-0.5 text-emerald-600"
+                          className="mt-0.5 text-primary"
                         />
                         <span>{item}</span>
                       </li>
@@ -298,7 +298,7 @@ export default function FeaturesPage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="/auth"
-              className="inline-flex items-center justify-center gap-2 bg-emerald-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-emerald-700 transition-colors"
+              className="inline-flex items-center justify-center gap-2 bg-primary text-white px-8 py-3 rounded-lg font-semibold hover:bg-primary-dark transition-colors"
             >
               <DashboardIconSlot icon={DASHBOARD_ICONS.user} size={DASHBOARD_ICON_POLICY.sizes.button} />
               <span>Create Account</span>

@@ -104,7 +104,7 @@ export default function DriverTripHistory({
   }
 
   return (
-    <section className="app-surface-card rounded-2xl p-5">
+    <section className="border border-surface-border bg-surface shadow-card rounded-2xl p-5">
       {showHeader ? (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -192,7 +192,7 @@ export default function DriverTripHistory({
                       <div className="flex items-center gap-4">
                         <div className="grid gap-1 text-xs text-slate-600 sm:text-right">
                           <div>Riders: <span className="font-semibold">{session.riderCount}</span></div>
-                          <div>Completed: <span className="font-semibold text-emerald-700">{session.completedCount}</span></div>
+                          <div>Completed: <span className="font-semibold text-primary-dark">{session.completedCount}</span></div>
                           <div>Archived: <span className="font-semibold">{session.archivedCount}</span></div>
                         </div>
                         <svg

@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation'
 
 import { useAuth } from '@/components/AuthProvider'
 import BrandMark from '@/components/BrandMark'
-import LoadingSpinner from '@/components/LoadingSpinner'
-import PasswordInput from '@/components/PasswordInput'
+import Button from '@/ui/Button'
+import { Field, Input } from '@/ui/Field'
+import PasswordInput from '@/ui/PasswordInput'
 import { getAuthenticatedHomeRoute } from '@/lib/authRoutes'
 
 interface LoginFormProps {
@@ -68,103 +69,81 @@ const LoginForm = ({
   }
 
   return (
-    <div className="app-page-bg min-h-screen px-4 py-12 sm:px-6 lg:px-8">
-      <div className="flex min-h-[calc(100vh-6rem)] items-center justify-center">
-        <div className="w-full max-w-md">
-          <div className="app-surface-card-strong space-y-8 rounded-3xl p-8 sm:p-10">
-            <div>
-              <div className="flex justify-center">
-                <BrandMark />
+    <div className="flex min-h-screen items-center justify-center bg-ink-strong px-4 py-12">
+      <div className="w-full max-w-md">
+        <div className="mb-8 flex flex-col items-center text-center">
+          <BrandMark />
+          <h1 className="mt-4 text-[26px] font-extrabold text-white">Basey FareCheck</h1>
+          <p className="mt-1 text-xs text-ink-muted">Municipal Ordinance 105, Series of 2023</p>
+        </div>
+
+        <div className="rounded-3xl bg-surface p-6 shadow-raised sm:p-8">
+          <h2 className="mb-5 text-xl font-bold text-ink-strong">Sign In</h2>
+
+          <form className="space-y-4" onSubmit={handleSubmit} suppressHydrationWarning>
+            {error ? (
+              <div className="rounded-xl bg-danger-soft px-4 py-3 text-[13px] font-medium text-danger">
+                {error}
               </div>
-              <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-                Sign in to Basey Fare Check
-              </h2>
-              <p className="mt-2 text-center text-sm text-gray-600">
-                Transportation fare reference system
-              </p>
+            ) : null}
+
+            <Field label="Username" htmlFor="username">
+              <Input
+                id="username"
+                name="username"
+                type="text"
+                autoComplete="username"
+                required
+                placeholder="Enter username"
+                value={formData.username}
+                onChange={handleInputChange}
+                suppressHydrationWarning
+              />
+            </Field>
+
+            <Field label="Password" htmlFor="password">
+              <PasswordInput
+                id="password"
+                name="password"
+                autoComplete="current-password"
+                required
+                placeholder="Enter password"
+                value={formData.password}
+                onChange={handleInputChange}
+                suppressHydrationWarning
+              />
+            </Field>
+
+            <Button type="submit" loading={loading} className="mt-2 w-full">
+              {loading ? 'Signing in...' : 'Sign In'}
+            </Button>
+
+            <div className="pt-2 text-center">
+              <button
+                type="button"
+                onClick={() => router.push('/auth/request-reset')}
+                className="text-sm font-semibold text-primary hover:text-primary-dark"
+              >
+                Forgot password?
+              </button>
             </div>
 
-            <form
-              className="mt-8 space-y-6"
-              action="/auth/login"
-              method="post"
-              onSubmit={handleSubmit}
-              suppressHydrationWarning
-            >
-              {error ? (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-                  {error}
-                </div>
-              ) : null}
-
-              <div className="rounded-md shadow-sm -space-y-px" suppressHydrationWarning>
-                <div suppressHydrationWarning>
-                  <label htmlFor="username" className="sr-only">Username</label>
-                  <input
-                    id="username"
-                    name="username"
-                    type="text"
-                    autoComplete="username"
-                    required
-                    className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 bg-white placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 focus:z-10 sm:text-sm"
-                    placeholder="Username"
-                    value={formData.username}
-                    onChange={handleInputChange}
-                    suppressHydrationWarning
-                  />
-                </div>
-                <div suppressHydrationWarning>
-                  <label htmlFor="password" className="sr-only">Password</label>
-                  <PasswordInput
-                    id="password"
-                    name="password"
-                    autoComplete="current-password"
-                    required
-                    className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 bg-white placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 focus:z-10 sm:text-sm"
-                    placeholder="Password"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    suppressHydrationWarning
-                  />
-                </div>
-              </div>
-
-              <div>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50"
-                >
-                  {loading ? (
-                    <span className="flex items-center">
-                      <LoadingSpinner size={20} className="mr-3 text-white" />
-                      Signing in...
-                    </span>
-                  ) : (
-                    'Sign in'
-                  )}
-                </button>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <button
-                  type="button"
-                  onClick={() => router.push('/auth/request-reset')}
-                  className="text-sm text-emerald-600 hover:text-emerald-500"
-                >
-                  Forgot password?
-                </button>
-                <button
-                  type="button"
-                  onClick={onSwitchToRegister}
-                  className="text-emerald-600 hover:text-emerald-500 text-sm"
-                >
-                  Register here
-                </button>
-              </div>
-            </form>
-          </div>
+            <div className="border-t border-surface-border pt-4 text-center">
+              <button
+                type="button"
+                onClick={onSwitchToRegister}
+                className="text-sm text-ink-muted"
+              >
+                Don&apos;t have an account?{' '}
+                <span className="font-bold text-primary">Register</span>
+              </button>
+            </div>
+          </form>
         </div>
+
+        <p className="mt-8 text-center text-[11px] text-slate-500">
+          Basey Municipality, Samar · Philippines
+        </p>
       </div>
     </div>
   )

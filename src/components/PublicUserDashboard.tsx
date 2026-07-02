@@ -3,17 +3,14 @@
 import { memo, useMemo } from 'react'
 import Link from 'next/link'
 import useSWR from 'swr'
+import { AlertTriangle, BadgePercent, Banknote, Calculator, ClipboardList, History, Route, ShieldCheck } from 'lucide-react'
 
-import {
-  DASHBOARD_ICONS,
-  DASHBOARD_ICON_POLICY,
-  DashboardIconSlot,
-  getDashboardIconChipClasses,
-  type DashboardIcon,
-  type DashboardIconTone,
-} from '@/components/dashboardIcons'
 import FareRateBanner from '@/components/FareRateBanner'
 import TrafficAnnouncementsFeed from '@/components/TrafficAnnouncementsFeed'
+import Badge from '@/ui/Badge'
+import Card from '@/ui/Card'
+import StatTile from '@/ui/StatTile'
+import { StatGridSkeleton, ListSkeleton } from '@/ui/Skeleton'
 import type {
   DashboardActivityItemDto,
   FareCalculationDto,
@@ -46,28 +43,6 @@ function formatDate(value: string) {
     month: 'short',
     day: 'numeric',
   })
-}
-
-function getIncidentStatusClasses(status: string) {
-  if (status === 'INVESTIGATING') {
-    return 'bg-yellow-100 text-yellow-800'
-  }
-
-  if (status === 'RESOLVED') {
-    return 'bg-green-100 text-green-800'
-  }
-
-  return 'bg-gray-100 text-gray-800'
-}
-
-const SECTION_ICON_TONES: Record<DashboardIconTone, string> = {
-  slate: 'text-slate-500',
-  blue: 'text-blue-600',
-  emerald: 'text-emerald-600',
-  red: 'text-red-600',
-  violet: 'text-violet-600',
-  amber: 'text-amber-600',
-  purple: 'text-purple-600',
 }
 
 function PublicUserDashboard() {
@@ -108,70 +83,42 @@ function PublicUserDashboard() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="animate-pulse">
-          <div className="h-6 bg-gray-300 rounded w-1/3 mb-3" />
-          <div className="h-4 bg-gray-200 rounded w-2/3 mb-6" />
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {[...Array(4)].map((_, index) => (
-              <div key={index} className="app-surface-card h-28 rounded-xl" />
-            ))}
-          </div>
-        </div>
+        <StatGridSkeleton />
+        <ListSkeleton count={3} />
       </div>
     )
   }
 
+  const tripActive =
+    activeTripData?.trip?.status === 'ACCEPTED' || activeTripData?.trip?.status === 'BOARDED'
+
   return (
-    <div className="space-y-6 sm:space-y-8">
+    <div className="space-y-5">
+      {/* Active trip card — mirrors mobile ActiveTripCard, polls via SWR above */}
       {activeTripData?.hasActiveTrip && activeTripData.trip ? (
-        <section
-          className={`rounded-2xl border p-3 sm:p-4 ${
-            activeTripData.trip.status === 'ACCEPTED' || activeTripData.trip.status === 'BOARDED'
-              ? 'border-emerald-200 bg-emerald-50'
-              : 'border-yellow-200 bg-yellow-50'
-          }`}
-        >
+        <Card className={tripActive ? 'border-primary/40 bg-surface-tint' : 'border-warning/40 bg-warning/5'}>
           <div className="flex items-center justify-between gap-2">
             <span
-              className={`text-xs font-semibold uppercase tracking-[0.14em] ${
-                activeTripData.trip.status === 'ACCEPTED' || activeTripData.trip.status === 'BOARDED'
-                  ? 'text-emerald-700'
-                  : 'text-yellow-700'
+              className={`text-xs font-bold uppercase tracking-[0.14em] ${
+                tripActive ? 'text-primary-dark' : 'text-warning-dark'
               }`}
             >
               {activeTripData.trip.statusLabel}
             </span>
             {activeTripData.trip.vehiclePlateNumber ? (
-              <span className="rounded-full bg-white/80 px-2 py-0.5 text-xs font-medium text-slate-600 ring-1 ring-slate-200">
+              <span className="rounded-full border border-surface-border bg-surface px-2 py-0.5 text-xs font-medium text-ink-muted">
                 {activeTripData.trip.vehiclePlateNumber}
               </span>
             ) : null}
           </div>
-          <div className="mt-1.5 text-sm font-medium text-slate-800">
+          <div className="mt-1.5 text-sm font-medium text-ink-body">
             {activeTripData.trip.origin} → {activeTripData.trip.destination}
           </div>
-          <div className="mt-0.5 text-sm font-semibold text-slate-900">
+          <div className="mt-0.5 text-sm font-bold text-ink-strong">
             PHP {activeTripData.trip.fare.toFixed(2)}
           </div>
-        </section>
+        </Card>
       ) : null}
-      <section className="app-surface-card-strong rounded-2xl border border-blue-200/80 p-5 sm:p-6">
-        <div className="flex items-start gap-4">
-          <div className={getDashboardIconChipClasses('blue')}>
-            <DashboardIconSlot
-              icon={DASHBOARD_ICONS.dashboard}
-              size={DASHBOARD_ICON_POLICY.sizes.hero}
-              className="text-blue-700"
-            />
-          </div>
-          <div className="min-w-0">
-            <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">Your activity in Basey Fare Check</h2>
-            <p className="mt-2 max-w-2xl text-sm text-slate-600">
-              Start with one action, then review your latest fares and reports.
-            </p>
-          </div>
-        </div>
-      </section>
 
       <TrafficAnnouncementsFeed
         title="Traffic Announcements"
@@ -183,111 +130,86 @@ function PublicUserDashboard() {
         description="Current public fare rates and the next approved increase or adjustment, when one is scheduled."
       />
 
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+      {/* Quick actions */}
+      <section className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
         <ActionCard
           href="/calculator"
-          icon={DASHBOARD_ICONS.calculator}
+          icon={<Calculator className="h-5 w-5 text-primary" />}
           title="Calculate Fare"
           description="Plan a route or quick estimate."
         />
         <ActionCard
           href="/report"
-          icon={DASHBOARD_ICONS.incidents}
+          icon={<AlertTriangle className="h-5 w-5 text-danger" />}
           title="Report Incident"
           description="Send one report with optional evidence."
-          accent="red"
         />
         <ActionCard
           href="/history"
-          icon={DASHBOARD_ICONS.history}
+          icon={<History className="h-5 w-5 text-info" />}
           title="View History"
           description="Review saved fares and submitted reports."
-          accent="emerald"
         />
         <ActionCard
           href="/profile/discount"
-          icon={DASHBOARD_ICONS.discount}
+          icon={<BadgePercent className="h-5 w-5 text-brandPurple" />}
           title="Manage Discount Card"
           description="Check your approval and active discount."
-          accent="violet"
         />
       </section>
 
-      <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        <SummaryCard
-          label="Saved Routes"
-          value={summary.routes}
-          icon={DASHBOARD_ICONS.routes}
-          tone="blue"
-        />
-        <SummaryCard
-          label="Incident Reports"
-          value={summary.reports}
-          icon={DASHBOARD_ICONS.list}
-          tone="red"
-        />
-        <SummaryCard
-          label="Total Fare Logged"
-          value={formatCurrency(summary.totalFare)}
-          icon={DASHBOARD_ICONS.fare}
-          tone="emerald"
-        />
-        <SummaryCard
-          label="Discount Savings"
-          value={formatCurrency(summary.totalSavings)}
-          icon={DASHBOARD_ICONS.discount}
-          tone="violet"
-        />
+      {/* Summary stats */}
+      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatTile label="Saved Routes" value={summary.routes} icon={Route} tone="info" />
+        <StatTile label="Incident Reports" value={summary.reports} icon={ClipboardList} tone="danger" />
+        <StatTile label="Total Fare Logged" value={formatCurrency(summary.totalFare)} icon={Banknote} tone="success" />
+        <StatTile label="Discount Savings" value={formatCurrency(summary.totalSavings)} icon={BadgePercent} tone="purple" />
       </section>
 
-      <section className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <div className="app-surface-card rounded-2xl">
+      <section className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+        <Card padded={false}>
           <SectionHeader
             title="Recent Fare Calculations"
             description="Latest saved planner results."
             href="/history?filter=routes"
             linkLabel="View all fares"
-            icon={DASHBOARD_ICONS.routes}
-            tone="blue"
           />
-          <div className="p-4 sm:p-6">
+          <div className="p-4">
             {recentRoutes.length === 0 ? (
-              <EmptyState
+              <InlineEmpty
                 title="No fare calculations yet"
                 description="Use the calculator to save your first route."
                 href="/calculator"
                 linkLabel="Open calculator"
-                icon={DASHBOARD_ICONS.routes}
-                tone="blue"
               />
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {recentRoutes.slice(0, 3).map((route) => (
-                  <div key={route.id} className="app-surface-inner rounded-xl p-4">
+                  <div key={route.id} className="rounded-xl bg-surface-alt p-4">
                     <div className="flex items-start justify-between gap-4">
                       <div>
-                        <p className="font-medium text-slate-900">
+                        <p className="font-medium text-ink-strong">
                           {route.from} to {route.to}
                         </p>
-                        <p className="mt-1 text-sm text-slate-600">
+                        <p className="mt-1 text-sm text-ink-muted">
                           {route.distanceKm.toFixed(1)} km on {formatDate(route.createdAt)}
                         </p>
                       </div>
                       <div className="text-right">
                         {route.originalFare !== null && route.discountApplied !== null ? (
                           <>
-                            <div className="text-xs text-slate-500 line-through">
+                            <div className="text-xs text-ink-faint line-through">
                               {formatCurrency(route.originalFare)}
                             </div>
-                            <div className="text-lg font-semibold text-emerald-600">
+                            <div className="text-lg font-bold text-primary">
                               {formatCurrency(route.fare)}
                             </div>
-                            <div className="text-xs text-emerald-600">
+                            <div className="text-xs text-primary">
                               Saved {formatCurrency(route.discountApplied)}
                             </div>
                           </>
                         ) : (
-                          <div className="text-lg font-semibold text-emerald-600">
+                          <div className="text-lg font-bold text-primary">
                             {formatCurrency(route.fare)}
                           </div>
                         )}
@@ -298,89 +220,77 @@ function PublicUserDashboard() {
               </div>
             )}
           </div>
-        </div>
+        </Card>
 
-        <div className="app-surface-card rounded-2xl">
+        <Card padded={false}>
           <SectionHeader
             title="Recent Incident Reports"
             description="Most recent reports you submitted."
             href="/history?filter=reports"
             linkLabel="View all reports"
-            icon={DASHBOARD_ICONS.incidents}
-            tone="red"
           />
-          <div className="p-4 sm:p-6">
+          <div className="p-4">
             {reportedIncidents.length === 0 ? (
-              <EmptyState
+              <InlineEmpty
                 title="No incident reports yet"
                 description="Submit a report when you need to flag a transport issue."
                 href="/report"
                 linkLabel="Report an incident"
-                icon={DASHBOARD_ICONS.incidents}
-                tone="red"
               />
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {reportedIncidents.slice(0, 3).map((incident) => (
-                  <div key={incident.id} className="app-surface-inner rounded-xl p-4">
+                  <div key={incident.id} className="rounded-xl bg-surface-alt p-4">
                     <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0 flex-1">
-                        <p className="font-medium text-slate-900">{incident.typeLabel}</p>
-                        <p className="mt-1 text-sm text-slate-600">
+                        <p className="font-medium text-ink-strong">{incident.typeLabel}</p>
+                        <p className="mt-1 text-sm text-ink-muted">
                           {incident.location} on {formatDate(incident.date)}
                         </p>
-                        <p className="mt-2 text-sm text-slate-700 line-clamp-2">{incident.description}</p>
+                        <p className="mt-2 text-sm text-ink-body line-clamp-2">{incident.description}</p>
                       </div>
-                      <span
-                        className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${getIncidentStatusClasses(incident.status)}`}
-                      >
-                        {incident.statusLabel}
-                      </span>
+                      <Badge label={incident.status} />
                     </div>
                   </div>
                 ))}
               </div>
             )}
           </div>
-        </div>
+        </Card>
       </section>
 
-      <section className="app-surface-card rounded-2xl">
+      <Card padded={false}>
         <SectionHeader
           title="Enforcement Transparency"
           description="Community-wide incident handling — see that reports are being actioned."
           href="/history?filter=reports"
           linkLabel="View your reports"
-          icon={DASHBOARD_ICONS.safe}
-          tone="emerald"
         />
 
         {communityStats !== null && (
-          <div className="grid grid-cols-3 divide-x divide-gray-200 border-b border-gray-200">
-            <div className="px-4 py-4 text-center sm:px-6 sm:py-5">
-              <p className="text-2xl font-bold text-slate-900">{communityStats.totalIncidents}</p>
-              <p className="mt-1 text-xs text-slate-500">Total Reports</p>
+          <div className="grid grid-cols-3 divide-x divide-surface-border border-b border-surface-border">
+            <div className="px-4 py-4 text-center">
+              <p className="text-2xl font-extrabold text-ink-strong">{communityStats.totalIncidents}</p>
+              <p className="mt-1 text-xs text-ink-muted">Total Reports</p>
             </div>
-            <div className="px-4 py-4 text-center sm:px-6 sm:py-5">
-              <p className="text-2xl font-bold text-emerald-600">{communityStats.resolvedIncidents}</p>
-              <p className="mt-1 text-xs text-slate-500">Resolved</p>
+            <div className="px-4 py-4 text-center">
+              <p className="text-2xl font-extrabold text-primary">{communityStats.resolvedIncidents}</p>
+              <p className="mt-1 text-xs text-ink-muted">Resolved</p>
             </div>
-            <div className="px-4 py-4 text-center sm:px-6 sm:py-5">
-              <p className="text-2xl font-bold text-amber-600">{communityStats.pendingIncidents}</p>
-              <p className="mt-1 text-xs text-slate-500">Under Review</p>
+            <div className="px-4 py-4 text-center">
+              <p className="text-2xl font-extrabold text-warning-dark">{communityStats.pendingIncidents}</p>
+              <p className="mt-1 text-xs text-ink-muted">Under Review</p>
             </div>
           </div>
         )}
 
-        <div className="p-4 sm:p-6">
+        <div className="p-4">
           {recentActivity.length === 0 ? (
-            <EmptyState
+            <InlineEmpty
               title="No enforcement activity yet"
               description="Incident actions will appear here once reports are submitted and handled."
               href="/report"
               linkLabel="Report an incident"
-              icon={DASHBOARD_ICONS.safe}
-              tone="emerald"
             />
           ) : (
             <div className="space-y-3">
@@ -390,160 +300,85 @@ function PublicUserDashboard() {
             </div>
           )}
         </div>
-      </section>
+      </Card>
     </div>
   )
 }
 
 function ActionCard({
-  accent = 'blue',
   description,
   href,
   icon,
   title,
 }: {
-  accent?: 'blue' | 'emerald' | 'red' | 'violet'
   description: string
   href: string
-  icon?: DashboardIcon
+  icon: React.ReactNode
   title: string
 }) {
-  const accentClasses: Record<string, string> = {
-    blue: 'app-surface-card border-blue-200/80 text-blue-900',
-    emerald: 'app-surface-card border-emerald-200/80 text-emerald-900',
-    red: 'app-surface-card border-red-200/80 text-red-900',
-    violet: 'app-surface-card border-violet-200/80 text-violet-900',
-  }
-  const accentTones: Record<string, DashboardIconTone> = {
-    blue: 'blue',
-    emerald: 'emerald',
-    red: 'red',
-    violet: 'violet',
-  }
-
   return (
     <Link
       href={href}
-      className={`rounded-2xl p-4 sm:p-5 transition hover:-translate-y-0.5 hover:shadow-lg ${accentClasses[accent]}`}
+      className="rounded-card border border-surface-border bg-surface p-4 shadow-card transition hover:-translate-y-0.5 hover:shadow-raised"
     >
       <div className="flex items-start gap-3">
-        {icon ? (
-          <div className={getDashboardIconChipClasses(accentTones[accent])}>
-            <DashboardIconSlot
-              icon={icon}
-              size={DASHBOARD_ICON_POLICY.sizes.card}
-            />
-          </div>
-        ) : null}
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-tint">
+          {icon}
+        </div>
         <div className="min-w-0">
-          <h3 className="text-base font-semibold">{title}</h3>
-          <p className="mt-1.5 text-sm opacity-80">{description}</p>
+          <h3 className="text-base font-bold text-ink-strong">{title}</h3>
+          <p className="mt-1 text-sm text-ink-muted">{description}</p>
         </div>
       </div>
     </Link>
   )
 }
 
-function SummaryCard({
-  icon,
-  label,
-  tone = 'slate',
-  value,
-}: {
-  icon?: DashboardIcon
-  label: string
-  tone?: DashboardIconTone
-  value: number | string
-}) {
-  return (
-    <div className="app-surface-card rounded-2xl p-4 sm:p-5">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-sm text-slate-500">{label}</p>
-          <p className="mt-2 text-2xl font-bold text-slate-900">{value}</p>
-        </div>
-        {icon ? (
-          <div className={getDashboardIconChipClasses(tone)}>
-            <DashboardIconSlot
-              icon={icon}
-              size={DASHBOARD_ICON_POLICY.sizes.card}
-            />
-          </div>
-        ) : null}
-      </div>
-    </div>
-  )
-}
-
 function SectionHeader({
   description,
   href,
-  icon,
   linkLabel,
-  tone = 'slate',
   title,
 }: {
   description: string
   href: string
-  icon?: DashboardIcon
   linkLabel: string
-  tone?: DashboardIconTone
   title: string
 }) {
   return (
-    <div className="flex flex-col gap-3 border-b border-gray-200 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+    <div className="flex flex-col gap-3 border-b border-surface-border p-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <div className="flex items-center gap-2">
-          {icon ? (
-            <DashboardIconSlot
-              icon={icon}
-              size={DASHBOARD_ICON_POLICY.sizes.section}
-              className={SECTION_ICON_TONES[tone]}
-            />
-          ) : null}
-          <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
-        </div>
-        <p className="mt-1 text-sm text-slate-600">{description}</p>
+        <h3 className="text-lg font-bold text-ink-strong">{title}</h3>
+        <p className="mt-1 text-sm text-ink-muted">{description}</p>
       </div>
-      <Link href={href} className="text-sm font-medium text-emerald-700 hover:text-emerald-800">
+      <Link href={href} className="text-sm font-semibold text-primary hover:text-primary-dark">
         {linkLabel}
       </Link>
     </div>
   )
 }
 
-function EmptyState({
+function InlineEmpty({
   description,
   href,
-  icon,
   linkLabel,
-  tone = 'slate',
   title,
 }: {
   description: string
   href: string
-  icon?: DashboardIcon
   linkLabel: string
-  tone?: DashboardIconTone
   title: string
 }) {
   return (
-    <div className="app-surface-inner rounded-xl border border-dashed border-gray-300 p-6 text-center">
-      {icon ? (
-        <div className="mx-auto mb-4 flex justify-center">
-          <div className={getDashboardIconChipClasses(tone)}>
-            <DashboardIconSlot
-              icon={icon}
-              size={DASHBOARD_ICON_POLICY.sizes.empty}
-            />
-          </div>
-        </div>
-      ) : null}
-      <h4 className="text-base font-semibold text-slate-900">{title}</h4>
-      <p className="mt-2 text-sm text-slate-600">{description}</p>
+    <div className="rounded-xl border border-dashed border-surface-border bg-surface-alt p-6 text-center">
+      <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-surface-tint">
+        <ShieldCheck className="h-6 w-6 text-primary" />
+      </div>
+      <h4 className="text-base font-bold text-ink-strong">{title}</h4>
+      <p className="mt-1 text-sm text-ink-muted">{description}</p>
       <Link
         href={href}
-        className="mt-4 inline-flex items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+        className="mt-4 inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white hover:bg-primary-dark"
       >
         {linkLabel}
       </Link>
@@ -551,32 +386,21 @@ function EmptyState({
   )
 }
 
-function getEnforcementStatusClasses(status: string): string {
-  if (status === 'RESOLVED') return 'bg-green-100 text-green-800'
-  if (status === 'TICKET_ISSUED') return 'bg-blue-100 text-blue-800'
-  if (status === 'INVESTIGATING') return 'bg-yellow-100 text-yellow-800'
-  return 'bg-gray-100 text-gray-800'
-}
-
 function ActivityRow({ item }: { item: DashboardActivityItemDto }) {
   return (
-    <div className="app-surface-inner rounded-xl p-4">
+    <div className="rounded-xl bg-surface-alt p-4">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
-          <p className="font-medium text-slate-900">{item.typeLabel}</p>
-          <p className="mt-0.5 text-sm text-slate-600">{item.location}</p>
+          <p className="font-medium text-ink-strong">{item.typeLabel}</p>
+          <p className="mt-0.5 text-sm text-ink-muted">{item.location}</p>
           {item.handledBy ? (
-            <p className="mt-1 text-xs text-slate-500">Handled by {item.handledBy}</p>
+            <p className="mt-1 text-xs text-ink-faint">Handled by {item.handledBy}</p>
           ) : null}
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1.5">
-          <span
-            className={`rounded-full px-2.5 py-1 text-xs font-medium ${getEnforcementStatusClasses(item.status)}`}
-          >
-            {item.statusLabel}
-          </span>
+          <Badge label={item.status} />
           {item.ticketNumber ? (
-            <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-600 ring-1 ring-slate-200">
+            <span className="rounded-md border border-surface-border bg-surface px-2 py-0.5 font-mono text-xs text-ink-muted">
               #{item.ticketNumber}
             </span>
           ) : null}

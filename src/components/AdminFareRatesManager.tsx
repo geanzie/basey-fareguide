@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 
 import type { AdminFareRatesResponseDto } from '@/lib/contracts'
 import { formatManilaDateTimeInput, formatManilaDateTimeLabel } from '@/lib/manilaTime'
+import { useFeedback } from '@/ui/FeedbackProvider'
 
 type PublishMode = 'immediate' | 'scheduled'
 
@@ -33,6 +34,7 @@ function findPreviousEligibleVersion(data: AdminFareRatesResponseDto | null) {
 }
 
 export default function AdminFareRatesManager() {
+  const { confirm } = useFeedback()
   const [data, setData] = useState<AdminFareRatesResponseDto | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -158,9 +160,10 @@ export default function AdminFareRatesManager() {
       return
     }
 
-    const confirmed = window.confirm(
-      `Revert the current live fare to ${formatCurrency(previousEligibleVersion.baseFare)} base and ${formatCurrency(previousEligibleVersion.perKmRate)} per km?`,
-    )
+    const confirmed = await confirm({
+      title: 'Revert fare rate',
+      message: `Revert the current live fare to ${formatCurrency(previousEligibleVersion.baseFare)} base and ${formatCurrency(previousEligibleVersion.perKmRate)} per km?`,
+    })
     if (!confirmed) {
       return
     }
@@ -196,7 +199,11 @@ export default function AdminFareRatesManager() {
   }
 
   async function handleDeleteVersion(versionId: string, isUpcoming: boolean) {
-    const confirmed = window.confirm('Delete this fare version permanently? This cannot be undone.')
+    const confirmed = await confirm({
+      title: 'Delete fare version',
+      message: 'Delete this fare version permanently? This cannot be undone.',
+      destructive: true,
+    })
     if (!confirmed) {
       return
     }
@@ -234,7 +241,7 @@ export default function AdminFareRatesManager() {
 
   if (loading && !data) {
     return (
-      <div className="app-surface-card rounded-2xl p-6">
+      <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
         <p className="text-sm text-slate-500">Loading fare rate management...</p>
       </div>
     )
@@ -255,15 +262,15 @@ export default function AdminFareRatesManager() {
       )}
 
       {success && (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <div className="rounded-2xl border border-primary/20 bg-surface-tint px-4 py-3 text-sm text-primary-dark">
           {success}
         </div>
       )}
 
       <section className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
-          <p className="text-xs font-medium uppercase tracking-wide text-emerald-700">Current fare</p>
-          <div className="mt-4 space-y-2 text-sm text-emerald-900">
+        <div className="rounded-2xl border border-primary/20 bg-surface-tint p-5">
+          <p className="text-xs font-medium uppercase tracking-wide text-primary-dark">Current fare</p>
+          <div className="mt-4 space-y-2 text-sm text-primary-dark">
             <div className="flex items-center justify-between">
               <span>Base fare ({data?.current.baseDistanceKm} km)</span>
               <span className="font-semibold">{formatCurrency(data?.current.baseFare ?? 0)}</span>
@@ -272,7 +279,7 @@ export default function AdminFareRatesManager() {
               <span>Per additional km</span>
               <span className="font-semibold">{formatCurrency(data?.current.perKmRate ?? 0)}</span>
             </div>
-            <p className="pt-2 text-xs text-emerald-700">
+            <p className="pt-2 text-xs text-primary-dark">
               Active since {formatManilaDateTimeLabel(data?.current.effectiveAt)}
             </p>
           </div>
@@ -303,7 +310,7 @@ export default function AdminFareRatesManager() {
         </div>
       </section>
 
-      <section className="app-surface-card rounded-2xl p-6">
+      <section className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
         <div className="mb-5">
           <h2 className="text-xl font-semibold text-slate-900">Publish or Schedule a Fare Change</h2>
           <p className="mt-1 text-sm text-slate-600">
@@ -365,7 +372,7 @@ export default function AdminFareRatesManager() {
                 step="0.01"
                 value={baseFare}
                 onChange={(event) => setBaseFare(event.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                className="w-full rounded-xl border border-slate-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-2 focus:ring-surface-tint"
               />
             </label>
 
@@ -380,7 +387,7 @@ export default function AdminFareRatesManager() {
                 step="0.01"
                 value={perKmRate}
                 onChange={(event) => setPerKmRate(event.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                className="w-full rounded-xl border border-slate-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-2 focus:ring-surface-tint"
               />
             </label>
           </div>
@@ -399,7 +406,7 @@ export default function AdminFareRatesManager() {
                 autoComplete="off"
                 value={effectiveAt}
                 onChange={(event) => setEffectiveAt(event.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                className="w-full rounded-xl border border-slate-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-2 focus:ring-surface-tint"
               />
             </label>
           )}
@@ -415,14 +422,14 @@ export default function AdminFareRatesManager() {
               rows={4}
               required
               placeholder="Explain why this fare version is being published or scheduled."
-              className="w-full rounded-xl border border-slate-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+              className="w-full rounded-xl border border-slate-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-2 focus:ring-surface-tint"
             />
           </label>
 
           <button
             type="submit"
             disabled={saving || setupRequired}
-            className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+            className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark disabled:cursor-not-allowed disabled:bg-slate-300"
           >
             {saving ? 'Saving fare rate...' : mode === 'scheduled' ? 'Save scheduled fare' : 'Publish fare now'}
           </button>
@@ -501,7 +508,7 @@ export default function AdminFareRatesManager() {
         </section>
       )}
 
-      <section className="app-surface-card rounded-2xl p-6">
+      <section className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
         <div className="mb-5">
           <h2 className="text-xl font-semibold text-slate-900">Fare Rate History</h2>
           <p className="mt-1 text-sm text-slate-600">

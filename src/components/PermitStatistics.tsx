@@ -86,7 +86,7 @@ export default function PermitStatistics() {
     icon: DashboardIcon
     tone: DashboardIconTone
   }) => (
-    <div className="app-surface-card rounded-2xl p-6">
+    <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-medium text-gray-600">{title}</p>

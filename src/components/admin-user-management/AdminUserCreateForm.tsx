@@ -198,30 +198,30 @@ export default function AdminUserCreateForm({ onUserCreated }: AdminUserCreateFo
       ) : null}
 
       {result ? (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+        <div className="rounded-2xl border border-primary/20 bg-surface-tint p-5">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
-              <h3 className="text-lg font-semibold text-emerald-900">{result.message}</h3>
-              <p className="mt-1 text-sm text-emerald-800">
+              <h3 className="text-lg font-semibold text-primary-dark">{result.message}</h3>
+              <p className="mt-1 text-sm text-primary-dark">
                 {result.user.fullName} ({formatAdminUserTypeLabel(result.user.userType)}) was added as an active
                 account.
               </p>
-              <p className="mt-2 text-sm text-emerald-800">Username: @{result.user.username}</p>
+              <p className="mt-2 text-sm text-primary-dark">Username: @{result.user.username}</p>
             </div>
             <button
               type="button"
               onClick={() => setResult(null)}
-              className="text-sm font-medium text-emerald-800 hover:text-emerald-900"
+              className="text-sm font-medium text-primary-dark hover:text-primary-dark"
             >
               Hide success state
             </button>
           </div>
 
           {result.tempPassword ? (
-            <div className="mt-4 rounded-2xl border border-emerald-300 bg-white p-4">
+            <div className="mt-4 rounded-2xl border border-primary/40 bg-white p-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <div className="text-xs font-semibold uppercase tracking-wider text-emerald-700">
+                  <div className="text-xs font-semibold uppercase tracking-wider text-primary-dark">
                     Temporary credential
                   </div>
                   <div className="mt-2 rounded-lg bg-slate-950 px-3 py-2 font-mono text-sm text-white">
@@ -234,7 +234,7 @@ export default function AdminUserCreateForm({ onUserCreated }: AdminUserCreateFo
                 <button
                   type="button"
                   onClick={() => void copySensitiveValue(result.tempPassword as string)}
-                  className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+                  className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-white hover:bg-primary-dark"
                 >
                   Copy password
                 </button>
@@ -270,7 +270,7 @@ export default function AdminUserCreateForm({ onUserCreated }: AdminUserCreateFo
                   userType: nextUserType,
                 })
               }}
-              className="block w-full rounded-lg border border-gray-300 px-4 py-2 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
+              className="block w-full rounded-lg border border-gray-300 px-4 py-2 shadow-sm focus:border-primary focus:ring-primary"
             >
               <option value="DATA_ENCODER">Data Encoder</option>
               <option value="ENFORCER">Enforcer</option>
@@ -296,7 +296,7 @@ export default function AdminUserCreateForm({ onUserCreated }: AdminUserCreateFo
                 name="driverVehicleId"
                 value={form.driverVehicleId}
                 onChange={(event) => updateForm('driverVehicleId', event.target.value)}
-                className="block w-full rounded-lg border border-gray-300 px-4 py-2 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
+                className="block w-full rounded-lg border border-gray-300 px-4 py-2 shadow-sm focus:border-primary focus:ring-primary"
               >
                 <option value="">Select registered driver</option>
                 {driverOptions.map((option) => (
@@ -320,7 +320,7 @@ export default function AdminUserCreateForm({ onUserCreated }: AdminUserCreateFo
                 value={form.tempPassword}
                 onChange={(event) => updateForm('tempPassword', event.target.value)}
                 placeholder="Set a temporary password for the driver"
-                className="block w-full rounded-lg border border-gray-300 px-4 py-2 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
+                className="block w-full rounded-lg border border-gray-300 px-4 py-2 shadow-sm focus:border-primary focus:ring-primary"
               />
             </LabeledInput>
           </div>
@@ -366,7 +366,7 @@ export default function AdminUserCreateForm({ onUserCreated }: AdminUserCreateFo
                   autoComplete="username"
                   value={form.username}
                   onChange={(event) => updateForm('username', event.target.value)}
-                  className="block w-full rounded-lg border border-gray-300 px-4 py-2 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
+                  className="block w-full rounded-lg border border-gray-300 px-4 py-2 shadow-sm focus:border-primary focus:ring-primary"
                 />
               </LabeledInput>
 
@@ -378,7 +378,7 @@ export default function AdminUserCreateForm({ onUserCreated }: AdminUserCreateFo
                   autoComplete="tel"
                   value={form.phoneNumber}
                   onChange={(event) => updateForm('phoneNumber', event.target.value)}
-                  className="block w-full rounded-lg border border-gray-300 px-4 py-2 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
+                  className="block w-full rounded-lg border border-gray-300 px-4 py-2 shadow-sm focus:border-primary focus:ring-primary"
                 />
               </LabeledInput>
 
@@ -390,7 +390,7 @@ export default function AdminUserCreateForm({ onUserCreated }: AdminUserCreateFo
                   autoComplete="given-name"
                   value={form.firstName}
                   onChange={(event) => updateForm('firstName', event.target.value)}
-                  className="block w-full rounded-lg border border-gray-300 px-4 py-2 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
+                  className="block w-full rounded-lg border border-gray-300 px-4 py-2 shadow-sm focus:border-primary focus:ring-primary"
                 />
               </LabeledInput>
 
@@ -402,7 +402,7 @@ export default function AdminUserCreateForm({ onUserCreated }: AdminUserCreateFo
                   autoComplete="family-name"
                   value={form.lastName}
                   onChange={(event) => updateForm('lastName', event.target.value)}
-                  className="block w-full rounded-lg border border-gray-300 px-4 py-2 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
+                  className="block w-full rounded-lg border border-gray-300 px-4 py-2 shadow-sm focus:border-primary focus:ring-primary"
                 />
               </LabeledInput>
             </div>
@@ -418,7 +418,7 @@ export default function AdminUserCreateForm({ onUserCreated }: AdminUserCreateFo
                   type="text"
                   value={form.employeeId}
                   onChange={(event) => updateForm('employeeId', event.target.value)}
-                  className="block w-full rounded-lg border border-gray-300 px-4 py-2 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
+                  className="block w-full rounded-lg border border-gray-300 px-4 py-2 shadow-sm focus:border-primary focus:ring-primary"
                 />
               </LabeledInput>
 
@@ -430,7 +430,7 @@ export default function AdminUserCreateForm({ onUserCreated }: AdminUserCreateFo
                   value={form.department}
                   onChange={(event) => updateForm('department', event.target.value)}
                   placeholder="e.g., Traffic Management"
-                  className="block w-full rounded-lg border border-gray-300 px-4 py-2 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
+                  className="block w-full rounded-lg border border-gray-300 px-4 py-2 shadow-sm focus:border-primary focus:ring-primary"
                 />
               </LabeledInput>
 
@@ -442,7 +442,7 @@ export default function AdminUserCreateForm({ onUserCreated }: AdminUserCreateFo
                   value={form.position}
                   onChange={(event) => updateForm('position', event.target.value)}
                   placeholder="e.g., Traffic Enforcer"
-                  className="block w-full rounded-lg border border-gray-300 px-4 py-2 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
+                  className="block w-full rounded-lg border border-gray-300 px-4 py-2 shadow-sm focus:border-primary focus:ring-primary"
                 />
               </LabeledInput>
 
@@ -454,7 +454,7 @@ export default function AdminUserCreateForm({ onUserCreated }: AdminUserCreateFo
                   onChange={(event) => updateForm('notes', event.target.value)}
                   rows={3}
                   placeholder="Optional context about this account"
-                  className="block w-full rounded-lg border border-gray-300 px-4 py-2 shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
+                  className="block w-full rounded-lg border border-gray-300 px-4 py-2 shadow-sm focus:border-primary focus:ring-primary"
                 />
               </LabeledInput>
             </div>
@@ -466,7 +466,7 @@ export default function AdminUserCreateForm({ onUserCreated }: AdminUserCreateFo
         <button
           type="submit"
           disabled={submitting}
-          className="rounded-lg bg-emerald-600 px-6 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+          className="rounded-lg bg-primary px-6 py-2 text-sm font-medium text-white hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
         >
           {submitting
             ? 'Creating account...'
