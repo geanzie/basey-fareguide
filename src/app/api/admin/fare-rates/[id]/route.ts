@@ -63,21 +63,21 @@ export async function DELETE(
 
     if (result.status === "missing") {
       return NextResponse.json(
-        { error: "Fare rate version not found." },
+        { message: "Fare rate version not found." },
         { status: 404 },
       );
     }
 
     if (result.status === "active") {
       return NextResponse.json(
-        { error: "The current live fare rate cannot be deleted." },
+        { message: "The current live fare rate cannot be deleted." },
         { status: 409 },
       );
     }
 
     if (result.status === "blocked") {
       return NextResponse.json(
-        { error: "Only upcoming or historical fare rate versions can be deleted." },
+        { message: "Only upcoming or historical fare rate versions can be deleted." },
         { status: 409 },
       );
     }

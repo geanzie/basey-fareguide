@@ -176,7 +176,7 @@ export default function DriverDashboard() {
       const payload = await response.json()
 
       if (!response.ok) {
-        setPermitQrError(payload.error ?? 'Unable to load permit QR.')
+        setPermitQrError(payload.message ?? 'Unable to load permit QR.')
         return
       }
 

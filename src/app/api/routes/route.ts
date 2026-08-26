@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
     if (!name || !waypoints || !distance) {
       return NextResponse.json(
         { 
-          error: 'Missing required fields',
+          message: 'Missing required fields',
           required: ['name', 'waypoints', 'distance']
         },
         { status: 400 }
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
     // Validate data types
     if (typeof distance !== 'number') {
       return NextResponse.json(
-        { error: 'Distance must be a number' },
+        { message: 'Distance must be a number' },
         { status: 400 }
       )
     }
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
 
     if (existingRoute) {
       return NextResponse.json(
-        { error: 'A route with this name already exists' },
+        { message: 'A route with this name already exists' },
         { status: 409 }
       )
     }
@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       { 
-        error: 'Internal server error',
+        message: 'Internal server error',
         details: process.env.NODE_ENV === 'development' ? String(error) : undefined
       },
       { status: 500 }

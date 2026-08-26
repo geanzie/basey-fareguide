@@ -35,7 +35,7 @@ export async function PATCH(request: NextRequest) {
 
     if (!primaryProvider) {
       return NextResponse.json(
-        { error: "Primary routing provider must be either 'ors' or 'google_routes'." },
+        { message: "Primary routing provider must be either 'ors' or 'google_routes'." },
         { status: 400 },
       );
     }

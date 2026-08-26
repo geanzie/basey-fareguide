@@ -126,7 +126,7 @@ describe('admin routing settings route', () => {
     const json = await response.json()
 
     expect(response.status).toBe(400)
-    expect(json.error).toMatch(/Primary routing provider/)
+    expect(json.message).toMatch(/Primary routing provider/)
     expect(routingSettingsServiceMock.updateRoutingSettings).not.toHaveBeenCalled()
   })
 

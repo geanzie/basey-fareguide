@@ -93,7 +93,7 @@ describe("POST /api/routes/calculate - input validation", () => {
     expect(res.status).toBe(400);
     const json = await res.json();
     expect(json.code).toBe("INVALID_ROUTE_INPUT");
-    expect(json.error).toMatch(/origin/i);
+    expect(json.message).toMatch(/origin/i);
   });
 
   it("returns 400 when destination is missing", async () => {
@@ -101,7 +101,7 @@ describe("POST /api/routes/calculate - input validation", () => {
     expect(res.status).toBe(400);
     const json = await res.json();
     expect(json.code).toBe("INVALID_ROUTE_INPUT");
-    expect(json.error).toMatch(/destination/i);
+    expect(json.message).toMatch(/destination/i);
   });
 
   it("returns 200 with zero fare when origin and destination are the same point", async () => {
@@ -134,7 +134,7 @@ describe("POST /api/routes/calculate - input validation", () => {
     expect(res.status).toBe(400);
     const json = await res.json();
     expect(json.code).toBe("INVALID_ROUTE_INPUT");
-    expect(json.error).toMatch(/origin/i);
+    expect(json.message).toMatch(/origin/i);
   });
 
   it("returns 400 when origin is an unknown location", async () => {
@@ -144,7 +144,7 @@ describe("POST /api/routes/calculate - input validation", () => {
     expect(res.status).toBe(400);
     const json = await res.json();
     expect(json.code).toBe("INVALID_ROUTE_INPUT");
-    expect(json.error).toMatch(/NoSuchPlace/);
+    expect(json.message).toMatch(/NoSuchPlace/);
   });
 
   it("returns 400 when destination is an unknown location", async () => {
@@ -154,7 +154,7 @@ describe("POST /api/routes/calculate - input validation", () => {
     expect(res.status).toBe(400);
     const json = await res.json();
     expect(json.code).toBe("INVALID_ROUTE_INPUT");
-    expect(json.error).toMatch(/NoSuchPlace/);
+    expect(json.message).toMatch(/NoSuchPlace/);
   });
 
   it("returns 400 for an invalid passengerType", async () => {
@@ -168,7 +168,7 @@ describe("POST /api/routes/calculate - input validation", () => {
     expect(res.status).toBe(400);
     const json = await res.json();
     expect(json.code).toBe("INVALID_ROUTE_INPUT");
-    expect(json.error).toMatch(/CHILD/);
+    expect(json.message).toMatch(/CHILD/);
   });
 
   it("returns 400 for non-JSON body", async () => {
@@ -192,7 +192,7 @@ describe("POST /api/routes/calculate - input validation", () => {
     expect(res.status).toBe(400);
     const json = await res.json();
     expect(json.code).toBe("INVALID_ROUTE_INPUT");
-    expect(json.error).toMatch(/philippines/i);
+    expect(json.message).toMatch(/philippines/i);
   });
 
   it("returns 400 when pin is outside the Basey service area", async () => {
@@ -205,7 +205,7 @@ describe("POST /api/routes/calculate - input validation", () => {
     expect(res.status).toBe(400);
     const json = await res.json();
     expect(json.code).toBe("INVALID_ROUTE_INPUT");
-    expect(json.error).toMatch(/basey service area/i);
+    expect(json.message).toMatch(/basey service area/i);
   });
 
   it("returns 422 when no road route can be found", async () => {
@@ -224,7 +224,7 @@ describe("POST /api/routes/calculate - input validation", () => {
     expect(res.status).toBe(422);
     const json = await res.json();
     expect(json.code).toBe("NO_ROAD_ROUTE_FOUND");
-    expect(json.error).toMatch(/no road route/i);
+    expect(json.message).toMatch(/no road route/i);
   });
 
   it("returns 503 when shortest-road routing is unavailable", async () => {
@@ -261,7 +261,7 @@ describe("POST /api/routes/calculate - input validation", () => {
     expect(res.status).toBe(422);
     const json = await res.json();
     expect(json.code).toBe("ROUTE_UNVERIFIED");
-    expect(json.error).toMatch(/official fare is unavailable/i);
+    expect(json.message).toMatch(/official fare is unavailable/i);
   });
 });
 
@@ -363,7 +363,7 @@ describe("POST /api/routes/calculate - successful responses", () => {
     expect(res.status).toBe(503);
     const json = await res.json();
     expect(json.code).toBe("ROUTING_SERVICE_UNAVAILABLE");
-    expect(json.error).toMatch(/fare policy/i);
+    expect(json.message).toMatch(/fare policy/i);
   });
 });
 
@@ -423,6 +423,6 @@ describe("POST /api/routes/calculate - pin mode", () => {
     expect(res.status).toBe(400);
     const json = await res.json();
     expect(json.code).toBe("INVALID_ROUTE_INPUT");
-    expect(json.error).toMatch(/origin/i);
+    expect(json.message).toMatch(/origin/i);
   });
 });

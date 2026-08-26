@@ -651,11 +651,11 @@ describe('RoutePlannerCalculator', () => {
 
   it('shows no-route and service-failure states truthfully while keeping the current selections editable', async () => {
     routeQueue.push(
-      makeResponse({ error: 'No road route could be found between these points.', code: 'NO_ROAD_ROUTE_FOUND' }, 422),
+      makeResponse({ message: 'No road route could be found between these points.', code: 'NO_ROAD_ROUTE_FOUND' }, 422),
     )
     routeQueue.push(
       makeResponse(
-        { error: 'Routing service unavailable right now.', code: 'ROUTING_SERVICE_UNAVAILABLE' },
+        { message: 'Routing service unavailable right now.', code: 'ROUTING_SERVICE_UNAVAILABLE' },
         503,
       ),
     )

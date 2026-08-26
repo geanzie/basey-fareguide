@@ -5,7 +5,7 @@ const authMock = vi.hoisted(() => ({
   createAuthErrorResponse: vi.fn((error: unknown) => {
     const message = error instanceof Error ? error.message : 'Internal server error'
     const status = message === 'Unauthorized' ? 401 : message === 'Forbidden' ? 403 : 500
-    return new Response(JSON.stringify({ error: message }), { status })
+    return new Response(JSON.stringify({ message }), { status })
   }),
 }))
 
@@ -40,7 +40,7 @@ describe('GET /api/admin/users/driver-options', () => {
     const json = await response.json()
 
     expect(response.status).toBe(403)
-    expect(json).toEqual({ success: false, error: 'Access denied. Insufficient permissions.' })
+    expect(json).toEqual({ success: false, message: 'Access denied. Insufficient permissions.' })
     expect(prismaMock.vehicle.findMany).not.toHaveBeenCalled()
   })
 

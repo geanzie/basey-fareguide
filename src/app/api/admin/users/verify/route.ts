@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
 
     if (!userId || !action) {
       return NextResponse.json(
-        { success: false, error: 'Missing required fields' },
+        { success: false, message: 'Missing required fields' },
         { status: 400 }
       )
     }
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
 
     if (!user) {
       return NextResponse.json(
-        { success: false, error: 'User not found' },
+        { success: false, message: 'User not found' },
         { status: 404 }
       )
     }
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
       })
     } else {
       return NextResponse.json(
-        { success: false, error: 'Invalid action' },
+        { success: false, message: 'Invalid action' },
         { status: 400 }
       )
     }

@@ -68,11 +68,11 @@ export async function POST(request: NextRequest) {
   try {
     body = (await request.json()) as TrackerSegmentRequestDto;
   } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    return NextResponse.json({ message: "Invalid JSON body" }, { status: 400 });
   }
 
   if (!body?.trackerSessionId || typeof body.trackerSessionId !== "string") {
-    return NextResponse.json({ error: "trackerSessionId is required" }, { status: 400 });
+    return NextResponse.json({ message: "trackerSessionId is required" }, { status: 400 });
   }
 
   const from = parsePoint(body.from);
@@ -80,14 +80,14 @@ export async function POST(request: NextRequest) {
 
   if (!from || !to) {
     return NextResponse.json(
-      { error: "from and to must include lat, lng, accuracyM, and timestampMs" },
+      { message: "from and to must include lat, lng, accuracyM, and timestampMs" },
       { status: 400 },
     );
   }
 
   if (!isInBounds(from.lat, from.lng, PH_BOUNDS) || !isInBounds(to.lat, to.lng, PH_BOUNDS)) {
     return NextResponse.json(
-      { error: "Tracker points must stay inside the Philippines" },
+      { message: "Tracker points must stay inside the Philippines" },
       { status: 400 },
     );
   }
@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
     !isInBounds(to.lat, to.lng, BASEY_SERVICE_AREA)
   ) {
     return NextResponse.json(
-      { error: "Tracker points must stay inside the Basey service area" },
+      { message: "Tracker points must stay inside the Basey service area" },
       { status: 400 },
     );
   }
@@ -247,6 +247,6 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     console.error("[/api/tracker/segment] failed to process segment", error);
-    return NextResponse.json({ error: "Tracking service unavailable" }, { status: 503 });
+    return NextResponse.json({ message: "Tracking service unavailable" }, { status: 503 });
   }
 }

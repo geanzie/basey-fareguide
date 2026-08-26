@@ -108,7 +108,7 @@ export async function GET(request: NextRequest) {
     }
     return NextResponse.json(
       { 
-        error: 'Failed to fetch discount cards',
+        message: 'Failed to fetch discount cards',
         details: error.message
       },
       { status: 500 }
@@ -129,7 +129,7 @@ export async function PATCH(request: NextRequest) {
 
     if (!discountCardId || !action) {
       return NextResponse.json(
-        { error: 'Missing required fields: discountCardId, action' },
+        { message: 'Missing required fields: discountCardId, action' },
         { status: 400 }
       )
     }
@@ -137,7 +137,7 @@ export async function PATCH(request: NextRequest) {
     const validActions = ['activate', 'deactivate', 'suspend', 'approve', 'reject']
     if (!validActions.includes(action)) {
       return NextResponse.json(
-        { error: `Invalid action. Valid actions: ${validActions.join(', ')}` },
+        { message: `Invalid action. Valid actions: ${validActions.join(', ')}` },
         { status: 400 }
       )
     }
@@ -151,7 +151,7 @@ export async function PATCH(request: NextRequest) {
 
     if (!existingCard) {
       return NextResponse.json(
-        { error: 'Discount card not found' },
+        { message: 'Discount card not found' },
         { status: 404 }
       )
     }
@@ -242,7 +242,7 @@ export async function PATCH(request: NextRequest) {
     }
     return NextResponse.json(
       { 
-        error: 'Failed to update discount card',
+        message: 'Failed to update discount card',
         details: error.message
       },
       { status: 500 }

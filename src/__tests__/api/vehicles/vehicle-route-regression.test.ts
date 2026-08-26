@@ -5,7 +5,7 @@ const authMock = vi.hoisted(() => ({
   createAuthErrorResponse: vi.fn((error: unknown) => {
     const message = error instanceof Error ? error.message : 'Internal server error'
     const status = message === 'Unauthorized' ? 401 : message === 'Forbidden' ? 403 : 500
-    return new Response(JSON.stringify({ error: message }), { status })
+    return new Response(JSON.stringify({ message }), { status })
   }),
 }))
 
@@ -153,7 +153,7 @@ describe('vehicle route regression coverage', () => {
     const json = await response.json()
 
     expect(response.status).toBe(409)
-    expect(json.error).toMatch(/active driver assignment/i)
+    expect(json.message).toMatch(/active driver assignment/i)
     expect(prismaMock.vehicle.update).not.toHaveBeenCalled()
   })
 

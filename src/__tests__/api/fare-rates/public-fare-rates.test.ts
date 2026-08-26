@@ -48,6 +48,6 @@ describe("GET /api/fare-rates", () => {
     const json = await response.json();
 
     expect(response.status).toBe(500);
-    expect(json.error).toMatch(/failed to load fare rates/i);
+    expect(json.message).toMatch(/failed to load fare rates/i);
   });
 });

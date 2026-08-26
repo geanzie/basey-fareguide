@@ -251,7 +251,7 @@ export default function DiscountApplication({ user: initialUser }: DiscountAppli
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to submit application')
+        throw new Error(data.message || 'Failed to submit application')
       }
 
       setSuccess('Application submitted successfully. Check this page again for review status and approval details.')

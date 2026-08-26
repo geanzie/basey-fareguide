@@ -33,7 +33,7 @@ export default function AdminRoutingSettingsManager() {
       const payload = await response.json()
 
       if (!response.ok) {
-        throw new Error(payload.message || payload.error || 'Failed to load routing settings')
+        throw new Error(payload.message || 'Failed to load routing settings')
       }
 
       const nextData = payload as AdminRoutingSettingsResponseDto
@@ -70,7 +70,7 @@ export default function AdminRoutingSettingsManager() {
 
       const payload = await response.json()
       if (!response.ok) {
-        throw new Error(payload.message || payload.error || 'Failed to save routing settings')
+        throw new Error(payload.message || 'Failed to save routing settings')
       }
 
       const nextData = payload.settings as AdminRoutingSettingsResponseDto

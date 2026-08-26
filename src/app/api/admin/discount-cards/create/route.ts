@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     if (!userId || !discountType || !validFrom || !validUntil || !overrideReason) {
       return NextResponse.json(
         { 
-          error: 'Missing required fields',
+          message: 'Missing required fields',
           required: ['userId', 'discountType', 'validFrom', 'validUntil', 'overrideReason']
         },
         { status: 400 }
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     if (!validDiscountTypes.includes(discountType)) {
       return NextResponse.json(
         { 
-          error: 'Invalid discount type',
+          message: 'Invalid discount type',
           validTypes: validDiscountTypes
         },
         { status: 400 }
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     const validityWindow = validateDiscountValidityWindow(fromDate, untilDate)
     if (!validityWindow.valid) {
       return NextResponse.json(
-        { error: validityWindow.error },
+        { message: validityWindow.error },
         { status: 400 }
       )
     }
@@ -76,14 +76,14 @@ export async function POST(request: NextRequest) {
 
     if (!targetUser) {
       return NextResponse.json(
-        { error: 'User not found' },
+        { message: 'User not found' },
         { status: 404 }
       )
     }
 
     if (!targetUser.isActive) {
       return NextResponse.json(
-        { error: 'Cannot create discount card for inactive user' },
+        { message: 'Cannot create discount card for inactive user' },
         { status: 400 }
       )
     }
@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
     if (existingCard) {
       return NextResponse.json(
         { 
-          error: 'User already has a discount card',
+          message: 'User already has a discount card',
           existingCard: {
             id: existingCard.id,
             discountType: existingCard.discountType,
@@ -216,7 +216,7 @@ export async function POST(request: NextRequest) {
     }
     return NextResponse.json(
       { 
-        error: 'Failed to create discount card',
+        message: 'Failed to create discount card',
         details: error.message || 'Internal server error'
       },
       { status: 500 }
@@ -283,7 +283,7 @@ export async function GET(request: NextRequest) {
     }
     return NextResponse.json(
       { 
-        error: 'Failed to fetch eligible users',
+        message: 'Failed to fetch eligible users',
         details: error.message
       },
       { status: 500 }

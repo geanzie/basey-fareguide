@@ -5,7 +5,7 @@ const authMock = vi.hoisted(() => ({
   createAuthErrorResponse: vi.fn((error: unknown) => {
     const message = error instanceof Error ? error.message : 'Internal server error'
     const status = message === 'Unauthorized' ? 401 : message === 'Forbidden' ? 403 : 500
-    return new Response(JSON.stringify({ success: false, error: message }), { status })
+    return new Response(JSON.stringify({ success: false, message: message }), { status })
   }),
 }))
 
@@ -91,7 +91,7 @@ describe('admin user workflow truthfulness', () => {
     const json = await response.json()
 
     expect(response.status).toBe(400)
-    expect(json.error).toMatch(/administrator, enforcer, data encoder, and driver/i)
+    expect(json.message).toMatch(/administrator, enforcer, data encoder, and driver/i)
     expect(prismaMock.user.findUnique).not.toHaveBeenCalled()
     expect(prismaMock.user.create).not.toHaveBeenCalled()
   })
@@ -255,7 +255,7 @@ describe('admin user workflow truthfulness', () => {
     const json = await response.json()
 
     expect(response.status).toBe(400)
-    expect(json.error).toMatch(/temporary password is required/i)
+    expect(json.message).toMatch(/temporary password is required/i)
     expect(prismaMock.vehicle.findUnique).not.toHaveBeenCalled()
     expect(prismaMock.user.create).not.toHaveBeenCalled()
   })

@@ -38,14 +38,14 @@ export async function GET(
 
     if (!permit) {
       return NextResponse.json(
-        { error: 'Permit not found' },
+        { message: 'Permit not found' },
         { status: 404 },
       )
     }
 
     if (!permit.qrToken) {
       return NextResponse.json(
-        { error: 'QR token has not been issued for this permit yet' },
+        { message: 'QR token has not been issued for this permit yet' },
         { status: 409 },
       )
     }
@@ -79,7 +79,7 @@ export async function POST(
 
     if (!permit) {
       return NextResponse.json(
-        { error: 'Permit not found' },
+        { message: 'Permit not found' },
         { status: 404 },
       )
     }

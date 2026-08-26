@@ -54,14 +54,14 @@ export async function POST(request: NextRequest) {
 
     if (result.status === "missing-current") {
       return NextResponse.json(
-        { error: "No live fare rate is available to revert." },
+        { message: "No live fare rate is available to revert." },
         { status: 404 },
       );
     }
 
     if (result.status === "missing-previous") {
       return NextResponse.json(
-        { error: "No previous eligible fare rate is available for rollback." },
+        { message: "No previous eligible fare rate is available for rollback." },
         { status: 409 },
       );
     }

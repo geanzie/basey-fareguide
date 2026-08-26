@@ -203,7 +203,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       return authError
     }
     return NextResponse.json(
-      { success: false, error: 'Failed to generate trip reports' },
+      { success: false, message: 'Failed to generate trip reports' },
       { status: 500 },
     )
   }

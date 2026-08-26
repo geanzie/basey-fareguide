@@ -129,10 +129,10 @@ function buildGpsFallbackSegment(
 
 async function fetchCurrentFarePolicy(): Promise<FarePolicySnapshotDto> {
   const response = await fetch('/api/fare-rates')
-  const payload = (await response.json()) as Partial<FareRatesResponseDto> & { error?: string }
+  const payload = (await response.json()) as Partial<FareRatesResponseDto> & { message?: string }
 
   if (!response.ok || !payload.current) {
-    throw new Error(payload.error || 'Failed to load current fare policy')
+    throw new Error(payload.message || 'Failed to load current fare policy')
   }
 
   return resolveFarePolicySnapshot(payload.current)

@@ -146,7 +146,7 @@ describe("discount policy enforcement", () => {
     const json = await res.json();
 
     expect(res.status).toBe(401);
-    expect(json.error).toMatch(/authentication required/i);
+    expect(json.message).toMatch(/authentication required/i);
     expect(prismaMock.fareCalculation.create).not.toHaveBeenCalled();
   });
 
@@ -263,7 +263,7 @@ describe("discount policy enforcement", () => {
     const json = await res.json();
 
     expect(res.status).toBe(401);
-    expect(json.error).toMatch(/authentication required/i);
+    expect(json.message).toMatch(/authentication required/i);
     expect(prismaMock.vehicle.findUnique).not.toHaveBeenCalled();
   });
 
@@ -285,7 +285,7 @@ describe("discount policy enforcement", () => {
     const json = await res.json();
 
     expect(res.status).toBe(400);
-    expect(json.error).toMatch(/inactive/i);
+    expect(json.message).toMatch(/inactive/i);
     expect(prismaMock.fareCalculation.create).not.toHaveBeenCalled();
   });
 

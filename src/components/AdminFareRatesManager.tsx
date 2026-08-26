@@ -66,7 +66,7 @@ export default function AdminFareRatesManager() {
       const payload = await response.json()
 
       if (!response.ok) {
-        throw new Error(payload.message || payload.error || 'Failed to load fare rates')
+        throw new Error(payload.message || 'Failed to load fare rates')
       }
 
       const nextData = payload as AdminFareRatesResponseDto
@@ -104,7 +104,7 @@ export default function AdminFareRatesManager() {
 
       const payload = await response.json()
       if (!response.ok) {
-        throw new Error(payload.message || payload.error || 'Failed to save fare rate')
+        throw new Error(payload.message || 'Failed to save fare rate')
       }
 
       setSuccess(payload.message || 'Fare rate saved successfully.')
@@ -142,7 +142,7 @@ export default function AdminFareRatesManager() {
 
       const payload = await response.json()
       if (!response.ok) {
-        throw new Error(payload.message || payload.error || 'Failed to cancel scheduled fare rate')
+        throw new Error(payload.message || 'Failed to cancel scheduled fare rate')
       }
 
       setSuccess(payload.message || 'Scheduled fare rate canceled successfully.')
@@ -185,7 +185,7 @@ export default function AdminFareRatesManager() {
 
       const payload = await response.json()
       if (!response.ok) {
-        throw new Error(payload.message || payload.error || 'Failed to revert fare rate')
+        throw new Error(payload.message || 'Failed to revert fare rate')
       }
 
       setSuccess(payload.message || 'Fare rate reverted successfully.')
@@ -227,7 +227,7 @@ export default function AdminFareRatesManager() {
 
       const payload = await response.json()
       if (!response.ok) {
-        throw new Error(payload.message || payload.error || 'Failed to delete fare rate version')
+        throw new Error(payload.message || 'Failed to delete fare rate version')
       }
 
       setSuccess(payload.message || 'Fare rate version deleted permanently.')

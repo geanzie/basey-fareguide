@@ -105,7 +105,7 @@ describe("admin announcements routes", () => {
     const json = await response.json();
 
     expect(response.status).toBe(400);
-    expect(json.error).toMatch(/headline/i);
+    expect(json.message).toMatch(/headline/i);
     expect(announcementServiceMock.createAnnouncement).not.toHaveBeenCalled();
   });
 

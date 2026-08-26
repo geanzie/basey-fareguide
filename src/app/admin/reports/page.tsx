@@ -37,7 +37,7 @@ interface ReportData {
 interface ReportsResponse {
   success: boolean
   data?: ReportData
-  error?: string
+  message?: string
 }
 
 type Period = '7d' | '30d' | '90d' | '1y'
@@ -56,7 +56,7 @@ export default function AdminReportsPage() {
   const error = fetchError
     ? 'Failed to load system reports'
     : response && !response.success
-      ? response.error || 'Failed to load system reports'
+      ? response.message || 'Failed to load system reports'
       : null
 
   const exportReport = () => {

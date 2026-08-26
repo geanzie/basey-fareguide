@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
 
     if (!currentUser) {
       return NextResponse.json(
-        { error: 'User not found' },
+        { message: 'User not found' },
         { status: 404 }
       )
     }
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     if (currentUser.discountCard) {
       return NextResponse.json(
         { 
-          error: 'You already have a discount card application',
+          message: 'You already have a discount card application',
           existingCard: {
             id: currentUser.discountCard.id,
             status: currentUser.discountCard.verificationStatus
@@ -95,21 +95,21 @@ export async function POST(request: NextRequest) {
     // Validation
     if (!discountType || !['SENIOR_CITIZEN', 'PWD', 'STUDENT'].includes(discountType)) {
       return NextResponse.json(
-        { error: 'Invalid discount type' },
+        { message: 'Invalid discount type' },
         { status: 400 }
       )
     }
 
     if (!fullName || fullName.trim().length === 0) {
       return NextResponse.json(
-        { error: 'Full name is required' },
+        { message: 'Full name is required' },
         { status: 400 }
       )
     }
 
     if (!dateOfBirth) {
       return NextResponse.json(
-        { error: 'Date of birth is required' },
+        { message: 'Date of birth is required' },
         { status: 400 }
       )
     }
@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
       
       if (age < 60) {
         return NextResponse.json(
-          { error: 'You must be 60 years or older to apply for Senior Citizen discount' },
+          { message: 'You must be 60 years or older to apply for Senior Citizen discount' },
           { status: 400 }
         )
       }
@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
 
     if (!photo) {
       return NextResponse.json(
-        { error: 'Photo is required' },
+        { message: 'Photo is required' },
         { status: 400 }
       )
     }
@@ -143,14 +143,14 @@ export async function POST(request: NextRequest) {
     // Validate photo file
     if (!photo.type.startsWith('image/')) {
       return NextResponse.json(
-        { error: 'Photo must be an image file' },
+        { message: 'Photo must be an image file' },
         { status: 400 }
       )
     }
 
     if (photo.size > 5 * 1024 * 1024) { // 5MB limit
       return NextResponse.json(
-        { error: 'Photo file size must be less than 5MB' },
+        { message: 'Photo file size must be less than 5MB' },
         { status: 400 }
       )
     }
@@ -159,19 +159,19 @@ export async function POST(request: NextRequest) {
     if (discountType === 'STUDENT') {
       if (!schoolName || schoolName.trim().length === 0) {
         return NextResponse.json(
-          { error: 'School name is required for student discount' },
+          { message: 'School name is required for student discount' },
           { status: 400 }
         )
       }
       if (!gradeLevel || gradeLevel.trim().length === 0) {
         return NextResponse.json(
-          { error: 'Grade/Year level is required for student discount' },
+          { message: 'Grade/Year level is required for student discount' },
           { status: 400 }
         )
       }
       if (!schoolIdExpiry) {
         return NextResponse.json(
-          { error: 'School ID expiry date is required' },
+          { message: 'School ID expiry date is required' },
           { status: 400 }
         )
       }
@@ -181,19 +181,19 @@ export async function POST(request: NextRequest) {
     if (discountType === 'PWD') {
       if (!disabilityType || disabilityType.trim().length === 0) {
         return NextResponse.json(
-          { error: 'Disability type is required for PWD discount' },
+          { message: 'Disability type is required for PWD discount' },
           { status: 400 }
         )
       }
       if (!pwdIdExpiry) {
         return NextResponse.json(
-          { error: 'PWD ID expiry date is required' },
+          { message: 'PWD ID expiry date is required' },
           { status: 400 }
         )
       }
       if (!idNumber || idNumber.trim().length === 0) {
         return NextResponse.json(
-          { error: 'PWD ID number is required' },
+          { message: 'PWD ID number is required' },
           { status: 400 }
         )
       }
@@ -218,7 +218,7 @@ export async function POST(request: NextRequest) {
       if (!idValidation.isValid || idValidation.confidence < 60) {
         return NextResponse.json(
           { 
-            error: 'ID validation failed',
+            message: 'ID validation failed',
             details: 'The uploaded image does not appear to be a valid ID. ' + 
                     idValidation.reasons.join('. '),
             validationResult: idValidation
@@ -238,7 +238,7 @@ export async function POST(request: NextRequest) {
       photoUrl = `/uploads/discount-cards/${fileName}`
     } catch (fileError: any) {      return NextResponse.json(
         { 
-          error: 'Failed to save or validate photo file',
+          message: 'Failed to save or validate photo file',
           details: fileError.message 
         },
         { status: 500 }
@@ -316,7 +316,7 @@ export async function POST(request: NextRequest) {
     }
     return NextResponse.json(
       { 
-        error: 'Failed to submit application',
+        message: 'Failed to submit application',
         details: error.message 
       },
       { status: 500 }

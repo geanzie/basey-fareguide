@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
     // Validate required fields
     if (!plateNumber || !vehicleType || !make || !model || !year || !color || !capacity || !ownerName || !ownerContact || !registrationExpiry) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { message: 'Missing required fields' },
         { status: 400 }
       )
     }
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
     const normalizedPlate = normalizePlateNumber(plateNumber)
     if (!normalizedPlate) {
       return NextResponse.json(
-        { error: 'Invalid plate number' },
+        { message: 'Invalid plate number' },
         { status: 400 }
       )
     }
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
 
     if (existingVehicle) {
       return NextResponse.json(
-        { error: 'Vehicle with this plate number already exists' },
+        { message: 'Vehicle with this plate number already exists' },
         { status: 409 }
       )
     }

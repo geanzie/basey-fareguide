@@ -105,14 +105,14 @@ export async function POST(request: NextRequest) {
     // Validate required fields
     if (!name || !type || !coordinates) {
       return NextResponse.json(
-        { error: 'Missing required fields: name, type, coordinates' },
+        { message: 'Missing required fields: name, type, coordinates' },
         { status: 400 }
       );
     }
 
     if (!isValidCoordinateString(coordinates)) {
       return NextResponse.json(
-        { error: 'Invalid coordinates format. Expected "lat,lng" with valid ranges (lat: -90..90, lng: -180..180).' },
+        { message: 'Invalid coordinates format. Expected "lat,lng" with valid ranges (lat: -90..90, lng: -180..180).' },
         { status: 400 }
       );
     }
@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
 
     if (existing) {
       return NextResponse.json(
-        { error: 'Location with this name already exists' },
+        { message: 'Location with this name already exists' },
         { status: 400 }
       );
     }

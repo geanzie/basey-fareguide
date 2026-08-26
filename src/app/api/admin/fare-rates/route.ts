@@ -50,14 +50,14 @@ export async function POST(request: NextRequest) {
 
     if (baseFare == null || perKmRate == null) {
       return NextResponse.json(
-        { error: "Base fare and per-kilometer fare must be positive numbers." },
+        { message: "Base fare and per-kilometer fare must be positive numbers." },
         { status: 400 },
       );
     }
 
     if (!notes) {
       return NextResponse.json(
-        { error: "An admin note is required for fare changes." },
+        { message: "An admin note is required for fare changes." },
         { status: 400 },
       );
     }
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     if (mode === "scheduled") {
       if (typeof body.effectiveAt !== "string") {
         return NextResponse.json(
-          { error: "A scheduled fare change requires an effective date and time." },
+          { message: "A scheduled fare change requires an effective date and time." },
           { status: 400 },
         );
       }
@@ -76,14 +76,14 @@ export async function POST(request: NextRequest) {
       const parsedEffectiveAt = parseManilaDateTimeInput(body.effectiveAt);
       if (!parsedEffectiveAt) {
         return NextResponse.json(
-          { error: "Invalid effective date and time." },
+          { message: "Invalid effective date and time." },
           { status: 400 },
         );
       }
 
       if (parsedEffectiveAt <= now) {
         return NextResponse.json(
-          { error: "Scheduled fare changes must be set in the future." },
+          { message: "Scheduled fare changes must be set in the future." },
           { status: 400 },
         );
       }
@@ -203,7 +203,7 @@ export async function DELETE(request: NextRequest) {
 
     if (!scheduledVersion) {
       return NextResponse.json(
-        { error: "No upcoming fare rate is scheduled." },
+        { message: "No upcoming fare rate is scheduled." },
         { status: 404 },
       );
     }

@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
     // Validate required fields
     if (!vehicleId || !permitPlateNumber || !driverFullName || !vehicleType) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { message: 'Missing required fields' },
         { status: 400 }
       )
     }
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
     const normalizedPermitPlate = normalizePlateNumber(permitPlateNumber)
     if (!normalizedPermitPlate) {
       return NextResponse.json(
-        { error: 'Invalid permit plate number' },
+        { message: 'Invalid permit plate number' },
         { status: 400 }
       )
     }
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
 
     if (existingPlatePermit) {
       return NextResponse.json(
-        { error: 'Permit plate number already exists' },
+        { message: 'Permit plate number already exists' },
         { status: 409 }
       )
     }
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
 
     if (!vehicle) {
       return NextResponse.json(
-        { error: 'Vehicle not found' },
+        { message: 'Vehicle not found' },
         { status: 404 }
       )
     }
@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
 
     if (existingPermit) {
       return NextResponse.json(
-        { error: 'Vehicle already has a permit' },
+        { message: 'Vehicle already has a permit' },
         { status: 409 }
       )
     }

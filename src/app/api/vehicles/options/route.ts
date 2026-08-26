@@ -158,7 +158,7 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json(
-      { error: "Failed to fetch vehicle options" },
+      { message: "Failed to fetch vehicle options" },
       { status: 500 },
     );
   }

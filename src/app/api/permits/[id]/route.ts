@@ -32,7 +32,7 @@ export async function GET(
 
     if (!permit) {
       return NextResponse.json(
-        { error: 'Permit not found' },
+        { message: 'Permit not found' },
         { status: 404 }
       )
     }
@@ -59,7 +59,7 @@ export async function PUT(
 
     if (!existingPermit) {
       return NextResponse.json(
-        { error: 'Permit not found' },
+        { message: 'Permit not found' },
         { status: 404 }
       )
     }
@@ -72,7 +72,7 @@ export async function PUT(
       
       if (existingPlatePermit && existingPlatePermit.id !== id) {
         return NextResponse.json(
-          { error: 'Permit plate number already exists' },
+          { message: 'Permit plate number already exists' },
           { status: 409 }
         )
       }
@@ -124,7 +124,7 @@ export async function DELETE(
 
     if (!existingPermit) {
       return NextResponse.json(
-        { error: 'Permit not found' },
+        { message: 'Permit not found' },
         { status: 404 }
       )
     }

@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     const user = await verifyAuth(request)
     if (!user) {
       return NextResponse.json(
-        { error: 'Authentication required' },
+        { message: 'Authentication required' },
         { status: 401 }
       )
     }
@@ -28,14 +28,14 @@ export async function POST(request: NextRequest) {
 
     if (!photo) {
       return NextResponse.json(
-        { error: 'Photo file is required' },
+        { message: 'Photo file is required' },
         { status: 400 }
       )
     }
 
     if (!userName || !discountType) {
       return NextResponse.json(
-        { error: 'User name and discount type are required' },
+        { message: 'User name and discount type are required' },
         { status: 400 }
       )
     }
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     })
       } catch (error) {    return NextResponse.json(
       { 
-        error: 'Failed to validate ID',
+        message: 'Failed to validate ID',
         details: (error as Error).message 
       },
       { status: 500 }

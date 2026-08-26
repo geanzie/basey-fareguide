@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
 
     if (!query || typeof query !== 'string') {
       return NextResponse.json(
-        { error: 'Invalid query. Please provide a valid address or location name.' },
+        { message: 'Invalid query. Please provide a valid address or location name.' },
         { status: 400 }
       );
     }
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
 
     if (!apiKey) {
       return NextResponse.json(
-        { error: 'Google Maps server API not configured' },
+        { message: 'Google Maps server API not configured' },
         { status: 500 }
       );
     }
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
 
     if (response.data.status !== 'OK') {
       return NextResponse.json(
-        { error: `Geocoding failed: ${response.data.status}` },
+        { message: `Geocoding failed: ${response.data.status}` },
         { status: 400 }
       );
     }
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       { 
-        error: 'Internal server error during geocoding',
+        message: 'Internal server error during geocoding',
         details: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }

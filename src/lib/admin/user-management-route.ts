@@ -16,11 +16,11 @@ export function createAdminRouteSuccess<T>(
   )
 }
 
-export function createAdminRouteError(error: string, status = 400): NextResponse<AdminApiFailure> {
+export function createAdminRouteError(message: string, status = 400): NextResponse<AdminApiFailure> {
   return NextResponse.json(
     {
       success: false,
-      error,
+      message,
     },
     { status },
   )

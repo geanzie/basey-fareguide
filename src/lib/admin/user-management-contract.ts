@@ -93,7 +93,7 @@ export interface AdminApiSuccess<T> {
 
 export interface AdminApiFailure {
   success: false
-  error: string
+  message: string
 }
 
 interface AdminAssignedVehicleSource {

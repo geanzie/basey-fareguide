@@ -16,7 +16,7 @@ export async function POST(
 
     if (!renewedBy) {
       return NextResponse.json(
-        { error: 'renewedBy is required' },
+        { message: 'renewedBy is required' },
         { status: 400 }
       )
     }
@@ -27,7 +27,7 @@ export async function POST(
 
     if (!existingPermit) {
       return NextResponse.json(
-        { error: 'Permit not found' },
+        { message: 'Permit not found' },
         { status: 404 }
       )
     }

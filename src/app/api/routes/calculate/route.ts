@@ -66,8 +66,8 @@ type RouteApiErrorCode =
   | "ROUTING_SERVICE_UNAVAILABLE"
   | "ROUTE_UNVERIFIED";
 
-function jsonError(status: number, code: RouteApiErrorCode, error: string) {
-  return NextResponse.json({ code, error }, { status });
+function jsonError(status: number, code: RouteApiErrorCode, message: string) {
+  return NextResponse.json({ code, message }, { status });
 }
 
 /**
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    return NextResponse.json({ message: "Invalid JSON body" }, { status: 400 });
   }
 
   const {

@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       { 
         success: false,
-        error: 'Failed to fetch locations',
+        message: 'Failed to fetch locations',
         locations: [],
         count: 0,
         metadata: null

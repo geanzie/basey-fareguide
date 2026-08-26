@@ -462,7 +462,7 @@ const RoutePlannerCalculator = ({
       })
 
       const data = (await response.json()) as Partial<CalculateRouteResponse> & {
-        error?: string
+        message?: string
         code?: CalculateRouteErrorCode
       }
 
@@ -471,7 +471,7 @@ const RoutePlannerCalculator = ({
       }
 
       if (!response.ok) {
-        const message = data.error || 'Unable to calculate this route right now.'
+        const message = data.message || 'Unable to calculate this route right now.'
         const nextState = classifyPlannerError(message, data.code)
         setPlannerState(nextState)
         setRouteMessage(
@@ -583,7 +583,7 @@ const RoutePlannerCalculator = ({
       })
 
       const data = (await response.json()) as Partial<FareCalculationMutationResponseDto> & {
-        error?: string
+        message?: string
       }
 
       if (displayedRouteVersion !== displayedRouteVersionRef.current) {
@@ -593,7 +593,7 @@ const RoutePlannerCalculator = ({
       if (!response.ok || !data.success) {
         setSaveStatus('failed')
         if (onError) {
-          onError(data.error || 'Unable to save this route right now.')
+          onError(data.message || 'Unable to save this route right now.')
         }
         return
       }

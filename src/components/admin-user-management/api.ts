@@ -15,14 +15,13 @@ import type {
 
 const ADMIN_USERS_PAGE_SIZE = 100
 
-type AdminApiResult<T> = AdminApiSuccess<T> | AdminApiFailure | { message?: string; error?: string }
+type AdminApiResult<T> = AdminApiSuccess<T> | AdminApiFailure | { message?: string }
 
 async function parseAdminResponse<T>(response: Response): Promise<AdminApiSuccess<T>> {
   const body = (await response.json()) as AdminApiResult<T>
 
   if (!response.ok || !('success' in body) || body.success !== true) {
     const errorMessage =
-      ('error' in body && typeof body.error === 'string' && body.error) ||
       ('message' in body && typeof body.message === 'string' && body.message) ||
       'Request failed'
 

@@ -16,7 +16,7 @@ export async function PATCH(
     const validation = validateAnnouncementPayload(body);
 
     if (validation.error || !validation.data) {
-      return NextResponse.json({ error: validation.error }, { status: 400 });
+      return NextResponse.json({ message: validation.error }, { status: 400 });
     }
 
     const announcement = await updateAnnouncement(id, {

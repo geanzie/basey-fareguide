@@ -38,7 +38,7 @@ export async function PUT(
 
     if (!existingLocation) {
       return NextResponse.json(
-        { error: 'Location not found' },
+        { message: 'Location not found' },
         { status: 404 }
       );
     }
@@ -51,7 +51,7 @@ export async function PUT(
 
       if (duplicate) {
         return NextResponse.json(
-          { error: 'Location with this name already exists' },
+          { message: 'Location with this name already exists' },
           { status: 400 }
         );
       }
@@ -123,7 +123,7 @@ export async function DELETE(
 
     if (!location) {
       return NextResponse.json(
-        { error: 'Location not found' },
+        { message: 'Location not found' },
         { status: 404 }
       );
     }
@@ -166,7 +166,7 @@ export async function GET(
 
     if (!location) {
       return NextResponse.json(
-        { error: 'Location not found' },
+        { message: 'Location not found' },
         { status: 404 }
       );
     }

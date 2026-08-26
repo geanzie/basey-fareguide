@@ -154,7 +154,7 @@ export default function AdminDiscountOverride({ onSuccess, onCancel }: AdminDisc
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to create discount card')
+        throw new Error(data.message || 'Failed to create discount card')
       }
 
       setSuccess(`Discount card created successfully for ${data.discountCard.user.firstName} ${data.discountCard.user.lastName}`)

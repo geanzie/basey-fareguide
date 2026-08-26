@@ -143,7 +143,7 @@ describe('POST /api/vehicles — plate normalization', () => {
     const res = await vehiclePost(makeRequest('http://localhost/api/vehicles', { ...baseBody, plateNumber: '   ' }))
     expect(res.status).toBe(400)
     const json = await res.json()
-    expect(json.error).toMatch(/plate/i)
+    expect(json.message).toMatch(/plate/i)
   })
 
   it('returns 409 when normalized plate already exists', async () => {
@@ -186,7 +186,7 @@ describe('POST /api/permits — plate normalization', () => {
     )
     expect(res.status).toBe(400)
     const json = await res.json()
-    expect(json.error).toMatch(/plate/i)
+    expect(json.message).toMatch(/plate/i)
   })
 })
 
@@ -216,7 +216,7 @@ describe('POST /api/admin/locations — coordinate validation', () => {
     )
     expect(res.status).toBe(400)
     const json = await res.json()
-    expect(json.error).toMatch(/coordinates/i)
+    expect(json.message).toMatch(/coordinates/i)
   })
 
   it('rejects latitude out of range', async () => {

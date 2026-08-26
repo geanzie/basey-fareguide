@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
     }
     return NextResponse.json(
       { 
-        error: 'Internal server error',
+        message: 'Internal server error',
         details: process.env.NODE_ENV === 'development' ? String(error) : undefined
       },
       { status: 500 }

@@ -185,7 +185,7 @@ export default function AdminLocationManager() {
         fetchLocations()
       } else {
         const data = await response.json()
-        alert(data.error || 'Failed to save location')
+        alert(data.message || 'Failed to save location')
       }
     } catch (error) {
       console.error('Error saving location:', error)

@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
 
     if (!currentUser.assignedVehicleId) {
       return NextResponse.json(
-        { error: 'No active vehicle assignment found for this driver account.' },
+        { message: 'No active vehicle assignment found for this driver account.' },
         { status: 404 },
       )
     }
@@ -41,14 +41,14 @@ export async function GET(request: NextRequest) {
 
     if (!vehicle?.permit) {
       return NextResponse.json(
-        { error: 'No permit found for the assigned vehicle.' },
+        { message: 'No permit found for the assigned vehicle.' },
         { status: 404 },
       )
     }
 
     if (!vehicle.permit.qrToken) {
       return NextResponse.json(
-        { error: 'No QR token has been issued for this permit yet. Contact the encoder to issue one.' },
+        { message: 'No QR token has been issued for this permit yet. Contact the encoder to issue one.' },
         { status: 409 },
       )
     }

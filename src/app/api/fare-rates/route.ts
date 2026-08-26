@@ -12,7 +12,7 @@ export async function GET() {
   } catch (error) {
     console.error("[/api/fare-rates] failed to resolve fare rates", error);
     return NextResponse.json(
-      { error: "Failed to load fare rates" },
+      { message: "Failed to load fare rates" },
       { status: 500 },
     );
   }

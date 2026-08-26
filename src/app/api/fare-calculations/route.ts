@@ -147,7 +147,7 @@ export async function POST(request: NextRequest) {
 
     if (!user) {
       return NextResponse.json(
-        { error: 'Authentication required to save fare calculations' },
+        { message: 'Authentication required to save fare calculations' },
         { status: 401 }
       )
     }
@@ -182,7 +182,7 @@ export async function POST(request: NextRequest) {
     ) {
       return NextResponse.json(
         { 
-          error: 'Missing required fields',
+          message: 'Missing required fields',
           required: ['fromLocation', 'toLocation', 'distance', 'calculatedFare', 'calculationType']
         },
         { status: 400 }
@@ -197,7 +197,7 @@ export async function POST(request: NextRequest) {
       !Number.isFinite(calculatedFare)
     ) {
       return NextResponse.json(
-        { error: 'Distance and calculatedFare must be numbers' },
+        { message: 'Distance and calculatedFare must be numbers' },
         { status: 400 }
       )
     }
@@ -213,7 +213,7 @@ export async function POST(request: NextRequest) {
 
     if (typeof vehicleId !== 'string' || vehicleId.trim().length === 0) {
       return NextResponse.json(
-        { error: 'Select an active driver vehicle before sending a trip request' },
+        { message: 'Select an active driver vehicle before sending a trip request' },
         { status: 400 }
       )
     }
@@ -228,14 +228,14 @@ export async function POST(request: NextRequest) {
 
     if (!selectedVehicle) {
       return NextResponse.json(
-        { error: 'Selected vehicle was not found' },
+        { message: 'Selected vehicle was not found' },
         { status: 404 }
       )
     }
 
     if (!selectedVehicle.isActive) {
       return NextResponse.json(
-        { error: 'Selected vehicle is inactive and cannot receive trip requests' },
+        { message: 'Selected vehicle is inactive and cannot receive trip requests' },
         { status: 400 }
       )
     }
@@ -248,7 +248,7 @@ export async function POST(request: NextRequest) {
     if (discountCardId) {
       if (parsedOriginalFare === null || parsedDiscountApplied === null || parsedDiscountApplied <= 0) {
         return NextResponse.json(
-          { error: 'A valid discount usage must include originalFare and a positive discountApplied amount' },
+          { message: 'A valid discount usage must include originalFare and a positive discountApplied amount' },
           { status: 400 }
         )
       }
@@ -268,7 +268,7 @@ export async function POST(request: NextRequest) {
 
       if (!card) {
         return NextResponse.json(
-          { error: 'Invalid discount card' },
+          { message: 'Invalid discount card' },
           { status: 404 }
         )
       }
@@ -277,7 +277,7 @@ export async function POST(request: NextRequest) {
       if (!evaluation.isValid) {
         return NextResponse.json(
           {
-            error: 'Invalid or unauthorized discount card',
+            message: 'Invalid or unauthorized discount card',
             validationChecks: evaluation
           },
           { status: 403 }
@@ -286,7 +286,7 @@ export async function POST(request: NextRequest) {
 
       if (discountType && discountType !== card.discountType) {
         return NextResponse.json(
-          { error: 'Discount type does not match the supplied discount card' },
+          { message: 'Discount type does not match the supplied discount card' },
           { status: 400 }
         )
       }
@@ -316,7 +316,7 @@ export async function POST(request: NextRequest) {
 
     if (!pendingTripRequest) {
       return NextResponse.json(
-        { error: 'Selected driver is not currently accepting trip requests' },
+        { message: 'Selected driver is not currently accepting trip requests' },
         { status: 409 }
       )
     }
@@ -332,7 +332,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       { 
-        error: 'Internal server error',
+        message: 'Internal server error',
         details: process.env.NODE_ENV === 'development' ? String(error) : undefined
       },
       { status: 500 }

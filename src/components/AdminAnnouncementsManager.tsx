@@ -162,7 +162,7 @@ export default function AdminAnnouncementsManager() {
       const payload = await response.json()
 
       if (!response.ok) {
-        throw new Error(payload.message || payload.error || 'Failed to load announcements')
+        throw new Error(payload.message || 'Failed to load announcements')
       }
 
       setData(payload as AdminAnnouncementsResponseDto)
@@ -219,7 +219,7 @@ export default function AdminAnnouncementsManager() {
 
       const payload = await response.json()
       if (!response.ok) {
-        throw new Error(payload.message || payload.error || 'Failed to save announcement')
+        throw new Error(payload.message || 'Failed to save announcement')
       }
 
       setSuccess(
@@ -249,7 +249,7 @@ export default function AdminAnnouncementsManager() {
       const payload = await response.json()
 
       if (!response.ok) {
-        throw new Error(payload.message || payload.error || 'Failed to archive announcement')
+        throw new Error(payload.message || 'Failed to archive announcement')
       }
 
       if (editingId === announcement.id) {

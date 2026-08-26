@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     // Validate required fields
     if (!name || !coordinates || !type) {
       return NextResponse.json(
-        { error: 'Missing required fields: name, coordinates, type' },
+        { message: 'Missing required fields: name, coordinates, type' },
         { status: 400 }
       );
     }

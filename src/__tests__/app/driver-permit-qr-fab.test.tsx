@@ -259,7 +259,7 @@ describe('Driver permit QR floating action button', () => {
 
   it('shows an error toast when the API returns 409 (no QR token issued)', async () => {
     fetchMock = makeFetchMock({
-      body: { error: 'No QR token has been issued for this permit yet. Contact the encoder to issue one.' },
+      body: { message: 'No QR token has been issued for this permit yet. Contact the encoder to issue one.' },
       status: 409,
     })
     vi.stubGlobal('fetch', fetchMock)
@@ -280,7 +280,7 @@ describe('Driver permit QR floating action button', () => {
 
   it('shows an error toast when the API returns 404 (no permit for vehicle)', async () => {
     fetchMock = makeFetchMock({
-      body: { error: 'No permit found for the assigned vehicle.' },
+      body: { message: 'No permit found for the assigned vehicle.' },
       status: 404,
     })
     vi.stubGlobal('fetch', fetchMock)

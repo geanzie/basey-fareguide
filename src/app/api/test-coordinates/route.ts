@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
 
     if (!coordinates || !Array.isArray(coordinates) || coordinates.length !== 2) {
       return NextResponse.json(
-        { error: 'Invalid coordinates. Expected [lat, lng] array.' },
+        { message: 'Invalid coordinates. Expected [lat, lng] array.' },
         { status: 400 }
       );
     }
@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     const [lat, lng] = coordinates;
     if (typeof lat !== 'number' || typeof lng !== 'number') {
       return NextResponse.json(
-        { error: 'Coordinates must be numbers.' },
+        { message: 'Coordinates must be numbers.' },
         { status: 400 }
       );
     }    const isValid = await testCoordinates([lat, lng]);
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     });
     
   } catch (error) {    return NextResponse.json(
-      { error: 'Internal server error while testing coordinates' },
+      { message: 'Internal server error while testing coordinates' },
       { status: 500 }
     );
   }

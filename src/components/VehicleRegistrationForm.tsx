@@ -109,11 +109,11 @@ export default function VehicleRegistrationForm() {
         router.push('/encoder/vehicles')
       } else {
         const errorData = await response.json()
-        if (errorData.error) {
-          if (errorData.error.includes('plate number')) {
+        if (errorData.message) {
+          if (errorData.message.includes('plate number')) {
             setErrors({ plateNumber: 'Vehicle with this plate number already exists' })
           } else {
-            setErrors({ submit: errorData.error })
+            setErrors({ submit: errorData.message })
           }
         }
       }

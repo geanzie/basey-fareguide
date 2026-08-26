@@ -6,7 +6,7 @@ const authMock = vi.hoisted(() => ({
     const message = error instanceof Error ? error.message : 'Internal server error'
     const status = message === 'Unauthorized' ? 401 : 500
 
-    return new Response(JSON.stringify({ error: message }), { status })
+    return new Response(JSON.stringify({ message }), { status })
   }),
 }))
 

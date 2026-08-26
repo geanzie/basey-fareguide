@@ -173,7 +173,7 @@ export default function PermitManagement() {
         fetchPermits()
       } else {
         const errorData = await response.json()
-        alert(`Error: ${errorData.error}`)
+        alert(`Error: ${errorData.message}`)
       }
     } catch (error) {      alert('Error saving permit')
     }
@@ -195,7 +195,7 @@ export default function PermitManagement() {
         alert('Permit renewed successfully')
       } else {
         const errorData = await response.json()
-        alert(`Error: ${errorData.error}`)
+        alert(`Error: ${errorData.message}`)
       }
     } catch (error) {      alert('Error renewing permit')
     }
@@ -216,7 +216,7 @@ export default function PermitManagement() {
         fetchPermits()
       } else {
         const errorData = await response.json()
-        alert(`Error: ${errorData.error}`)
+        alert(`Error: ${errorData.message}`)
       }
     } catch (error) {      alert('Error updating permit status')
     }
@@ -240,10 +240,10 @@ export default function PermitManagement() {
         headers: { 'Content-Type': 'application/json' },
       })
 
-      const payload = (await response.json()) as PermitQrLifecycleResponse | { error?: string }
+      const payload = (await response.json()) as PermitQrLifecycleResponse | { message?: string }
 
       if (!response.ok || !('permit' in payload)) {
-        alert(`Error: ${'error' in payload ? payload.error : 'Unable to update permit QR'}`)
+        alert(`Error: ${'message' in payload ? payload.message : 'Unable to update permit QR'}`)
         return
       }
 
@@ -276,10 +276,10 @@ export default function PermitManagement() {
     try {
       setLoadingQrPermitId(permit.id)
       const response = await fetch(`/api/permits/${permit.id}/qr`)
-      const payload = (await response.json()) as PermitQrReadResponse | { error?: string }
+      const payload = (await response.json()) as PermitQrReadResponse | { message?: string }
 
       if (!response.ok || !('permit' in payload)) {
-        alert(`Error: ${'error' in payload ? payload.error : 'Unable to load permit QR'}`)
+        alert(`Error: ${'message' in payload ? payload.message : 'Unable to load permit QR'}`)
         return
       }
 

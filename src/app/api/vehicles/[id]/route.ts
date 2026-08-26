@@ -28,7 +28,7 @@ export async function GET(
 
     if (!vehicle) {
       return NextResponse.json(
-        { error: 'Vehicle not found' },
+        { message: 'Vehicle not found' },
         { status: 404 }
       )
     }
@@ -64,7 +64,7 @@ export async function PATCH(
 
     if (!existingVehicle) {
       return NextResponse.json(
-        { error: 'Vehicle not found' },
+        { message: 'Vehicle not found' },
         { status: 404 }
       )
     }
@@ -74,7 +74,7 @@ export async function PATCH(
 
       if (!normalizedPlateNumber) {
         return NextResponse.json(
-          { error: 'Plate number must be a non-empty string when provided' },
+          { message: 'Plate number must be a non-empty string when provided' },
           { status: 400 }
         )
       }
@@ -86,7 +86,7 @@ export async function PATCH(
       if (isChangingAssignedPlate) {
         return NextResponse.json(
           {
-            error:
+            message:
               'Plate number cannot be changed while this vehicle has an active driver assignment. Reassign or retire the driver account first.',
           },
           { status: 409 }
@@ -137,7 +137,7 @@ export async function DELETE(
 
     if (!existingVehicle) {
       return NextResponse.json(
-        { error: 'Vehicle not found' },
+        { message: 'Vehicle not found' },
         { status: 404 }
       )
     }

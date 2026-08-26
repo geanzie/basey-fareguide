@@ -163,7 +163,7 @@ describe("admin fare rate revert and delete routes", () => {
     const json = await response.json();
 
     expect(response.status).toBe(409);
-    expect(json.error).toMatch(/previous eligible/i);
+    expect(json.message).toMatch(/previous eligible/i);
     expect(txFareRateVersionMock.update).not.toHaveBeenCalled();
   });
 
@@ -232,7 +232,7 @@ describe("admin fare rate revert and delete routes", () => {
     const json = await response.json();
 
     expect(response.status).toBe(409);
-    expect(json.error).toMatch(/current live/i);
+    expect(json.message).toMatch(/current live/i);
     expect(txFareRateDeletionAuditMock.create).not.toHaveBeenCalled();
     expect(txFareRateVersionMock.delete).not.toHaveBeenCalled();
   });

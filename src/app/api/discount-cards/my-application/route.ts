@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
     }
     return NextResponse.json(
       { 
-        error: 'Failed to fetch application status',
+        message: 'Failed to fetch application status',
         details: error.message 
       },
       { status: 500 }
@@ -118,7 +118,7 @@ export async function PATCH(request: NextRequest) {
 
     if (!existingCard) {
       return NextResponse.json(
-        { error: 'No existing application found' },
+        { message: 'No existing application found' },
         { status: 404 }
       )
     }
@@ -127,7 +127,7 @@ export async function PATCH(request: NextRequest) {
     if (existingCard.verificationStatus !== 'REJECTED') {
       return NextResponse.json(
         { 
-          error: 'Can only update rejected applications',
+          message: 'Can only update rejected applications',
           currentStatus: existingCard.verificationStatus
         },
         { status: 400 }
@@ -160,21 +160,21 @@ export async function PATCH(request: NextRequest) {
     // Validation (same as POST)
     if (!discountType || !['SENIOR_CITIZEN', 'PWD', 'STUDENT'].includes(discountType)) {
       return NextResponse.json(
-        { error: 'Invalid discount type' },
+        { message: 'Invalid discount type' },
         { status: 400 }
       )
     }
 
     if (!fullName || fullName.trim().length === 0) {
       return NextResponse.json(
-        { error: 'Full name is required' },
+        { message: 'Full name is required' },
         { status: 400 }
       )
     }
 
     if (!dateOfBirth) {
       return NextResponse.json(
-        { error: 'Date of birth is required' },
+        { message: 'Date of birth is required' },
         { status: 400 }
       )
     }
@@ -187,7 +187,7 @@ export async function PATCH(request: NextRequest) {
       
       if (age < 60) {
         return NextResponse.json(
-          { error: 'You must be 60 years or older to apply for Senior Citizen discount' },
+          { message: 'You must be 60 years or older to apply for Senior Citizen discount' },
           { status: 400 }
         )
       }
@@ -200,14 +200,14 @@ export async function PATCH(request: NextRequest) {
       // Validate photo file
       if (!photo.type.startsWith('image/')) {
         return NextResponse.json(
-          { error: 'Photo must be an image file' },
+          { message: 'Photo must be an image file' },
           { status: 400 }
         )
       }
 
       if (photo.size > 5 * 1024 * 1024) { // 5MB limit
         return NextResponse.json(
-          { error: 'Photo file size must be less than 5MB' },
+          { message: 'Photo file size must be less than 5MB' },
           { status: 400 }
         )
       }
@@ -229,7 +229,7 @@ export async function PATCH(request: NextRequest) {
         if (!idValidation.isValid || idValidation.confidence < 60) {
           return NextResponse.json(
             { 
-              error: 'ID validation failed',
+              message: 'ID validation failed',
               details: 'The uploaded image does not appear to be a valid ID. ' + 
                       idValidation.reasons.join('. '),
               validationResult: idValidation
@@ -253,7 +253,7 @@ export async function PATCH(request: NextRequest) {
         // (You can optionally add a field to the database to store this)
       } catch (fileError: any) {        return NextResponse.json(
           { 
-            error: 'Failed to save or validate photo file',
+            message: 'Failed to save or validate photo file',
             details: fileError.message 
           },
           { status: 500 }
@@ -265,19 +265,19 @@ export async function PATCH(request: NextRequest) {
     if (discountType === 'STUDENT') {
       if (!schoolName || schoolName.trim().length === 0) {
         return NextResponse.json(
-          { error: 'School name is required for student discount' },
+          { message: 'School name is required for student discount' },
           { status: 400 }
         )
       }
       if (!gradeLevel || gradeLevel.trim().length === 0) {
         return NextResponse.json(
-          { error: 'Grade/Year level is required for student discount' },
+          { message: 'Grade/Year level is required for student discount' },
           { status: 400 }
         )
       }
       if (!schoolIdExpiry) {
         return NextResponse.json(
-          { error: 'School ID expiry date is required' },
+          { message: 'School ID expiry date is required' },
           { status: 400 }
         )
       }
@@ -287,19 +287,19 @@ export async function PATCH(request: NextRequest) {
     if (discountType === 'PWD') {
       if (!disabilityType || disabilityType.trim().length === 0) {
         return NextResponse.json(
-          { error: 'Disability type is required for PWD discount' },
+          { message: 'Disability type is required for PWD discount' },
           { status: 400 }
         )
       }
       if (!pwdIdExpiry) {
         return NextResponse.json(
-          { error: 'PWD ID expiry date is required' },
+          { message: 'PWD ID expiry date is required' },
           { status: 400 }
         )
       }
       if (!idNumber || idNumber.trim().length === 0) {
         return NextResponse.json(
-          { error: 'PWD ID number is required' },
+          { message: 'PWD ID number is required' },
           { status: 400 }
         )
       }
@@ -371,7 +371,7 @@ export async function PATCH(request: NextRequest) {
     }
     return NextResponse.json(
       { 
-        error: 'Failed to update application',
+        message: 'Failed to update application',
         details: error.message 
       },
       { status: 500 }

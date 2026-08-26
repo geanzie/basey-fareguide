@@ -214,7 +214,7 @@ export async function GET(request: NextRequest) {
       return authError
     }
     return NextResponse.json(
-      { success: false, error: 'Failed to generate system reports' },
+      { success: false, message: 'Failed to generate system reports' },
       { status: 500 }
     )
   }
