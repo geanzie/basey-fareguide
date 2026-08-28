@@ -170,17 +170,22 @@ describe('RoutePlannerCalculator QR tagging integration', () => {
       await Promise.resolve()
     })
 
-    const placeAButton = Array.from(container.querySelectorAll('button')).find((button) =>
-      button.textContent?.includes('Mock place A'),
-    )
-    const placeBButton = Array.from(container.querySelectorAll('button')).find((button) =>
-      button.textContent?.includes('Mock place B'),
-    )
+    // The map is behind a dialog now, so each pin is placed the way a rider
+    // places it: open the map, click, and the dialog closes on the point.
+    const clickByText = async (label: string) => {
+      await act(async () => {
+        const match = Array.from(container.querySelectorAll('button')).find((button) =>
+          button.textContent?.includes(label),
+        )
+        match?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+        await Promise.resolve()
+      })
+    }
 
-    await act(async () => {
-      placeAButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      placeBButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    await clickByText('Pick on the map')
+    await clickByText('Mock place A')
+    await clickByText('Pick on the map')
+    await clickByText('Mock place B')
 
     await act(async () => {
       await Promise.resolve()

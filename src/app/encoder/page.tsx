@@ -79,6 +79,21 @@ function EncoderContent() {
             </Link>
 
             <Link
+              href="/encoder/ride-access"
+              className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg p-4 transition-colors group"
+            >
+              <div className="text-center">
+                <div className="mb-3 flex justify-center">
+                  <div className={`${getDashboardIconChipClasses('slate')} group-hover:scale-110 transition-transform`}>
+                    <DashboardIconSlot icon={DASHBOARD_ICONS.routes} size={DASHBOARD_ICON_POLICY.sizes.hero} />
+                  </div>
+                </div>
+                <h3 className="font-semibold text-slate-700">Ride Access</h3>
+                <p className="text-sm text-slate-600 mt-1">Mark which places a ride can reach</p>
+              </div>
+            </Link>
+
+            <Link
               href="/encoder/ticket-payments"
               className="bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg p-4 transition-colors group"
             >

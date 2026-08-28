@@ -1,14 +1,55 @@
+import type { VehicleType } from "@prisma/client";
+
 import {
   RoutingServiceError,
   type ShortestRoadRouteResult,
   type RouteResult,
   type SnappedPoint,
 } from "../types";
-import type { Coordinates, RoutingProvider } from "./base";
+import type { Coordinates, RouteRequestOptions, RoutingProvider } from "./base";
+import { approxMeters } from "../geo";
+import { getVehicleRoutingProfile } from "../vehicleProfiles";
 
-const ORS_ENDPOINT =
-  "https://api.openrouteservice.org/v2/directions/driving-car";
+const ORS_BASE = "https://api.openrouteservice.org/v2/directions";
+
+/** ORS routing profiles. "foot" is used only to probe walking-only access. */
+const ORS_PROFILE = {
+  drive: "driving-car",
+  foot: "foot-walking",
+} as const;
+
+type OrsProfile = keyof typeof ORS_PROFILE;
+
+interface OrsInternalOptions {
+  preference?: typeof ORS_SHORTEST_PREFERENCE;
+  profile?: OrsProfile;
+  vehicleType?: VehicleType | null;
+  /** ORS honours polygons. It has no equivalent for points or OSM way ids. */
+  excludePolygons?: Array<Array<[number, number]>>;
+}
+
 const ORS_SHORTEST_PREFERENCE = "shortest" as const;
+
+/**
+ * How far ORS may look for a road when snapping a coordinate.
+ *
+ * ORS defaults to 350 m and answers anything further with error 2010, "Could
+ * not find routable point". Most of Basey's barangay coordinates are polygon
+ * centroids sitting well inside their land area — Anglit is 819 m from the
+ * nearest mapped road, Manlilinab 3.4 km — so the default made 32 saved places
+ * permanently unquotable. Bounded rather than unlimited: with no limit a pin
+ * can snap across a river to an unrelated road and price a fare from it.
+ */
+const DEFAULT_SNAP_RADIUS_M = 5000;
+
+function getConfiguredSnapRadiusM(): number {
+  const parsed = Number.parseInt(
+    process.env.ROUTING_SNAP_RADIUS_M ?? String(DEFAULT_SNAP_RADIUS_M),
+    10,
+  );
+
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_SNAP_RADIUS_M;
+}
 
 /** Decode a Google/ORS precision-5 encoded polyline into [lat, lng] pairs. */
 function decodePolyline(encoded: string): [number, number][] {
@@ -37,17 +78,6 @@ function decodePolyline(encoded: string): [number, number][] {
     coords.push([lat / 1e5, lng / 1e5]);
   }
   return coords;
-}
-
-/**
- * Returns approximate distance in metres between two lat/lng points.
- * Accurate enough for the snapping threshold check (~10 m minimum, 200 m max).
- */
-function approxMeters(a: Coordinates, b: Coordinates): number {
-  const dLat = (a.lat - b.lat) * 111_000;
-  const dLng =
-    (a.lng - b.lng) * 111_000 * Math.cos((a.lat * Math.PI) / 180);
-  return Math.sqrt(dLat * dLat + dLng * dLng);
 }
 
 /** Minimum displacement (metres) before wasSnapped is reported as true. */
@@ -105,47 +135,101 @@ export class OrsProvider implements RoutingProvider {
     this.timeoutMs = timeoutMs;
   }
 
-  async calculate(origin: Coordinates, destination: Coordinates): Promise<RouteResult> {
-    return this.calculateInternal(origin, destination);
+  async calculate(
+    origin: Coordinates,
+    destination: Coordinates,
+    options?: RouteRequestOptions,
+  ): Promise<RouteResult> {
+    return this.calculateInternal(origin, destination, {
+      vehicleType: options?.vehicleType ?? null,
+      excludePolygons: options?.excludePolygons,
+    });
   }
 
   async calculateShortest(
     origin: Coordinates,
     destination: Coordinates,
+    options?: RouteRequestOptions,
   ): Promise<ShortestRoadRouteResult> {
-    return this.calculateInternal(origin, destination, ORS_SHORTEST_PREFERENCE);
+    return this.calculateInternal(origin, destination, {
+      preference: ORS_SHORTEST_PREFERENCE,
+      vehicleType: options?.vehicleType ?? null,
+      excludePolygons: options?.excludePolygons,
+    });
+  }
+
+  /**
+   * Walking route between two points. Used only to tell "the last stretch is a
+   * footpath or stairs" apart from "there is no road anywhere near here" — the
+   * result never becomes a fare, so it is not cached alongside road routes.
+   */
+  async calculateWalking(
+    origin: Coordinates,
+    destination: Coordinates,
+  ): Promise<RouteResult> {
+    return this.calculateInternal(origin, destination, { profile: "foot" });
   }
 
   private async calculateInternal(
     origin: Coordinates,
     destination: Coordinates,
-    preference: typeof ORS_SHORTEST_PREFERENCE,
+    options: OrsInternalOptions & { preference: typeof ORS_SHORTEST_PREFERENCE },
   ): Promise<ShortestRoadRouteResult>;
 
   private async calculateInternal(
     origin: Coordinates,
     destination: Coordinates,
-    preference?: typeof ORS_SHORTEST_PREFERENCE,
+    options: OrsInternalOptions,
   ): Promise<RouteResult>;
 
   private async calculateInternal(
     origin: Coordinates,
     destination: Coordinates,
-    preference?: typeof ORS_SHORTEST_PREFERENCE,
+    options: OrsInternalOptions,
   ): Promise<RouteResult> {
+    const { preference, profile = "drive", vehicleType = null } = options;
+    // ORS has no motorised two-wheeler profile, so habal-habal and tricycle
+    // both come back as car routes. The profile table says so explicitly and
+    // carries the reason to report.
+    const vehicleProfile = getVehicleRoutingProfile(vehicleType);
+    const avoidFeatures = profile === "drive" ? vehicleProfile.orsAvoidFeatures : [];
+    const orsFallbackReason = profile === "drive" ? vehicleProfile.orsFallbackReason : null;
     // ORS expects [lng, lat] order — the opposite of our internal {lat, lng}.
+    const snapRadiusM = getConfiguredSnapRadiusM();
     const body: {
       coordinates: [number, number][];
+      radiuses: [number, number];
       preference?: typeof ORS_SHORTEST_PREFERENCE;
+      options?: {
+        avoid_features?: string[];
+        avoid_polygons?: { type: "MultiPolygon"; coordinates: number[][][][] };
+      };
     } = {
       coordinates: [
         [origin.lng, origin.lat],
         [destination.lng, destination.lat],
       ],
+      radiuses: [snapRadiusM, snapRadiusM],
     };
 
     if (preference) {
       body.preference = preference;
+    }
+
+    const excludePolygons = profile === "drive" ? options.excludePolygons ?? [] : [];
+
+    if (avoidFeatures.length > 0 || excludePolygons.length > 0) {
+      body.options = {
+        ...(avoidFeatures.length > 0 ? { avoid_features: [...avoidFeatures] } : {}),
+        ...(excludePolygons.length > 0
+          ? {
+              avoid_polygons: {
+                type: "MultiPolygon" as const,
+                coordinates: excludePolygons.map((ring) => [ring]),
+              },
+            }
+          : {}),
+      };
     }
 
     const controller = new AbortController();
@@ -154,7 +238,7 @@ export class OrsProvider implements RoutingProvider {
     let response: Response;
 
     try {
-      response = await fetch(ORS_ENDPOINT, {
+      response = await fetch(`${ORS_BASE}/${ORS_PROFILE[profile]}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -269,7 +353,7 @@ export class OrsProvider implements RoutingProvider {
       method: "ors",
       provider: "ors",
       isEstimate: false,
-      fallbackReason: null,
+      fallbackReason: orsFallbackReason,
       snappedOrigin,
       snappedDestination,
       diagnostics: {

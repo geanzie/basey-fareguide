@@ -1,4 +1,4 @@
-export type RoutingPrimaryProviderDto = "ors" | "google_routes";
+export type RoutingPrimaryProviderDto = "ors" | "google_routes" | "valhalla";
 
 export type RoutingSettingsSourceDto = "database" | "environment_default";
 

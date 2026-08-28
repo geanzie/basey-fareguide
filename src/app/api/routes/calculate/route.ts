@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import type { FarePolicySnapshotDto } from "@/lib/contracts";
-import { calculateShortestRoadRoute } from "@/lib/routing";
+import { VehicleType } from "@prisma/client";
+import type { FarePolicySnapshotDto, PlannerLocationDto } from "@/lib/contracts";
+import { resolveRouteForQuote } from "@/lib/routing";
 import { calculateFare, getFareBreakdown } from "@/lib/fare/calculator";
 import { getResolvedFareRates } from "@/lib/fare/rateService";
 import { resolvePinLabel, type ResolvedPinLabel } from "@/lib/locations/pinLabelResolver";
@@ -8,10 +9,21 @@ import { resolvePlannerLocationByName } from "@/lib/locations/plannerLocations";
 import { serializePinLabel } from "@/lib/locations/pinSerializer";
 import {
   RoutingServiceError,
+  type AccessPolicy,
   type CalculatedRouteResponse,
+  type DropoffNotice,
   type LocationInput,
   type PassengerType,
+  type RouteField,
+  type BlockedVehicleAccessVerdict,
 } from "@/lib/routing/types";
+import { approxMeters } from "@/lib/routing/geo";
+import {
+  verifyVehicleAccess,
+  type CuratedAccess,
+} from "@/lib/routing/vehicleAccess";
+import { requiresTwoWheelerNotice } from "@/lib/routing/vehicleProfiles";
+import { evaluateRouteTerrain } from "@/lib/routing/terrainService";
 
 const VALID_PASSENGER_TYPES = new Set<PassengerType>([
   "REGULAR",
@@ -19,6 +31,12 @@ const VALID_PASSENGER_TYPES = new Set<PassengerType>([
   "SENIOR",
   "PWD",
 ]);
+
+/**
+ * Derived from the Prisma enum rather than hand-listed, so a new vehicle type
+ * is accepted here the moment it exists in the schema.
+ */
+const VALID_VEHICLE_TYPES = new Set<string>(Object.values(VehicleType));
 
 /** Philippine national bounding box — hard outer guard. */
 const PH_BOUNDS = { latMin: 4, latMax: 22, lngMin: 114, lngMax: 128 } as const;
@@ -44,30 +62,25 @@ function isInBounds(
   );
 }
 
-/**
- * Returns the approximate distance in metres between two coordinate pairs.
- * Accurate enough for the snap-distance guard (< 1% error within Samar).
- */
-function approxMeters(
-  a: { lat: number; lng: number },
-  b: { lat: number; lng: number },
-): number {
-  const dLat = (a.lat - b.lat) * 111_000;
-  const dLng =
-    (a.lng - b.lng) * 111_000 * Math.cos(a.lat * (Math.PI / 180));
-  return Math.sqrt(dLat * dLat + dLng * dLng);
-}
-
-const MAX_SNAP_DISTANCE_M = 200;
-
 type RouteApiErrorCode =
   | "INVALID_ROUTE_INPUT"
   | "NO_ROAD_ROUTE_FOUND"
   | "ROUTING_SERVICE_UNAVAILABLE"
-  | "ROUTE_UNVERIFIED";
+  | "ROUTE_UNVERIFIED"
+  | "NO_VEHICLE_ACCESS"
+  | "NO_ROUTE_FOR_VEHICLE"
+  | "ROUTE_BLOCKED_BY_RESTRICTION";
 
-function jsonError(status: number, code: RouteApiErrorCode, message: string) {
-  return NextResponse.json({ code, message }, { status });
+function jsonError(
+  status: number,
+  code: RouteApiErrorCode,
+  message: string,
+  details?: Record<string, unknown>,
+) {
+  return NextResponse.json(
+    { code, message, ...(details ? { details } : {}) },
+    { status },
+  );
 }
 
 /**
@@ -79,6 +92,73 @@ function isSamePoint(
   b: { lat: number; lng: number },
 ): boolean {
   return Math.abs(a.lat - b.lat) < 0.0001 && Math.abs(a.lng - b.lng) < 0.0001;
+}
+
+/**
+ * Applies a saved Place's curated ride-access facts.
+ *
+ * A Place marked WALK_ONLY carries the point a ride can actually reach — a
+ * school gate on the main road rather than the pin inside the campus. The trip
+ * is quoted to that point and the rider is told about the walk, instead of
+ * being handed a fare no driver can complete.
+ */
+function applyCuratedAccess(
+  field: RouteField,
+  place: PlannerLocationDto,
+  coords: { lat: number; lng: number },
+): {
+  coords: { lat: number; lng: number };
+  curated: CuratedAccess | null;
+  notice: DropoffNotice | null;
+} {
+  const vetted: CuratedAccess = {
+    vehicleAccess: "VEHICLE_ACCESSIBLE",
+    dropoff: null,
+    label: place.name,
+  };
+
+  if (place.vehicleAccess === "VEHICLE_ACCESSIBLE") {
+    return { coords, curated: vetted, notice: null };
+  }
+
+  if (place.vehicleAccess === "WALK_ONLY" && place.dropoffCoordinates) {
+    const dropoff = place.dropoffCoordinates;
+
+    return {
+      // The drop-off is itself a vetted road point, so the live guard can skip it.
+      coords: dropoff,
+      curated: vetted,
+      notice: {
+        field,
+        requestedLabel: place.name,
+        label: `${place.name} drop-off`,
+        lat: dropoff.lat,
+        lng: dropoff.lng,
+        walkMeters: Math.round(approxMeters(dropoff, coords)),
+        note: place.accessNote ?? null,
+      },
+    };
+  }
+
+  // WALK_ONLY with no drop-off recorded yet, or UNVERIFIED: let the live guard decide.
+  return { coords, curated: null, notice: null };
+}
+
+/**
+ * Decides whether a coordinate is a doorstep or an area centroid.
+ *
+ * Barangay and sitio coordinates are polygon centroids — 36 of Basey's 51
+ * barangays sit over 80 m from any road for that reason alone. Holding them to
+ * a doorstep-reachability test refuses fares that Ordinance 105 plainly covers.
+ */
+function accessPolicyFor(
+  input: LocationInput,
+  place: PlannerLocationDto | null,
+): AccessPolicy {
+  if (input.type === "pin") return "doorstep";
+  return place && (place.category === "barangay" || place.category === "sitio")
+    ? "area"
+    : "doorstep";
 }
 
 function parseLocationInput(raw: unknown): LocationInput | null {
@@ -96,6 +176,51 @@ function parseLocationInput(raw: unknown): LocationInput | null {
   return null;
 }
 
+/**
+ * Validates coordinates resolved from a preset Place name.
+ *
+ * Pin inputs are bounds-checked before use; preset inputs used to skip this
+ * entirely and trust the Location row. A single bad row (coordinate typo, a
+ * validation that resolved to the wrong municipality) would then produce a fare
+ * from a coordinate the pin path would have refused, so presets are held to the
+ * same guard.
+ */
+function validateResolvedCoordinates(
+  coords: { lat: number; lng: number },
+  field: "origin" | "destination",
+  name: string,
+): NextResponse | null {
+  if (!isInBounds(coords.lat, coords.lng, PH_BOUNDS)) {
+    console.warn("[/api/routes/calculate] validation-failure", {
+      code: "INVALID_ROUTE_INPUT",
+      reason: "preset_outside_philippines",
+      field,
+      name,
+      ...coords,
+    });
+    return jsonError(
+      400,
+      "INVALID_ROUTE_INPUT",
+      `Location "${name}" has coordinates outside the Philippines`,
+    );
+  }
+  if (!isInBounds(coords.lat, coords.lng, SERVICE_AREA)) {
+    console.warn("[/api/routes/calculate] validation-failure", {
+      code: "INVALID_ROUTE_INPUT",
+      reason: "preset_outside_service_area",
+      field,
+      name,
+      ...coords,
+    });
+    return jsonError(
+      400,
+      "INVALID_ROUTE_INPUT",
+      `Location "${name}" is outside the Basey service area`,
+    );
+  }
+  return null;
+}
+
 export async function POST(request: NextRequest) {
   let body: unknown;
   try {
@@ -108,6 +233,7 @@ export async function POST(request: NextRequest) {
     origin: rawOrigin,
     destination: rawDest,
     passengerType: rawPassengerType,
+    vehicleType: rawVehicleType,
   } = body as Record<string, unknown>;
 
   // --- Parse LocationInput objects ---
@@ -144,6 +270,24 @@ export async function POST(request: NextRequest) {
   }
   const passengerType = passengerTypeUpper as PassengerType;
 
+  // --- vehicleType: optional. Absent means "no vehicle context", which routes
+  // as a car — exactly what every quote did before this parameter existed. ---
+  let vehicleType: VehicleType | null = null;
+
+  if (rawVehicleType != null && String(rawVehicleType).trim() !== "") {
+    const vehicleTypeUpper = String(rawVehicleType).trim().toUpperCase();
+
+    if (!VALID_VEHICLE_TYPES.has(vehicleTypeUpper)) {
+      return jsonError(
+        400,
+        "INVALID_ROUTE_INPUT",
+        `Invalid vehicleType "${vehicleTypeUpper}". Must be one of: ${[...VALID_VEHICLE_TYPES].join(", ")}`,
+      );
+    }
+
+    vehicleType = vehicleTypeUpper as VehicleType;
+  }
+
   // --- Resolve origin to coordinates ---
   // Fire both preset lookups in parallel to eliminate sequential waterfall.
   const [originPresetResult, destPresetResult] = await Promise.all([
@@ -160,6 +304,12 @@ export async function POST(request: NextRequest) {
     if (!resolved) {
       return jsonError(400, "INVALID_ROUTE_INPUT", `Unknown location: "${originInput.name}"`);
     }
+    const outOfBounds = validateResolvedCoordinates(
+      resolved.coordinates,
+      "origin",
+      resolved.name,
+    );
+    if (outOfBounds) return outOfBounds;
     originCoords = resolved.coordinates;
     originLabel = resolved.name;
   } else {
@@ -199,6 +349,12 @@ export async function POST(request: NextRequest) {
     if (!resolved) {
       return jsonError(400, "INVALID_ROUTE_INPUT", `Unknown location: "${destInput.name}"`);
     }
+    const outOfBounds = validateResolvedCoordinates(
+      resolved.coordinates,
+      "destination",
+      resolved.name,
+    );
+    if (outOfBounds) return outOfBounds;
     destCoords = resolved.coordinates;
     destLabel = resolved.name;
   } else {
@@ -228,6 +384,25 @@ export async function POST(request: NextRequest) {
     destLabel = destinationResolved.displayLabel;
   }
 
+  // --- Curated ride access for saved places ---
+  const dropoffNotices: DropoffNotice[] = [];
+  let originCurated: CuratedAccess | null = null;
+  let destCurated: CuratedAccess | null = null;
+
+  if (originPresetResult) {
+    const applied = applyCuratedAccess("origin", originPresetResult, originCoords);
+    originCoords = applied.coords;
+    originCurated = applied.curated;
+    if (applied.notice) dropoffNotices.push(applied.notice);
+  }
+
+  if (destPresetResult) {
+    const applied = applyCuratedAccess("destination", destPresetResult, destCoords);
+    destCoords = applied.coords;
+    destCurated = applied.curated;
+    if (applied.notice) dropoffNotices.push(applied.notice);
+  }
+
   // --- inputMode: pin if either side is a pin, otherwise preset ---
   const inputMode: "preset" | "pin" =
     originInput.type === "pin" || destInput.type === "pin" ? "pin" : "preset";
@@ -252,6 +427,11 @@ export async function POST(request: NextRequest) {
     const samePointResponse: CalculatedRouteResponse = {
       origin: originLabel,
       destination: destLabel,
+      vehicleType,
+      // No provider was consulted, so no provider notice applies.
+      twoWheelerNotice: false,
+      // No route means no terrain to read.
+      routeValidity: null,
       originResolved,
       destinationResolved,
       distanceKm: 0,
@@ -274,6 +454,7 @@ export async function POST(request: NextRequest) {
       snappedOrigin: null,
       snappedDestination: null,
       inputMode,
+      dropoffNotices,
     };
 
     return NextResponse.json(samePointResponse);
@@ -282,21 +463,35 @@ export async function POST(request: NextRequest) {
   // --- Route calculation (ORS shortest road route only) ---
   let route;
   try {
-    route = await calculateShortestRoadRoute(originCoords, destCoords);
+    // Tier 1 is the curated corpus, which only applies when both ends resolved
+    // to saved places. Both lookups already ran in parallel above.
+    route = await resolveRouteForQuote({
+      origin: originCoords,
+      destination: destCoords,
+      originLocationId: originPresetResult?.id ?? null,
+      destinationLocationId: destPresetResult?.id ?? null,
+      vehicleType,
+    });
   } catch (err) {
     if (err instanceof RoutingServiceError) {
       const status =
         err.code === "NO_ROAD_ROUTE_FOUND"
           ? 422
-          : err.code === "ROUTE_UNVERIFIED"
-            ? err.status ?? 503
-            : err.status ?? 503;
+          : err.code === "ROUTE_BLOCKED_BY_RESTRICTION"
+            ? 422
+            : err.code === "ROUTE_UNVERIFIED"
+              ? err.status ?? 503
+              : err.status ?? 503;
       const errorMessage =
         err.code === "NO_ROAD_ROUTE_FOUND"
           ? "No road route could be found between these points."
-          : err.code === "ROUTE_UNVERIFIED"
-            ? "Route could not be verified right now. Official fare is unavailable."
-          : "Routing service unavailable right now.";
+          : // A closure is a fact about the road, so the admin's own wording
+            // reaches the rider rather than a generic failure.
+            err.code === "ROUTE_BLOCKED_BY_RESTRICTION"
+            ? err.message
+            : err.code === "ROUTE_UNVERIFIED"
+              ? "Route could not be verified right now. Official fare is unavailable."
+              : "Routing service unavailable right now.";
 
       console.warn("[/api/routes/calculate] routing-failure", {
         code: err.code,
@@ -313,38 +508,137 @@ export async function POST(request: NextRequest) {
     return jsonError(503, "ROUTING_SERVICE_UNAVAILABLE", "Routing service unavailable right now.");
   }
 
-  // --- Snap-distance guard for pin inputs ---
-  if (originInput.type === "pin" && route.snappedOrigin) {
-    const snapDist = approxMeters(originCoords, route.snappedOrigin);
-    if (snapDist > MAX_SNAP_DISTANCE_M) {
-      console.info("[/api/routes/calculate] routing-failure", {
-        code: "NO_ROAD_ROUTE_FOUND",
-        reason: "origin_snap_too_far",
-        snapDist,
-        originCoords,
-      });
-      return jsonError(
-        422,
-        "NO_ROAD_ROUTE_FOUND",
-        "Origin pin is too far from any road. Please move the pin closer to a road.",
-      );
-    }
+  // --- Ride-access guard ---
+  // Runs for pins and saved places alike, at both ends of the trip. It used to
+  // run for pins only, so a saved place whose coordinate sat off the drivable
+  // network — a school reachable only up a flight of stairs — was quoted a fare
+  // no habal-habal or tricycle could complete.
+  const originPolicy = accessPolicyFor(originInput, originPresetResult);
+  const destPolicy = accessPolicyFor(destInput, destPresetResult);
+
+  const [originAccess, destAccess] = await Promise.all([
+    verifyVehicleAccess({
+      field: "origin",
+      policy: originPolicy,
+      requested: originCoords,
+      label: originLabel,
+      snapped: route.snappedOrigin,
+      curated: originCurated,
+    }),
+    verifyVehicleAccess({
+      field: "destination",
+      policy: destPolicy,
+      requested: destCoords,
+      label: destLabel,
+      snapped: route.snappedDestination,
+      curated: destCurated,
+    }),
+  ]);
+
+  // An area centroid that snapped far out is reported, not refused: the ride
+  // stops where the road into the barangay ends, and the rider is told so.
+  for (const verdict of [originAccess, destAccess]) {
+    if (verdict.status === "reachable") continue;
+    const policy = verdict.field === "origin" ? originPolicy : destPolicy;
+    if (policy !== "area") continue;
+
+    const label = verdict.field === "origin" ? originLabel : destLabel;
+    const point =
+      verdict.status === "walk_only"
+        ? verdict.dropoff
+        : verdict.field === "origin"
+          ? route.snappedOrigin
+          : route.snappedDestination;
+    if (!point) continue;
+
+    dropoffNotices.push({
+      field: verdict.field,
+      requestedLabel: label,
+      label: `the road into ${label}`,
+      lat: point.lat,
+      lng: point.lng,
+      walkMeters: verdict.snapMeters,
+      note: null,
+    });
   }
-  if (destInput.type === "pin" && route.snappedDestination) {
-    const snapDist = approxMeters(destCoords, route.snappedDestination);
-    if (snapDist > MAX_SNAP_DISTANCE_M) {
+
+  // Destination first: it is the end the rider just chose.
+  const blocked: BlockedVehicleAccessVerdict | undefined = [
+    destAccess,
+    originAccess,
+  ].find(
+    (verdict): verdict is BlockedVehicleAccessVerdict =>
+      verdict.status !== "reachable" &&
+      (verdict.field === "origin" ? originPolicy : destPolicy) === "doorstep",
+  );
+
+  if (blocked) {
+    const blockedLabel = blocked.field === "origin" ? originLabel : destLabel;
+
+    if (blocked.status === "no_road") {
       console.info("[/api/routes/calculate] routing-failure", {
         code: "NO_ROAD_ROUTE_FOUND",
-        reason: "destination_snap_too_far",
-        snapDist,
-        destCoords,
+        reason:
+          blocked.field === "origin"
+            ? "origin_snap_too_far"
+            : "destination_snap_too_far",
+        field: blocked.field,
+        snapMeters: blocked.snapMeters,
       });
+
+      // A rider cannot "move the pin" on a saved place, so the advice differs by
+      // how the location was given. Both keep the "too far from any road"
+      // wording, which classifyPlannerError in lib/planner/routePlanner.ts
+      // substring-matches.
+      const blockedInput = blocked.field === "origin" ? originInput : destInput;
+      const end = blocked.field === "origin" ? "Origin" : "Destination";
+
       return jsonError(
         422,
         "NO_ROAD_ROUTE_FOUND",
-        "Destination pin is too far from any road. Please move the pin closer to a road.",
+        blockedInput.type === "pin"
+          ? `${end} pin is too far from any road. Please move the pin closer to a road.`
+          : `${blockedLabel} is too far from any road for a habal-habal or tricycle. Pick a nearby place instead.`,
       );
     }
+
+    console.info("[/api/routes/calculate] routing-failure", {
+      code: "NO_VEHICLE_ACCESS",
+      reason: "no_vehicle_access",
+      field: blocked.field,
+      snapMeters: blocked.snapMeters,
+      walkMeters: blocked.dropoff.walkMeters,
+      dropoffSource: blocked.dropoff.source,
+    });
+
+    return jsonError(
+      422,
+      "NO_VEHICLE_ACCESS",
+      `Habal-habal and tricycles can only reach ${blocked.dropoff.label}. The last ${blocked.dropoff.walkMeters} m to ${blockedLabel} is on foot.`,
+      { field: blocked.field, dropoff: blocked.dropoff },
+    );
+  }
+
+  // --- Terrain check ---
+  // Runs on whichever tier produced the route, because it works from the
+  // polyline. It NEVER feeds the fare: Ordinance 105 prices distance, and
+  // letting grade move the number would be a terrain surcharge. It decides
+  // validity only, and only once an admin has armed the gate for this vehicle.
+  const terrain = await evaluateRouteTerrain(route.polyline, vehicleType);
+
+  if (terrain.shouldBlock) {
+    console.info("[/api/routes/calculate] no-route-for-vehicle", {
+      vehicleType,
+      maxGradePercent: terrain.verdict.maxGradePercent,
+      thresholdPercent: terrain.verdict.thresholdPercent,
+      demResolutionM: terrain.verdict.demResolutionM,
+    });
+
+    return jsonError(
+      422,
+      "NO_ROUTE_FOR_VEHICLE",
+      `No ${vehicleType?.toLowerCase().replace(/_/g, "-") ?? "vehicle"}-passable route: the only road climbs ${terrain.verdict.maxGradePercent?.toFixed(0)}%, above the ${terrain.verdict.thresholdPercent}% limit for this vehicle.`,
+    );
   }
 
   // --- Fare calculation ---
@@ -354,6 +648,12 @@ export async function POST(request: NextRequest) {
   const response: CalculatedRouteResponse = {
     origin: originLabel,
     destination: destLabel,
+    vehicleType,
+    twoWheelerNotice: requiresTwoWheelerNotice(vehicleType, route.provider),
+    routeValidity: {
+      ...terrain.verdict,
+      enforced: terrain.shouldBlock,
+    },
     originResolved,
     destinationResolved,
     distanceKm: route.distanceKm,
@@ -370,6 +670,7 @@ export async function POST(request: NextRequest) {
     snappedOrigin: route.snappedOrigin,
     snappedDestination: route.snappedDestination,
     inputMode,
+    dropoffNotices,
   };
 
   return NextResponse.json(response);

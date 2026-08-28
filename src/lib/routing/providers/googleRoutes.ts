@@ -1,3 +1,5 @@
+import type { VehicleType } from "@prisma/client";
+
 import {
   RoutingServiceError,
   type RouteResult,
@@ -5,7 +7,8 @@ import {
   type ShortestRoadRouteResult,
   type SnappedPoint,
 } from "../types";
-import type { Coordinates, RoutingProvider } from "./base";
+import type { Coordinates, RouteRequestOptions, RoutingProvider } from "./base";
+import { getVehicleRoutingProfile } from "../vehicleProfiles";
 
 const GOOGLE_ROUTES_ENDPOINT = "https://routes.googleapis.com/directions/v2:computeRoutes";
 const DEFAULT_LANGUAGE_CODE = "en-US";
@@ -174,21 +177,32 @@ export class GoogleRoutesProvider implements RoutingProvider {
     this.timeoutMs = timeoutMs;
   }
 
-  async calculate(origin: Coordinates, destination: Coordinates): Promise<RouteResult> {
-    return this.calculateInternal(origin, destination);
+  async calculate(
+    origin: Coordinates,
+    destination: Coordinates,
+    options?: RouteRequestOptions,
+  ): Promise<RouteResult> {
+    return this.calculateInternal(origin, destination, options?.vehicleType ?? null);
   }
 
   async calculateShortest(
     origin: Coordinates,
     destination: Coordinates,
+    options?: RouteRequestOptions,
   ): Promise<ShortestRoadRouteResult> {
-    return this.calculateInternal(origin, destination);
+    return this.calculateInternal(origin, destination, options?.vehicleType ?? null);
   }
 
   private async calculateInternal(
     origin: Coordinates,
     destination: Coordinates,
+    vehicleType: VehicleType | null,
   ): Promise<ShortestRoadRouteResult> {
+    // TWO_WHEELER for habal-habal only. A tricycle stays on DRIVE even though
+    // it is nominally a two-wheeler, because TWO_WHEELER routes down narrow
+    // motorcycle cut-throughs a sidecar cannot fit and Google gives us no width
+    // or surface data to gate on. See vehicleProfiles.ts.
+    const travelMode = getVehicleRoutingProfile(vehicleType).googleTravelMode;
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeoutMs);
 
@@ -209,7 +223,7 @@ export class GoogleRoutesProvider implements RoutingProvider {
           },
         },
       },
-      travelMode: "DRIVE",
+      travelMode,
       routingPreference: "TRAFFIC_UNAWARE" satisfies GoogleRoutingPreference,
       computeAlternativeRoutes: false,
       languageCode: DEFAULT_LANGUAGE_CODE,

@@ -10,7 +10,11 @@ function flattenSeedLocations(dataset) {
       name: location.name,
       type,
       coordinates: `${location.coordinates.lat},${location.coordinates.lng}`,
-      barangay: type === "BARANGAY" ? location.name : null,
+      // Landmarks and sitios carry the barangay their coordinate falls inside,
+      // computed from the municipal boundary polygons. Keep it — the Place
+      // search shows it as the secondary line and matches against it.
+      barangay:
+        type === "BARANGAY" ? location.name : location.barangay || null,
       description: location.address || null,
       googleFormattedAddress: location.address || null,
       sourceCategory: category,

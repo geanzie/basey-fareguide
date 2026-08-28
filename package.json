@@ -24,6 +24,7 @@
     "db:seed": "node prisma/seed.js",
     "tiles:fetch": "node scripts/fetch-tiles.mjs",
     "roads:fetch": "node scripts/fetch-roads.mjs",
+    "roads:convert": "node scripts/convert-official-roads.mjs",
     "cleanup:public:inspect": "node scripts/public-schema-cleanup.js inspect",
     "cleanup:public:export": "node scripts/public-schema-cleanup.js export",
     "cleanup:public:drop-sql": "node scripts/public-schema-cleanup.js drop-sql",

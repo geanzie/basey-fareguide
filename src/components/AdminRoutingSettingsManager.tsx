@@ -188,6 +188,27 @@ export default function AdminRoutingSettingsManager() {
             <label className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
               <div className="flex items-center gap-3">
                 <input
+                  id="routing-provider-valhalla"
+                  type="radio"
+                  name="primaryProvider"
+                  value="valhalla"
+                  checked={selectedProvider === 'valhalla'}
+                  onChange={() => setSelectedProvider('valhalla')}
+                  disabled={setupRequired || saving}
+                />
+                <div>
+                  <div className="font-semibold text-slate-900">Valhalla (self-hosted)</div>
+                  <div className="text-xs text-slate-500">
+                    Routes each vehicle type on its own road profile. Falls back to the cloud
+                    providers when the container is unreachable.
+                  </div>
+                </div>
+              </div>
+            </label>
+
+            <label className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+              <div className="flex items-center gap-3">
+                <input
                   id="routing-provider-google"
                   type="radio"
                   name="primaryProvider"

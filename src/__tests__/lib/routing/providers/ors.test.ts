@@ -144,3 +144,56 @@ describe("OrsProvider.calculate", () => {
     } satisfies Partial<RoutingServiceError>);
   });
 });
+
+describe("OrsProvider snap radius", () => {
+  const origin = { lat: 11.278823, lng: 125.001194 };
+  const dest = { lat: 11.304796, lng: 125.10899 };
+
+  const OK_RESPONSE = {
+    ok: true,
+    json: () =>
+      Promise.resolve({
+        routes: [{ summary: { distance: 100, duration: 10 }, geometry: "a" }],
+      }),
+  };
+
+  function bodyOfLastCall(fetchMock: ReturnType<typeof vi.fn>) {
+    return JSON.parse(fetchMock.mock.calls.at(-1)![1].body as string);
+  }
+
+  it("asks ORS to snap well past its 350 m default", async () => {
+    // Anglit's centroid is 819 m from the nearest road and Manlilinab 3.4 km;
+    // at the default radius ORS answers error 2010 and no fare can be quoted.
+    vi.stubEnv("OPENROUTESERVICE_API_KEY", "test-key");
+    const fetchMock = vi.fn().mockResolvedValue(OK_RESPONSE);
+    vi.stubGlobal("fetch", fetchMock);
+
+    await new OrsProvider().calculate(origin, dest);
+
+    expect(bodyOfLastCall(fetchMock).radiuses).toEqual([5000, 5000]);
+  });
+
+  it("honours ROUTING_SNAP_RADIUS_M", async () => {
+    vi.stubEnv("OPENROUTESERVICE_API_KEY", "test-key");
+    vi.stubEnv("ROUTING_SNAP_RADIUS_M", "1200");
+    const fetchMock = vi.fn().mockResolvedValue(OK_RESPONSE);
+    vi.stubGlobal("fetch", fetchMock);
+
+    await new OrsProvider().calculateShortest(origin, dest);
+
+    const body = bodyOfLastCall(fetchMock);
+    expect(body.radiuses).toEqual([1200, 1200]);
+    expect(body.preference).toBe("shortest");
+  });
+
+  it("falls back to the default when the env var is not a positive number", async () => {
+    vi.stubEnv("OPENROUTESERVICE_API_KEY", "test-key");
+    vi.stubEnv("ROUTING_SNAP_RADIUS_M", "not-a-number");
+    const fetchMock = vi.fn().mockResolvedValue(OK_RESPONSE);
+    vi.stubGlobal("fetch", fetchMock);
+
+    await new OrsProvider().calculate(origin, dest);
+
+    expect(bodyOfLastCall(fetchMock).radiuses).toEqual([5000, 5000]);
+  });
+});

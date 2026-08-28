@@ -14,7 +14,9 @@ function coerceRoutingPrimaryProvider(value: unknown): RoutingPrimaryProvider | 
     return null;
   }
 
-  return value === "ors" || value === "google_routes" ? value : null;
+  return value === "ors" || value === "google_routes" || value === "valhalla"
+    ? value
+    : null;
 }
 
 export async function GET(request: NextRequest) {

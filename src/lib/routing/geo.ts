@@ -28,3 +28,14 @@ export function haversineKm(a: Coordinates, b: Coordinates): number {
 export function estimatedRoadKm(a: Coordinates, b: Coordinates): number {
   return haversineKm(a, b) * ROAD_FACTOR;
 }
+
+/**
+ * Approximate distance in metres between two lat/lng points using a flat-earth
+ * projection. Accurate enough for snapping and access thresholds (tens to a few
+ * hundred metres) and much cheaper than the full haversine.
+ */
+export function approxMeters(a: Coordinates, b: Coordinates): number {
+  const dLat = (a.lat - b.lat) * 111_000;
+  const dLng = (a.lng - b.lng) * 111_000 * Math.cos((a.lat * Math.PI) / 180);
+  return Math.sqrt(dLat * dLat + dLng * dLng);
+}

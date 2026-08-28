@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   previewFeatures = ["driverAdapters"]
 }
 
@@ -9,72 +9,79 @@ datasource db {
 }
 
 model User {
-  id                    String                @id @default(cuid())
-  username              String                @unique
-  password              String
-  email                 String?               @unique
-  firstName             String
-  lastName              String
-  phoneNumber           String?
-  address               String?
-  userType              UserType
-  isActive              Boolean               @default(true)
-  dateOfBirth           DateTime?
-  governmentId          String?               @unique
-  idType                String?
-  barangayResidence     String?
-  occupation            String?
-  emergencyContact      String?
-  emergencyContactPhone String?
-  reasonForRegistration String?
-  assignedVehicleId     String?               @unique
-  assignedVehicleAssignedAt DateTime?
-  assignedVehicleAssignedBy String?
-  isVerified            Boolean               @default(false)
-  verificationToken     String?
-  verificationExpiry    DateTime?
-  verifiedAt            DateTime?
-  verifiedBy            String?
-  registrationIp        String?
-  lastLoginAt           DateTime?
-  lastLoginIp           String?
-  loginAttempts         Int                   @default(0)
-  lockedUntil           DateTime?
-  passwordResetToken    String?
-  passwordResetExpiry   DateTime?
-  passwordResetOtp      String?
-  passwordResetOtpExpiry DateTime?
-  privacyNoticeAcknowledgedAt DateTime?
-  privacyNoticeVersion        String?
-  createdAt             DateTime              @default(now())
-  updatedAt             DateTime              @updatedAt
-  fareCalculations      FareCalculation[]
-  handledIncidents      Incident[]            @relation("HandledBy")
-  reportedIncidents     Incident[]            @relation("ReportedBy")
-  uploadedEvidence      Evidence[]            @relation("EvidenceUploader")
-  reviewedEvidence      Evidence[]            @relation("EvidenceReviewer")
-  verificationLogs      UserVerificationLog[]
-  discountCard          DiscountCard?
-  createdLocations      Location[]            @relation("LocationCreator")
-  verifiedLocations     Location[]            @relation("LocationVerifier")
-  createdFareRateVersions FareRateVersion[]   @relation("FareRateVersionCreator")
-  canceledFareRateVersions FareRateVersion[]  @relation("FareRateVersionCanceller")
-  createdAnnouncements  Announcement[]        @relation("AnnouncementCreator")
-  updatedAnnouncements  Announcement[]        @relation("AnnouncementUpdater")
-  archivedAnnouncements Announcement[]        @relation("AnnouncementArchiver")
-  updatedRoutingSettings RoutingSettings[]    @relation("RoutingSettingsUpdater")
-  routingSettingsAuditEntries RoutingSettingsAudit[] @relation("RoutingSettingsAuditActor")
-  permitQrAuditEntries  PermitQrAudit[]       @relation("PermitQrAuditActor")
-  fareRateDeletionAuditEntries FareRateDeletionAudit[] @relation("FareRateDeletionAuditActor")
-  verifiedIncidents     Incident[]            @relation("IncidentEvidenceVerifier")
-  ticketIssuedIncidents Incident[]            @relation("IncidentTicketIssuer")
-  dismissedIncidents    Incident[]            @relation("IncidentDismisser")
-  paymentRecordedIncidents Incident[]         @relation("IncidentPaymentRecorder")
-  assignedVehicle       Vehicle?              @relation("DriverAssignedVehicle", fields: [assignedVehicleId], references: [id])
-  driverAssignmentHistory DriverVehicleAssignmentHistory[] @relation("DriverAssignmentHistoryUser")
-  driverTripSessions    VehicleTripSession[]  @relation("DriverTripSessions")
-  riderTripSessionEntries VehicleTripSessionRider[] @relation("RiderTripSessionEntries")
-  driverTripSessionEvents VehicleTripSessionRiderEvent[] @relation("DriverTripSessionEvents")
+  id                            String                           @id @default(cuid())
+  username                      String                           @unique
+  password                      String
+  email                         String?                          @unique
+  firstName                     String
+  lastName                      String
+  phoneNumber                   String?
+  address                       String?
+  userType                      UserType
+  isActive                      Boolean                          @default(true)
+  dateOfBirth                   DateTime?
+  governmentId                  String?                          @unique
+  idType                        String?
+  barangayResidence             String?
+  occupation                    String?
+  emergencyContact              String?
+  emergencyContactPhone         String?
+  reasonForRegistration         String?
+  assignedVehicleId             String?                          @unique
+  assignedVehicleAssignedAt     DateTime?
+  assignedVehicleAssignedBy     String?
+  isVerified                    Boolean                          @default(false)
+  verificationToken             String?
+  verificationExpiry            DateTime?
+  verifiedAt                    DateTime?
+  verifiedBy                    String?
+  registrationIp                String?
+  lastLoginAt                   DateTime?
+  lastLoginIp                   String?
+  loginAttempts                 Int                              @default(0)
+  lockedUntil                   DateTime?
+  passwordResetToken            String?
+  passwordResetExpiry           DateTime?
+  passwordResetOtp              String?
+  passwordResetOtpExpiry        DateTime?
+  privacyNoticeAcknowledgedAt   DateTime?
+  privacyNoticeVersion          String?
+  createdAt                     DateTime                         @default(now())
+  updatedAt                     DateTime                         @updatedAt
+  fareCalculations              FareCalculation[]
+  handledIncidents              Incident[]                       @relation("HandledBy")
+  reportedIncidents             Incident[]                       @relation("ReportedBy")
+  uploadedEvidence              Evidence[]                       @relation("EvidenceUploader")
+  reviewedEvidence              Evidence[]                       @relation("EvidenceReviewer")
+  verificationLogs              UserVerificationLog[]
+  discountCard                  DiscountCard?
+  createdLocations              Location[]                       @relation("LocationCreator")
+  verifiedLocations             Location[]                       @relation("LocationVerifier")
+  accessVerifiedLocations       Location[]                       @relation("LocationAccessVerifier")
+  createdFareRateVersions       FareRateVersion[]                @relation("FareRateVersionCreator")
+  canceledFareRateVersions      FareRateVersion[]                @relation("FareRateVersionCanceller")
+  createdAnnouncements          Announcement[]                   @relation("AnnouncementCreator")
+  updatedAnnouncements          Announcement[]                   @relation("AnnouncementUpdater")
+  archivedAnnouncements         Announcement[]                   @relation("AnnouncementArchiver")
+  updatedRoutingSettings        RoutingSettings[]                @relation("RoutingSettingsUpdater")
+  routingSettingsAuditEntries   RoutingSettingsAudit[]           @relation("RoutingSettingsAuditActor")
+  surveyedCuratedRoutes         CuratedRouteDistance[]           @relation("CuratedRouteSurveyor")
+  curatedRouteAuditEntries      CuratedRouteDistanceAudit[]      @relation("CuratedRouteAuditActor")
+  updatedVehicleRoutingProfiles VehicleRoutingProfile[]          @relation("VehicleRoutingProfileUpdater")
+  createdRoadRestrictions       RoadRestrictionOverride[]        @relation("RoadRestrictionCreator")
+  updatedRoadRestrictions       RoadRestrictionOverride[]        @relation("RoadRestrictionUpdater")
+  roadRestrictionAuditEntries   RoadRestrictionOverrideAudit[]   @relation("RoadRestrictionAuditActor")
+  permitQrAuditEntries          PermitQrAudit[]                  @relation("PermitQrAuditActor")
+  fareRateDeletionAuditEntries  FareRateDeletionAudit[]          @relation("FareRateDeletionAuditActor")
+  verifiedIncidents             Incident[]                       @relation("IncidentEvidenceVerifier")
+  ticketIssuedIncidents         Incident[]                       @relation("IncidentTicketIssuer")
+  dismissedIncidents            Incident[]                       @relation("IncidentDismisser")
+  paymentRecordedIncidents      Incident[]                       @relation("IncidentPaymentRecorder")
+  assignedVehicle               Vehicle?                         @relation("DriverAssignedVehicle", fields: [assignedVehicleId], references: [id])
+  driverAssignmentHistory       DriverVehicleAssignmentHistory[] @relation("DriverAssignmentHistoryUser")
+  driverTripSessions            VehicleTripSession[]             @relation("DriverTripSessions")
+  riderTripSessionEntries       VehicleTripSessionRider[]        @relation("RiderTripSessionEntries")
+  driverTripSessionEvents       VehicleTripSessionRiderEvent[]   @relation("DriverTripSessionEvents")
 
   @@index([username])
   @@index([userType])
@@ -134,18 +141,212 @@ model RoutingSettings {
 }
 
 model RoutingSettingsAudit {
-  id                     String                  @id @default(cuid())
-  routingSettingsId      String
+  id                      String                  @id @default(cuid())
+  routingSettingsId       String
   previousPrimaryProvider RoutingProviderSetting?
-  newPrimaryProvider     RoutingProviderSetting
-  changedAt              DateTime                @default(now())
-  changedBy              String?
-  routingSettings        RoutingSettings         @relation(fields: [routingSettingsId], references: [id], onDelete: Cascade)
-  changedByUser          User?                   @relation("RoutingSettingsAuditActor", fields: [changedBy], references: [id])
+  newPrimaryProvider      RoutingProviderSetting
+  changedAt               DateTime                @default(now())
+  changedBy               String?
+  routingSettings         RoutingSettings         @relation(fields: [routingSettingsId], references: [id], onDelete: Cascade)
+  changedByUser           User?                   @relation("RoutingSettingsAuditActor", fields: [changedBy], references: [id])
 
   @@index([routingSettingsId, changedAt])
   @@index([changedAt])
   @@map("routing_settings_audit")
+}
+
+/// A surveyed distance between two saved places for one vehicle type.
+///
+/// This is the top resolution tier for a fare quote: when both ends of a trip
+/// are saved Locations and a row exists here, it is used in place of any
+/// routing engine. OSM coverage in Basey is the ceiling on every engine we
+/// could run, and a distance somebody drove with an odometer beats all of them.
+///
+/// Keyed by vehicle type because a habal-habal shortcut and the tricycle road
+/// between the same two places are genuinely different distances.
+model CuratedRouteDistance {
+  id                    String             @id @default(cuid())
+  originLocationId      String
+  destinationLocationId String
+  vehicleType           VehicleType
+  distanceMeters        Int
+  durationSeconds       Int?
+  /// Encoded precision 5, matching every other polyline in the codebase.
+  polyline              String?
+  /// When true the same distance answers the reverse trip. Basey has one-ways,
+  /// so the surveyor decides rather than the code assuming.
+  isBidirectional       Boolean            @default(false)
+  source                CuratedRouteSource
+  /// Set on rows produced in bulk from an engine: a distance claim that nobody
+  /// has confirmed on the ground yet.
+  needsSurvey           Boolean            @default(false)
+  notes                 String?
+  isActive              Boolean            @default(true)
+  surveyedAt            DateTime
+  surveyedBy            String?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  origin         Location                    @relation("CuratedRouteOrigin", fields: [originLocationId], references: [id], onDelete: Cascade)
+  destination    Location                    @relation("CuratedRouteDestination", fields: [destinationLocationId], references: [id], onDelete: Cascade)
+  surveyedByUser User?                       @relation("CuratedRouteSurveyor", fields: [surveyedBy], references: [id])
+  auditEntries   CuratedRouteDistanceAudit[]
+
+  @@unique([originLocationId, destinationLocationId, vehicleType])
+  @@index([originLocationId, destinationLocationId])
+  @@index([vehicleType, isActive])
+  @@index([needsSurvey])
+  @@map("curated_route_distances")
+}
+
+/// Why a stretch of road is off limits.
+enum RoadRestrictionKind {
+  IMPASSABLE
+  SEASONAL
+  GRADE_TOO_STEEP
+  SURFACE_UNSUITABLE
+  ONE_WAY_LOCAL
+}
+
+/// How the restriction is expressed, which decides how each engine applies it.
+enum RoadRestrictionGeometry {
+  /// GeoJSON Polygon -> Valhalla exclude_polygons, ORS avoid_polygons.
+  POLYGON
+  /// A single point -> Valhalla exclude_locations. No ORS equivalent.
+  POINT
+  /// OSM way ids -> post-filtered against the route. No engine equivalent.
+  OSM_WAY
+}
+
+/// An admin's correction to the road network.
+///
+/// OpenStreetMap coverage in Basey is the ceiling on every routing engine, and
+/// no engine knows that a ford floods each rainy season or that a bridge is
+/// out. This layer is how that local knowledge reaches routing without waiting
+/// on an OSM edit and a tile rebuild — it is applied per request.
+model RoadRestrictionOverride {
+  id            String                  @id @default(cuid())
+  name          String                  @unique
+  kind          RoadRestrictionKind
+  geometryType  RoadRestrictionGeometry
+  /// GeoJSON Polygon | {lat,lng} | {wayIds:[...]}, per geometryType.
+  geometry      Json
+  /// Empty means it applies to every vehicle type.
+  appliesTo     VehicleType[]
+  isActive      Boolean                 @default(true)
+  /// Seasonal reality: a ford impassable only in the rainy season.
+  effectiveFrom DateTime?
+  effectiveTo   DateTime?
+  /// Rider-facing reason.
+  note          String?
+  createdBy     String
+  updatedBy     String?
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+
+  createdByUser User                           @relation("RoadRestrictionCreator", fields: [createdBy], references: [id])
+  updatedByUser User?                          @relation("RoadRestrictionUpdater", fields: [updatedBy], references: [id])
+  auditEntries  RoadRestrictionOverrideAudit[]
+
+  @@index([isActive])
+  @@index([isActive, effectiveFrom, effectiveTo])
+  @@map("road_restriction_overrides")
+}
+
+model RoadRestrictionOverrideAudit {
+  id                        String   @id @default(cuid())
+  roadRestrictionOverrideId String
+  action                    String
+  previous                  Json?
+  next                      Json?
+  reason                    String?
+  changedAt                 DateTime @default(now())
+  changedBy                 String?
+
+  roadRestrictionOverride RoadRestrictionOverride @relation(fields: [roadRestrictionOverrideId], references: [id], onDelete: Cascade)
+  changedByUser           User?                   @relation("RoadRestrictionAuditActor", fields: [changedBy], references: [id])
+
+  @@index([roadRestrictionOverrideId, changedAt])
+  @@index([changedAt])
+  @@map("road_restriction_override_audit")
+}
+
+/// Per-vehicle routing behaviour that admins can tune without a deploy.
+///
+/// The grade limits live here rather than in code because they are engineering
+/// judgement, not ordinance figures, and the shadow period exists precisely to
+/// correct them against what Basey drivers report.
+model VehicleRoutingProfile {
+  vehicleType            VehicleType @id
+  /// Steepest sustained upward grade this vehicle can climb, in percent.
+  maxUpwardGradePercent  Int
+  /// Stretches shorter than this are ignored: a short spike in a coarse DEM is
+  /// an artifact, not a hill.
+  minGradedSegmentMeters Int         @default(25)
+  /// The shadow-mode switch. While false the verdict is computed and logged but
+  /// never enforced, so a miscalibrated threshold cannot refuse a real fare.
+  enforceGradeGate       Boolean     @default(false)
+  updatedBy              String?
+  updatedAt              DateTime    @updatedAt
+
+  updatedByUser User? @relation("VehicleRoutingProfileUpdater", fields: [updatedBy], references: [id])
+
+  @@map("vehicle_routing_profiles")
+}
+
+/// Cached elevation profile for one route shape.
+///
+/// A given polyline's terrain never changes, so this belongs in Postgres rather
+/// than the five-minute in-memory route cache. It also doubles as the shadow
+/// period's evidence: every row records what the gate would have decided.
+model RouteTerrainProfile {
+  id               String   @id @default(cuid())
+  /// SHA-256 of the encoded polyline the samples were taken along.
+  polylineHash     String   @unique
+  sampleCount      Int
+  /// Metres between samples, as actually spaced along the route.
+  sampleSpacingM   Decimal  @db.Decimal(8, 2)
+  /// What Google reported for the underlying DEM. Over Basey this has been seen
+  /// at 153 m on roads and 611 m inland — far coarser than the 30 m the
+  /// thresholds were reasoned about, so it bounds what any verdict can mean.
+  demResolutionM   Decimal  @db.Decimal(8, 2)
+  /// Window the grade was averaged over. Derived from demResolutionM: computing
+  /// a gradient finer than the DEM only measures interpolation.
+  smoothingWindowM Decimal  @db.Decimal(8, 2)
+  elevationGainM   Decimal  @db.Decimal(8, 2)
+  elevationLossM   Decimal  @db.Decimal(8, 2)
+  maxGradePercent  Decimal  @db.Decimal(6, 2)
+  /// Per-sample elevations in metres, in polyline order.
+  samples          Json
+  source           String
+  createdAt        DateTime @default(now())
+
+  @@index([createdAt])
+  @@map("route_terrain_profiles")
+}
+
+/// Trail for every change to a curated distance.
+///
+/// Follows FareRateVersion/FareRateDeletionAudit rather than modelling
+/// supersession with a partial unique index, which Prisma cannot express. A
+/// number that sets a fare should never change without a record of who changed
+/// it and from what.
+model CuratedRouteDistanceAudit {
+  id                     String   @id @default(cuid())
+  curatedRouteDistanceId String
+  action                 String
+  previous               Json?
+  next                   Json?
+  reason                 String?
+  changedAt              DateTime @default(now())
+  changedBy              String?
+
+  curatedRouteDistance CuratedRouteDistance @relation(fields: [curatedRouteDistanceId], references: [id], onDelete: Cascade)
+  changedByUser        User?                @relation("CuratedRouteAuditActor", fields: [changedBy], references: [id])
+
+  @@index([curatedRouteDistanceId, changedAt])
+  @@index([changedAt])
+  @@map("curated_route_distance_audit")
 }
 
 model Announcement {
@@ -171,29 +372,29 @@ model Announcement {
 }
 
 model Vehicle {
-  id                 String            @id @default(cuid())
-  plateNumber        String            @unique
-  vehicleType        VehicleType
-  make               String
-  model              String
-  year               Int
-  color              String
-  capacity           Int
-  ownerName          String
-  ownerContact       String
-  driverName         String?
-  driverLicense      String?
-  isActive           Boolean           @default(true)
-  registrationExpiry DateTime
-  insuranceExpiry    DateTime?
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
-  fareCalculations   FareCalculation[]
-  incidents          Incident[]
-  permit             Permit?
-  assignedDriver     User?             @relation("DriverAssignedVehicle")
+  id                      String                           @id @default(cuid())
+  plateNumber             String                           @unique
+  vehicleType             VehicleType
+  make                    String
+  model                   String
+  year                    Int
+  color                   String
+  capacity                Int
+  ownerName               String
+  ownerContact            String
+  driverName              String?
+  driverLicense           String?
+  isActive                Boolean                          @default(true)
+  registrationExpiry      DateTime
+  insuranceExpiry         DateTime?
+  createdAt               DateTime                         @default(now())
+  updatedAt               DateTime                         @updatedAt
+  fareCalculations        FareCalculation[]
+  incidents               Incident[]
+  permit                  Permit?
+  assignedDriver          User?                            @relation("DriverAssignedVehicle")
   driverAssignmentHistory DriverVehicleAssignmentHistory[] @relation("DriverAssignmentHistoryVehicle")
-  tripSessions       VehicleTripSession[]
+  tripSessions            VehicleTripSession[]
 
   @@index([plateNumber])
   @@index([vehicleType])
@@ -204,41 +405,41 @@ model Vehicle {
 }
 
 model Incident {
-  id            String         @id @default(cuid())
-  incidentType  IncidentType
-  description   String
-  location      String
-  coordinates   String?
-  fareCalculationId String?
-  tripOrigin    String?
-  tripDestination String?
-  tripFare      Decimal?
-  tripDiscountType DiscountType?
-  tripCalculatedAt DateTime?
-  tripCalculationType String?
-  tripVehicleType VehicleType?
-  tripPermitPlateNumber String?
-  tripPlateNumber String?
-  reportedById  String
-  handledById   String?
-  vehicleId     String?
-  vehicleType   VehicleType?
-  driverLicense String?
-  plateNumber   String?
-  status        IncidentStatus @default(PENDING)
-  penaltyAmount Decimal?
+  id                      String              @id @default(cuid())
+  incidentType            IncidentType
+  description             String
+  location                String
+  coordinates             String?
+  fareCalculationId       String?
+  tripOrigin              String?
+  tripDestination         String?
+  tripFare                Decimal?
+  tripDiscountType        DiscountType?
+  tripCalculatedAt        DateTime?
+  tripCalculationType     String?
+  tripVehicleType         VehicleType?
+  tripPermitPlateNumber   String?
+  tripPlateNumber         String?
+  reportedById            String
+  handledById             String?
+  vehicleId               String?
+  vehicleType             VehicleType?
+  driverLicense           String?
+  plateNumber             String?
+  status                  IncidentStatus      @default(PENDING)
+  penaltyAmount           Decimal?
   offenseNumberAtIssuance Int?
-  offenseTierAtIssuance OffenseTier?
-  penaltyRuleVersion String?  
-  paymentStatus TicketPaymentStatus @default(NOT_APPLICABLE)
-  paidAt        DateTime?
-  officialReceiptNumber String? @unique
-  remarks       String?
-  ticketNumber  String?        @unique
-  incidentDate  DateTime
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  resolvedAt    DateTime?
+  offenseTierAtIssuance   OffenseTier?
+  penaltyRuleVersion      String?
+  paymentStatus           TicketPaymentStatus @default(NOT_APPLICABLE)
+  paidAt                  DateTime?
+  officialReceiptNumber   String?             @unique
+  remarks                 String?
+  ticketNumber            String?             @unique
+  incidentDate            DateTime
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
+  resolvedAt              DateTime?
 
   // Evidence verification audit
   evidenceVerifiedAt   DateTime?
@@ -257,15 +458,15 @@ model Incident {
   paymentRecordedAt   DateTime?
   paymentRecordedById String?
 
-  fareCalculation FareCalculation? @relation(fields: [fareCalculationId], references: [id])
-  handledBy       User?            @relation("HandledBy", fields: [handledById], references: [id])
-  reportedBy      User             @relation("ReportedBy", fields: [reportedById], references: [id])
-  vehicle         Vehicle?         @relation(fields: [vehicleId], references: [id])
-  evidence        Evidence[]
-  evidenceVerifiedBy   User?        @relation("IncidentEvidenceVerifier", fields: [evidenceVerifiedById], references: [id])
-  ticketIssuedBy       User?        @relation("IncidentTicketIssuer", fields: [ticketIssuedById], references: [id])
-  dismissedBy          User?        @relation("IncidentDismisser", fields: [dismissedById], references: [id])
-  paymentRecordedBy    User?        @relation("IncidentPaymentRecorder", fields: [paymentRecordedById], references: [id])
+  fareCalculation    FareCalculation? @relation(fields: [fareCalculationId], references: [id])
+  handledBy          User?            @relation("HandledBy", fields: [handledById], references: [id])
+  reportedBy         User             @relation("ReportedBy", fields: [reportedById], references: [id])
+  vehicle            Vehicle?         @relation(fields: [vehicleId], references: [id])
+  evidence           Evidence[]
+  evidenceVerifiedBy User?            @relation("IncidentEvidenceVerifier", fields: [evidenceVerifiedById], references: [id])
+  ticketIssuedBy     User?            @relation("IncidentTicketIssuer", fields: [ticketIssuedById], references: [id])
+  dismissedBy        User?            @relation("IncidentDismisser", fields: [dismissedById], references: [id])
+  paymentRecordedBy  User?            @relation("IncidentPaymentRecorder", fields: [paymentRecordedById], references: [id])
 
   @@index([fareCalculationId])
   @@index([status])
@@ -290,24 +491,24 @@ model Incident {
 }
 
 model Evidence {
-  id          String        @id @default(cuid())
-  incidentId  String
-  fileName    String
-  fileUrl     String
-  fileType    EvidenceType
-  fileSize    Int?
-  uploadedBy  String
-  status      EvidenceStatus @default(PENDING_REVIEW)
+  id            String                @id @default(cuid())
+  incidentId    String
+  fileName      String
+  fileUrl       String
+  fileType      EvidenceType
+  fileSize      Int?
+  uploadedBy    String
+  status        EvidenceStatus        @default(PENDING_REVIEW)
   storageStatus EvidenceStorageStatus @default(AVAILABLE)
   fileDeletedAt DateTime?
-  reviewedBy  String?
-  reviewedAt  DateTime?
-  remarks     String?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  incident    Incident      @relation(fields: [incidentId], references: [id], onDelete: Cascade)
-  uploader    User          @relation("EvidenceUploader", fields: [uploadedBy], references: [id])
-  reviewer    User?         @relation("EvidenceReviewer", fields: [reviewedBy], references: [id])
+  reviewedBy    String?
+  reviewedAt    DateTime?
+  remarks       String?
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  incident      Incident              @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  uploader      User                  @relation("EvidenceUploader", fields: [uploadedBy], references: [id])
+  reviewer      User?                 @relation("EvidenceReviewer", fields: [reviewedBy], references: [id])
 
   @@index([incidentId])
   @@index([status])
@@ -318,7 +519,7 @@ model Evidence {
 }
 
 model FareCalculation {
-  id              String            @id @default(cuid())
+  id              String                   @id @default(cuid())
   userId          String?
   vehicleId       String?
   fromLocation    String
@@ -332,11 +533,11 @@ model FareCalculation {
   originalFare    Decimal?
   discountApplied Decimal?
   discountType    DiscountType?
-  createdAt       DateTime          @default(now())
+  createdAt       DateTime                 @default(now())
   incidents       Incident[]
-  user            User?             @relation(fields: [userId], references: [id])
-  vehicle         Vehicle?          @relation(fields: [vehicleId], references: [id])
-  discountCard    DiscountCard?     @relation("DiscountedCalculations", fields: [discountCardId], references: [id])
+  user            User?                    @relation(fields: [userId], references: [id])
+  vehicle         Vehicle?                 @relation(fields: [vehicleId], references: [id])
+  discountCard    DiscountCard?            @relation("DiscountedCalculations", fields: [discountCardId], references: [id])
   sessionRider    VehicleTripSessionRider? @relation("FareCalculationSessionRider")
   usageLog        DiscountUsageLog?
 
@@ -350,17 +551,17 @@ model FareCalculation {
 }
 
 model VehicleTripSession {
-  id         String                   @id @default(cuid())
-  vehicleId  String
+  id           String                    @id @default(cuid())
+  vehicleId    String
   driverUserId String
-  status     DriverTripSessionStatus  @default(OPEN)
-  openedAt   DateTime                 @default(now())
-  closedAt   DateTime?
-  createdAt  DateTime                 @default(now())
-  updatedAt  DateTime                 @updatedAt
-  vehicle    Vehicle                  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
-  driverUser User                     @relation("DriverTripSessions", fields: [driverUserId], references: [id], onDelete: Cascade)
-  riders     VehicleTripSessionRider[]
+  status       DriverTripSessionStatus   @default(OPEN)
+  openedAt     DateTime                  @default(now())
+  closedAt     DateTime?
+  createdAt    DateTime                  @default(now())
+  updatedAt    DateTime                  @updatedAt
+  vehicle      Vehicle                   @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  driverUser   User                      @relation("DriverTripSessions", fields: [driverUserId], references: [id], onDelete: Cascade)
+  riders       VehicleTripSessionRider[]
 
   @@index([vehicleId, status])
   @@index([driverUserId, status])
@@ -369,53 +570,53 @@ model VehicleTripSession {
 }
 
 model VehicleTripSessionRider {
-  id                   String                      @id @default(cuid())
-  sessionId            String
-    fareCalculationId    String?                     @unique
-  riderUserId          String
-    activeRequestKey     String?                     @unique
-  status               DriverTripSessionRiderStatus @default(PENDING)
-  originSnapshot       String
-  destinationSnapshot  String
-    distanceSnapshot     Decimal                     @db.Decimal(10, 2)
-  fareSnapshot         Decimal                     @db.Decimal(10, 2)
-    calculationTypeSnapshot String
-    routeDataSnapshot    String?
-    farePolicySnapshot   String?
-    discountCardIdSnapshot String?
-    originalFareSnapshot Decimal?                    @db.Decimal(10, 2)
-    discountAppliedSnapshot Decimal?                 @db.Decimal(10, 2)
-  discountTypeSnapshot DiscountType?
-  joinedAt             DateTime                    @default(now())
-    expiresAt            DateTime?
-  acceptedAt           DateTime?
-  boardedAt            DateTime?
-  completedAt          DateTime?
-  finalisedAt          DateTime?
-  createdAt            DateTime                    @default(now())
-  updatedAt            DateTime                    @updatedAt
-  session              VehicleTripSession          @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-    fareCalculation      FareCalculation?            @relation("FareCalculationSessionRider", fields: [fareCalculationId], references: [id], onDelete: Cascade)
-  riderUser            User                        @relation("RiderTripSessionEntries", fields: [riderUserId], references: [id], onDelete: Cascade)
-  events               VehicleTripSessionRiderEvent[]
+  id                      String                         @id @default(cuid())
+  sessionId               String
+  fareCalculationId       String?                        @unique
+  riderUserId             String
+  activeRequestKey        String?                        @unique
+  status                  DriverTripSessionRiderStatus   @default(PENDING)
+  originSnapshot          String
+  destinationSnapshot     String
+  distanceSnapshot        Decimal                        @db.Decimal(10, 2)
+  fareSnapshot            Decimal                        @db.Decimal(10, 2)
+  calculationTypeSnapshot String
+  routeDataSnapshot       String?
+  farePolicySnapshot      String?
+  discountCardIdSnapshot  String?
+  originalFareSnapshot    Decimal?                       @db.Decimal(10, 2)
+  discountAppliedSnapshot Decimal?                       @db.Decimal(10, 2)
+  discountTypeSnapshot    DiscountType?
+  joinedAt                DateTime                       @default(now())
+  expiresAt               DateTime?
+  acceptedAt              DateTime?
+  boardedAt               DateTime?
+  completedAt             DateTime?
+  finalisedAt             DateTime?
+  createdAt               DateTime                       @default(now())
+  updatedAt               DateTime                       @updatedAt
+  session                 VehicleTripSession             @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  fareCalculation         FareCalculation?               @relation("FareCalculationSessionRider", fields: [fareCalculationId], references: [id], onDelete: Cascade)
+  riderUser               User                           @relation("RiderTripSessionEntries", fields: [riderUserId], references: [id], onDelete: Cascade)
+  events                  VehicleTripSessionRiderEvent[]
 
   @@index([sessionId, status])
   @@index([riderUserId, status])
-    @@index([status, expiresAt])
+  @@index([status, expiresAt])
   @@index([joinedAt])
   @@map("vehicle_trip_session_riders")
 }
 
 model VehicleTripSessionRiderEvent {
-  id             String                      @id @default(cuid())
+  id             String                       @id @default(cuid())
   sessionRiderId String
   action         DriverTripSessionRiderAction
   fromStatus     DriverTripSessionRiderStatus
   toStatus       DriverTripSessionRiderStatus
   actedByUserId  String
-  createdAt      DateTime                    @default(now())
-  sessionRider   VehicleTripSessionRider     @relation(fields: [sessionRiderId], references: [id], onDelete: Cascade)
-  actedByUser    User                        @relation("DriverTripSessionEvents", fields: [actedByUserId], references: [id], onDelete: Cascade)
+  createdAt      DateTime                     @default(now())
+  sessionRider   VehicleTripSessionRider      @relation(fields: [sessionRiderId], references: [id], onDelete: Cascade)
+  actedByUser    User                         @relation("DriverTripSessionEvents", fields: [actedByUserId], references: [id], onDelete: Cascade)
 
   @@index([sessionRiderId, createdAt])
   @@index([actedByUserId, createdAt])
@@ -436,74 +637,87 @@ model Route {
 }
 
 model Location {
-  id                    String              @id @default(cuid())
-  name                  String              @unique
-  type                  LocationType
-  coordinates           String              // Format: "lat,lng"
-  barangay              String?
-  description           String?
-  isActive              Boolean             @default(true)
-  
+  id          String       @id @default(cuid())
+  name        String       @unique
+  type        LocationType
+  coordinates String // Format: "lat,lng"
+  barangay    String?
+  description String?
+  isActive    Boolean      @default(true)
+
   // Administrative fields
-  createdBy             String
-  createdByUser         User                @relation("LocationCreator", fields: [createdBy], references: [id])
-  verifiedBy            String?
-  verifiedByUser        User?               @relation("LocationVerifier", fields: [verifiedBy], references: [id])
-  verifiedAt            DateTime?
-  
+  createdBy      String
+  createdByUser  User      @relation("LocationCreator", fields: [createdBy], references: [id])
+  verifiedBy     String?
+  verifiedByUser User?     @relation("LocationVerifier", fields: [verifiedBy], references: [id])
+  verifiedAt     DateTime?
+
   // Google Maps validation
-  googlePlaceId         String?
+  googlePlaceId          String?
   googleFormattedAddress String?
-  lastValidated         DateTime?
-  validationStatus      LocationValidationStatus @default(PENDING)
-  
+  lastValidated          DateTime?
+  validationStatus       LocationValidationStatus @default(PENDING)
+
   // Boundary validation
-  isWithinMunicipality  Boolean             @default(false)
-  isWithinBarangay      Boolean             @default(false)
-  actualBarangay        String?
-  
+  isWithinMunicipality Boolean @default(false)
+  isWithinBarangay     Boolean @default(false)
+  actualBarangay       String?
+
+  // Ride access: can a habal-habal or tricycle actually reach `coordinates`?
+  vehicleAccess        VehicleAccess @default(UNVERIFIED)
+  /// "lat,lng" of the point a ride can reach. Required when vehicleAccess is WALK_ONLY.
+  dropoffCoordinates   String?
+  /// Rider-facing note about the walk, e.g. "Stairs from the gate to the campus."
+  accessNote           String?
+  accessVerifiedBy     String?
+  accessVerifiedByUser User?         @relation("LocationAccessVerifier", fields: [accessVerifiedBy], references: [id])
+  accessVerifiedAt     DateTime?
+
   // Metadata
-  createdAt             DateTime            @default(now())
-  updatedAt             DateTime            @updatedAt
-  
-  validationLogs        LocationValidation[]
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  validationLogs    LocationValidation[]
+  curatedRoutesFrom CuratedRouteDistance[] @relation("CuratedRouteOrigin")
+  curatedRoutesTo   CuratedRouteDistance[] @relation("CuratedRouteDestination")
+
   @@index([barangay])
   @@index([isActive])
   @@index([validationStatus])
   @@index([createdBy])
+  @@index([vehicleAccess])
   @@map("locations")
 }
 
 model LocationValidation {
-  id                    String   @id @default(cuid())
-  locationId            String
-  location              Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
-  
-  validatedBy           String
-  validationType        String   // "CREATION", "UPDATE", "PERIODIC_CHECK"
-  
+  id         String   @id @default(cuid())
+  locationId String
+  location   Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  validatedBy    String
+  validationType String // "CREATION", "UPDATE", "PERIODIC_CHECK"
+
   // Validation results
-  isValid               Boolean
-  validationErrors      String[] // JSON array of error messages
-  validationWarnings    String[] // JSON array of warning messages
-  
+  isValid            Boolean
+  validationErrors   String[] // JSON array of error messages
+  validationWarnings String[] // JSON array of warning messages
+
   // Boundary check results
-  withinMunicipality    Boolean
-  withinBarangay        Boolean
-  detectedBarangay      String?
-  
+  withinMunicipality Boolean
+  withinBarangay     Boolean
+  detectedBarangay   String?
+
   // Google Maps results
-  googleMapsValid       Boolean?
-  googlePlaceId         String?
-  googleAddress         String?
-  googleConfidence      String?  // "high", "medium", "low"
-  
+  googleMapsValid  Boolean?
+  googlePlaceId    String?
+  googleAddress    String?
+  googleConfidence String? // "high", "medium", "low"
+
   // Coordinates at time of validation
-  validatedCoordinates  String
-  
-  validatedAt           DateTime @default(now())
-  
+  validatedCoordinates String
+
+  validatedAt DateTime @default(now())
+
   @@index([locationId])
   @@index([validatedAt])
   @@map("location_validations")
@@ -525,38 +739,38 @@ model UserVerificationLog {
 }
 
 model AdminUserCreation {
-  id            String    @id @default(cuid())
-  requestedBy   String
-  userType      UserType
-  firstName     String
-  lastName      String
-  phoneNumber   String
+  id                String    @id @default(cuid())
+  requestedBy       String
+  userType          UserType
+  firstName         String
+  lastName          String
+  phoneNumber       String
   assignedVehicleId String?
-  department    String?
-  position      String?
-  employeeId    String?
-  notes         String?
-  isActive      Boolean   @default(false)
-  approvedBy    String?
-  approvedAt    DateTime?
-  createdUserId String?
-  createdAt     DateTime  @default(now())
+  department        String?
+  position          String?
+  employeeId        String?
+  notes             String?
+  isActive          Boolean   @default(false)
+  approvedBy        String?
+  approvedAt        DateTime?
+  createdUserId     String?
+  createdAt         DateTime  @default(now())
 
   @@map("admin_user_creations")
 }
 
 model DriverVehicleAssignmentHistory {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   userId     String
   vehicleId  String
   assignedBy String?
-  assignedAt DateTime @default(now())
+  assignedAt DateTime  @default(now())
   endedBy    String?
   endedAt    DateTime?
   reason     String?
-  isActive   Boolean  @default(true)
-  user       User     @relation("DriverAssignmentHistoryUser", fields: [userId], references: [id], onDelete: Cascade)
-  vehicle    Vehicle  @relation("DriverAssignmentHistoryVehicle", fields: [vehicleId], references: [id], onDelete: Cascade)
+  isActive   Boolean   @default(true)
+  user       User      @relation("DriverAssignmentHistoryUser", fields: [userId], references: [id], onDelete: Cascade)
+  vehicle    Vehicle   @relation("DriverAssignmentHistoryVehicle", fields: [vehicleId], references: [id], onDelete: Cascade)
 
   @@index([userId, assignedAt])
   @@index([vehicleId, assignedAt])
@@ -565,26 +779,26 @@ model DriverVehicleAssignmentHistory {
 }
 
 model Permit {
-  id                 String       @id @default(cuid())
-  vehicleId          String       @unique
-  permitPlateNumber  String       @unique
-  qrToken            String?      @unique
-  qrIssuedAt         DateTime?
-  qrIssuedBy         String?
-  driverFullName     String
-  vehicleType        VehicleType
-  issuedDate         DateTime     @default(now())
-  expiryDate         DateTime
-  status             PermitStatus @default(ACTIVE)
-  remarks            String?
-  encodedBy          String
-  encodedAt          DateTime     @default(now())
-  lastUpdatedBy      String?
-  lastUpdatedAt      DateTime?
-  renewalHistory     PermitRenewal[]
-  qrAuditEntries     PermitQrAudit[]
-  vehicle            Vehicle      @relation(fields: [vehicleId], references: [id])
-  
+  id                String          @id @default(cuid())
+  vehicleId         String          @unique
+  permitPlateNumber String          @unique
+  qrToken           String?         @unique
+  qrIssuedAt        DateTime?
+  qrIssuedBy        String?
+  driverFullName    String
+  vehicleType       VehicleType
+  issuedDate        DateTime        @default(now())
+  expiryDate        DateTime
+  status            PermitStatus    @default(ACTIVE)
+  remarks           String?
+  encodedBy         String
+  encodedAt         DateTime        @default(now())
+  lastUpdatedBy     String?
+  lastUpdatedAt     DateTime?
+  renewalHistory    PermitRenewal[]
+  qrAuditEntries    PermitQrAudit[]
+  vehicle           Vehicle         @relation(fields: [vehicleId], references: [id])
+
   @@index([status])
   @@index([vehicleType])
   @@index([permitPlateNumber])
@@ -613,48 +827,48 @@ model PermitQrAudit {
 }
 
 model PermitRenewal {
-  id            String   @id @default(cuid())
-  permitId      String
+  id             String   @id @default(cuid())
+  permitId       String
   previousExpiry DateTime
   newExpiry      DateTime
-  renewedBy     String
-  renewedAt     DateTime @default(now())
-  notes         String?
-  permit        Permit   @relation(fields: [permitId], references: [id], onDelete: Cascade)
-  
+  renewedBy      String
+  renewedAt      DateTime @default(now())
+  notes          String?
+  permit         Permit   @relation(fields: [permitId], references: [id], onDelete: Cascade)
+
   @@map("permit_renewals")
 }
 
-  model TerminalUnlockSession {
-    id             String   @id @default(cuid())
-    userId         String
-    tokenHash      String   @unique
-    expiresAt      DateTime
-    lastActivityAt DateTime
-    createdAt      DateTime @default(now())
-    updatedAt      DateTime @updatedAt
+model TerminalUnlockSession {
+  id             String   @id @default(cuid())
+  userId         String
+  tokenHash      String   @unique
+  expiresAt      DateTime
+  lastActivityAt DateTime
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-    @@index([userId])
-    @@index([expiresAt])
-    @@index([lastActivityAt])
-    @@map("terminal_unlock_sessions")
-  }
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([lastActivityAt])
+  @@map("terminal_unlock_sessions")
+}
 
-  model QrScanAudit {
-    id                 String            @id @default(cuid())
-    scannerUserId      String?
-    scannedAt          DateTime          @default(now())
-    submittedToken     String
-    matchedPermitId    String?
-    resultType         QrScanResultType
-    scanSource         QrScanSource
-    disposition        ScanDisposition?
+model QrScanAudit {
+  id              String           @id @default(cuid())
+  scannerUserId   String?
+  scannedAt       DateTime         @default(now())
+  submittedToken  String
+  matchedPermitId String?
+  resultType      QrScanResultType
+  scanSource      QrScanSource
+  disposition     ScanDisposition?
 
-    @@index([scannerUserId, scannedAt])
-    @@index([matchedPermitId, scannedAt])
-    @@index([resultType, scannedAt])
-    @@map("qr_scan_audit")
-  }
+  @@index([scannerUserId, scannedAt])
+  @@index([matchedPermitId, scannedAt])
+  @@index([resultType, scannedAt])
+  @@map("qr_scan_audit")
+}
 
 enum UserType {
   ADMIN
@@ -667,6 +881,10 @@ enum UserType {
 enum RoutingProviderSetting {
   ORS
   GOOGLE_ROUTES
+  /// The self-hosted engine. Selecting it puts Valhalla first and keeps the
+  /// cloud providers behind it as fallbacks; it is ignored when the container
+  /// is not configured, so the setting is safe to pick before the tiles exist.
+  VALHALLA
 }
 
 enum AnnouncementCategory {
@@ -674,6 +892,18 @@ enum AnnouncementCategory {
   ROAD_CLOSURE
   ROAD_WORK
   TRAFFIC_ADVISORY
+}
+
+/// Where a curated distance came from, in descending order of trust.
+enum CuratedRouteSource {
+  /// Measured on the ground — odometer, GPS trace, or field measurement.
+  SURVEYED
+  /// A figure written into the ordinance or an official route schedule.
+  ORDINANCE
+  /// A single engine result an admin accepted from a live quote.
+  ADOPTED_FROM_ENGINE
+  /// Produced in bulk by the seeding script. Distance only, unconfirmed.
+  BATCH_SEEDED
 }
 
 enum VehicleType {
@@ -751,6 +981,12 @@ enum LocationType {
   RURAL
 }
 
+enum VehicleAccess {
+  UNVERIFIED
+  VEHICLE_ACCESSIBLE
+  WALK_ONLY
+}
+
 enum LocationValidationStatus {
   PENDING
   VALIDATED
@@ -815,64 +1051,64 @@ enum EvidenceStorageStatus {
 }
 
 model DiscountCard {
-  id                    String              @id @default(cuid())
-  userId                String              @unique
-  user                  User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  discountType          DiscountType
-  
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  discountType DiscountType
+
   // Identification Details
-  idNumber              String?             @unique
-  idType                String?
-  issuingAuthority      String?
-  
+  idNumber         String? @unique
+  idType           String?
+  issuingAuthority String?
+
   // Supporting Information
-  fullName              String
-  dateOfBirth           DateTime
-  photoUrl              String?
-  
+  fullName    String
+  dateOfBirth DateTime
+  photoUrl    String?
+
   // Student-specific
-  schoolName            String?
-  schoolAddress         String?
-  gradeLevel            String?
-  schoolIdExpiry        DateTime?
-  
+  schoolName     String?
+  schoolAddress  String?
+  gradeLevel     String?
+  schoolIdExpiry DateTime?
+
   // PWD-specific
-  disabilityType        String?
-  pwdIdExpiry           DateTime?
-  
+  disabilityType String?
+  pwdIdExpiry    DateTime?
+
   // Verification Status
-  verificationStatus    VerificationStatus  @default(PENDING)
-  verifiedBy            String?
-  verifiedAt            DateTime?
-  verificationNotes     String?
-  rejectionReason       String?
-  
+  verificationStatus VerificationStatus @default(PENDING)
+  verifiedBy         String?
+  verifiedAt         DateTime?
+  verificationNotes  String?
+  rejectionReason    String?
+
   // Admin Override Feature
-  isAdminOverride       Boolean             @default(false)
-  overrideReason        String?
-  overrideBy            String?
-  overrideAt            DateTime?
-  
+  isAdminOverride Boolean   @default(false)
+  overrideReason  String?
+  overrideBy      String?
+  overrideAt      DateTime?
+
   // Validity
-  isActive              Boolean             @default(false)
-  validFrom             DateTime
-  validUntil            DateTime
-  
+  isActive   Boolean  @default(false)
+  validFrom  DateTime
+  validUntil DateTime
+
   // Usage Tracking (Anti-abuse)
-  lastUsedAt            DateTime?
-  usageCount            Int                 @default(0)
-  dailyUsageCount       Int                 @default(0)
-  lastResetDate         DateTime?
-  
+  lastUsedAt      DateTime?
+  usageCount      Int       @default(0)
+  dailyUsageCount Int       @default(0)
+  lastResetDate   DateTime?
+
   // Audit Trail
-  createdAt             DateTime            @default(now())
-  updatedAt             DateTime            @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  fareCalculations      FareCalculation[]   @relation("DiscountedCalculations")
-  usageLogs             DiscountUsageLog[]
-  
+  fareCalculations FareCalculation[]  @relation("DiscountedCalculations")
+  usageLogs        DiscountUsageLog[]
+
   @@index([userId])
   @@index([discountType])
   @@index([verificationStatus])
@@ -883,34 +1119,34 @@ model DiscountCard {
 }
 
 model DiscountUsageLog {
-  id                String          @id @default(cuid())
-  discountCardId    String
-  discountCard      DiscountCard    @relation(fields: [discountCardId], references: [id], onDelete: Cascade)
-  
+  id             String       @id @default(cuid())
+  discountCardId String
+  discountCard   DiscountCard @relation(fields: [discountCardId], references: [id], onDelete: Cascade)
+
   fareCalculationId String          @unique
   fareCalculation   FareCalculation @relation(fields: [fareCalculationId], references: [id])
-  
-  originalFare      Decimal         @db.Decimal(10, 2)
-  discountAmount    Decimal         @db.Decimal(10, 2)
-  finalFare         Decimal         @db.Decimal(10, 2)
-  discountRate      Decimal         @db.Decimal(5, 2)
-  
-  fromLocation      String
-  toLocation        String
-  distance          Decimal         @db.Decimal(10, 2)
-  
+
+  originalFare   Decimal @db.Decimal(10, 2)
+  discountAmount Decimal @db.Decimal(10, 2)
+  finalFare      Decimal @db.Decimal(10, 2)
+  discountRate   Decimal @db.Decimal(5, 2)
+
+  fromLocation String
+  toLocation   String
+  distance     Decimal @db.Decimal(10, 2)
+
   // Anti-fraud tracking
-  usedAt            DateTime        @default(now())
+  usedAt            DateTime @default(now())
   ipAddress         String?
   deviceFingerprint String?
   gpsCoordinates    String?
-  
+
   // Flags for suspicious activity
-  isSuspicious      Boolean         @default(false)
-  suspiciousReason  String?
-  reviewedBy        String?
-  reviewedAt        DateTime?
-  
+  isSuspicious     Boolean   @default(false)
+  suspiciousReason String?
+  reviewedBy       String?
+  reviewedAt       DateTime?
+
   @@index([discountCardId, usedAt])
   @@index([usedAt])
   @@map("discount_usage_logs")

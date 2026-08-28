@@ -49,6 +49,12 @@ describe('planner route helpers', () => {
       'no_route_found',
     )
     expect(classifyPlannerError('Routing service unavailable', 'ROUTING_SERVICE_UNAVAILABLE')).toBe('network_error')
+    expect(
+      classifyPlannerError(
+        'Habal-habal and tricycles can only reach the nearest road in Poblacion.',
+        'NO_VEHICLE_ACCESS',
+      ),
+    ).toBe('no_vehicle_access')
   })
 
   it('keeps distance approximation stable enough for request dedupe', () => {

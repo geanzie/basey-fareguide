@@ -1,3 +1,5 @@
+import type { VehicleType } from "@prisma/client";
+
 import type { FarePolicySnapshotDto } from "@/lib/contracts";
 import { calculateFare, getFareBreakdown } from "@/lib/fare/calculator";
 import { resolveFarePolicySnapshot } from "@/lib/fare/policy";
@@ -20,6 +22,8 @@ export interface OfflineRouteInput {
   origin: Coordinates;
   destination: Coordinates;
   passengerType: PassengerType;
+  /** Echoed back so an offline quote states which vehicle it was asked for. */
+  vehicleType?: VehicleType | null;
   /** Last-known fare policy snapshot; falls back to legacy default when absent. */
   farePolicy?: FarePolicySnapshotDto | null;
 }
@@ -51,6 +55,11 @@ function buildResponse(
   return {
     origin: originResolved.displayLabel,
     destination: destinationResolved.displayLabel,
+    vehicleType: input.vehicleType ?? null,
+    // The offline path never reaches Google, so neither its notice nor its
+    // elevation data applies.
+    twoWheelerNotice: false,
+    routeValidity: null,
     originResolved,
     destinationResolved,
     distanceKm: opts.distanceKm,
@@ -67,6 +76,9 @@ function buildResponse(
     snappedOrigin: null,
     snappedDestination: null,
     inputMode: "pin",
+    // Offline estimates never consult a saved place, so there is no curated
+    // drop-off to report.
+    dropoffNotices: [],
   };
 }
 

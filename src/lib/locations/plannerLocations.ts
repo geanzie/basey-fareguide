@@ -1,10 +1,11 @@
-import { LocationType } from "@prisma/client";
+import { LocationType, VehicleAccess } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import type {
   LocationCoordinatesDto as PlannerCoordinates,
   PlannerLocationCategory,
   PlannerLocationDto as PlannerLocation,
 } from "@/lib/contracts";
+import { getPlaceProvenance } from "./placeProvenance";
 
 interface PlannerLocationRow {
   id: string;
@@ -14,6 +15,10 @@ interface PlannerLocationRow {
   barangay: string | null;
   description: string | null;
   googleFormattedAddress: string | null;
+  googlePlaceId: string | null;
+  vehicleAccess: VehicleAccess;
+  dropoffCoordinates: string | null;
+  accessNote: string | null;
   updatedAt: Date;
 }
 
@@ -41,6 +46,11 @@ function toPlannerLocation(row: PlannerLocationRow): PlannerLocation | null {
     return null;
   }
 
+  const provenance = getPlaceProvenance(row.name);
+  const dropoffCoordinates = row.dropoffCoordinates
+    ? parseCoordinates(row.dropoffCoordinates)
+    : null;
+
   return {
     id: row.id,
     name: row.name,
@@ -48,10 +58,17 @@ function toPlannerLocation(row: PlannerLocationRow): PlannerLocation | null {
     category: getPlannerCategory(row.type),
     coordinates,
     address: row.googleFormattedAddress || `${row.name}, Basey, Samar`,
-    verified: true,
+    // Only a real Google reverse-geocode writes googlePlaceId. The seeder does
+    // not, so seeded rows report false instead of the old hardcoded true.
+    verified: row.googlePlaceId !== null,
     source: "database",
+    pointSource: provenance.pointSource,
+    ...(provenance.needsResurvey ? { needsResurvey: true } : {}),
     barangay: row.barangay || undefined,
     description: row.description || undefined,
+    vehicleAccess: row.vehicleAccess,
+    ...(dropoffCoordinates ? { dropoffCoordinates } : {}),
+    ...(row.accessNote ? { accessNote: row.accessNote } : {}),
     updatedAt: row.updatedAt.toISOString(),
   };
 }
@@ -64,6 +81,10 @@ const plannerLocationSelect = {
   barangay: true,
   description: true,
   googleFormattedAddress: true,
+  googlePlaceId: true,
+  vehicleAccess: true,
+  dropoffCoordinates: true,
+  accessNote: true,
   updatedAt: true,
 } as const;
 

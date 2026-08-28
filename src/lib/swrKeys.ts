@@ -24,9 +24,15 @@ export const SWR_KEYS = {
   adminUsers: '/api/admin/users',
   adminUsersPending: '/api/admin/users/pending',
   adminLocations: '/api/admin/locations',
+  // The curated barangay/landmark list the rider searches. Public and served
+  // with a cache header, so one fetch covers the whole session.
+  plannerLocations: '/api/locations',
+  locationRideAccess: '/api/locations/ride-access',
   adminStorage: '/api/admin/storage',
   adminAnnouncements: '/api/admin/announcements',
   adminDiscountCards: '/api/admin/discount-cards',
+  adminCuratedRoutes: '/api/admin/curated-routes',
+  adminRoadRestrictions: '/api/admin/road-restrictions',
   adminRoutingSettings: '/api/admin/settings/routing',
   adminIncidentStats: '/api/admin/incidents/stats',
   adminFareRates: '/api/admin/fare-rates',
@@ -36,4 +42,7 @@ export const SWR_KEYS = {
 export const swrKey = {
   permits: (query?: string) => `/api/permits${query ? `?${query}` : ''}`,
   adminReports: (period: string) => `/api/admin/reports?period=${period}`,
+  locationRideAccess: (status: string) => `/api/locations/ride-access?status=${status}`,
+  adminCuratedRoutes: (query?: string) =>
+    `/api/admin/curated-routes${query ? `?${query}` : ''}`,
 } as const;

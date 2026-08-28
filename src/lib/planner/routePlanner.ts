@@ -12,6 +12,11 @@ export type PlannerViewState =
   | 'calculating'
   | 'route_ready'
   | 'no_route_found'
+  | 'no_vehicle_access'
+  /** No route this vehicle can climb. A different vehicle may still work. */
+  | 'no_route_for_vehicle'
+  /** The route crosses a closure an admin recorded. */
+  | 'route_blocked'
   | 'network_error'
   | 'out_of_service_area'
 
@@ -56,6 +61,20 @@ export function routePairEffectivelyEqual(
 }
 
 export function classifyPlannerError(message: string, code?: string | null): PlannerViewState {
+  if (code === 'NO_VEHICLE_ACCESS') {
+    return 'no_vehicle_access'
+  }
+
+  if (code === 'ROUTE_BLOCKED_BY_RESTRICTION') {
+    return 'route_blocked'
+  }
+
+  if (code === 'NO_ROUTE_FOR_VEHICLE') {
+    // Distinct from no_route_found: a road exists, this vehicle cannot climb
+    // it, and the rider's next move is to pick a different vehicle.
+    return 'no_route_for_vehicle'
+  }
+
   if (code === 'NO_ROAD_ROUTE_FOUND') {
     return 'no_route_found'
   }

@@ -12,5 +12,7 @@ export * from "./session";
 export * from "./terminal";
 export * from "./tracker";
 export * from "./vehicles";
+export * from "./curatedRoutes";
+export * from "./roadRestrictions";
 export * from "./routingSettings";
 export * from "./riderTrip";

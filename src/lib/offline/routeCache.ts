@@ -22,6 +22,24 @@ export function routePairKey(origin: Coordinates, destination: Coordinates): str
   return `${r(origin.lat)},${r(origin.lng)}->${r(destination.lat)},${r(destination.lng)}`;
 }
 
+/**
+ * Vehicle-scoped variant of {@link routePairKey}.
+ *
+ * Deliberately a wrapper rather than a change to `routePairKey` itself: the
+ * store is at DB_VERSION 1 with no migration code, so changing the key format
+ * would silently orphan every route already cached on every installed device.
+ * A call with no vehicle type returns the legacy key unchanged, so existing
+ * entries stay readable.
+ */
+export function routePairKeyForVehicle(
+  origin: Coordinates,
+  destination: Coordinates,
+  vehicleType: string | null | undefined,
+): string {
+  const base = routePairKey(origin, destination);
+  return vehicleType ? `${base}#${vehicleType}` : base;
+}
+
 function openDb(): Promise<IDBDatabase | null> {
   return new Promise((resolve) => {
     if (typeof indexedDB === "undefined") {

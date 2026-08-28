@@ -1,7 +1,7 @@
 import type { AdminRoutingSettingsResponseDto } from "@/lib/contracts";
 import { serializeAdminRoutingSettings } from "@/lib/serializers";
 
-export type RoutingPrimaryProvider = "ors" | "google_routes";
+export type RoutingPrimaryProvider = "ors" | "google_routes" | "valhalla";
 
 type RoutingSettingsSource = "database" | "environment_default";
 
@@ -13,8 +13,10 @@ type RoutingSettingsActor = {
   username?: string | null;
 } | null;
 
+type StoredRoutingProvider = "ORS" | "GOOGLE_ROUTES" | "VALHALLA";
+
 type RoutingSettingsRow = {
-  primaryProvider: "ORS" | "GOOGLE_ROUTES";
+  primaryProvider: StoredRoutingProvider;
   updatedBy: string | null;
   updatedAt: Date;
   updatedByUser: RoutingSettingsActor;
@@ -59,19 +61,27 @@ function normalizeConfiguredPrimaryProvider(
     return "google_routes";
   }
 
+  if (normalized === "valhalla") {
+    return "valhalla";
+  }
+
   return "ors";
 }
 
 function mapStoredProviderToRuntime(
-  provider: "ORS" | "GOOGLE_ROUTES",
+  provider: StoredRoutingProvider,
 ): RoutingPrimaryProvider {
-  return provider === "GOOGLE_ROUTES" ? "google_routes" : "ors";
+  if (provider === "GOOGLE_ROUTES") return "google_routes";
+  if (provider === "VALHALLA") return "valhalla";
+  return "ors";
 }
 
 function mapRuntimeProviderToStored(
   provider: RoutingPrimaryProvider,
-): "ORS" | "GOOGLE_ROUTES" {
-  return provider === "google_routes" ? "GOOGLE_ROUTES" : "ORS";
+): StoredRoutingProvider {
+  if (provider === "google_routes") return "GOOGLE_ROUTES";
+  if (provider === "valhalla") return "VALHALLA";
+  return "ORS";
 }
 
 function getDatabaseDefaultSnapshot(): RoutingSettingsSnapshot {

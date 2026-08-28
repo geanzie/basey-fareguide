@@ -25,7 +25,11 @@ export interface TrackerSegmentResponseDto {
   distanceKm: number;
   durationMin: number | null;
   confidence: TrackerConfidence;
-  method: "ors" | "gps" | "google_routes";
+  /**
+   * Which engine measured the segment. "curated" cannot appear here: the
+   * tracker follows a GPS trail and has no pair of saved places to look up.
+   */
+  method: "ors" | "gps" | "google_routes" | "valhalla";
   fallbackReason: string | null;
   polyline: string | null;
   snappedFrom: TrackerSnappedPointDto | null;
