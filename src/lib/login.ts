@@ -15,6 +15,9 @@ const MAX_FAILED_LOGIN_ATTEMPTS = 5
 /** Lockout duration after hitting the failed-attempt threshold. */
 const LOGIN_LOCKOUT_DURATION_MS = 15 * 60 * 1000 // 15 minutes
 
+/** The user fields a session needs, satisfied by a full Prisma `User` row. */
+export type SessionEligibleUser = Parameters<typeof serializeSessionUser>[0] & { id: string }
+
 export interface LoginAttemptError {
   status: number
   body: Record<string, unknown>
@@ -176,6 +179,26 @@ export async function authenticateLoginAttempt(
     }
   }
 
+  const session = await issueSessionForUser(user, request)
+
+  return {
+    ok: true,
+    token: session.token,
+    serializedUser: session.serializedUser,
+  }
+}
+
+/**
+ * Mints a session for an already-authenticated user: clears the lockout
+ * counters, records the login, and signs the `auth-token` JWT.
+ *
+ * Shared by password login and the OAuth callback so both paths produce
+ * identical sessions.
+ */
+export async function issueSessionForUser(
+  user: SessionEligibleUser,
+  request: NextRequest,
+): Promise<{ token: string; serializedUser: ReturnType<typeof serializeSessionUser> }> {
   // Reset lockout counters and record last login details on successful authentication.
   await prisma.user.update({
     where: { id: user.id },
@@ -198,7 +221,6 @@ export async function authenticateLoginAttempt(
   )
 
   return {
-    ok: true,
     token,
     serializedUser: serializeSessionUser(user),
   }
@@ -219,4 +241,4 @@ export function applyLoginSessionCookie(response: NextResponse, token: string): 
     maxAge: AUTH_SESSION_MAX_AGE_SECONDS,
     path: '/',
   })
-}
+}

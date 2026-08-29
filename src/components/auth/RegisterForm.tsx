@@ -5,39 +5,17 @@ import Button from '@/ui/Button'
 import { Field, Input, Select } from '@/ui/Field'
 import PasswordInput from '@/ui/PasswordInput'
 import { CURRENT_PRIVACY_NOTICE_VERSION } from '@/lib/privacyNotice'
+import { BARANGAYS, ID_TYPES } from '@/lib/registrationOptions'
+import SocialSignInButtons, { type SocialProviderOption } from './SocialSignInButtons'
 
 interface RegisterFormProps {
+  socialProviders?: SocialProviderOption[]
   onSwitchToLogin: () => void
 }
 
 type UserType = 'PUBLIC' | 'ENFORCER' | 'DATA_ENCODER'
 
-const BARANGAYS = [
-  'Amandayehan', 'Anglit', 'Bacubac', 'Baloog', 'Basiao', 'Buenavista', 'Burgos',
-  'Cambayan', 'Can-abay', 'Cancaiyas', 'Canmanila', 'Catadman', 'Cogon', 'Dolongan',
-  'Guintigui-an', 'Guirang', 'Balante', 'Iba', 'Inuntan', 'Loog', 'Mabini',
-  'Magallanes', 'Manlilinab', 'Del Pilar', 'May-it', 'Mongabong', 'New San Agustin',
-  'Nouvelas Occidental', 'Old San Agustin', 'Panugmonon', 'Pelit',
-  'Baybay (Poblacion)', 'Buscada (Poblacion)', 'Lawa-an (Poblacion)',
-  'Loyo (Poblacion)', 'Mercado (Poblacion)', 'Palaypay (Poblacion)',
-  'Sulod (Poblacion)', 'Roxas', 'Salvacion', 'San Antonio', 'San Fernando', 'Sawa',
-  'Serum', 'Sugca', 'Sugponon', 'Tinaogan', 'Tingib', 'Villa Aurora', 'Binongtu-an',
-  'Bulao',
-]
-
-const ID_TYPES: Array<[string, string]> = [
-  ['NATIONAL_ID', 'National ID (PhilID)'],
-  ['DRIVERS_LICENSE', "Driver's License"],
-  ['PASSPORT', 'Passport'],
-  ['VOTERS_ID', "Voter's ID"],
-  ['SSS_ID', 'SSS ID'],
-  ['PHILHEALTH_ID', 'PhilHealth ID'],
-  ['TIN_ID', 'TIN ID'],
-  ['POSTAL_ID', 'Postal ID'],
-  ['STUDENT_ID', 'Student ID'],
-]
-
-const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
+const RegisterForm = ({ socialProviders = [], onSwitchToLogin }: RegisterFormProps) => {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -70,20 +48,6 @@ const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
 
     if (formData.password.length < 8) {
       setError('Password must be at least 8 characters long')
-      setLoading(false)
-      return
-    }
-
-    const birthDate = new Date(formData.dateOfBirth)
-    const today = new Date()
-    let age = today.getFullYear() - birthDate.getFullYear()
-    const monthDiff = today.getMonth() - birthDate.getMonth()
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      age--
-    }
-
-    if (age < 18) {
-      setError('You must be at least 18 years old to register')
       setLoading(false)
       return
     }
@@ -165,6 +129,8 @@ const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
         </div>
 
         <div className="rounded-3xl bg-surface p-6 shadow-raised sm:p-8">
+          <SocialSignInButtons providers={socialProviders} action="signup" />
+
           <form className="space-y-4" onSubmit={handleSubmit} suppressHydrationWarning>
             {error && (
               <div className="rounded-xl bg-danger-soft px-4 py-3 text-sm font-medium text-danger">

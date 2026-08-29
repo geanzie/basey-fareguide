@@ -7,7 +7,7 @@ import { prisma } from '@/lib/prisma'
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await verifyAuthWithSelect(request, { password: true })
+    const user = await verifyAuthWithSelect(request, { password: true, hasUsablePassword: true })
 
     if (!user) {
       return NextResponse.json({ message: 'Unauthorized. Please login.' }, { status: 401 })
@@ -25,6 +25,19 @@ export async function POST(request: NextRequest) {
     if (typeof newPassword !== 'string' || newPassword.length < 8) {
       return NextResponse.json(
         { message: 'Password must be at least 8 characters long' },
+        { status: 400 },
+      )
+    }
+
+    // Social sign-in accounts hold a random unusable hash, so there is no
+    // current password to check against; they set one through the OTP reset flow.
+    if (user.hasUsablePassword === false) {
+      return NextResponse.json(
+        {
+          message:
+            'Your account signs in with Google or Facebook. Use "Forgot password" to set a password first.',
+          code: 'no_usable_password',
+        },
         { status: 400 },
       )
     }

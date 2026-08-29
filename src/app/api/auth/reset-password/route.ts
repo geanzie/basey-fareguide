@@ -71,6 +71,7 @@ export async function POST(request: NextRequest) {
       where: { id: user.id },
       data: {
         password: hashedPassword,
+        hasUsablePassword: true,
         passwordResetOtp: null,
         passwordResetOtpExpiry: null,
         loginAttempts: 0, // Reset failed login attempts

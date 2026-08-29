@@ -9,16 +9,19 @@ import Button from '@/ui/Button'
 import { Field, Input } from '@/ui/Field'
 import PasswordInput from '@/ui/PasswordInput'
 import { getAuthenticatedHomeRoute } from '@/lib/authRoutes'
+import SocialSignInButtons, { type SocialProviderOption } from './SocialSignInButtons'
 
 interface LoginFormProps {
   initialError?: string
   initialUsername?: string
+  socialProviders?: SocialProviderOption[]
   onSwitchToRegister: () => void
 }
 
 const LoginForm = ({
   initialError = '',
   initialUsername = '',
+  socialProviders = [],
   onSwitchToRegister,
 }: LoginFormProps) => {
   const router = useRouter()
@@ -79,6 +82,8 @@ const LoginForm = ({
 
         <div className="rounded-3xl bg-surface p-6 shadow-raised sm:p-8">
           <h2 className="mb-5 text-xl font-bold text-ink-strong">Sign In</h2>
+
+          <SocialSignInButtons providers={socialProviders} />
 
           <form className="space-y-4" onSubmit={handleSubmit} suppressHydrationWarning>
             {error ? (

@@ -46,6 +46,7 @@ model User {
   passwordResetOtpExpiry        DateTime?
   privacyNoticeAcknowledgedAt   DateTime?
   privacyNoticeVersion          String?
+  hasUsablePassword             Boolean                          @default(true)
   createdAt                     DateTime                         @default(now())
   updatedAt                     DateTime                         @updatedAt
   fareCalculations              FareCalculation[]
@@ -54,6 +55,7 @@ model User {
   uploadedEvidence              Evidence[]                       @relation("EvidenceUploader")
   reviewedEvidence              Evidence[]                       @relation("EvidenceReviewer")
   verificationLogs              UserVerificationLog[]
+  oauthAccounts                 UserOAuthAccount[]
   discountCard                  DiscountCard?
   createdLocations              Location[]                       @relation("LocationCreator")
   verifiedLocations             Location[]                       @relation("LocationVerifier")
@@ -738,6 +740,21 @@ model UserVerificationLog {
   @@map("user_verification_logs")
 }
 
+model UserOAuthAccount {
+  id                String        @id @default(cuid())
+  userId            String
+  provider          OAuthProvider
+  providerAccountId String
+  email             String?
+  linkedAt          DateTime      @default(now())
+  lastLoginAt       DateTime?
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("user_oauth_accounts")
+}
+
 model AdminUserCreation {
   id                String    @id @default(cuid())
   requestedBy       String
@@ -876,6 +893,11 @@ enum UserType {
   ENFORCER
   DRIVER
   PUBLIC
+}
+
+enum OAuthProvider {
+  GOOGLE
+  FACEBOOK
 }
 
 enum RoutingProviderSetting {

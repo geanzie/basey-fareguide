@@ -2,6 +2,8 @@ import type { UserRole } from "@/lib/contracts";
 
 export const LOGIN_ROUTE = "/login";
 export const LEGACY_AUTH_ROUTE = "/auth";
+/** Where social sign-in sends a user who has no account yet. */
+export const SOCIAL_SIGNUP_ROUTE = "/register/social";
 export const POST_LOGOUT_ROUTE = LOGIN_ROUTE;
 export const AUTHENTICATED_ROLES = [
   "ADMIN",

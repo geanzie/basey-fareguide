@@ -1,4 +1,6 @@
 import AuthPage from '@/components/auth/AuthPage'
+import { resolveAuthErrorMessage } from '@/lib/oauth/errorMessages'
+import { listConfiguredProviders } from '@/lib/oauth/providers'
 
 interface AuthPageSearchParams {
   error?: string | string[]
@@ -19,11 +21,13 @@ export default async function LoginPage({
   searchParams?: Promise<AuthPageSearchParams>
 }) {
   const resolvedSearchParams = await searchParams
+  const error = getSearchParamValue(resolvedSearchParams?.error)
 
   return (
     <AuthPage
-      initialError={getSearchParamValue(resolvedSearchParams?.error)}
+      initialError={error ? resolveAuthErrorMessage(error) : ''}
       initialUsername={getSearchParamValue(resolvedSearchParams?.username)}
+      socialProviders={listConfiguredProviders().map(({ slug, label }) => ({ slug, label }))}
     />
   )
-}
+}
