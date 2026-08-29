@@ -374,11 +374,11 @@ describe('auth guard transitions', () => {
       await flushPromises()
     })
 
-    expect(replaceMock).toHaveBeenCalledWith('/')
+    expect(replaceMock).toHaveBeenCalledWith('/login')
     expect(refreshMock).toHaveBeenCalled()
   })
 
-  it('clears the signing out state after navigation reaches /', async () => {
+  it('clears the signing out state after navigation reaches the login page', async () => {
     const pendingLogout = deferredResponse()
     logoutResponse = pendingLogout.promise
 
@@ -418,7 +418,7 @@ describe('auth guard transitions', () => {
       await flushPromises()
     })
 
-    expect(currentPathname).toBe('/')
+    expect(currentPathname).toBe('/login')
     expect(container.textContent).toContain('Auth status: unauthenticated')
     expect(container.textContent).not.toContain('Auth status: logging_out')
   })
@@ -440,7 +440,7 @@ describe('auth guard transitions', () => {
       await flushPromises()
     })
 
-    expect(replaceMock).toHaveBeenCalledWith('/')
+    expect(replaceMock).toHaveBeenCalledWith('/login')
     expect(refreshMock).toHaveBeenCalled()
   })
 
@@ -463,7 +463,7 @@ describe('auth guard transitions', () => {
       await flushPromises()
     })
 
-    expect(replaceMock).toHaveBeenCalledWith('/')
+    expect(replaceMock).toHaveBeenCalledWith('/login')
     expect(container.textContent).toContain('Signing out')
   })
 })

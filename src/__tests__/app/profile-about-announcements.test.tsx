@@ -24,6 +24,14 @@ const authMock = vi.hoisted(() => ({
   }>(() => ({ user: null, status: "unauthenticated" })),
 }));
 
+const PUBLIC_USER = {
+  id: "public-1",
+  username: "rider",
+  firstName: "Rider",
+  lastName: "One",
+  userType: "PUBLIC",
+};
+
 vi.mock("next/navigation", () => ({
   useRouter: () => routerMock,
 }));
@@ -32,7 +40,7 @@ vi.mock("@/components/AuthProvider", () => ({
   useAuth: authMock.useAuth,
 }));
 
-import HomePage from "@/app/page";
+import AboutPage from "@/app/profile/about/page";
 
 function makeJsonResponse(body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -41,7 +49,7 @@ function makeJsonResponse(body: unknown): Response {
   });
 }
 
-describe("public home page announcements", () => {
+describe("profile about page announcements", () => {
   let container: HTMLDivElement;
   let root: Root;
 
@@ -50,6 +58,7 @@ describe("public home page announcements", () => {
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
+    authMock.useAuth.mockReturnValue({ user: PUBLIC_USER, status: "authenticated" });
   });
 
   afterEach(async () => {
@@ -64,7 +73,27 @@ describe("public home page announcements", () => {
     (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
   });
 
-  it("shows traffic announcements above the fare announcement for logged-out users", async () => {
+  async function renderAboutPage() {
+    await act(async () => {
+      root.render(
+        React.createElement(
+          SWRConfig,
+          {
+            value: {
+              provider: () => new Map(),
+              dedupingInterval: 0,
+              fetcher: (url: string) => fetch(url).then((response) => response.json()),
+            },
+          },
+          React.createElement(AboutPage),
+        ),
+      );
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+  }
+
+  it("shows traffic announcements above the fare announcement for signed-in users", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn((input: RequestInfo | URL) => {
@@ -112,45 +141,30 @@ describe("public home page announcements", () => {
       }),
     );
 
-    await act(async () => {
-      root.render(
-        React.createElement(
-          SWRConfig,
-          {
-            value: {
-              provider: () => new Map(),
-              dedupingInterval: 0,
-              fetcher: (url: string) => fetch(url).then((response) => response.json()),
-            },
-          },
-          React.createElement(HomePage),
-        ),
-      );
-      await Promise.resolve();
-      await Promise.resolve();
-    });
+    await renderAboutPage();
 
+    expect(container.textContent).toContain("About Basey FareCheck");
     expect(container.textContent).toContain("Public Announcements");
     expect(container.textContent).toContain("Traffic Announcements");
     expect(container.textContent).toContain("Road closure");
     expect(container.textContent).toContain("Fare Announcement");
+    expect(container.textContent).toContain("Key Features");
     expect(container.querySelector(".bg-brand")).not.toBeNull();
     expect(routerMock.replace).not.toHaveBeenCalled();
   });
 
-  it("renders the public landing page while auth is still resolving", async () => {
-    authMock.useAuth.mockReturnValue({ user: null, status: "loading" });
+  it("keeps the ordinance card reachable for every authenticated role", async () => {
+    authMock.useAuth.mockReturnValue({
+      user: { ...PUBLIC_USER, userType: "ENFORCER" },
+      status: "authenticated",
+    });
 
     vi.stubGlobal(
       "fetch",
       vi.fn((input: RequestInfo | URL) => {
         const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
         if (url.includes("/api/announcements")) {
-          return Promise.resolve(
-            makeJsonResponse({
-              announcements: [],
-            }),
-          );
+          return Promise.resolve(makeJsonResponse({ announcements: [] }));
         }
 
         if (url.includes("/api/fare-rates")) {
@@ -172,59 +186,19 @@ describe("public home page announcements", () => {
       }),
     );
 
-    await act(async () => {
-      root.render(
-        React.createElement(
-          SWRConfig,
-          {
-            value: {
-              provider: () => new Map(),
-              dedupingInterval: 0,
-              fetcher: (url: string) => fetch(url).then((response) => response.json()),
-            },
-          },
-          React.createElement(HomePage),
-        ),
-      );
-      await Promise.resolve();
-      await Promise.resolve();
-    });
+    await renderAboutPage();
 
-    expect(container.textContent).toContain("Public Announcements");
-    expect(container.textContent).toContain("Fare Announcement");
-    expect(container.textContent).not.toContain("Restoring session");
-    expect(routerMock.replace).not.toHaveBeenCalled();
+    expect(container.textContent).not.toContain("Access Denied");
+    expect(container.textContent).toContain("Official Ordinance");
+    expect(container.querySelector('a[href="/ordinance"]')).not.toBeNull();
   });
 
-  it("redirects authenticated users to their role home route instead of rendering the landing page", async () => {
-    authMock.useAuth.mockReturnValue({
-      user: {
-        id: "admin-1",
-        username: "admin",
-        firstName: "Admin",
-        lastName: "User",
-        userType: "ADMIN",
-      },
-      status: "authenticated",
-    });
+  it("sends signed-out visitors to the login page", async () => {
+    authMock.useAuth.mockReturnValue({ user: null, status: "unauthenticated" });
 
-    await act(async () => {
-      root.render(
-        React.createElement(
-          SWRConfig,
-          {
-            value: {
-              provider: () => new Map(),
-            },
-          },
-          React.createElement(HomePage),
-        ),
-      );
-      await Promise.resolve();
-    });
+    await renderAboutPage();
 
-    expect(container.textContent).toContain("Opening dashboard");
     expect(container.textContent).not.toContain("Public Announcements");
-    expect(routerMock.replace).toHaveBeenCalledWith("/admin");
+    expect(routerMock.replace).toHaveBeenCalledWith("/login");
   });
 });
