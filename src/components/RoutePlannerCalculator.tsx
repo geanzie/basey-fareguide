@@ -1114,7 +1114,7 @@ const RoutePlannerCalculator = ({
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="text-sm font-semibold text-slate-900">Operator QR scanner</p>
-                  <p className="mt-1 text-xs leading-5 text-slate-600 sm:text-sm">
+                  <p className="mt-1 text-xs text-slate-600 sm:text-sm">
                     Scan and confirm the operator details here.
                   </p>
                 </div>
@@ -1144,7 +1144,7 @@ const RoutePlannerCalculator = ({
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="text-sm font-semibold text-slate-900">Manual vehicle lookup</p>
-                  <p className="mt-1 text-xs leading-5 text-slate-600 sm:text-sm">
+                  <p className="mt-1 text-xs text-slate-600 sm:text-sm">
                     Use manual search for damaged stickers, older vehicles, or camera issues.
                   </p>
                 </div>
@@ -1165,7 +1165,7 @@ const RoutePlannerCalculator = ({
                 onClearSelection={() => setSelectedVehicle(null)}
                 requireActivePermit={false}
               />
-              <p className="px-1 text-xs leading-5 text-slate-600 sm:text-sm">
+              <p className="px-1 text-xs text-slate-600 sm:text-sm">
                 If you select a plate number, the vehicle is saved with the trip for easier incident
                 reporting.
               </p>
@@ -1243,7 +1243,7 @@ const RoutePlannerCalculator = ({
                       <DashboardIconSlot icon={DASHBOARD_ICONS[choice.icon]} size={26} />
                     </span>
                     <span className="text-base font-bold text-slate-900">{choice.label}</span>
-                    <span className="text-xs leading-4 text-slate-500">{choice.hint}</span>
+                    <span className="text-xs text-slate-500">{choice.hint}</span>
                   </button>
                 )
               })}
@@ -1257,11 +1257,11 @@ const RoutePlannerCalculator = ({
 
             {user ? (
               <div className="space-y-2 border-t border-slate-200 pt-4">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
                   Driver (optional)
                 </p>
                 {identitySection}
-                <p className="text-xs leading-5 text-slate-500">
+                <p className="text-xs text-slate-500">
                   Only needed to send the driver a trip request. Skip it to check a fare.
                 </p>
               </div>
@@ -1292,7 +1292,7 @@ const RoutePlannerCalculator = ({
             />
 
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-tint px-2.5 py-1 text-[11px] font-semibold text-primary-dark">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-tint px-2.5 py-1 text-xs font-semibold text-primary-dark">
                 <DashboardIconSlot icon={DASHBOARD_ICONS.discount} size={13} />
                 {passengerLabel}
               </span>
@@ -1303,7 +1303,7 @@ const RoutePlannerCalculator = ({
 
             {locationStatus === 'failed' && locationFailure && !originSelection ? (
               <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                <p className="text-xs leading-5 text-slate-600">
+                <p className="text-xs text-slate-600">
                   {CURRENT_LOCATION_MESSAGES[locationFailure]}
                 </p>
                 <button
@@ -1374,7 +1374,7 @@ const RoutePlannerCalculator = ({
                 <div className="px-4 pt-4 sm:px-5">
                   <div className="flex flex-wrap items-center gap-2">
                     <span
-                      className={`rounded-full px-3 py-1 text-[11px] font-semibold ${
+                      className={`rounded-full px-3 py-1 text-xs font-semibold ${
                         routeResult.method == null
                           ? 'border border-slate-200 bg-slate-100 text-slate-700'
                           : 'border border-violet-200 bg-violet-100 text-violet-800'
@@ -1383,14 +1383,14 @@ const RoutePlannerCalculator = ({
                       {routeResult.sourceBadge}
                     </span>
                     {selectedVehicle ? (
-                      <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700">
+                      <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700">
                         {selectedVehicle.permitPlateNumber || selectedVehicle.plateNumber}
                       </span>
                     ) : null}
                   </div>
 
                   {routeResult.twoWheelerNotice ? (
-                    <p className="mt-2 text-[11px] leading-4 text-amber-700">
+                    <p className="mt-2 text-xs text-amber-700">
                       Two-wheeled routes are in beta and may be missing sidewalks, pedestrian paths,
                       or other restrictions.
                     </p>
@@ -1410,7 +1410,7 @@ const RoutePlannerCalculator = ({
                     </div>
 
                     <div className="shrink-0 rounded-[1.4rem] bg-slate-950 px-4 py-3 text-right text-white shadow-lg">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-300">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-300">
                         Fare
                       </p>
                       <p className="mt-1 text-2xl font-bold">{formatCurrency(routeResult.fare)}</p>
@@ -1420,7 +1420,7 @@ const RoutePlannerCalculator = ({
 
                 <div className="mt-4 grid grid-cols-2 gap-px border-t border-slate-200 bg-slate-200/80">
                   <div className="bg-slate-50 px-4 py-3">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
                       Regular
                     </p>
                     <p className="mt-1 text-2xl font-bold text-slate-900">
@@ -1428,7 +1428,7 @@ const RoutePlannerCalculator = ({
                     </p>
                   </div>
                   <div className="bg-slate-50 px-4 py-3">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
                       Your fare
                     </p>
                     <p className="mt-1 text-2xl font-bold text-primary-dark">
@@ -1437,7 +1437,7 @@ const RoutePlannerCalculator = ({
                   </div>
                   {routeResult.discountApplied ? (
                     <div className="bg-slate-50 px-4 py-3">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
                         Discount
                       </p>
                       <p className="mt-1 text-2xl font-bold text-primary-dark">
@@ -1451,7 +1451,7 @@ const RoutePlannerCalculator = ({
                     all explain themselves here. They used to sit on the map
                     overlay, which no longer opens on its own. */}
                 {routeMessage && plannerState !== 'no_vehicle_access' && !errorPanelVisible ? (
-                  <p className="border-t border-slate-200 px-4 py-3 text-xs leading-5 text-slate-600 sm:px-5">
+                  <p className="border-t border-slate-200 px-4 py-3 text-xs text-slate-600 sm:px-5">
                     {routeMessage}
                   </p>
                 ) : null}
@@ -1476,7 +1476,7 @@ const RoutePlannerCalculator = ({
             ) : null}
 
             <section className="space-y-2 rounded-[2rem] border border-surface-border bg-surface p-4 shadow-card">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
                 Ride
               </p>
               <div className="flex items-center justify-between gap-3">
@@ -1495,7 +1495,7 @@ const RoutePlannerCalculator = ({
 
             {user ? (
               <section className="space-y-2 rounded-[2rem] border border-surface-border bg-surface p-4 shadow-card">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
                   Driver
                 </p>
                 {identitySection}

@@ -40,10 +40,10 @@ export default function DonutRing({
         />
       </svg>
       <div className="text-center">
-        <div className="text-[26px] font-extrabold" style={{ color }}>
+        <div className="text-2xl font-extrabold" style={{ color }}>
           {Math.round(clamped * 100)}%
         </div>
-        {centerLabel ? <div className="mt-px text-[11px] font-semibold text-ink-muted">{centerLabel}</div> : null}
+        {centerLabel ? <div className="mt-px text-xs font-semibold text-ink-muted">{centerLabel}</div> : null}
       </div>
     </div>
   )

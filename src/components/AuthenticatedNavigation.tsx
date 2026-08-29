@@ -99,7 +99,7 @@ export function AuthenticatedMobileBottomNavigation({
             <Link
               key={item.id}
               href={item.href}
-              className={`flex min-w-0 flex-col items-center justify-center rounded-2xl px-1 py-2 text-[11px] font-medium transition-colors ${
+              className={`flex min-w-0 flex-col items-center justify-center rounded-2xl px-0.5 py-2 text-xs font-medium transition-colors ${
                 active
                   ? 'bg-surface-tint text-primary'
                   : 'text-ink-muted hover:bg-surface-alt hover:text-ink-body'
@@ -114,7 +114,7 @@ export function AuthenticatedMobileBottomNavigation({
                   />
                 ) : null}
               </div>
-              <span className="mt-1 truncate">{item.shortLabel}</span>
+              <span className="mt-1 text-center leading-tight">{item.shortLabel}</span>
             </Link>
           )
         })}
@@ -122,14 +122,14 @@ export function AuthenticatedMobileBottomNavigation({
         <button
           type="button"
           onClick={onOpenProfileSheet}
-          className={`flex min-w-0 flex-col items-center justify-center rounded-2xl px-1 py-2 text-[11px] font-medium transition-colors ${
+          className={`flex min-w-0 flex-col items-center justify-center rounded-2xl px-0.5 py-2 text-xs font-medium transition-colors ${
             profileSheetActive
               ? 'bg-surface-tint text-primary'
               : 'text-ink-muted hover:bg-surface-alt hover:text-ink-body'
           }`}
         >
           <DashboardIconSlot icon={MOBILE_PROFILE_LAUNCHER.icon} size={20} />
-          <span className="mt-1 truncate">{MOBILE_PROFILE_LAUNCHER.shortLabel}</span>
+          <span className="mt-1 text-center leading-tight">{MOBILE_PROFILE_LAUNCHER.shortLabel}</span>
         </button>
       </div>
     </nav>

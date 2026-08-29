@@ -23,8 +23,8 @@ const VARIANTS: Record<ButtonVariant, string> = {
 }
 
 const SIZES: Record<ButtonSize, string> = {
-  sm: 'px-3 py-2 text-[13px]',
-  md: 'px-4 py-3 text-[15px]',
+  sm: 'px-3 py-2 text-sm',
+  md: 'px-4 py-3 text-base',
 }
 
 const Button = forwardRef<HTMLButtonElement, Props>(function Button(

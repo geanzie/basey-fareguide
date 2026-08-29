@@ -63,7 +63,7 @@ export default function ChangePasswordForm() {
       </div>
 
       {error ? (
-        <div className="rounded-xl bg-danger-soft px-4 py-3 text-[13px] font-medium text-danger">
+        <div className="rounded-xl bg-danger-soft px-4 py-3 text-sm font-medium text-danger">
           {error}
         </div>
       ) : null}

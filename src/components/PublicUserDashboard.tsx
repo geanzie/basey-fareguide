@@ -188,7 +188,7 @@ function PublicUserDashboard() {
                   <div key={route.id} className="rounded-xl bg-surface-alt p-4">
                     <div className="flex items-start justify-between gap-4">
                       <div>
-                        <p className="font-medium text-ink-strong">
+                        <p className="text-base font-medium text-ink-strong">
                           {route.from} to {route.to}
                         </p>
                         <p className="mt-1 text-sm text-ink-muted">
@@ -243,7 +243,7 @@ function PublicUserDashboard() {
                   <div key={incident.id} className="rounded-xl bg-surface-alt p-4">
                     <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0 flex-1">
-                        <p className="font-medium text-ink-strong">{incident.typeLabel}</p>
+                        <p className="text-base font-medium text-ink-strong">{incident.typeLabel}</p>
                         <p className="mt-1 text-sm text-ink-muted">
                           {incident.location} on {formatDate(incident.date)}
                         </p>
@@ -268,18 +268,18 @@ function PublicUserDashboard() {
         />
 
         {communityStats !== null && (
-          <div className="grid grid-cols-3 divide-x divide-surface-border border-b border-surface-border">
-            <div className="px-4 py-4 text-center">
+          <div className="grid grid-cols-3 items-start divide-x divide-surface-border border-b border-surface-border">
+            <div className="px-2 py-4 text-center">
               <p className="text-2xl font-extrabold text-ink-strong">{communityStats.totalIncidents}</p>
-              <p className="mt-1 text-xs text-ink-muted">Total Reports</p>
+              <p className="mt-1 text-xs leading-tight text-ink-muted">Total Reports</p>
             </div>
-            <div className="px-4 py-4 text-center">
+            <div className="px-2 py-4 text-center">
               <p className="text-2xl font-extrabold text-primary">{communityStats.resolvedIncidents}</p>
-              <p className="mt-1 text-xs text-ink-muted">Resolved</p>
+              <p className="mt-1 text-xs leading-tight text-ink-muted">Resolved</p>
             </div>
-            <div className="px-4 py-4 text-center">
+            <div className="px-2 py-4 text-center">
               <p className="text-2xl font-extrabold text-warning-dark">{communityStats.pendingIncidents}</p>
-              <p className="mt-1 text-xs text-ink-muted">Under Review</p>
+              <p className="mt-1 text-xs leading-tight text-ink-muted">Under Review</p>
             </div>
           </div>
         )}
@@ -391,7 +391,7 @@ function ActivityRow({ item }: { item: DashboardActivityItemDto }) {
     <div className="rounded-xl bg-surface-alt p-4">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
-          <p className="font-medium text-ink-strong">{item.typeLabel}</p>
+          <p className="text-base font-medium text-ink-strong">{item.typeLabel}</p>
           <p className="mt-0.5 text-sm text-ink-muted">{item.location}</p>
           {item.handledBy ? (
             <p className="mt-1 text-xs text-ink-faint">Handled by {item.handledBy}</p>

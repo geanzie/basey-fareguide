@@ -80,7 +80,7 @@ const RequestResetForm = ({ onSuccess, onCancel }: RequestResetFormProps) => {
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/10">
             <KeyRound className="h-8 w-8 text-primary" />
           </div>
-          <h1 className="mt-4 text-[26px] font-extrabold text-white">Reset Password</h1>
+          <h1 className="mt-4 text-2xl font-extrabold text-white">Reset Password</h1>
           <p className="mt-1 text-xs text-ink-muted">
             Enter your email address to receive an OTP code
           </p>
@@ -124,7 +124,7 @@ const RequestResetForm = ({ onSuccess, onCancel }: RequestResetFormProps) => {
           ) : (
             <form className="space-y-4" onSubmit={handleSubmit}>
               {error ? (
-                <div className="rounded-xl bg-danger-soft px-4 py-3 text-[13px] font-medium text-danger">
+                <div className="rounded-xl bg-danger-soft px-4 py-3 text-sm font-medium text-danger">
                   {error}
                 </div>
               ) : null}

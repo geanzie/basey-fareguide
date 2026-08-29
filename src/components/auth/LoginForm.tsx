@@ -73,7 +73,7 @@ const LoginForm = ({
       <div className="w-full max-w-md">
         <div className="mb-8 flex flex-col items-center text-center">
           <BrandMark />
-          <h1 className="mt-4 text-[26px] font-extrabold text-white">Basey FareCheck</h1>
+          <h1 className="mt-4 text-2xl font-extrabold text-white">Basey FareCheck</h1>
           <p className="mt-1 text-xs text-ink-muted">Municipal Ordinance 105, Series of 2023</p>
         </div>
 
@@ -82,7 +82,7 @@ const LoginForm = ({
 
           <form className="space-y-4" onSubmit={handleSubmit} suppressHydrationWarning>
             {error ? (
-              <div className="rounded-xl bg-danger-soft px-4 py-3 text-[13px] font-medium text-danger">
+              <div className="rounded-xl bg-danger-soft px-4 py-3 text-sm font-medium text-danger">
                 {error}
               </div>
             ) : null}
@@ -141,7 +141,7 @@ const LoginForm = ({
           </form>
         </div>
 
-        <p className="mt-8 text-center text-[11px] text-slate-500">
+        <p className="mt-8 text-center text-xs text-slate-500">
           Basey Municipality, Samar · Philippines
         </p>
       </div>

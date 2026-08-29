@@ -305,7 +305,7 @@ export default function RoutePlannerMap({
       <div className="pointer-events-none absolute bottom-3 left-3 z-[350] max-w-[calc(100%-1.5rem)] sm:max-w-sm">
         <div className={`rounded-2xl border px-3 py-2 text-xs shadow-lg backdrop-blur-md sm:text-sm ${toneClasses}`}>
           <div className="font-medium">{helperText}</div>
-          {plannerMessage ? <p className="mt-1 text-[11px] opacity-90 sm:text-xs">{plannerMessage}</p> : null}
+          {plannerMessage ? <p className="mt-1 text-xs opacity-90">{plannerMessage}</p> : null}
         </div>
       </div>
 

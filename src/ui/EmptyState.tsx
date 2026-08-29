@@ -17,7 +17,7 @@ export default function EmptyState({ icon: Icon, title, message, action }: Props
         <Icon className="h-8 w-8 text-primary" />
       </div>
       <h3 className="text-base font-bold text-ink-strong">{title}</h3>
-      {message ? <p className="mt-1 max-w-sm text-[13px] leading-5 text-ink-muted">{message}</p> : null}
+      {message ? <p className="mt-1 max-w-sm text-sm text-ink-muted">{message}</p> : null}
       {action ? <div className="mt-4">{action}</div> : null}
     </div>
   )

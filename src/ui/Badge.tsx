@@ -11,7 +11,7 @@ export default function Badge({ label, tone }: Props) {
   const t = tone ?? statusTone(label)
   return (
     <span
-      className={`inline-block rounded-lg px-2.5 py-0.5 text-[11px] font-bold ${TONE_BADGE_CLASSES[t]}`}
+      className={`inline-block rounded-lg px-2.5 py-0.5 text-xs font-bold ${TONE_BADGE_CLASSES[t]}`}
     >
       {label.replace(/_/g, ' ')}
     </span>

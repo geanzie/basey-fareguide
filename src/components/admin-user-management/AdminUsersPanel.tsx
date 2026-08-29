@@ -24,7 +24,7 @@ interface AdminUsersPanelProps {
 function SummaryCard({ label, value }: { label: string; value: number }) {
   return (
     <div className="border border-surface-border bg-surface-alt rounded-2xl p-4">
-      <div className="text-xs font-medium uppercase tracking-wider text-gray-500">{label}</div>
+      <div className="text-xs font-semibold leading-tight text-gray-500">{label}</div>
       <div className="mt-2 text-2xl font-bold text-gray-900">{value}</div>
     </div>
   )

@@ -4,11 +4,26 @@
 
 :root {
   color-scheme: light;
+  /* Multiplier applied to every font size in tailwind.config.js. 1 is the
+     stock Tailwind ramp; the phone layout bumps it below. Text only — root
+     font-size is untouched, so rem-based spacing never moves. */
+  --text-scale: 1;
   /* Height of the mobile tab bar, excluding the safe-area inset below it.
      .app-mobile-bottom-nav enforces this as a min-height, so the token is the
-     real rendered height rather than an estimate anything can drift from. */
+     real rendered height rather than an estimate anything can drift from.
+     Measured at --text-scale 1.15: 20px icon + 4px gap + ~17px label + the
+     two py-2 pairs = ~73px, so 4.75rem still clears it. */
   --mobile-bottom-nav-height: 4.75rem;
   --mobile-safe-area-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Below lg the app renders its phone layout (see .app-mobile-bottom-nav).
+   Basey FareCheck's public users include elderly commuters, and the stock
+   12-14px body copy is hard to read at arm's length on a phone. */
+@media (max-width: 1023px) {
+  :root {
+    --text-scale: 1.15;
+  }
 }
 
 html {
@@ -21,6 +36,10 @@ body {
   margin: 0;
   padding: 0;
   font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  /* Safety net: text rendered with no Tailwind size class still scales.
+     rem resolves against <html>, which we never touch, so this cannot
+     move any spacing utility. */
+  font-size: calc(1rem * var(--text-scale));
   color: #0f172a;
   background-color: #f1f5f9; /* colors.bg from mobile theme */
 }
@@ -70,6 +89,15 @@ body {
      calc() offsets (e.g. FAB, modals) naturally fall back to their base value */
   :root {
     --mobile-bottom-nav-height: 0px;
+  }
+}
+
+/* Printed sheets (QR permit cards, ordinance) are laid out against paper, not
+   a viewport — keep them on the stock ramp whatever width the window happens
+   to be when Print is pressed. */
+@media print {
+  :root {
+    --text-scale: 1;
   }
 }
 

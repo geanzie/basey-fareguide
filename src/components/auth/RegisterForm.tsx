@@ -158,7 +158,7 @@ const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
     <div className="min-h-dvh bg-ink-strong px-4 py-10 sm:px-6 lg:px-8">
       <div className="mx-auto w-full max-w-lg">
         <div className="mb-6 text-center">
-          <h1 className="text-[26px] font-extrabold text-white">Create your account</h1>
+          <h1 className="text-2xl font-extrabold text-white">Create your account</h1>
           <p className="mt-1 text-xs text-ink-muted">
             Basey FareCheck — Municipal Ordinance 105, Series of 2023
           </p>
@@ -167,13 +167,13 @@ const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
         <div className="rounded-3xl bg-surface p-6 shadow-raised sm:p-8">
           <form className="space-y-4" onSubmit={handleSubmit} suppressHydrationWarning>
             {error && (
-              <div className="rounded-xl bg-danger-soft px-4 py-3 text-[13px] font-medium text-danger">
+              <div className="rounded-xl bg-danger-soft px-4 py-3 text-sm font-medium text-danger">
                 {error}
               </div>
             )}
 
             {success && (
-              <div className="rounded-xl bg-surface-tint px-4 py-3 text-[13px] font-medium text-primary-dark">
+              <div className="rounded-xl bg-surface-tint px-4 py-3 text-sm font-medium text-primary-dark">
                 {success}
               </div>
             )}

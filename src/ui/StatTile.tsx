@@ -23,8 +23,8 @@ export default function StatTile({ label, value, icon: Icon, tone = 'success' }:
           <Icon className={`h-[18px] w-[18px] ${TONE_TEXT_CLASSES[tone]}`} />
         </span>
       ) : null}
-      <div className={`text-[22px] font-extrabold ${TONE_TEXT_CLASSES[tone]}`}>{value}</div>
-      <div className="truncate text-xs font-semibold text-ink-muted">{label}</div>
+      <div className={`text-xl font-extrabold ${TONE_TEXT_CLASSES[tone]}`}>{value}</div>
+      <div className="text-xs font-semibold leading-tight text-ink-muted">{label}</div>
     </div>
   )
 }

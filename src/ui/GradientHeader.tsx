@@ -48,7 +48,7 @@ export default function GradientHeader({
         ) : null}
         <div className="min-w-0 flex-1">
           <h1 className="break-words text-2xl font-extrabold">{title}</h1>
-          {subtitle ? <p className="mt-0.5 text-[13px] text-green-200">{subtitle}</p> : null}
+          {subtitle ? <p className="mt-0.5 text-sm text-green-200">{subtitle}</p> : null}
         </div>
         {right ? <div className="ml-auto shrink-0">{right}</div> : null}
       </div>

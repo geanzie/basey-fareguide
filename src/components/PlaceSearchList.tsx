@@ -139,7 +139,7 @@ const PlaceSearchList = ({
                   <li
                     key={row.key}
                     role="presentation"
-                    className="px-1 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500"
+                    className="px-1 pb-1 pt-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500"
                   >
                     {row.title}
                   </li>
@@ -184,12 +184,12 @@ const PlaceSearchList = ({
                       </span>
                     </span>
                     {row.type === 'place' && needsResurvey(row.place) ? (
-                      <span className="shrink-0 text-[11px] font-semibold text-amber-700">
+                      <span className="shrink-0 text-xs font-semibold text-amber-700">
                         Approximate
                       </span>
                     ) : null}
                     {row.recent ? (
-                      <span className="shrink-0 text-[11px] font-medium text-slate-400">Recent</span>
+                      <span className="shrink-0 text-xs font-medium text-slate-400">Recent</span>
                     ) : null}
                   </button>
                 </li>

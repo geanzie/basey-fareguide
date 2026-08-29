@@ -119,10 +119,10 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
                 <HelpCircle className="h-11 w-11 text-info" />
               )}
             </div>
-            <h3 className="text-[19px] font-extrabold text-ink-strong">
+            <h3 className="text-lg font-extrabold text-ink-strong">
               {confirmState.title ?? 'Please confirm'}
             </h3>
-            <p className="mt-2 text-sm leading-5 text-ink-muted">{confirmState.message}</p>
+            <p className="mt-2 text-sm text-ink-muted">{confirmState.message}</p>
             <div className="mt-6 flex w-full gap-2.5">
               <Button variant="secondary" className="flex-1" onClick={() => settle(false)}>
                 {confirmState.cancelLabel ?? 'Cancel'}
