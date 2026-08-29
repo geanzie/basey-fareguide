@@ -11,6 +11,8 @@ import {
 } from '@/components/dashboardIcons'
 import {
   getAuthenticatedMobilePrimaryActionCount,
+  getAuthenticatedMobileSheetItems,
+  getAuthenticatedMobileTabs,
   MOBILE_PROFILE_LAUNCHER,
   getAuthenticatedNavigationConfig,
   isAuthenticatedNavigationItemActive,
@@ -80,7 +82,7 @@ export function AuthenticatedMobileBottomNavigation({
   onOpenProfileSheet: () => void
   tabBadges?: Record<string, number>
 }) {
-  const navigation = getAuthenticatedNavigationConfig(user.userType)
+  const mobileTabs = getAuthenticatedMobileTabs(user.userType)
   const mobilePrimaryActionCount = getAuthenticatedMobilePrimaryActionCount(user.userType)
   const profileSheetActive =
     profileSheetOpen || isAuthenticatedProfileSheetActive(pathname, user.userType)
@@ -91,7 +93,7 @@ export function AuthenticatedMobileBottomNavigation({
         className="grid gap-1 px-2 py-2"
         style={{ gridTemplateColumns: `repeat(${mobilePrimaryActionCount}, minmax(0, 1fr))` }}
       >
-        {navigation.tabs.map((item) => {
+        {mobileTabs.map((item) => {
           const active = isAuthenticatedNavigationItemActive(pathname, item)
           const badgeCount = tabBadges?.[item.id] ?? 0
 
@@ -149,7 +151,7 @@ export function AuthenticatedMobileProfileSheet({
   onLogout: () => void
   isLoggingOut: boolean
 }) {
-  const navigation = getAuthenticatedNavigationConfig(user.userType)
+  const sheetItems = getAuthenticatedMobileSheetItems(user.userType)
   const [confirmOpen, setConfirmOpen] = useState(false)
 
   useEffect(() => {
@@ -193,7 +195,7 @@ export function AuthenticatedMobileProfileSheet({
         </div>
 
         <div className="space-y-2 pb-2">
-          {navigation.secondaryActions.map((item) => {
+          {sheetItems.map((item) => {
             const active = isAuthenticatedNavigationItemActive(pathname, item)
 
             return (

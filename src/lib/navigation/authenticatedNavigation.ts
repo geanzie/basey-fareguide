@@ -18,6 +18,8 @@ export interface AuthenticatedNavigationItem {
   icon: DashboardIcon
   href: string
   matchers: readonly NavigationMatcher[]
+  /** false = keep it in the desktop sidebar, but reach it from the mobile profile sheet. */
+  mobileTab?: boolean
 }
 
 export interface AuthenticatedNavigationConfig {
@@ -65,6 +67,7 @@ const authenticatedNavigationRegistry: Record<UserRole, AuthenticatedNavigationC
         icon: DASHBOARD_ICONS.history,
         href: '/history',
         matchers: [prefix('/history'), exact('/dashboard/incidents')],
+        mobileTab: false,
       },
       {
         id: 'report',
@@ -73,6 +76,7 @@ const authenticatedNavigationRegistry: Record<UserRole, AuthenticatedNavigationC
         icon: DASHBOARD_ICONS.incidents,
         href: '/report',
         matchers: [prefix('/report'), exact('/dashboard/report')],
+        mobileTab: false,
       },
     ],
     secondaryActions: [
@@ -367,8 +371,26 @@ export function getAuthenticatedNavigationConfig(userRole: UserRole): Authentica
   return authenticatedNavigationRegistry[userRole]
 }
 
+export function getAuthenticatedMobileTabs(
+  userRole: UserRole,
+): readonly AuthenticatedNavigationItem[] {
+  return getAuthenticatedNavigationConfig(userRole).tabs.filter((tab) => tab.mobileTab !== false)
+}
+
+/**
+ * Destinations behind the mobile Profile button: the tabs demoted off the bottom
+ * bar first, then the role's secondary actions.
+ */
+export function getAuthenticatedMobileSheetItems(
+  userRole: UserRole,
+): readonly AuthenticatedNavigationItem[] {
+  const { tabs, secondaryActions } = getAuthenticatedNavigationConfig(userRole)
+
+  return [...tabs.filter((tab) => tab.mobileTab === false), ...secondaryActions]
+}
+
 export function getAuthenticatedMobilePrimaryActionCount(userRole: UserRole): number {
-  return getAuthenticatedNavigationConfig(userRole).tabs.length + 1
+  return getAuthenticatedMobileTabs(userRole).length + 1
 }
 
 export function isAuthenticatedNavigationItemActive(
@@ -379,7 +401,7 @@ export function isAuthenticatedNavigationItemActive(
 }
 
 export function isAuthenticatedProfileSheetActive(pathname: string, userRole: UserRole): boolean {
-  return getAuthenticatedNavigationConfig(userRole).secondaryActions.some((item) =>
+  return getAuthenticatedMobileSheetItems(userRole).some((item) =>
     isAuthenticatedNavigationItemActive(pathname, item),
   )
 }
