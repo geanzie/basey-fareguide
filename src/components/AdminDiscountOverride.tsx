@@ -190,7 +190,7 @@ export default function AdminDiscountOverride({ onSuccess, onCancel }: AdminDisc
   const selectedUser = eligibleUsers.find(u => u.id === selectedUserId)
 
   return (
-    <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
+    <div className="border border-surface-border bg-surface shadow-card rounded-card p-6">
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
           <div className={getDashboardIconChipClasses('blue')}>

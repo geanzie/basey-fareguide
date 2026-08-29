@@ -1,6 +1,7 @@
 'use client'
 
 import { ActionButton, StatusBadge } from '@/components/ResponsiveTable'
+import Modal from '@/ui/Modal'
 import type { AdminUserDto } from '@/lib/admin/user-management-contract'
 
 import {
@@ -33,24 +34,33 @@ export default function AdminUserDetailModal({
   onToggleStatus,
   statusUpdating,
 }: AdminUserDetailModalProps) {
-  if (!user) {
-    return null
-  }
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true">
-      <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white shadow-xl">
-        <div className="flex items-start justify-between border-b border-gray-200 px-6 py-5">
-          <div>
-            <h3 className="text-2xl font-bold text-gray-900">User Details</h3>
-            <p className="mt-1 text-sm text-gray-600">Review account status, role, source, and linked driver context.</p>
+    <Modal
+      open={Boolean(user)}
+      onClose={onClose}
+      title="User Details"
+      size="lg"
+      footer={
+        user ? (
+          <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+            <ActionButton onClick={onClose} variant="secondary" size="md">
+              Close
+            </ActionButton>
+            <ActionButton
+              onClick={() => onToggleStatus(user)}
+              variant={user.isActive ? 'danger' : 'primary'}
+              size="md"
+              disabled={statusUpdating}
+            >
+              {statusUpdating ? 'Updating...' : user.isActive ? 'Deactivate Account' : 'Activate Account'}
+            </ActionButton>
           </div>
-          <button type="button" onClick={onClose} className="text-sm font-medium text-gray-500 hover:text-gray-700">
-            Close
-          </button>
-        </div>
-
-        <div className="space-y-6 px-6 py-6">
+        ) : null
+      }
+    >
+      {user ? (
+        <div className="space-y-6">
+          <p className="text-sm text-gray-600">Review account status, role, source, and linked driver context.</p>
           <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
@@ -102,21 +112,7 @@ export default function AdminUserDetailModal({
             </div>
           </div>
         </div>
-
-        <div className="flex flex-col gap-3 border-t border-gray-200 px-6 py-4 sm:flex-row sm:justify-end">
-          <ActionButton onClick={onClose} variant="secondary" size="md">
-            Close
-          </ActionButton>
-          <ActionButton
-            onClick={() => onToggleStatus(user)}
-            variant={user.isActive ? 'danger' : 'primary'}
-            size="md"
-            disabled={statusUpdating}
-          >
-            {statusUpdating ? 'Updating...' : user.isActive ? 'Deactivate Account' : 'Activate Account'}
-          </ActionButton>
-        </div>
-      </div>
-    </div>
+      ) : null}
+    </Modal>
   )
 }

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 import { CheckCircle2 } from 'lucide-react'
-import GradientHeader from '@/ui/GradientHeader'
+import PageShell from '@/ui/PageShell'
 
 export const metadata: Metadata = {
   title: 'Coordinate System - Admin Dashboard',
@@ -10,14 +10,13 @@ export const metadata: Metadata = {
 
 export default function CoordinateSystemPage() {
   return (
-    <div className="mx-auto max-w-4xl">
-      <GradientHeader
-        title="Coordinate System"
-        subtitle="Authoritative GeoJSON data for all coordinates"
-        backHref="/admin"
-        compact
-      />
-      <div className="-mt-6 space-y-4 px-4 pb-8 lg:px-8">
+    <PageShell
+      title="Coordinate System"
+      subtitle="Authoritative GeoJSON data for all coordinates"
+      backHref="/admin"
+      width="narrow"
+    >
+      <div className="space-y-4">
         <div className="rounded-card border border-surface-border bg-surface p-6 shadow-card">
           <div className="flex gap-3">
             <CheckCircle2 className="h-5 w-5 shrink-0 text-primary" />
@@ -59,6 +58,6 @@ export default function CoordinateSystemPage() {
           </div>
         </div>
       </div>
-    </div>
+    </PageShell>
   )
 }

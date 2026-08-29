@@ -9,6 +9,7 @@ import { VehicleType, PermitStatus } from '@prisma/client'
 import ResponsiveTable, { StatusBadge, ActionButton } from './ResponsiveTable'
 import VehicleLookupField from './VehicleLookupField'
 import { useFeedback } from '@/ui/FeedbackProvider'
+import Modal from '@/ui/Modal'
 import type {
   PermitDto,
   PermitsResponseDto,
@@ -361,7 +362,7 @@ export default function PermitManagement() {
       </div>
 
       {lastCreatedPermit?.qrToken ? (
-        <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-4">
+        <div className="border border-surface-border bg-surface shadow-card rounded-card p-4">
           <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h3 className="text-lg font-semibold text-gray-900">Latest QR-issued permit</h3>
@@ -439,7 +440,7 @@ export default function PermitManagement() {
       ) : null}
 
       {/* Filters */}
-      <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-4">
+      <div className="border border-surface-border bg-surface shadow-card rounded-card p-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label htmlFor="permit-management-search" className="block text-sm font-medium text-gray-700 mb-1">
@@ -504,110 +505,107 @@ export default function PermitManagement() {
       </div>
 
       {/* Add/Edit Form Modal */}
-      {(showAddForm || editingPermit) && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="border border-surface-border bg-surface shadow-raised mx-4 w-full max-w-md rounded-2xl p-6">
-            <h3 className="text-lg font-semibold mb-4">
-              {editingPermit ? 'Edit Permit' : 'Add New Permit'}
-            </h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {editingPermit ? 'Assigned Vehicle' : 'Select Vehicle'}
-                </label>
-                {editingPermit && (
-                  <p className="text-sm text-blue-600 mb-2">
-                    Vehicle assignment cannot be changed when editing a permit.
-                  </p>
-                )}
-                {editingPermit ? (
-                  <div className="rounded-md border border-gray-300 bg-gray-50 px-3 py-3 text-sm text-gray-700">
-                    <div><strong>Plate:</strong> {editingPermit.vehicle?.plateNumber || 'Unknown vehicle'}</div>
-                    <div><strong>Type:</strong> {editingPermit.vehicle?.vehicleType?.replace('_', '-') || editingPermit.vehicleType.replace('_', '-')}</div>
-                    <div><strong>Owner:</strong> {editingPermit.vehicle?.ownerName || 'Unknown owner'}</div>
-                    <div><strong>Driver:</strong> {editingPermit.driverFullName}</div>
-                  </div>
-                ) : (
-                  <VehicleLookupField
-                    label="Vehicle Search"
-                    placeholder="Type at least 2 characters to search active vehicles"
-                    helperText="Search only when you need a match. Vehicles with active permits stay hidden from new permit assignment."
-                    selectedVehicle={selectedVehicle}
-                    onSelect={handleVehicleLookupSelect}
-                    onClearSelection={clearSelectedVehicle}
-                    requireActivePermit={false}
-                    resultFilter={(vehicle) => !activePermitVehicleIds.has(vehicle.id)}
-                    noResultsText="No eligible vehicles matched your search."
-                  />
-                )}
-                {!editingPermit && formData.vehicleId && selectedVehicle && (
-                  <div className="mt-2 p-3 bg-gray-50 rounded-md text-sm">
-                    <div>
-                      <div><strong>Plate:</strong> {selectedVehicle.plateNumber}</div>
-                      <div><strong>Type:</strong> {selectedVehicle.vehicleType.replace('_', '-')}</div>
-                      <div><strong>Driver:</strong> {selectedVehicle.driverName || 'Unknown'}</div>
-                      <div><strong>Owner:</strong> {selectedVehicle.ownerName}</div>
-                    </div>
-                  </div>
-                )}
+      <Modal
+        open={showAddForm || Boolean(editingPermit)}
+        onClose={resetForm}
+        title={editingPermit ? 'Edit Permit' : 'Add New Permit'}
+      >
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {editingPermit ? 'Assigned Vehicle' : 'Select Vehicle'}
+            </label>
+            {editingPermit && (
+              <p className="text-sm text-blue-600 mb-2">
+                Vehicle assignment cannot be changed when editing a permit.
+              </p>
+            )}
+            {editingPermit ? (
+              <div className="rounded-md border border-gray-300 bg-gray-50 px-3 py-3 text-sm text-gray-700">
+                <div><strong>Plate:</strong> {editingPermit.vehicle?.plateNumber || 'Unknown vehicle'}</div>
+                <div><strong>Type:</strong> {editingPermit.vehicle?.vehicleType?.replace('_', '-') || editingPermit.vehicleType.replace('_', '-')}</div>
+                <div><strong>Owner:</strong> {editingPermit.vehicle?.ownerName || 'Unknown owner'}</div>
+                <div><strong>Driver:</strong> {editingPermit.driverFullName}</div>
               </div>
-              <div>
-                <label htmlFor="permit-management-permit-plate-number" className="block text-sm font-medium text-gray-700 mb-1">
-                  Permit Plate Number *
-                </label>
-                <input
-                  id="permit-management-permit-plate-number"
-                  name="permitPlateNumber"
-                  type="text"
-                  autoComplete="off"
-                  required
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 font-mono"
-                  value={formData.permitPlateNumber}
-                  onChange={(e) => setFormData({ ...formData, permitPlateNumber: e.target.value.toUpperCase() })}
-                  placeholder="e.g., PERMIT-2025-001"
-                  maxLength={20}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  This will serve as the unique permit ID for this vehicle (valid for 1 year)
-                </p>
+            ) : (
+              <VehicleLookupField
+                label="Vehicle Search"
+                placeholder="Type at least 2 characters to search active vehicles"
+                helperText="Search only when you need a match. Vehicles with active permits stay hidden from new permit assignment."
+                selectedVehicle={selectedVehicle}
+                onSelect={handleVehicleLookupSelect}
+                onClearSelection={clearSelectedVehicle}
+                requireActivePermit={false}
+                resultFilter={(vehicle) => !activePermitVehicleIds.has(vehicle.id)}
+                noResultsText="No eligible vehicles matched your search."
+              />
+            )}
+            {!editingPermit && formData.vehicleId && selectedVehicle && (
+              <div className="mt-2 p-3 bg-gray-50 rounded-md text-sm">
+                <div>
+                  <div><strong>Plate:</strong> {selectedVehicle.plateNumber}</div>
+                  <div><strong>Type:</strong> {selectedVehicle.vehicleType.replace('_', '-')}</div>
+                  <div><strong>Driver:</strong> {selectedVehicle.driverName || 'Unknown'}</div>
+                  <div><strong>Owner:</strong> {selectedVehicle.ownerName}</div>
+                </div>
               </div>
-              <div>
-                <label htmlFor="permit-management-remarks" className="block text-sm font-medium text-gray-700 mb-1">
-                  Remarks (Optional)
-                </label>
-                <textarea
-                  id="permit-management-remarks"
-                  name="remarks"
-                  autoComplete="off"
-                  className="w-full border border-gray-300 rounded-md px-3 py-2"
-                  rows={3}
-                  value={formData.remarks}
-                  onChange={(e) => setFormData({ ...formData, remarks: e.target.value })}
-                  placeholder="Additional notes or remarks"
-                />
-              </div>
-              <div className="flex gap-2 pt-4">
-                <button
-                  type="submit"
-                  className="flex-1 bg-primary text-white py-2 rounded-md hover:bg-primary-dark transition-colors"
-                >
-                  {editingPermit ? 'Update Permit' : 'Create Permit'}
-                </button>
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className="flex-1 bg-gray-100 text-gray-700 py-2 rounded-md hover:bg-gray-200 transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
+            )}
           </div>
-        </div>
-      )}
+          <div>
+            <label htmlFor="permit-management-permit-plate-number" className="block text-sm font-medium text-gray-700 mb-1">
+              Permit Plate Number *
+            </label>
+            <input
+              id="permit-management-permit-plate-number"
+              name="permitPlateNumber"
+              type="text"
+              autoComplete="off"
+              required
+              className="w-full border border-gray-300 rounded-md px-3 py-2 font-mono"
+              value={formData.permitPlateNumber}
+              onChange={(e) => setFormData({ ...formData, permitPlateNumber: e.target.value.toUpperCase() })}
+              placeholder="e.g., PERMIT-2025-001"
+              maxLength={20}
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              This will serve as the unique permit ID for this vehicle (valid for 1 year)
+            </p>
+          </div>
+          <div>
+            <label htmlFor="permit-management-remarks" className="block text-sm font-medium text-gray-700 mb-1">
+              Remarks (Optional)
+            </label>
+            <textarea
+              id="permit-management-remarks"
+              name="remarks"
+              autoComplete="off"
+              className="w-full border border-gray-300 rounded-md px-3 py-2"
+              rows={3}
+              value={formData.remarks}
+              onChange={(e) => setFormData({ ...formData, remarks: e.target.value })}
+              placeholder="Additional notes or remarks"
+            />
+          </div>
+          <div className="flex gap-2 pt-4">
+            <button
+              type="submit"
+              className="flex-1 rounded-md bg-primary py-2 text-white transition-colors hover:bg-primary-dark"
+            >
+              {editingPermit ? 'Update Permit' : 'Create Permit'}
+            </button>
+            <button
+              type="button"
+              onClick={resetForm}
+              className="flex-1 rounded-md bg-gray-100 py-2 text-gray-700 transition-colors hover:bg-gray-200"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </Modal>
 
       {/* Permits Table */}
-      <div className="border border-surface-border bg-surface shadow-card rounded-2xl overflow-hidden">
+      <div className="border border-surface-border bg-surface shadow-card rounded-card overflow-hidden">
         <ResponsiveTable
           columns={[
             {
@@ -849,33 +847,22 @@ export default function PermitManagement() {
             )}
       </div>
 
-      {selectedQrPermit?.qrToken ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="border border-surface-border bg-surface shadow-raised mx-4 w-full max-w-lg rounded-2xl p-6">
-            <div className="mb-4 flex items-start justify-between gap-4">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Permit QR</h3>
-                <p className="text-sm text-gray-600">
-                  Reuse the stored QR token for display and printing. No regeneration happens here.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedQrPermit(null)}
-                className="text-2xl leading-none text-gray-400 transition-colors hover:text-gray-600"
-                aria-label="Close QR preview"
-              >
-                ×
-              </button>
-            </div>
-            <PermitQrCard
-              permitPlateNumber={selectedQrPermit.permitPlateNumber}
-              qrToken={selectedQrPermit.qrToken}
-              driverFullName={selectedQrPermit.driverFullName}
-            />
-          </div>
-        </div>
-      ) : null}
+      <Modal
+        open={Boolean(selectedQrPermit?.qrToken)}
+        onClose={() => setSelectedQrPermit(null)}
+        title="Permit QR"
+      >
+        <p className="mb-4 text-sm text-gray-600">
+          Reuse the stored QR token for display and printing. No regeneration happens here.
+        </p>
+        {selectedQrPermit?.qrToken ? (
+          <PermitQrCard
+            permitPlateNumber={selectedQrPermit.permitPlateNumber}
+            qrToken={selectedQrPermit.qrToken}
+            driverFullName={selectedQrPermit.driverFullName}
+          />
+        ) : null}
+      </Modal>
 
       {showBulkPrint ? (
         <BulkQrPrintSheet onClose={() => setShowBulkPrint(false)} />

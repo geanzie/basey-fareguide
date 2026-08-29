@@ -427,7 +427,7 @@ const IncidentReporting = () => {
 
   if (authStatus === 'loading') {
     return (
-      <div className="border border-surface-border bg-surface shadow-card mx-auto max-w-4xl rounded-3xl p-8">
+      <div className="border border-surface-border bg-surface shadow-card mx-auto max-w-4xl rounded-card p-8">
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
             <LoadingSpinner className="justify-center text-red-600" size={28} />
@@ -440,7 +440,7 @@ const IncidentReporting = () => {
 
   if (qrHandoffParam === '1') {
     return (
-      <div className="border border-surface-border bg-surface shadow-card mx-auto max-w-4xl rounded-3xl p-8">
+      <div className="border border-surface-border bg-surface shadow-card mx-auto max-w-4xl rounded-card p-8">
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
             <LoadingSpinner className="justify-center text-red-600" size={28} />
@@ -453,7 +453,7 @@ const IncidentReporting = () => {
 
   if (!auth.user) {
     return (
-      <div className="border border-surface-border bg-surface shadow-card mx-auto max-w-4xl rounded-3xl p-8">
+      <div className="border border-surface-border bg-surface shadow-card mx-auto max-w-4xl rounded-card p-8">
         <div className="text-center mb-8">
           <div className={`${getDashboardIconChipClasses('red')} mx-auto mb-4 h-16 w-16 rounded-full`}>
             <DashboardIconSlot icon={DASHBOARD_ICONS.incidents} size={DASHBOARD_ICON_POLICY.sizes.hero} />
@@ -470,7 +470,7 @@ const IncidentReporting = () => {
   }
 
   return (
-    <div className="border border-surface-border bg-surface shadow-card mx-auto max-w-4xl rounded-3xl p-8">
+    <div className="border border-surface-border bg-surface shadow-card mx-auto max-w-4xl rounded-card p-8">
       <div className="text-center mb-8">
         <div className={`${getDashboardIconChipClasses('red')} mx-auto mb-4 h-16 w-16 rounded-full`}>
           <DashboardIconSlot icon={DASHBOARD_ICONS.incidents} size={DASHBOARD_ICON_POLICY.sizes.hero} />

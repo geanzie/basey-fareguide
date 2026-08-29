@@ -3,7 +3,7 @@
 import RoleGuard from '@/components/RoleGuard'
 import PermitManagement from '@/components/PermitManagement'
 import PermitStatistics from '@/components/PermitStatistics'
-import GradientHeader from '@/ui/GradientHeader'
+import PageShell from '@/ui/PageShell'
 import Link from 'next/link'
 import {
   DASHBOARD_ICONS,
@@ -22,15 +22,13 @@ export default function EncoderPage() {
 
 function EncoderContent() {
   return (
-    <div className="mx-auto max-w-6xl">
-      <GradientHeader
-        title="Data Encoder Dashboard"
-        subtitle="Manage vehicle permits for Basey Municipality"
-        compact
-      />
-      <div className="-mt-6 space-y-6 px-4 pb-8 lg:px-8">
+    <PageShell
+      title="Data Encoder Dashboard"
+      subtitle="Manage vehicle permits for Basey Municipality"
+    >
+      <div className="space-y-6">
         {/* Quick Actions */}
-        <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
+        <div className="border border-surface-border bg-surface shadow-card rounded-card p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <Link
@@ -113,6 +111,6 @@ function EncoderContent() {
         <PermitStatistics />
         <PermitManagement />
       </div>
-    </div>
+    </PageShell>
   )
 }

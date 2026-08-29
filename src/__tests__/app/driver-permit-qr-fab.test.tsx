@@ -132,8 +132,9 @@ describe('Driver permit QR floating action button', () => {
     expect(fab).not.toBeNull()
     expect(fab?.className).toContain('fixed')
     expect(fab?.className).toContain('right-4')
-    // bottom is set via inline style using the --mobile-bottom-nav-height CSS variable
-    expect((fab as HTMLElement | null)?.style.bottom).toMatch(/mobile-bottom-nav-height/)
+    // bottom comes from the shared .app-above-bottom-nav utility, which is
+    // built on --mobile-bottom-nav-height + the safe-area inset
+    expect(fab?.className).toContain('app-above-bottom-nav')
   })
 
   it('does not show the QR modal or QR card before the button is clicked', async () => {
@@ -181,8 +182,8 @@ describe('Driver permit QR floating action button', () => {
       await Promise.resolve()
     })
 
-    // Close via × button
-    const closeBtn = container.querySelector('button[aria-label="Close permit QR"]')!
+    // Close via the modal's close button
+    const closeBtn = container.querySelector('dialog button[aria-label="Close"]')!
     await act(async () => {
       closeBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
       await Promise.resolve()
@@ -218,7 +219,7 @@ describe('Driver permit QR floating action button', () => {
 
     expect(container.querySelector('[data-testid="permit-qr-card"]')).not.toBeNull()
 
-    const closeBtn = container.querySelector('button[aria-label="Close permit QR"]')!
+    const closeBtn = container.querySelector('dialog button[aria-label="Close"]')!
     expect(closeBtn).not.toBeNull()
 
     await act(async () => {
@@ -227,7 +228,7 @@ describe('Driver permit QR floating action button', () => {
     })
 
     expect(container.querySelector('[data-testid="permit-qr-card"]')).toBeNull()
-    expect(container.querySelector('button[aria-label="Close permit QR"]')).toBeNull()
+    expect(container.querySelector('dialog')).toBeNull()
   })
 
   it('closes the QR modal when the backdrop is clicked', async () => {
@@ -243,12 +244,13 @@ describe('Driver permit QR floating action button', () => {
 
     expect(container.querySelector('[data-testid="permit-qr-card"]')).not.toBeNull()
 
-    // The outer backdrop div is the first fixed inset-0 element enclosing the modal
-    const backdrop = container.querySelector('.fixed.inset-0.z-50') as HTMLElement
-    expect(backdrop).not.toBeNull()
+    // ui/Modal is a native <dialog>: a click on ::backdrop lands on the
+    // dialog element itself, which is what closes it
+    const dialog = container.querySelector('dialog') as HTMLElement
+    expect(dialog).not.toBeNull()
 
     await act(async () => {
-      backdrop.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      dialog.dispatchEvent(new MouseEvent('click', { bubbles: true }))
       await Promise.resolve()
     })
 

@@ -104,7 +104,7 @@ export default function DriverTripHistory({
   }
 
   return (
-    <section className="border border-surface-border bg-surface shadow-card rounded-2xl p-5">
+    <section className="border border-surface-border bg-surface shadow-card rounded-card p-5">
       {showHeader ? (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>

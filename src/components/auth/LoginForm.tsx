@@ -69,7 +69,7 @@ const LoginForm = ({
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-ink-strong px-4 py-12">
+    <div className="flex min-h-dvh items-center justify-center bg-ink-strong px-4 py-12">
       <div className="w-full max-w-md">
         <div className="mb-8 flex flex-col items-center text-center">
           <BrandMark />

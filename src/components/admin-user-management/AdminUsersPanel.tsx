@@ -278,7 +278,7 @@ export default function AdminUsersPanel({
         data={filteredUsers}
         loading={loading}
         emptyMessage="No users match the current filters"
-        className="border border-surface-border bg-surface shadow-card rounded-2xl"
+        className="border border-surface-border bg-surface shadow-card rounded-card"
         getRowKey={(user) => user.id}
       />
     </div>

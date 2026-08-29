@@ -110,7 +110,7 @@ const AdminPasswordReset = ({ users, onRefresh }: AdminPasswordResetProps) => {
   }
 
   return (
-    <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
+    <div className="border border-surface-border bg-surface shadow-card rounded-card p-6">
       <div className="mb-6">
         <h3 className="mb-2 flex items-center gap-3 text-lg font-semibold text-gray-900">
           <span className={getDashboardIconChipClasses('blue')}>

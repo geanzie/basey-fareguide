@@ -9,6 +9,7 @@ module.exports = {
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
     './src/ui/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/lib/**/*.{js,ts,jsx,tsx}',
   ],
   theme: {
     extend: {
@@ -30,8 +31,28 @@ module.exports = {
       fontFamily: {
         sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
+      // Surface radii. `band` is the GradientHeader's bottom; `plate` is the
+      // content surface floated over it — 4px tighter so it reads as sitting in
+      // front of the band (concentric radius = outer - offset).
       borderRadius: {
         card: '14px',
+        plate: '20px',
+        band: '24px',
+        sheet: '28px',
+      },
+      // Named stacking layers. Anything `position: fixed` picks one of these
+      // instead of a literal, so collisions are visible at a glance.
+      zIndex: {
+        nav: '40',
+        fab: '45',
+        sheet: '50',
+        dialog: '60',
+        overlay: '70',
+        map: '500',
+      },
+      spacing: {
+        'nav-mobile': 'var(--mobile-bottom-nav-height)',
+        'safe-b': 'var(--mobile-safe-area-bottom)',
       },
       backgroundImage: {
         brand: 'linear-gradient(135deg, #0f172a 0%, #15803d 60%, #16a34a 100%)',
@@ -40,16 +61,6 @@ module.exports = {
       boxShadow: {
         card: '0 1px 2px rgba(0,0,0,0.04)',
         raised: '0 4px 8px rgba(0,0,0,0.2)',
-      },
-      container: {
-        center: true,
-        padding: {
-          DEFAULT: '1rem',
-          sm: '2rem',
-          lg: '4rem',
-          xl: '5rem',
-          '2xl': '6rem',
-        },
       },
     },
   },

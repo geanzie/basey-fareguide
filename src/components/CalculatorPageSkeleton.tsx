@@ -1,58 +1,36 @@
+import PageShell from '@/ui/PageShell'
+import { SkeletonBox } from '@/ui/Skeleton'
+
+/**
+ * Route-level loading state for /calculator. It renders the real PageShell, so
+ * the band and column width are already final when the calculator arrives —
+ * only the body swaps. The shape mirrors RoutePlannerCalculator's first phase:
+ * a back/title row, then one card of ride choices.
+ */
 export default function CalculatorPageSkeleton() {
   return (
-    <div className="min-h-screen">
-      <div className="container mx-auto px-4 py-5 sm:py-8">
-        <div className="mx-auto max-w-6xl animate-pulse space-y-6">
-          <div className="border border-surface-border bg-surface shadow-card rounded-3xl p-6">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div className="space-y-3">
-                <div className="h-3 w-28 rounded bg-gray-200" />
-                <div className="h-12 w-40 rounded bg-gray-300" />
-                <div className="h-4 w-48 rounded bg-gray-200" />
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <div className="h-9 w-24 rounded-full bg-gray-200" />
-                <div className="h-9 w-24 rounded-full bg-gray-200" />
-                <div className="h-9 w-32 rounded-full bg-gray-200" />
-              </div>
-            </div>
-          </div>
+    <PageShell
+      title="Fare Calculator"
+      subtitle="Plan a route and get the official fare under Ordinance 105"
+      width="form"
+    >
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <SkeletonBox className="h-10 w-10 rounded-full" />
+          <SkeletonBox className="h-6 w-40" />
+        </div>
 
-          <div className="grid gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
-            <div className="border border-surface-border bg-surface shadow-card rounded-3xl p-5">
-              <div className="space-y-2">
-                <div className="h-6 w-32 rounded bg-gray-300" />
-                <div className="h-4 w-52 rounded bg-gray-200" />
-              </div>
-              <div className="h-28 rounded-2xl bg-gray-100" />
-              <div className="h-28 rounded-2xl bg-gray-100" />
-              <div className="grid grid-cols-2 gap-2">
-                <div className="h-11 rounded-xl bg-gray-100" />
-                <div className="h-11 rounded-xl bg-gray-100" />
-                <div className="h-11 rounded-xl bg-gray-100" />
-                <div className="h-11 rounded-xl bg-gray-100" />
-              </div>
-            </div>
-
-            <div className="border border-surface-border bg-surface shadow-card rounded-3xl p-5">
-              <div className="mb-3 h-16 rounded-xl bg-blue-50" />
-              <div className="h-[520px] rounded-2xl bg-gray-100" />
-            </div>
-          </div>
-
-          <div className="border border-surface-border bg-surface shadow-card rounded-3xl p-5">
-            <div className="flex items-start gap-4">
-              <div className="h-12 w-12 rounded-2xl bg-blue-100" />
-              <div className="flex-1 space-y-3">
-                <div className="h-4 w-28 rounded bg-gray-200" />
-                <div className="h-7 w-56 rounded bg-gray-300" />
-                <div className="h-4 w-full max-w-xl rounded bg-gray-200" />
-                <div className="h-10 w-72 rounded-xl bg-blue-50" />
-              </div>
-            </div>
+        <div className="rounded-[2rem] border border-surface-border bg-surface p-4 shadow-card">
+          <SkeletonBox className="h-4 w-full" />
+          <SkeletonBox className="mt-2 h-4 w-4/5" />
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <SkeletonBox className="h-24 rounded-2xl" />
+            <SkeletonBox className="h-24 rounded-2xl" />
+            <SkeletonBox className="h-24 rounded-2xl" />
+            <SkeletonBox className="h-24 rounded-2xl" />
           </div>
         </div>
       </div>
-    </div>
-  );
+    </PageShell>
+  )
 }

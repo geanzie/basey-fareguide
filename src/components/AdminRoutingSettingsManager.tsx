@@ -86,7 +86,7 @@ export default function AdminRoutingSettingsManager() {
 
   if (loading && !data) {
     return (
-      <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
+      <div className="border border-surface-border bg-surface shadow-card rounded-card p-6">
         <p className="text-sm text-slate-500">Loading routing settings...</p>
       </div>
     )
@@ -152,7 +152,7 @@ export default function AdminRoutingSettingsManager() {
         </div>
       </section>
 
-      <section className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
+      <section className="border border-surface-border bg-surface shadow-card rounded-card p-6">
         <div className="mb-5">
           <h2 className="text-xl font-semibold text-slate-900">Primary routing provider</h2>
           <p className="mt-1 text-sm text-slate-600">

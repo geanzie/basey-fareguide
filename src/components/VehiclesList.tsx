@@ -4,12 +4,8 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/components/AuthProvider'
 import { VehicleType } from '@prisma/client'
 import ResponsiveTable, { StatusBadge, ActionButton } from './ResponsiveTable'
+import Modal from '@/ui/Modal'
 import type { VehicleDto, VehiclesResponseDto } from '@/lib/contracts'
-import {
-  DASHBOARD_ICONS,
-  DASHBOARD_ICON_POLICY,
-  DashboardIconSlot,
-} from '@/components/dashboardIcons'
 
 export default function VehiclesList() {
   const { user } = useAuth()
@@ -287,7 +283,7 @@ export default function VehiclesList() {
   return (
     <div className="space-y-6 max-w-full">
       {/* Filters and Search */}
-      <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-4 sm:p-6">
+      <div className="border border-surface-border bg-surface shadow-card rounded-card p-4 sm:p-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {/* Search */}
           <div>
@@ -398,7 +394,7 @@ export default function VehiclesList() {
       </div>
 
       {/* Vehicles Table */}
-      <div className="border border-surface-border bg-surface shadow-card rounded-2xl">
+      <div className="border border-surface-border bg-surface shadow-card rounded-card">
         <ResponsiveTable
           columns={columns}
           data={vehicles || []}
@@ -438,181 +434,173 @@ export default function VehiclesList() {
       </div>
 
       {/* Vehicle Details Modal */}
-      {showDetails && selectedVehicle && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 p-4 backdrop-blur-sm">
-          <div className="border border-surface-border bg-surface shadow-raised max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-3xl">
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-6">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Vehicle Details - {selectedVehicle.plateNumber}
-                </h3>
-                <button
-                  onClick={() => setShowDetails(false)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  <DashboardIconSlot icon={DASHBOARD_ICONS.close} size={DASHBOARD_ICON_POLICY.sizes.card} />
-                </button>
-              </div>
+      <Modal
+        open={showDetails && Boolean(selectedVehicle)}
+        onClose={() => setShowDetails(false)}
+        title={`Vehicle Details — ${selectedVehicle?.plateNumber ?? ''}`}
+        size="lg"
+      >
+        {selectedVehicle ? (
+          <>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Vehicle Information */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Vehicle Information */}
+            <div>
+              <h4 className="font-medium text-gray-900 mb-3">Vehicle Information</h4>
+              <div className="space-y-3">
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-3">Vehicle Information</h4>
-                  <div className="space-y-3">
-                    <div>
-                      <span className="text-sm text-gray-500">Vehicle Plate Number:</span>
-                      <div className="font-mono font-medium">{selectedVehicle.plateNumber}</div>
+                  <span className="text-sm text-gray-500">Vehicle Plate Number:</span>
+                  <div className="font-mono font-medium">{selectedVehicle.plateNumber}</div>
+                </div>
+                <div>
+                  <span className="text-sm text-gray-500">Permit Plate Number:</span>
+                  {selectedVehicle.permit?.permitPlateNumber ? (
+                    <div className="font-mono font-medium text-primary-dark">
+                      {selectedVehicle.permit.permitPlateNumber}
                     </div>
-                    <div>
-                      <span className="text-sm text-gray-500">Permit Plate Number:</span>
-                      {selectedVehicle.permit?.permitPlateNumber ? (
-                        <div className="font-mono font-medium text-primary-dark">
-                          {selectedVehicle.permit.permitPlateNumber}
-                        </div>
-                      ) : (
-                        <div className="text-red-600 font-medium">No permit issued</div>
-                      )}
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-500">Vehicle Type:</span>
-                      <div>
-                        <StatusBadge
-                          status={selectedVehicle.vehicleType}
-                          className={getVehicleTypeColor(selectedVehicle.vehicleType)}
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-500">Make & Model:</span>
-                      <div className="font-medium">{selectedVehicle.make} {selectedVehicle.model}</div>
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-500">Year:</span>
-                      <div>{selectedVehicle.year}</div>
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-500">Color:</span>
-                      <div>{selectedVehicle.color}</div>
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-500">Capacity:</span>
-                      <div>{selectedVehicle.capacity} passengers</div>
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-500">Vehicle Status:</span>
-                      <div>
-                        <StatusBadge
-                          status={selectedVehicle.isActive ? 'Active' : 'Inactive'}
-                          className={getStatusColor(selectedVehicle.isActive)}
-                        />
-                      </div>
-                    </div>
-                    {selectedVehicle.permit && (
-                      <div>
-                        <span className="text-sm text-gray-500">Permit Status:</span>
-                        <div>
-                          <StatusBadge
-                            status={selectedVehicle.permit.status}
-                            className={selectedVehicle.permit.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}
-                          />
-                        </div>
-                      </div>
-                    )}
+                  ) : (
+                    <div className="text-red-600 font-medium">No permit issued</div>
+                  )}
+                </div>
+                <div>
+                  <span className="text-sm text-gray-500">Vehicle Type:</span>
+                  <div>
+                    <StatusBadge
+                      status={selectedVehicle.vehicleType}
+                      className={getVehicleTypeColor(selectedVehicle.vehicleType)}
+                    />
                   </div>
                 </div>
-
-                {/* Owner & Driver Information */}
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-3">Owner & Driver</h4>
-                  <div className="space-y-4">
+                  <span className="text-sm text-gray-500">Make & Model:</span>
+                  <div className="font-medium">{selectedVehicle.make} {selectedVehicle.model}</div>
+                </div>
+                <div>
+                  <span className="text-sm text-gray-500">Year:</span>
+                  <div>{selectedVehicle.year}</div>
+                </div>
+                <div>
+                  <span className="text-sm text-gray-500">Color:</span>
+                  <div>{selectedVehicle.color}</div>
+                </div>
+                <div>
+                  <span className="text-sm text-gray-500">Capacity:</span>
+                  <div>{selectedVehicle.capacity} passengers</div>
+                </div>
+                <div>
+                  <span className="text-sm text-gray-500">Vehicle Status:</span>
+                  <div>
+                    <StatusBadge
+                      status={selectedVehicle.isActive ? 'Active' : 'Inactive'}
+                      className={getStatusColor(selectedVehicle.isActive)}
+                    />
+                  </div>
+                </div>
+                {selectedVehicle.permit && (
+                  <div>
+                    <span className="text-sm text-gray-500">Permit Status:</span>
                     <div>
-                      <span className="text-sm text-gray-500">Owner:</span>
-                      <div className="font-medium">{selectedVehicle.ownerName}</div>
-                      <div className="text-sm text-gray-600">{selectedVehicle.ownerContact}</div>
+                      <StatusBadge
+                        status={selectedVehicle.permit.status}
+                        className={selectedVehicle.permit.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}
+                      />
                     </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Owner & Driver Information */}
+            <div>
+              <h4 className="font-medium text-gray-900 mb-3">Owner & Driver</h4>
+              <div className="space-y-4">
+                <div>
+                  <span className="text-sm text-gray-500">Owner:</span>
+                  <div className="font-medium">{selectedVehicle.ownerName}</div>
+                  <div className="text-sm text-gray-600">{selectedVehicle.ownerContact}</div>
+                </div>
                     
-                    {selectedVehicle.driverName ? (
-                      <div>
-                        <span className="text-sm text-gray-500">Assigned Driver:</span>
-                        <div className="font-medium">{selectedVehicle.driverName}</div>
-                        {selectedVehicle.driverLicense && (
-                          <div className="text-sm text-gray-600">License: {selectedVehicle.driverLicense}</div>
+                {selectedVehicle.driverName ? (
+                  <div>
+                    <span className="text-sm text-gray-500">Assigned Driver:</span>
+                    <div className="font-medium">{selectedVehicle.driverName}</div>
+                    {selectedVehicle.driverLicense && (
+                      <div className="text-sm text-gray-600">License: {selectedVehicle.driverLicense}</div>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <span className="text-sm text-gray-500">Assigned Driver:</span>
+                    <div className="text-gray-500 italic">No driver assigned</div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Registration & Insurance */}
+            <div className="md:col-span-2">
+              <h4 className="font-medium text-gray-900 mb-3">Registration & Permits</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <span className="text-sm text-gray-500">Registration Expiry:</span>
+                  <div>{new Date(selectedVehicle.registrationExpiry).toLocaleDateString()}</div>
+                </div>
+                <div>
+                  <span className="text-sm text-gray-500">Insurance Expiry:</span>
+                  <div>
+                    {selectedVehicle.insuranceExpiry 
+                      ? new Date(selectedVehicle.insuranceExpiry).toLocaleDateString()
+                      : 'Not provided'
+                    }
+                  </div>
+                </div>
+                {selectedVehicle.permit && (
+                  <>
+                    <div>
+                      <span className="text-sm text-gray-500">Permit Issued:</span>
+                      <div>{new Date(selectedVehicle.permit.issuedDate).toLocaleDateString()}</div>
+                    </div>
+                    <div>
+                      <span className="text-sm text-gray-500">Permit Expiry:</span>
+                      <div className={new Date(selectedVehicle.permit.expiryDate) < new Date() ? 'text-red-600 font-medium' : ''}>
+                        {new Date(selectedVehicle.permit.expiryDate).toLocaleDateString()}
+                        {new Date(selectedVehicle.permit.expiryDate) < new Date() && (
+                          <span className="text-xs text-red-500 ml-2">(Expired)</span>
                         )}
                       </div>
-                    ) : (
-                      <div>
-                        <span className="text-sm text-gray-500">Assigned Driver:</span>
-                        <div className="text-gray-500 italic">No driver assigned</div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Registration & Insurance */}
-                <div className="md:col-span-2">
-                  <h4 className="font-medium text-gray-900 mb-3">Registration & Permits</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <span className="text-sm text-gray-500">Registration Expiry:</span>
-                      <div>{new Date(selectedVehicle.registrationExpiry).toLocaleDateString()}</div>
                     </div>
-                    <div>
-                      <span className="text-sm text-gray-500">Insurance Expiry:</span>
-                      <div>
-                        {selectedVehicle.insuranceExpiry 
-                          ? new Date(selectedVehicle.insuranceExpiry).toLocaleDateString()
-                          : 'Not provided'
-                        }
-                      </div>
-                    </div>
-                    {selectedVehicle.permit && (
-                      <>
-                        <div>
-                          <span className="text-sm text-gray-500">Permit Issued:</span>
-                          <div>{new Date(selectedVehicle.permit.issuedDate).toLocaleDateString()}</div>
-                        </div>
-                        <div>
-                          <span className="text-sm text-gray-500">Permit Expiry:</span>
-                          <div className={new Date(selectedVehicle.permit.expiryDate) < new Date() ? 'text-red-600 font-medium' : ''}>
-                            {new Date(selectedVehicle.permit.expiryDate).toLocaleDateString()}
-                            {new Date(selectedVehicle.permit.expiryDate) < new Date() && (
-                              <span className="text-xs text-red-500 ml-2">(Expired)</span>
-                            )}
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                {/* Timestamps */}
-                <div className="md:col-span-2">
-                  <h4 className="font-medium text-gray-900 mb-3">Record Information</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <span className="text-sm text-gray-500">Created At:</span>
-                      <div>{new Date(selectedVehicle.createdAt).toLocaleString()}</div>
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-500">Last Updated:</span>
-                      <div>{new Date(selectedVehicle.updatedAt).toLocaleString()}</div>
-                    </div>
-                  </div>
-                </div>
+                  </>
+                )}
               </div>
+            </div>
 
-              <div className="mt-6 flex justify-end">
-                <button
-                  onClick={() => setShowDetails(false)}
-                  className="border border-surface-border bg-surface-alt px-4 py-2 rounded-lg text-gray-700 transition-colors hover:bg-white/80"
-                >
-                  Close
-                </button>
+            {/* Timestamps */}
+            <div className="md:col-span-2">
+              <h4 className="font-medium text-gray-900 mb-3">Record Information</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <span className="text-sm text-gray-500">Created At:</span>
+                  <div>{new Date(selectedVehicle.createdAt).toLocaleString()}</div>
+                </div>
+                <div>
+                  <span className="text-sm text-gray-500">Last Updated:</span>
+                  <div>{new Date(selectedVehicle.updatedAt).toLocaleString()}</div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+
+          <div className="mt-6 flex justify-end">
+            <button
+              onClick={() => setShowDetails(false)}
+              className="border border-surface-border bg-surface-alt px-4 py-2 rounded-lg text-gray-700 transition-colors hover:bg-white/80"
+            >
+              Close
+            </button>
+          </div>
+          </>
+        ) : null}
+      </Modal>
     </div>
   )
 }

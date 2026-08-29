@@ -13,7 +13,7 @@ describe('Planner-only calculator entrypoints', () => {
     const lazyCalculator = readFileSync(repoPath('src', 'components', 'LazyRoutePlannerCalculator.tsx'), 'utf8')
 
     expect(calculatorPage).toContain("<RoleGuard allowedRoles={['PUBLIC']}>")
-    expect(calculatorPage).toContain('GradientHeader')
+    expect(calculatorPage).toContain('PageShell')
     expect(calculatorPage).toContain('LazyRoutePlannerCalculator')
     expect(calculatorPage).toContain('getResolvedRoutingSettings')
     expect(calculatorPage).toContain('initialPrimaryProvider={routingSettings.primaryProvider}')

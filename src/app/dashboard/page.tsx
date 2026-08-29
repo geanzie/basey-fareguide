@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic'
 import RoleGuard from '@/components/RoleGuard'
 import { useAuth } from '@/components/AuthProvider'
-import GradientHeader from '@/ui/GradientHeader'
+import PageShell from '@/ui/PageShell'
 import { SectionSkeleton } from '@/ui/Skeleton'
 
 const PublicUserDashboard = dynamic(() => import('@/components/PublicUserDashboard'), {
@@ -19,15 +19,12 @@ export default function DashboardPage() {
 
   return (
     <RoleGuard allowedRoles={['PUBLIC']}>
-      <div className="mx-auto max-w-6xl">
-        <GradientHeader
-          title={user ? `Hello, ${user.firstName}` : 'My Dashboard'}
-          subtitle="Track your fare calculations and incident reports"
-        />
-        <div className="-mt-6 px-4 pb-8 lg:px-8">
-          <PublicUserDashboard />
-        </div>
-      </div>
+      <PageShell
+        title={user ? `Hello, ${user.firstName}` : 'My Dashboard'}
+        subtitle="Track your fare calculations and incident reports"
+      >
+        <PublicUserDashboard />
+      </PageShell>
     </RoleGuard>
   )
 }

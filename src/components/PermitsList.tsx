@@ -3,12 +3,8 @@
 import { useState, useEffect } from 'react'
 import { VehicleType, PermitStatus } from '@prisma/client'
 import ResponsiveTable, { StatusBadge, ActionButton } from './ResponsiveTable'
+import Modal from '@/ui/Modal'
 import type { PermitDto, PermitsResponseDto } from '@/lib/contracts'
-import {
-  DASHBOARD_ICONS,
-  DASHBOARD_ICON_POLICY,
-  DashboardIconSlot,
-} from '@/components/dashboardIcons'
 
 export default function PermitsList() {
   const [permits, setPermits] = useState<PermitDto[]>([])
@@ -195,7 +191,7 @@ export default function PermitsList() {
   return (
     <div className="space-y-6">
       {/* Filters and Search */}
-      <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
+      <div className="border border-surface-border bg-surface shadow-card rounded-card p-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {/* Search */}
           <div>
@@ -302,7 +298,7 @@ export default function PermitsList() {
       </div>
 
       {/* Permits Table */}
-      <div className="border border-surface-border bg-surface shadow-card rounded-2xl">
+      <div className="border border-surface-border bg-surface shadow-card rounded-card">
         <ResponsiveTable
           columns={columns}
           data={permits || []}
@@ -340,135 +336,127 @@ export default function PermitsList() {
       </div>
 
       {/* Permit Details Modal */}
-      {showDetails && selectedPermit && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 p-4 backdrop-blur-sm">
-          <div className="border border-surface-border bg-surface shadow-raised max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl">
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-6">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Permit Details - {selectedPermit.permitPlateNumber}
-                </h3>
-                <button
-                  onClick={() => setShowDetails(false)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  <DashboardIconSlot icon={DASHBOARD_ICONS.close} size={DASHBOARD_ICON_POLICY.sizes.card} />
-                </button>
-              </div>
+      <Modal
+        open={showDetails && Boolean(selectedPermit)}
+        onClose={() => setShowDetails(false)}
+        title={`Permit Details — ${selectedPermit?.permitPlateNumber ?? ''}`}
+        size="lg"
+      >
+        {selectedPermit ? (
+          <>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h4 className="font-medium text-gray-900 mb-3">Basic Information</h4>
+              <div className="space-y-3">
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-3">Basic Information</h4>
-                  <div className="space-y-3">
-                    <div>
-                      <span className="text-sm text-gray-500">Plate Number:</span>
-                      <div className="font-mono font-medium">{selectedPermit.permitPlateNumber}</div>
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-500">Driver Name:</span>
-                      <div className="font-medium">{selectedPermit.driverFullName}</div>
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-500">Vehicle Type:</span>
-                      <div>
-                        <StatusBadge
-                          status={selectedPermit.vehicleType}
-                          className={getVehicleTypeColor(selectedPermit.vehicleType)}
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-500">Status:</span>
-                      <div>
-                        <StatusBadge
-                          status={selectedPermit.status}
-                          className={getStatusColor(selectedPermit.status)}
-                        />
-                      </div>
-                    </div>
+                  <span className="text-sm text-gray-500">Plate Number:</span>
+                  <div className="font-mono font-medium">{selectedPermit.permitPlateNumber}</div>
+                </div>
+                <div>
+                  <span className="text-sm text-gray-500">Driver Name:</span>
+                  <div className="font-medium">{selectedPermit.driverFullName}</div>
+                </div>
+                <div>
+                  <span className="text-sm text-gray-500">Vehicle Type:</span>
+                  <div>
+                    <StatusBadge
+                      status={selectedPermit.vehicleType}
+                      className={getVehicleTypeColor(selectedPermit.vehicleType)}
+                    />
                   </div>
                 </div>
-
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-3">Dates & Validity</h4>
-                  <div className="space-y-3">
-                    <div>
-                      <span className="text-sm text-gray-500">Issued Date:</span>
-                      <div>{new Date(selectedPermit.issuedDate).toLocaleDateString()}</div>
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-500">Expiry Date:</span>
-                      <div>{new Date(selectedPermit.expiryDate).toLocaleDateString()}</div>
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-500">Encoded By:</span>
-                      <div>{selectedPermit.encodedBy}</div>
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-500">Encoded At:</span>
-                      <div>{new Date(selectedPermit.encodedAt).toLocaleString()}</div>
-                    </div>
+                  <span className="text-sm text-gray-500">Status:</span>
+                  <div>
+                    <StatusBadge
+                      status={selectedPermit.status}
+                      className={getStatusColor(selectedPermit.status)}
+                    />
                   </div>
                 </div>
               </div>
+            </div>
 
-              {selectedPermit.remarks && (
-                <div className="mt-6">
-                  <h4 className="font-medium text-gray-900 mb-2">Remarks</h4>
-                  <p className="border border-surface-border bg-surface-alt rounded-lg p-3 text-gray-700">
-                    {selectedPermit.remarks}
-                  </p>
+            <div>
+              <h4 className="font-medium text-gray-900 mb-3">Dates & Validity</h4>
+              <div className="space-y-3">
+                <div>
+                  <span className="text-sm text-gray-500">Issued Date:</span>
+                  <div>{new Date(selectedPermit.issuedDate).toLocaleDateString()}</div>
                 </div>
-              )}
-
-              {selectedPermit.renewalHistory.length > 0 && (
-                <div className="mt-6">
-                  <h4 className="font-medium text-gray-900 mb-3">Renewal History</h4>
-                  <div className="space-y-3">
-                    {selectedPermit.renewalHistory.map((renewal) => (
-                      <div key={renewal.id} className="border border-surface-border bg-surface-alt rounded-lg p-3">
-                        <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
-                          <div>
-                            <span className="text-gray-500">Previous Expiry:</span>
-                            <div className="break-words">{new Date(renewal.previousExpiry).toLocaleDateString()}</div>
-                          </div>
-                          <div>
-                            <span className="text-gray-500">New Expiry:</span>
-                            <div className="break-words">{new Date(renewal.newExpiry).toLocaleDateString()}</div>
-                          </div>
-                          <div>
-                            <span className="text-gray-500">Renewed By:</span>
-                            <div className="break-words">{renewal.renewedBy}</div>
-                          </div>
-                          <div>
-                            <span className="text-gray-500">Renewed At:</span>
-                            <div className="break-words">{new Date(renewal.renewedAt).toLocaleString()}</div>
-                          </div>
-                        </div>
-                        {renewal.notes && (
-                          <div className="mt-2">
-                            <span className="text-gray-500 text-sm">Notes:</span>
-                            <p className="text-gray-700">{renewal.notes}</p>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                <div>
+                  <span className="text-sm text-gray-500">Expiry Date:</span>
+                  <div>{new Date(selectedPermit.expiryDate).toLocaleDateString()}</div>
                 </div>
-              )}
-
-              <div className="mt-6 flex justify-end">
-                <button
-                  onClick={() => setShowDetails(false)}
-                  className="border border-surface-border bg-surface-alt px-4 py-2 rounded-lg text-gray-700 transition-colors hover:bg-white/80"
-                >
-                  Close
-                </button>
+                <div>
+                  <span className="text-sm text-gray-500">Encoded By:</span>
+                  <div>{selectedPermit.encodedBy}</div>
+                </div>
+                <div>
+                  <span className="text-sm text-gray-500">Encoded At:</span>
+                  <div>{new Date(selectedPermit.encodedAt).toLocaleString()}</div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+
+          {selectedPermit.remarks && (
+            <div className="mt-6">
+              <h4 className="font-medium text-gray-900 mb-2">Remarks</h4>
+              <p className="border border-surface-border bg-surface-alt rounded-lg p-3 text-gray-700">
+                {selectedPermit.remarks}
+              </p>
+            </div>
+          )}
+
+          {selectedPermit.renewalHistory.length > 0 && (
+            <div className="mt-6">
+              <h4 className="font-medium text-gray-900 mb-3">Renewal History</h4>
+              <div className="space-y-3">
+                {selectedPermit.renewalHistory.map((renewal) => (
+                  <div key={renewal.id} className="border border-surface-border bg-surface-alt rounded-lg p-3">
+                    <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
+                      <div>
+                        <span className="text-gray-500">Previous Expiry:</span>
+                        <div className="break-words">{new Date(renewal.previousExpiry).toLocaleDateString()}</div>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">New Expiry:</span>
+                        <div className="break-words">{new Date(renewal.newExpiry).toLocaleDateString()}</div>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Renewed By:</span>
+                        <div className="break-words">{renewal.renewedBy}</div>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Renewed At:</span>
+                        <div className="break-words">{new Date(renewal.renewedAt).toLocaleString()}</div>
+                      </div>
+                    </div>
+                    {renewal.notes && (
+                      <div className="mt-2">
+                        <span className="text-gray-500 text-sm">Notes:</span>
+                        <p className="text-gray-700">{renewal.notes}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="mt-6 flex justify-end">
+            <button
+              onClick={() => setShowDetails(false)}
+              className="border border-surface-border bg-surface-alt px-4 py-2 rounded-lg text-gray-700 transition-colors hover:bg-white/80"
+            >
+              Close
+            </button>
+          </div>
+          </>
+        ) : null}
+      </Modal>
     </div>
   )
 }

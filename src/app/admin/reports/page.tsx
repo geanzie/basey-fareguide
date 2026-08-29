@@ -8,7 +8,7 @@ import RoleGuard from '@/components/RoleGuard'
 import Button from '@/ui/Button'
 import Card from '@/ui/Card'
 import EmptyState from '@/ui/EmptyState'
-import GradientHeader from '@/ui/GradientHeader'
+import PageShell from '@/ui/PageShell'
 import { Select } from '@/ui/Field'
 import { ListSkeleton } from '@/ui/Skeleton'
 import { swrFetcher } from '@/lib/swr'
@@ -97,14 +97,12 @@ export default function AdminReportsPage() {
 
   return (
     <RoleGuard allowedRoles={['ADMIN']}>
-      <div className="mx-auto max-w-6xl">
-        <GradientHeader
-          title="System Reports"
-          subtitle="Analytics and operational reporting based on live data only"
-          backHref="/admin"
-          compact
-        />
-        <div className="-mt-6 space-y-4 px-4 pb-8 lg:px-8">
+      <PageShell
+        title="System Reports"
+        subtitle="Analytics and operational reporting based on live data only"
+        backHref="/admin"
+      >
+        <div className="space-y-4">
           {isLoading ? (
             <ListSkeleton count={4} variant="complex" />
           ) : error ? (
@@ -236,7 +234,7 @@ export default function AdminReportsPage() {
             </>
           ) : null}
         </div>
-      </div>
+      </PageShell>
     </RoleGuard>
   )
 }

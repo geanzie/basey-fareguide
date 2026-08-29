@@ -74,7 +74,7 @@ const RequestResetForm = ({ onSuccess, onCancel }: RequestResetFormProps) => {
     `A 6-digit verification code has been sent to ${maskedEmail || 'your email'}.`
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-ink-strong px-4 py-12">
+    <div className="flex min-h-dvh items-center justify-center bg-ink-strong px-4 py-12">
       <div className="w-full max-w-md">
         <div className="mb-8 flex flex-col items-center text-center">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/10">

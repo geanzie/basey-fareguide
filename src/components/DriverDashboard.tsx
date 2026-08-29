@@ -15,6 +15,7 @@ import { swrFetcher } from '@/lib/swr'
 import Link from 'next/link'
 import { useAuth } from './AuthProvider'
 import PermitQrCard from './PermitQrCard'
+import Modal from '@/ui/Modal'
 
 type PermitQrData = {
   permitPlateNumber: string
@@ -227,7 +228,7 @@ export default function DriverDashboard() {
 
   if (loading) {
     return (
-      <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
+      <div className="border border-surface-border bg-surface shadow-card rounded-card p-6">
         <p className="text-sm text-gray-600">Loading trip session...</p>
       </div>
     )
@@ -235,7 +236,7 @@ export default function DriverDashboard() {
 
   if (error) {
     return (
-      <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
+      <div className="border border-surface-border bg-surface shadow-card rounded-card p-6">
         <h2 className="text-lg font-semibold text-gray-900">Trip Session</h2>
         <p className="mt-3 text-sm text-red-600">{error}</p>
         <button
@@ -257,7 +258,7 @@ export default function DriverDashboard() {
     <>
     <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_320px]">
       <section className="space-y-6">
-        <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
+        <div className="border border-surface-border bg-surface shadow-card rounded-card p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="text-sm font-medium text-slate-500">Assigned vehicle</p>
@@ -319,7 +320,7 @@ export default function DriverDashboard() {
         </div>
 
         {!data?.session.id ? (
-          <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
+          <div className="border border-surface-border bg-surface shadow-card rounded-card p-6">
             <h3 className="text-lg font-semibold text-slate-900">Ready to load riders</h3>
             <p className="mt-2 text-sm text-slate-600">
               Start one trip for this vehicle, then riders who save tagged trips will appear here as pending.
@@ -328,7 +329,7 @@ export default function DriverDashboard() {
         ) : null}
 
         {visibleSections.map((section) => (
-          <section key={section.key} className="border border-surface-border bg-surface shadow-card rounded-2xl p-5">
+          <section key={section.key} className="border border-surface-border bg-surface shadow-card rounded-card p-5">
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-lg font-semibold text-slate-900">{section.label}</h3>
               <div className="flex items-center gap-2">
@@ -436,7 +437,7 @@ export default function DriverDashboard() {
         ))}
 
         {archivedSection && archivedSection.riders.length > 0 ? (
-          <section className="border border-surface-border bg-surface shadow-card rounded-2xl p-5">
+          <section className="border border-surface-border bg-surface shadow-card rounded-card p-5">
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-lg font-semibold text-slate-900">Archived</h3>
               <button
@@ -473,7 +474,7 @@ export default function DriverDashboard() {
         ) : null}
       </section>
 
-      <aside className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
+      <aside className="border border-surface-border bg-surface shadow-card rounded-card p-6">
         <h2 className="text-lg font-semibold text-slate-900">Session Notes</h2>
         <p className="mt-2 text-sm text-slate-500">Accept, board, and drop off riders in order. Use the problem button for exceptions.</p>
 
@@ -492,26 +493,13 @@ export default function DriverDashboard() {
         const acceptAction = modalRider.availableActions.find((a) => a.kind === 'positive')
         const remaining = pendingModalQueue.length - 1
         return (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-            onClick={() => setPendingModalQueue((q) => q.slice(1))}
+          <Modal
+            open
+            onClose={() => setPendingModalQueue((q) => q.slice(1))}
+            title={remaining > 0 ? `New ride request (+${remaining} more)` : 'New ride request'}
           >
-            <div
-              className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="mb-1 flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="inline-block h-2.5 w-2.5 rounded-full bg-primary" />
-                  <p className="text-xs font-semibold uppercase tracking-wider text-primary-dark">New ride request</p>
-                </div>
-                {remaining > 0 ? (
-                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
-                    +{remaining} more
-                  </span>
-                ) : null}
-              </div>
-              <h2 className="mt-2 text-lg font-semibold text-slate-900">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">
                 {modalRider.origin} → {modalRider.destination}
               </h2>
               <p className="mt-1 text-2xl font-bold text-slate-900">{formatCurrency(modalRider.fareSnapshot)}</p>
@@ -539,40 +527,18 @@ export default function DriverDashboard() {
                 </button>
               </div>
             </div>
-          </div>
+          </Modal>
         )
       })() : null}
 
       {/* Pending queue drawer */}
-      {showPendingQueue && pendingSection !== null && pendingSection.riders.length > 0 ? (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50"
-          onClick={() => setShowPendingQueue(false)}
-        >
-          <div
-            className="w-full max-w-lg rounded-t-2xl bg-white p-5 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <h3 className="text-base font-semibold text-slate-900">Pending requests</h3>
-                <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
-                  {pendingSection.riders.length}
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowPendingQueue(false)}
-                aria-label="Close pending queue"
-                className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-              >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <div className="max-h-72 space-y-2 overflow-y-auto">
-              {pendingSection.riders.map((rider) => {
+      <Modal
+        open={showPendingQueue && pendingSection !== null && pendingSection.riders.length > 0}
+        onClose={() => setShowPendingQueue(false)}
+        title={`Pending requests (${pendingSection?.riders.length ?? 0})`}
+      >
+            <div className="space-y-2">
+              {(pendingSection?.riders ?? []).map((rider) => {
                 const acceptAction = rider.availableActions.find((a) => a.kind === 'positive')
                 const isBusy = operation.targetId === rider.id
                 return (
@@ -600,9 +566,7 @@ export default function DriverDashboard() {
                 )
               })}
             </div>
-          </div>
-        </div>
-      ) : null}
+      </Modal>
 
       {/* Floating permit QR button */}
       <button
@@ -610,8 +574,7 @@ export default function DriverDashboard() {
         onClick={() => void handleViewPermitQr()}
         disabled={permitQrLoading}
         aria-label="View my permit QR"
-        style={{ bottom: 'calc(var(--mobile-bottom-nav-height, 0px) + 1rem)' } as React.CSSProperties}
-        className="fixed right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg transition hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-70 sm:right-6"
+        className="app-above-bottom-nav fixed right-4 z-fab flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg transition hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-70 sm:right-6"
       >
         {permitQrLoading ? (
           <svg className="h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -629,46 +592,25 @@ export default function DriverDashboard() {
       </button>
 
       {/* Permit QR modal */}
-      {showPermitQr && permitQr ? (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-end sm:justify-end sm:p-6"
-          style={{ paddingBottom: 'calc(var(--mobile-bottom-nav-height, 0px) + 1rem)' } as React.CSSProperties}
-          onClick={() => setShowPermitQr(false)}
-        >
-          <div
-            className="w-full rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl sm:max-w-sm"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mb-4 flex items-start justify-between gap-3">
-              <div>
-                <h3 className="text-base font-semibold text-slate-900">My Permit QR</h3>
-                <p className="text-xs text-slate-500">Show this at the compliance terminal.</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowPermitQr(false)}
-                aria-label="Close permit QR"
-                className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-              >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <PermitQrCard
-              permitPlateNumber={permitQr.permitPlateNumber}
-              qrToken={permitQr.qrToken}
-              driverFullName={permitQr.driverFullName}
-            />
-          </div>
-        </div>
-      ) : null}
+      <Modal
+        open={showPermitQr && Boolean(permitQr)}
+        onClose={() => setShowPermitQr(false)}
+        title="My Permit QR"
+      >
+        <p className="mb-4 text-xs text-slate-500">Show this at the compliance terminal.</p>
+        {permitQr ? (
+          <PermitQrCard
+            permitPlateNumber={permitQr.permitPlateNumber}
+            qrToken={permitQr.qrToken}
+            driverFullName={permitQr.driverFullName}
+          />
+        ) : null}
+      </Modal>
 
       {/* Permit QR error toast */}
       {permitQrError && !showPermitQr ? (
         <div
-          style={{ bottom: 'calc(var(--mobile-bottom-nav-height, 0px) + 5rem)' } as React.CSSProperties}
-          className="fixed left-4 right-4 z-50 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 shadow-lg sm:left-auto sm:right-6 sm:max-w-xs"
+          className="fixed bottom-[calc(var(--mobile-bottom-nav-height)+var(--mobile-safe-area-bottom)+5rem)] left-4 right-4 z-sheet rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 shadow-lg sm:left-auto sm:right-6 sm:max-w-xs"
         >
           {permitQrError}
         </div>

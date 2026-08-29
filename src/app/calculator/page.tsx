@@ -1,7 +1,7 @@
 import { unstable_cache } from 'next/cache'
 import LazyRoutePlannerCalculator from '@/components/LazyRoutePlannerCalculator'
 import RoleGuard from '@/components/RoleGuard'
-import GradientHeader from '@/ui/GradientHeader'
+import PageShell from '@/ui/PageShell'
 import { getResolvedRoutingSettings } from '@/lib/routing/settingsService'
 
 // Layer unstable_cache on top of the module-level cache for Vercel cold-start
@@ -17,16 +17,13 @@ export default async function CalculatorPage() {
 
   return (
     <RoleGuard allowedRoles={['PUBLIC']}>
-      <div className="mx-auto max-w-6xl">
-        <GradientHeader
-          title="Fare Calculator"
-          subtitle="Plan a route and get the official fare under Ordinance 105"
-          compact
-        />
-        <div className="-mt-6 px-4 pb-8 lg:px-8">
-          <LazyRoutePlannerCalculator initialPrimaryProvider={routingSettings.primaryProvider} />
-        </div>
-      </div>
+      <PageShell
+        title="Fare Calculator"
+        subtitle="Plan a route and get the official fare under Ordinance 105"
+        width="form"
+      >
+        <LazyRoutePlannerCalculator initialPrimaryProvider={routingSettings.primaryProvider} />
+      </PageShell>
     </RoleGuard>
   )
 }

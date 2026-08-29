@@ -7,6 +7,7 @@ import useSWR, { useSWRConfig } from 'swr'
 import ResponsiveTable, { ActionButton, StatusBadge } from './ResponsiveTable'
 import { useAuth } from '@/components/AuthProvider'
 import EvidenceManager from './EvidenceManager'
+import Modal from '@/ui/Modal'
 import type {
   EnforcerIncidentScope,
   EnforcerIncidentsViewMode,
@@ -547,11 +548,11 @@ export default function EnforcerIncidentsList({
   return (
     <div className="space-y-6 sm:space-y-8">
       {actionNotice ? (
-        <div className="fixed inset-x-4 top-4 z-[60] flex justify-center sm:left-auto sm:right-4 sm:inset-x-auto sm:w-full sm:max-w-md">
+        <div className="fixed inset-x-4 top-4 z-dialog flex justify-center sm:left-auto sm:right-4 sm:inset-x-auto sm:w-full sm:max-w-md">
           <div
             role={actionNotice.tone === 'error' ? 'alert' : 'status'}
             aria-live={actionNotice.tone === 'error' ? 'assertive' : 'polite'}
-            className={`border border-surface-border bg-surface shadow-raised w-full rounded-2xl border px-4 py-3 shadow-2xl ${
+            className={`w-full rounded-card border px-4 py-3 shadow-raised ${
               actionNotice.tone === 'success'
                 ? 'border-primary/20 bg-surface-tint/95 text-primary-dark'
                 : 'border-red-200 bg-red-50/95 text-red-900'
@@ -586,7 +587,7 @@ export default function EnforcerIncidentsList({
       ) : null}
 
       {!isQueueMode ? (
-        <div className="border border-surface-border bg-surface shadow-card rounded-3xl">
+        <div className="border border-surface-border bg-surface shadow-card rounded-card">
           <div className="px-4 py-5 sm:px-6 sm:py-6">
             <div className="flex items-start gap-4">
               <div className={getDashboardIconChipClasses('red')}>
@@ -649,7 +650,7 @@ export default function EnforcerIncidentsList({
         ) : null}
 
         {isQueueMode && qrHandoffSnapshot ? (
-          <div className="border border-surface-border bg-surface shadow-card rounded-2xl border border-primary/20 bg-surface-tint/70 p-4">
+          <div className="rounded-card border border-primary/20 bg-surface-tint/70 p-4 shadow-card">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div>
                 <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary-dark">
@@ -719,7 +720,7 @@ export default function EnforcerIncidentsList({
         ) : null}
 
         {!isEmbeddedQueueMode ? (
-        <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="border border-surface-border bg-surface shadow-card rounded-card p-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-sm font-medium text-gray-700">
               {isQueueMode ? 'Unresolved work queue' : 'All enforcement incidents'}
@@ -744,7 +745,7 @@ export default function EnforcerIncidentsList({
         ) : null}
 
         {!isEmbeddedQueueMode ? (
-        <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-4 flex flex-col gap-4 lg:flex-row lg:items-end">
+        <div className="border border-surface-border bg-surface shadow-card rounded-card p-4 flex flex-col gap-4 lg:flex-row lg:items-end">
           <div className="flex-1">
             <label htmlFor="incident-search" className="mb-2 inline-flex items-center gap-2 text-sm font-medium text-gray-700">
               <DashboardIconSlot
@@ -790,7 +791,7 @@ export default function EnforcerIncidentsList({
         </div>
         ) : null}
 
-        <div className="border border-surface-border bg-surface shadow-card rounded-2xl">
+        <div className="border border-surface-border bg-surface shadow-card rounded-card">
           <div className="p-6">
             <ResponsiveTable
               columns={[
@@ -930,30 +931,16 @@ export default function EnforcerIncidentsList({
         ) : null}
       </div>
 
-      {showIncidentDetails && selectedIncident ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 p-3 backdrop-blur-sm sm:p-5">
-          <div className="border border-surface-border bg-surface shadow-raised app-mobile-sheet-safe relative w-full max-w-5xl overflow-hidden rounded-3xl p-4 sm:max-h-[calc(100vh-2rem)] sm:p-5">
-            <button
-              onClick={closeIncidentDetails}
-              className="absolute right-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-white/80 hover:text-gray-600"
-              aria-label="Close incident details"
-            >
-              <DashboardIconSlot icon={DASHBOARD_ICONS.close} size={DASHBOARD_ICON_POLICY.sizes.card} />
-            </button>
-            <div className="space-y-3">
-              <div className="flex flex-col gap-2 border-b border-slate-200/80 pb-3 pr-12">
+      <Modal
+        open={showIncidentDetails && Boolean(selectedIncident)}
+        onClose={closeIncidentDetails}
+        title="Incident Details"
+        size="lg"
+      >
+        {selectedIncident ? (
+          <div className="space-y-3">
+              <div className="flex flex-col gap-2 border-b border-slate-200/80 pb-3">
                 <div className="space-y-1">
-                  <div className="flex items-center gap-3">
-                    <span className={getDashboardIconChipClasses('slate')}>
-                      <DashboardIconSlot
-                        icon={DASHBOARD_ICONS.list}
-                        size={DASHBOARD_ICON_POLICY.sizes.section}
-                      />
-                    </span>
-                    <div>
-                      <h3 className="text-xl font-bold text-gray-900">Incident Details</h3>
-                    </div>
-                  </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-700">
                       {selectedIncident.typeLabel}
@@ -1067,10 +1054,9 @@ export default function EnforcerIncidentsList({
                   ) : null}
                 </div>
               </div>
-            </div>
           </div>
-        </div>
-      ) : null}
+        ) : null}
+      </Modal>
 
       {showEvidenceManager && evidenceIncidentId ? (
         <EvidenceManager
@@ -1081,23 +1067,13 @@ export default function EnforcerIncidentsList({
         />
       ) : null}
 
-      {showTicketModal && ticketIncident ? (
-        <div className="fixed inset-0 z-50 h-full w-full overflow-y-auto bg-slate-950/35 backdrop-blur-sm">
-          <div className="border border-surface-border bg-surface shadow-raised app-mobile-sheet-safe relative top-4 mx-auto max-h-[calc(100vh-2rem)] w-[calc(100%-1.5rem)] max-w-2xl overflow-y-auto rounded-3xl p-4 sm:top-10 sm:max-h-[90vh] sm:w-11/12 sm:p-5">
-            <div className="mt-3">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-2">
-                  <DashboardIconSlot
-                    icon={DASHBOARD_ICONS.ticket}
-                    size={DASHBOARD_ICON_POLICY.sizes.section}
-                    className="text-red-600"
-                  />
-                  <h3 className="text-xl font-bold text-gray-900">Issue Ticket</h3>
-                </div>
-                <button onClick={closeTicketModal} className="text-gray-400 hover:text-gray-600">
-                  <span className="text-2xl">x</span>
-                </button>
-              </div>
+      <Modal
+        open={showTicketModal && Boolean(ticketIncident)}
+        onClose={closeTicketModal}
+        title="Issue Ticket"
+      >
+        {ticketIncident ? (
+          <>
 
               <div className="border border-surface-border bg-surface-alt mb-6 rounded-lg p-4">
                 <h4 className="font-semibold text-gray-800 mb-2">Incident Details</h4>
@@ -1209,10 +1185,9 @@ export default function EnforcerIncidentsList({
                   </button>
                 </div>
               </form>
-            </div>
-          </div>
-        </div>
-      ) : null}
+          </>
+        ) : null}
+      </Modal>
     </div>
   )
 }
@@ -1229,7 +1204,7 @@ function MetricCard({
   value: number | string
 }) {
   return (
-    <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
+    <div className="border border-surface-border bg-surface shadow-card rounded-card p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-medium text-gray-600">{label}</p>

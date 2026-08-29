@@ -12,7 +12,7 @@ import {
   type DashboardIcon,
   type DashboardIconTone,
 } from '@/components/dashboardIcons'
-import GradientHeader from '@/ui/GradientHeader'
+import PageShell from '@/ui/PageShell'
 
 const AdminUserManagement = dynamic(() => import('@/components/AdminUserManagement'), {
   loading: () => <div className="p-6">Loading users...</div>,
@@ -152,13 +152,10 @@ export default function AdminPage() {
 
   return (
     <RoleGuard allowedRoles={['ADMIN']}>
-      <div className="mx-auto max-w-6xl">
-        <GradientHeader
-          title="Admin Dashboard"
-          subtitle="Administration, oversight, storage, and location management"
-          compact
-        />
-        <div className="-mt-6 px-4 pb-8 lg:px-8">
+      <PageShell
+        title="Admin Dashboard"
+        subtitle="Administration, oversight, storage, and location management"
+      >
         <section className="mb-8 space-y-3">
           <div className="flex items-end justify-between gap-3">
             <div>
@@ -179,7 +176,7 @@ export default function AdminPage() {
               return (
                 <article
                   key={shortcut.href}
-                  className={`border border-surface-border bg-surface shadow-card flex h-full flex-col justify-between rounded-3xl border p-5 transition-transform duration-200 hover:-translate-y-0.5 ${cardStyles.border}`}
+                  className={`border border-surface-border bg-surface shadow-card flex h-full flex-col justify-between rounded-card p-5 transition-transform duration-200 hover:-translate-y-0.5 ${cardStyles.border}`}
                 >
                   <div className="space-y-4">
                     <div className="flex items-start gap-3">
@@ -226,12 +223,14 @@ export default function AdminPage() {
         </section>
 
         <div className="mb-8">
-          <nav className="border border-surface-border bg-surface shadow-card flex flex-wrap gap-2 rounded-2xl p-2">
+          {/* Scrolls on a phone, wraps on desktop — the FilterChips idiom, so
+              a tab never gets clipped off the right edge. */}
+          <nav className="flex gap-2 overflow-x-auto rounded-card border border-surface-border bg-surface p-2 shadow-card lg:flex-wrap lg:overflow-visible">
             {tabs.map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`inline-flex items-center gap-2 rounded-xl px-4 py-3 font-medium text-sm whitespace-nowrap transition-colors ${
+                className={`inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
                   activeTab === tab.key
                     ? 'border border-surface-border bg-surface-alt text-primary-dark'
                     : 'text-gray-500 hover:bg-white/60 hover:text-gray-700'
@@ -251,8 +250,7 @@ export default function AdminPage() {
         {activeTab === 'storage' && <StorageManagement />}
         {activeTab === 'locations' && <AdminLocationManager />}
         {activeTab === 'dashboard' && <AdminDashboard />}
-        </div>
-      </div>
+      </PageShell>
     </RoleGuard>
   )
 }

@@ -16,10 +16,10 @@ export default function AuthStateShell({
   return (
     <div
       className={`flex items-center justify-center px-4 ${
-        fullHeight ? 'min-h-screen' : 'min-h-[50vh]'
+        fullHeight ? 'min-h-dvh' : 'min-h-[50dvh]'
       }`}
     >
-      <div className="border border-surface-border bg-surface shadow-card rounded-3xl px-8 py-10 text-center">
+      <div className="border border-surface-border bg-surface shadow-card rounded-card px-8 py-10 text-center">
         <LoadingSpinner className="justify-center text-primary mb-4" size={32} />
         <h1 className="text-xl font-semibold text-gray-900">{title}</h1>
         <p className="mt-2 text-sm text-gray-600">{message}</p>

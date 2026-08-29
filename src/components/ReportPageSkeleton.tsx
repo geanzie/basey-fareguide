@@ -1,33 +1,30 @@
+import PageShell from '@/ui/PageShell'
+import { SkeletonBox } from '@/ui/Skeleton'
+
+/** Route-level loading state for /report — same shell and column as the form. */
 export default function ReportPageSkeleton() {
   return (
-    <div className="min-h-screen">
-      <div className="mx-auto max-w-4xl px-4 py-6">
-        <div className="border border-surface-border bg-surface shadow-card animate-pulse rounded-3xl p-8">
-          <div className="mb-8 text-center">
-            <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-red-100" />
-            <div className="mx-auto mb-3 h-8 w-56 rounded bg-gray-300" />
-            <div className="mx-auto h-4 w-full max-w-md rounded bg-gray-200" />
+    <PageShell
+      title="Report Incident"
+      subtitle="File a violation report with optional photo evidence"
+      width="narrow"
+    >
+      <div className="rounded-card border border-surface-border bg-surface p-6 shadow-card">
+        <SkeletonBox className="h-20 rounded-xl" />
+        <div className="mt-6 space-y-5">
+          <SkeletonBox className="h-24 rounded-xl" />
+          <SkeletonBox className="h-32 rounded-xl" />
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <SkeletonBox className="h-24 rounded-xl" />
+            <SkeletonBox className="h-24 rounded-xl" />
           </div>
-
-          <div className="mb-6 h-20 rounded-lg bg-blue-50" />
-
-          <div className="space-y-6">
-            <div className="h-24 rounded-lg bg-gray-100" />
-            <div className="h-32 rounded-lg bg-gray-100" />
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="h-24 rounded-lg bg-gray-100" />
-              <div className="h-24 rounded-lg bg-gray-100" />
-            </div>
-            <div className="h-24 rounded-lg bg-gray-100" />
-            <div className="h-32 rounded-lg bg-gray-100" />
-            <div className="h-24 rounded-lg bg-gray-100" />
-            <div className="flex justify-end gap-4">
-              <div className="h-12 w-24 rounded-lg bg-gray-100" />
-              <div className="h-12 w-40 rounded-lg bg-red-200" />
-            </div>
+          <SkeletonBox className="h-32 rounded-xl" />
+          <div className="flex justify-end gap-3">
+            <SkeletonBox className="h-12 w-24 rounded-xl" />
+            <SkeletonBox className="h-12 w-40 rounded-xl" />
           </div>
         </div>
       </div>
-    </div>
-  );
+    </PageShell>
+  )
 }

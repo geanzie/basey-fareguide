@@ -27,7 +27,7 @@ export const metadata: Metadata = {
 
 export default function OrdinancePage() {
   return (
-    <div className="min-h-screen py-10 lg:py-12">
+    <div className="min-h-dvh py-10 lg:py-12">
       <div className="container mx-auto px-4">
         <div className="mx-auto max-w-6xl space-y-6">
           <section className="rounded-card border border-surface-border bg-surface p-6 shadow-card lg:p-8">

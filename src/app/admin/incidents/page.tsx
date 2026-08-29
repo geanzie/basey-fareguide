@@ -9,7 +9,7 @@ import Badge from '@/ui/Badge'
 import Card from '@/ui/Card'
 import EmptyState from '@/ui/EmptyState'
 import FilterChips from '@/ui/FilterChips'
-import GradientHeader from '@/ui/GradientHeader'
+import PageShell from '@/ui/PageShell'
 import SearchBar from '@/ui/SearchBar'
 import { ListSkeleton, StatGridSkeleton } from '@/ui/Skeleton'
 import StatTile from '@/ui/StatTile'
@@ -61,14 +61,12 @@ export default function AdminIncidentsPage() {
 
   return (
     <RoleGuard allowedRoles={['ADMIN']}>
-      <div className="mx-auto max-w-6xl">
-        <GradientHeader
-          title="All Incidents"
-          subtitle="System-wide incident management and oversight"
-          backHref="/admin"
-          compact
-        />
-        <div className="-mt-6 space-y-4 px-4 pb-8 lg:px-8">
+      <PageShell
+        title="All Incidents"
+        subtitle="System-wide incident management and oversight"
+        backHref="/admin"
+      >
+        <div className="space-y-4">
           {isLoading ? (
             <>
               <StatGridSkeleton count={5} />
@@ -213,7 +211,7 @@ export default function AdminIncidentsPage() {
             </>
           )}
         </div>
-      </div>
+      </PageShell>
     </RoleGuard>
   )
 }

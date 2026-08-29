@@ -5,7 +5,7 @@ import EmptyState from '@/ui/EmptyState'
 
 export default function NotFound() {
   return (
-    <div className="flex min-h-[60vh] items-center justify-center px-4">
+    <div className="flex min-h-[60dvh] items-center justify-center px-4">
       <EmptyState
         icon={MapPinOff}
         title="Page not found"

@@ -34,7 +34,7 @@ export default function HomePage() {
 
   if (status === 'authenticated' && user) {
     return (
-      <div className="min-h-screen">
+      <div className="min-h-dvh">
         <AuthStateShell
           title="Opening dashboard"
           message="Redirecting you to the correct workspace for your account."
@@ -44,7 +44,7 @@ export default function HomePage() {
   }
 
   return (
-    <div>
+    <div className="min-h-dvh">
       <section className="relative bg-brand text-white">
         <div className="absolute inset-0 bg-black bg-opacity-10" />
         <div className="relative container mx-auto px-4 py-12 lg:py-16">
@@ -105,7 +105,7 @@ export default function HomePage() {
 
       {!isAuthenticated && (
         <section className="border-b border-surface-border">
-          <div className="container mx-auto px-4 py-8">
+          <div className="container mx-auto px-4 py-10">
             <div className="mx-auto max-w-6xl space-y-4">
               <div>
                 <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">
@@ -122,7 +122,6 @@ export default function HomePage() {
               </div>
 
               <TrafficAnnouncementsFeed
-                variant="landing"
                 title="Traffic Announcements"
                 description="Newest traffic advisories, closures, and transport notices from the municipality."
               />
@@ -133,7 +132,7 @@ export default function HomePage() {
                 description="Current fare rules and the next approved change for Basey municipal transport."
               />
 
-              <div className="rounded-2xl border border-red-200 bg-red-50 p-6 shadow-sm">
+              <div className="rounded-card border border-red-200 bg-red-50 p-6 shadow-card">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div>
                     <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-red-700">
@@ -146,7 +145,7 @@ export default function HomePage() {
                       fare changes are announced. Riders and operators should follow the published municipal rates.
                     </p>
                   </div>
-                  <div className="inline-flex items-center gap-2 rounded-xl border border-danger-softBorder bg-surface px-4 py-3 text-sm font-medium text-danger">
+                  <div className="inline-flex items-center gap-2 rounded-card border border-danger-softBorder bg-surface px-4 py-3 text-sm font-medium text-danger">
                     <DashboardIconSlot icon={DASHBOARD_ICONS.fare} size={DASHBOARD_ICON_POLICY.sizes.button} />
                     Official municipal penalty schedule
                   </div>
@@ -154,7 +153,7 @@ export default function HomePage() {
 
                 <div className="mt-5 grid gap-3 md:grid-cols-3">
                   {PUBLIC_PENALTY_SCHEDULE.map((penaltyTier) => (
-                    <div key={penaltyTier.offenseTier} className="rounded-xl border border-danger-softBorder bg-surface p-4">
+                    <div key={penaltyTier.offenseTier} className="rounded-card border border-danger-softBorder bg-surface p-4">
                       <div className="text-xs font-semibold uppercase tracking-wide text-red-600">{penaltyTier.label}</div>
                       <div className="mt-2 text-2xl font-bold text-red-700">
                         PHP {penaltyTier.penaltyAmount.toLocaleString()}
@@ -224,7 +223,7 @@ export default function HomePage() {
         </section>
       )}
 
-      <section className="py-12">
+      <section className="py-10">
         <div className="container mx-auto px-4">
           <div className="mx-auto max-w-6xl">
             <div className="mb-8 text-center">

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import useSWR from 'swr'
 
 import RoleGuard from '@/components/RoleGuard'
-import GradientHeader from '@/ui/GradientHeader'
+import PageShell from '@/ui/PageShell'
 import { authenticatedFetch } from '@/lib/api'
 import { swrKey } from '@/lib/swrKeys'
 import { approxMeters } from '@/lib/routing/geo'
@@ -73,15 +73,13 @@ function RideAccessContent() {
   )
 
   return (
-    <div className="mx-auto max-w-4xl">
-      <GradientHeader
-        title="Ride access"
-        subtitle="Record which places a habal-habal or tricycle can actually reach"
-        backHref="/encoder"
-        compact
-      />
-
-      <div className="-mt-6 space-y-4 px-4 pb-8 lg:px-8">
+    <PageShell
+      title="Ride access"
+      subtitle="Record which places a habal-habal or tricycle can actually reach"
+      backHref="/encoder"
+      width="narrow"
+    >
+      <div className="space-y-4">
         <div className="rounded-2xl border border-surface-border bg-surface p-4 shadow-card">
           <p className="text-sm text-ink-body">
             The fare calculator refuses to quote a trip to a pin no ride can reach. Marking a
@@ -145,7 +143,7 @@ function RideAccessContent() {
           </p>
         ) : null}
       </div>
-    </div>
+    </PageShell>
   )
 }
 

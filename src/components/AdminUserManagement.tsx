@@ -79,7 +79,7 @@ export default function AdminUserManagement() {
 
   return (
     <div className="mx-auto max-w-7xl p-6">
-      <div className="border border-surface-border bg-surface shadow-card rounded-2xl">
+      <div className="border border-surface-border bg-surface shadow-card rounded-card">
         <div className="border-b border-gray-200 px-6 py-4">
           <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
           <p className="mt-1 text-gray-600">

@@ -162,12 +162,12 @@ const EvidenceManager = ({ incidentId, onClose, onVerified, incidentVerifiedAt }
   const formatDate = (dateString: string) => new Date(dateString).toLocaleString()
 
   return (
-    <div className="fixed inset-0 z-[70] overflow-y-auto bg-slate-950/35 p-4 backdrop-blur-sm sm:p-6">
+    <div className="fixed inset-0 z-overlay overflow-y-auto bg-slate-950/35 p-4 backdrop-blur-sm sm:p-6">
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="evidence-manager-title"
-        className="border border-surface-border bg-surface shadow-raised mx-auto flex min-h-0 w-full max-w-4xl flex-col overflow-hidden rounded-3xl sm:max-h-[calc(100vh-5rem)]"
+        className="border border-surface-border bg-surface shadow-raised mx-auto flex min-h-0 w-full max-w-4xl flex-col overflow-hidden rounded-3xl sm:max-h-[calc(100dvh-5rem)]"
       >
         <div className="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-slate-200/80 bg-white/95 px-4 py-4 backdrop-blur sm:px-5">
           <h3 id="evidence-manager-title" className="min-w-0 text-lg font-bold text-gray-900 sm:text-xl flex items-center gap-3">

@@ -9,7 +9,6 @@ import { SWR_KEYS } from '@/lib/swrKeys'
 interface TrafficAnnouncementsFeedProps {
   title?: string
   description?: string
-  variant?: 'landing' | 'dashboard'
   className?: string
 }
 
@@ -29,7 +28,6 @@ function getToneClasses(category: PublicAnnouncementDto['category']) {
 export default function TrafficAnnouncementsFeed({
   title = 'Traffic Announcements',
   description = 'Current road, traffic, and municipal transport advisories from Basey.',
-  variant = 'dashboard',
   className = '',
 }: TrafficAnnouncementsFeedProps) {
   const { data, error, isLoading } = useSWR<AnnouncementsResponseDto>(SWR_KEYS.announcements)
@@ -38,19 +36,16 @@ export default function TrafficAnnouncementsFeed({
     return null
   }
 
-  const wrapperClasses =
-    variant === 'landing'
-      ? 'border border-surface-border bg-surface shadow-card rounded-2xl p-5'
-      : 'border border-surface-border bg-surface shadow-card rounded-2xl p-5'
-
   return (
-    <section className={`${wrapperClasses} ${className}`.trim()}>
+    <section
+      className={`rounded-card border border-surface-border bg-surface p-5 shadow-card ${className}`.trim()}
+    >
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
           <p className="mt-1 text-sm text-slate-600">{description}</p>
         </div>
-        <div className="border border-surface-border bg-surface-alt rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700">
+        <div className="rounded-card border border-surface-border bg-surface-alt px-4 py-3 text-sm text-slate-700">
           Latest active advisories
         </div>
       </div>

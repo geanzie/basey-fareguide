@@ -8,6 +8,7 @@ import {
   DashboardIconSlot,
   getDashboardIconChipClasses,
 } from '@/components/dashboardIcons'
+import Modal from '@/ui/Modal'
 
 type PaymentFilter = 'ALL' | 'UNPAID' | 'PAID'
 
@@ -199,7 +200,7 @@ export default function TicketPaymentsWorkspace({
 
   return (
     <div className="space-y-6">
-      <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
+      <div className="border border-surface-border bg-surface shadow-card rounded-card p-6">
         <div className="flex items-start gap-4">
           <div className={getDashboardIconChipClasses('emerald')}>
             <DashboardIconSlot
@@ -215,25 +216,25 @@ export default function TicketPaymentsWorkspace({
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-5">
+        <div className="border border-surface-border bg-surface shadow-card rounded-card p-5">
           <p className="text-sm text-gray-600">Ticketed Violations</p>
           <p className="mt-2 text-3xl font-bold text-gray-900">{stats.totalTicketed}</p>
         </div>
-        <div className="border border-surface-border bg-surface shadow-card rounded-2xl border border-amber-200 p-5">
+        <div className="border bg-surface shadow-card rounded-card border-amber-200 p-5">
           <p className="text-sm text-gray-600">Unpaid Tickets</p>
           <p className="mt-2 text-3xl font-bold text-amber-700">{stats.unpaid}</p>
         </div>
-        <div className="border border-surface-border bg-surface shadow-card rounded-2xl border border-primary/20 p-5">
+        <div className="border bg-surface shadow-card rounded-card border-primary/20 p-5">
           <p className="text-sm text-gray-600">Paid Tickets</p>
           <p className="mt-2 text-3xl font-bold text-primary-dark">{stats.paid}</p>
         </div>
-        <div className="border border-surface-border bg-surface shadow-card rounded-2xl border border-red-200 p-5">
+        <div className="border bg-surface shadow-card rounded-card border-red-200 p-5">
           <p className="text-sm text-gray-600">Outstanding Balance</p>
           <p className="mt-2 text-3xl font-bold text-red-700">{formatCurrency(stats.outstandingBalance)}</p>
         </div>
       </div>
 
-      <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-5">
+      <div className="border border-surface-border bg-surface shadow-card rounded-card p-5">
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
           <div>
             <label htmlFor="ticket-payments-search" className="mb-2 block text-sm font-medium text-gray-700">Search tickets or receipts</label>
@@ -276,7 +277,7 @@ export default function TicketPaymentsWorkspace({
         </div>
       ) : null}
 
-      <div className="border border-surface-border bg-surface shadow-card overflow-hidden rounded-2xl">
+      <div className="border border-surface-border bg-surface shadow-card overflow-hidden rounded-card">
         {loading ? (
           <div className="p-6 text-sm text-gray-600">Loading ticket payment records...</div>
         ) : filteredIncidents.length === 0 ? (
@@ -361,112 +362,108 @@ export default function TicketPaymentsWorkspace({
         )}
       </div>
 
-      {selectedIncident ? (
-        <div className="fixed inset-0 z-50 bg-slate-950/35 backdrop-blur-sm">
-          <div className="border border-surface-border bg-surface shadow-raised app-mobile-sheet-safe relative top-4 mx-auto max-h-[calc(100vh-2rem)] w-[calc(100%-1.5rem)] max-w-2xl overflow-y-auto rounded-3xl p-5 sm:top-10 sm:w-11/12">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Ticket Payment Details</h3>
-              <button
-                onClick={closeIncidentDetails}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <span className="text-2xl">x</span>
-              </button>
-            </div>
+      <Modal
+        open={Boolean(selectedIncident)}
+        onClose={closeIncidentDetails}
+        title="Ticket Payment Details"
+        size="lg"
+      >
+        {selectedIncident ? (
+          <>
 
-            <div className="mt-5 space-y-3 text-sm text-gray-700">
-              <p><span className="font-medium">Ticket Number:</span> {selectedIncident.ticketNumber}</p>
-              <p><span className="font-medium">Violation:</span> {selectedIncident.typeLabel}</p>
-              <p><span className="font-medium">Plate Number:</span> {selectedIncident.plateNumber || '-'}</p>
-              <p><span className="font-medium">Location:</span> {selectedIncident.location}</p>
-              <p><span className="font-medium">Penalty Amount:</span> {formatCurrency(selectedIncident.penaltyAmount || 0)}</p>
-              <p><span className="font-medium">Payment Status:</span> {normalizePaymentLabel(selectedIncident.paymentStatus)}</p>
-              <p><span className="font-medium">Official Receipt:</span> {selectedIncident.officialReceiptNumber || '-'}</p>
-              <p><span className="font-medium">Paid At:</span> {formatDateTime(selectedIncident.paidAt)}</p>
-              <div>
-                <p className="font-medium">Description</p>
-                <p className="mt-1 rounded-lg bg-gray-50 p-3 text-gray-600">{selectedIncident.description}</p>
-              </div>
-            </div>
-
-            {allowPaymentRecording && selectedIncident.paymentStatus === 'UNPAID' ? (
-              <div className="mt-5 space-y-4 border-t border-slate-200 pt-4">
-                <div>
-                  <label htmlFor="ticket-payment-receipt-number" className="mb-2 block text-sm font-medium text-gray-700">Official Receipt Number</label>
-                  <input
-                    id="ticket-payment-receipt-number"
-                    name="officialReceiptNumber"
-                    type="text"
-                    autoComplete="off"
-                    value={paymentForm.officialReceiptNumber}
-                    onChange={(event) =>
-                      setPaymentForm((current) => ({
-                        ...current,
-                        officialReceiptNumber: event.target.value,
-                      }))
-                    }
-                    placeholder="Enter OR number"
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2.5 focus:border-primary focus:ring-2 focus:ring-primary"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="ticket-payment-paid-at" className="mb-2 block text-sm font-medium text-gray-700">Payment Timestamp</label>
-                  <input
-                    id="ticket-payment-paid-at"
-                    name="paidAt"
-                    type="datetime-local"
-                    autoComplete="off"
-                    value={paymentForm.paidAt}
-                    onChange={(event) =>
-                      setPaymentForm((current) => ({
-                        ...current,
-                        paidAt: event.target.value,
-                      }))
-                    }
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2.5 focus:border-primary focus:ring-2 focus:ring-primary"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="ticket-payment-remarks" className="mb-2 block text-sm font-medium text-gray-700">Receipt Notes</label>
-                  <textarea
-                    id="ticket-payment-remarks"
-                    name="remarks"
-                    autoComplete="off"
-                    value={paymentForm.remarks}
-                    onChange={(event) =>
-                      setPaymentForm((current) => ({
-                        ...current,
-                        remarks: event.target.value,
-                      }))
-                    }
-                    rows={3}
-                    placeholder="Optional receipt remarks"
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2.5 focus:border-primary focus:ring-2 focus:ring-primary"
-                  />
-                </div>
-              </div>
-            ) : null}
-
-            <div className="mt-6 flex flex-col-reverse gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end">
-              <button
-                onClick={closeIncidentDetails}
-                className="rounded-lg bg-gray-200 px-4 py-2 font-medium text-gray-700 hover:bg-gray-300"
-              >
-                Close
-              </button>
-              {allowPaymentRecording && selectedIncident.paymentStatus === 'UNPAID' ? (
-                <button
-                  onClick={() => void handleRecordPayment()}
-                  disabled={isProcessingPayment}
-                  className="rounded-lg bg-primary px-4 py-2 font-semibold text-white hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  Record Payment
-                </button>
-              ) : null}
+          <div className="mt-5 space-y-3 text-sm text-gray-700">
+            <p><span className="font-medium">Ticket Number:</span> {selectedIncident.ticketNumber}</p>
+            <p><span className="font-medium">Violation:</span> {selectedIncident.typeLabel}</p>
+            <p><span className="font-medium">Plate Number:</span> {selectedIncident.plateNumber || '-'}</p>
+            <p><span className="font-medium">Location:</span> {selectedIncident.location}</p>
+            <p><span className="font-medium">Penalty Amount:</span> {formatCurrency(selectedIncident.penaltyAmount || 0)}</p>
+            <p><span className="font-medium">Payment Status:</span> {normalizePaymentLabel(selectedIncident.paymentStatus)}</p>
+            <p><span className="font-medium">Official Receipt:</span> {selectedIncident.officialReceiptNumber || '-'}</p>
+            <p><span className="font-medium">Paid At:</span> {formatDateTime(selectedIncident.paidAt)}</p>
+            <div>
+              <p className="font-medium">Description</p>
+              <p className="mt-1 rounded-lg bg-gray-50 p-3 text-gray-600">{selectedIncident.description}</p>
             </div>
           </div>
-        </div>
-      ) : null}
+
+          {allowPaymentRecording && selectedIncident.paymentStatus === 'UNPAID' ? (
+            <div className="mt-5 space-y-4 border-t border-slate-200 pt-4">
+              <div>
+                <label htmlFor="ticket-payment-receipt-number" className="mb-2 block text-sm font-medium text-gray-700">Official Receipt Number</label>
+                <input
+                  id="ticket-payment-receipt-number"
+                  name="officialReceiptNumber"
+                  type="text"
+                  autoComplete="off"
+                  value={paymentForm.officialReceiptNumber}
+                  onChange={(event) =>
+                    setPaymentForm((current) => ({
+                      ...current,
+                      officialReceiptNumber: event.target.value,
+                    }))
+                  }
+                  placeholder="Enter OR number"
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2.5 focus:border-primary focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              <div>
+                <label htmlFor="ticket-payment-paid-at" className="mb-2 block text-sm font-medium text-gray-700">Payment Timestamp</label>
+                <input
+                  id="ticket-payment-paid-at"
+                  name="paidAt"
+                  type="datetime-local"
+                  autoComplete="off"
+                  value={paymentForm.paidAt}
+                  onChange={(event) =>
+                    setPaymentForm((current) => ({
+                      ...current,
+                      paidAt: event.target.value,
+                    }))
+                  }
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2.5 focus:border-primary focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              <div>
+                <label htmlFor="ticket-payment-remarks" className="mb-2 block text-sm font-medium text-gray-700">Receipt Notes</label>
+                <textarea
+                  id="ticket-payment-remarks"
+                  name="remarks"
+                  autoComplete="off"
+                  value={paymentForm.remarks}
+                  onChange={(event) =>
+                    setPaymentForm((current) => ({
+                      ...current,
+                      remarks: event.target.value,
+                    }))
+                  }
+                  rows={3}
+                  placeholder="Optional receipt remarks"
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2.5 focus:border-primary focus:ring-2 focus:ring-primary"
+                />
+              </div>
+            </div>
+          ) : null}
+
+          <div className="mt-6 flex flex-col-reverse gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end">
+            <button
+              onClick={closeIncidentDetails}
+              className="rounded-lg bg-gray-200 px-4 py-2 font-medium text-gray-700 hover:bg-gray-300"
+            >
+              Close
+            </button>
+            {allowPaymentRecording && selectedIncident.paymentStatus === 'UNPAID' ? (
+              <button
+                onClick={() => void handleRecordPayment()}
+                disabled={isProcessingPayment}
+                className="rounded-lg bg-primary px-4 py-2 font-semibold text-white hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Record Payment
+              </button>
+            ) : null}
+          </div>
+          </>
+        ) : null}
+      </Modal>
     </div>
   )
 }

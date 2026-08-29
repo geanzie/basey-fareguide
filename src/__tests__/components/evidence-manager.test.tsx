@@ -54,9 +54,9 @@ describe('EvidenceManager', () => {
     expect(dialog).not.toBeNull()
     expect(dialog?.className).toContain('max-w-4xl')
     expect(dialog?.className).toContain('rounded-3xl')
-    expect(dialog?.className).toContain('sm:max-h-[calc(100vh-5rem)]')
+    expect(dialog?.className).toContain('sm:max-h-[calc(100dvh-5rem)]')
     expect(overlay).not.toBeNull()
-    expect(overlay?.className).toContain('z-[70]')
+    expect(overlay?.className).toContain('z-overlay')
     expect(overlay?.className).toContain('overflow-y-auto')
 
     expect(container.textContent).toContain('Review submitted evidence, open files, and submit verification without leaving the incident workflow.')

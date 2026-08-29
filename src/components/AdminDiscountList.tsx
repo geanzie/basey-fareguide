@@ -2,12 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/components/AuthProvider'
-import {
-  DASHBOARD_ICONS,
-  DASHBOARD_ICON_POLICY,
-  DashboardIconSlot,
-} from '@/components/dashboardIcons'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import Modal from '@/ui/Modal'
 
 interface DiscountCard {
   id: string
@@ -204,7 +200,7 @@ export default function AdminDiscountList({ onRefresh }: DiscountListProps) {
   return (
     <div className="space-y-6">
       {/* Header with Stats */}
-      <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
+      <div className="border border-surface-border bg-surface shadow-card rounded-card p-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-4">Discount Cards List</h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-blue-50 rounded-lg p-4">
@@ -233,7 +229,7 @@ export default function AdminDiscountList({ onRefresh }: DiscountListProps) {
       </div>
 
       {/* Search and Filters */}
-      <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
+      <div className="border border-surface-border bg-surface shadow-card rounded-card p-6">
         <form onSubmit={handleSearch} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-3">
@@ -363,7 +359,7 @@ export default function AdminDiscountList({ onRefresh }: DiscountListProps) {
       )}
 
       {/* Discount Cards Table */}
-      <div className="border border-surface-border bg-surface shadow-card rounded-2xl overflow-hidden">
+      <div className="border border-surface-border bg-surface shadow-card rounded-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -525,291 +521,285 @@ export default function AdminDiscountList({ onRefresh }: DiscountListProps) {
       </div>
 
       {/* Details Modal */}
-      {showDetailsModal && selectedCard && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-6">
-                <h3 className="text-2xl font-bold text-gray-900">Discount Card Details</h3>
-                <button
-                  onClick={() => setShowDetailsModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <DashboardIconSlot icon={DASHBOARD_ICONS.close} size={DASHBOARD_ICON_POLICY.sizes.card} />
-                </button>
+      <Modal
+        open={showDetailsModal && Boolean(selectedCard)}
+        onClose={() => setShowDetailsModal(false)}
+        title="Discount Card Details"
+        size="lg"
+      >
+        {selectedCard ? (
+          <>
+
+          <div className="space-y-6">
+            {/* User Information */}
+            <div>
+              <h4 className="text-lg font-semibold text-gray-900 mb-3">User Information</h4>
+              <div className="grid grid-cols-1 gap-4 rounded-card bg-gray-50 p-4 sm:grid-cols-2">
+                <div>
+                  <div className="text-sm text-gray-500">Full Name</div>
+                  <div className="text-sm font-medium text-gray-900">{selectedCard.fullName}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500">Username</div>
+                  <div className="text-sm font-medium text-gray-900">@{selectedCard.user.username}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500">Date of Birth</div>
+                  <div className="text-sm font-medium text-gray-900">
+                    {formatDate(selectedCard.dateOfBirth)} ({calculateAge(selectedCard.dateOfBirth)} years old)
+                  </div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500">Phone Number</div>
+                  <div className="text-sm font-medium text-gray-900">{selectedCard.user.phoneNumber || 'N/A'}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500">Barangay</div>
+                  <div className="text-sm font-medium text-gray-900">{selectedCard.user.barangayResidence || 'N/A'}</div>
+                </div>
               </div>
+            </div>
 
-              <div className="space-y-6">
-                {/* User Information */}
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-3">User Information</h4>
-                  <div className="grid grid-cols-2 gap-4 bg-gray-50 rounded-lg p-4">
-                    <div>
-                      <div className="text-sm text-gray-500">Full Name</div>
-                      <div className="text-sm font-medium text-gray-900">{selectedCard.fullName}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-gray-500">Username</div>
-                      <div className="text-sm font-medium text-gray-900">@{selectedCard.user.username}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-gray-500">Date of Birth</div>
-                      <div className="text-sm font-medium text-gray-900">
-                        {formatDate(selectedCard.dateOfBirth)} ({calculateAge(selectedCard.dateOfBirth)} years old)
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-gray-500">Phone Number</div>
-                      <div className="text-sm font-medium text-gray-900">{selectedCard.user.phoneNumber || 'N/A'}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-gray-500">Barangay</div>
-                      <div className="text-sm font-medium text-gray-900">{selectedCard.user.barangayResidence || 'N/A'}</div>
-                    </div>
+            {/* Photo ID */}
+            {selectedCard.photoUrl && (
+              <div>
+                <h4 className="text-lg font-semibold text-gray-900 mb-3">Uploaded Photo ID</h4>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex justify-center">
+                    <img
+                      src={selectedCard.photoUrl}
+                      alt="Discount Card Photo"
+                      loading="lazy"
+                      decoding="async"
+                      className="max-w-md max-h-96 object-contain rounded-lg border-2 border-gray-300 shadow-sm"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/placeholder-image.png'
+                      }}
+                    />
                   </div>
-                </div>
-
-                {/* Photo ID */}
-                {selectedCard.photoUrl && (
-                  <div>
-                    <h4 className="text-lg font-semibold text-gray-900 mb-3">Uploaded Photo ID</h4>
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <div className="flex justify-center">
-                        <img
-                          src={selectedCard.photoUrl}
-                          alt="Discount Card Photo"
-                          loading="lazy"
-                          decoding="async"
-                          className="max-w-md max-h-96 object-contain rounded-lg border-2 border-gray-300 shadow-sm"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = '/placeholder-image.png'
-                          }}
-                        />
-                      </div>
-                      <p className="text-xs text-gray-500 text-center mt-2">
-                        Click to view full size or download
-                      </p>
-                      <div className="flex justify-center mt-2 gap-2">
-                        <a
-                          href={selectedCard.photoUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
-                        >
-                          View Full Size
-                        </a>
-                        <a
-                          href={selectedCard.photoUrl}
-                          download
-                          className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm"
-                        >
-                          Download
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Discount Information */}
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Discount Information</h4>
-                  <div className="grid grid-cols-2 gap-4 bg-gray-50 rounded-lg p-4">
-                    <div>
-                      <div className="text-sm text-gray-500">Discount Type</div>
-                      <div className="text-sm font-medium text-gray-900">{getDiscountTypeLabel(selectedCard.discountType)}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-gray-500">ID Number</div>
-                      <div className="text-sm font-medium text-gray-900">{selectedCard.idNumber || 'N/A'}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-gray-500">ID Type</div>
-                      <div className="text-sm font-medium text-gray-900">{selectedCard.idType || 'N/A'}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-gray-500">Issuing Authority</div>
-                      <div className="text-sm font-medium text-gray-900">{selectedCard.issuingAuthority || 'N/A'}</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Type-Specific Information */}
-                {selectedCard.discountType === 'STUDENT' && (
-                  <div>
-                    <h4 className="text-lg font-semibold text-gray-900 mb-3">Student Information</h4>
-                    <div className="grid grid-cols-2 gap-4 bg-gray-50 rounded-lg p-4">
-                      <div>
-                        <div className="text-sm text-gray-500">School Name</div>
-                        <div className="text-sm font-medium text-gray-900">{selectedCard.schoolName || 'N/A'}</div>
-                      </div>
-                      <div>
-                        <div className="text-sm text-gray-500">Grade Level</div>
-                        <div className="text-sm font-medium text-gray-900">{selectedCard.gradeLevel || 'N/A'}</div>
-                      </div>
-                      <div className="col-span-2">
-                        <div className="text-sm text-gray-500">School Address</div>
-                        <div className="text-sm font-medium text-gray-900">{selectedCard.schoolAddress || 'N/A'}</div>
-                      </div>
-                      {selectedCard.schoolIdExpiry && (
-                        <div>
-                          <div className="text-sm text-gray-500">School ID Expiry</div>
-                          <div className="text-sm font-medium text-gray-900">{formatDate(selectedCard.schoolIdExpiry)}</div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {selectedCard.discountType === 'PWD' && selectedCard.disabilityType && (
-                  <div>
-                    <h4 className="text-lg font-semibold text-gray-900 mb-3">PWD Information</h4>
-                    <div className="grid grid-cols-2 gap-4 bg-gray-50 rounded-lg p-4">
-                      <div>
-                        <div className="text-sm text-gray-500">Disability Type</div>
-                        <div className="text-sm font-medium text-gray-900">{selectedCard.disabilityType}</div>
-                      </div>
-                      {selectedCard.pwdIdExpiry && (
-                        <div>
-                          <div className="text-sm text-gray-500">PWD ID Expiry</div>
-                          <div className="text-sm font-medium text-gray-900">{formatDate(selectedCard.pwdIdExpiry)}</div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Verification Status */}
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Verification Status</h4>
-                  <div className="grid grid-cols-2 gap-4 bg-gray-50 rounded-lg p-4">
-                    <div>
-                      <div className="text-sm text-gray-500">Status</div>
-                      <div>
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusBadge(selectedCard.verificationStatus)}`}>
-                          {selectedCard.verificationStatus}
-                        </span>
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-gray-500">Active</div>
-                      <div className="text-sm font-medium text-gray-900">{selectedCard.isActive ? 'Yes' : 'No'}</div>
-                    </div>
-                    {selectedCard.verifiedAt && (
-                      <>
-                        <div>
-                          <div className="text-sm text-gray-500">Verified At</div>
-                          <div className="text-sm font-medium text-gray-900">{formatDate(selectedCard.verifiedAt)}</div>
-                        </div>
-                        <div>
-                          <div className="text-sm text-gray-500">Verified By</div>
-                          <div className="text-sm font-medium text-gray-900">{selectedCard.verifiedBy || 'N/A'}</div>
-                        </div>
-                      </>
-                    )}
-                    {selectedCard.verificationNotes && (
-                      <div className="col-span-2">
-                        <div className="text-sm text-gray-500">Verification Notes</div>
-                        <div className="text-sm font-medium text-gray-900">{selectedCard.verificationNotes}</div>
-                      </div>
-                    )}
-                    {selectedCard.rejectionReason && (
-                      <div className="col-span-2">
-                        <div className="text-sm text-gray-500">Rejection Reason</div>
-                        <div className="text-sm font-medium text-red-600">{selectedCard.rejectionReason}</div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Admin Override */}
-                {selectedCard.isAdminOverride && (
-                  <div>
-                    <h4 className="text-lg font-semibold text-gray-900 mb-3">Admin Override</h4>
-                    <div className="grid grid-cols-2 gap-4 bg-yellow-50 rounded-lg p-4 border border-yellow-200">
-                      <div>
-                        <div className="text-sm text-gray-500">Override By</div>
-                        <div className="text-sm font-medium text-gray-900">{selectedCard.overrideBy || 'N/A'}</div>
-                      </div>
-                      {selectedCard.overrideAt && (
-                        <div>
-                          <div className="text-sm text-gray-500">Override At</div>
-                          <div className="text-sm font-medium text-gray-900">{formatDate(selectedCard.overrideAt)}</div>
-                        </div>
-                      )}
-                      {selectedCard.overrideReason && (
-                        <div className="col-span-2">
-                          <div className="text-sm text-gray-500">Override Reason</div>
-                          <div className="text-sm font-medium text-gray-900">{selectedCard.overrideReason}</div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Validity Period */}
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Validity Period</h4>
-                  <div className="grid grid-cols-2 gap-4 bg-gray-50 rounded-lg p-4">
-                    <div>
-                      <div className="text-sm text-gray-500">Valid From</div>
-                      <div className="text-sm font-medium text-gray-900">{formatDate(selectedCard.validFrom)}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-gray-500">Valid Until</div>
-                      <div className="text-sm font-medium text-gray-900">{formatDate(selectedCard.validUntil)}</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Usage Statistics */}
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Usage Statistics</h4>
-                  <div className="grid grid-cols-3 gap-4 bg-gray-50 rounded-lg p-4">
-                    <div>
-                      <div className="text-sm text-gray-500">Total Usage</div>
-                      <div className="text-sm font-medium text-gray-900">{selectedCard.usageCount}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-gray-500">Daily Usage</div>
-                      <div className="text-sm font-medium text-gray-900">{selectedCard.dailyUsageCount}</div>
-                    </div>
-                    {selectedCard.lastUsedAt && (
-                      <div>
-                        <div className="text-sm text-gray-500">Last Used</div>
-                        <div className="text-sm font-medium text-gray-900">{formatDate(selectedCard.lastUsedAt)}</div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Timestamps */}
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Timestamps</h4>
-                  <div className="grid grid-cols-2 gap-4 bg-gray-50 rounded-lg p-4">
-                    <div>
-                      <div className="text-sm text-gray-500">Created At</div>
-                      <div className="text-sm font-medium text-gray-900">{formatDate(selectedCard.createdAt)}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-gray-500">Updated At</div>
-                      <div className="text-sm font-medium text-gray-900">{formatDate(selectedCard.updatedAt)}</div>
-                    </div>
+                  <p className="text-xs text-gray-500 text-center mt-2">
+                    Click to view full size or download
+                  </p>
+                  <div className="flex justify-center mt-2 gap-2">
+                    <a
+                      href={selectedCard.photoUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+                    >
+                      View Full Size
+                    </a>
+                    <a
+                      href={selectedCard.photoUrl}
+                      download
+                      className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm"
+                    >
+                      Download
+                    </a>
                   </div>
                 </div>
               </div>
+            )}
 
-              <div className="mt-6 flex justify-end">
-                <button
-                  onClick={() => setShowDetailsModal(false)}
-                  className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-                >
-                  Close
-                </button>
+            {/* Discount Information */}
+            <div>
+              <h4 className="text-lg font-semibold text-gray-900 mb-3">Discount Information</h4>
+              <div className="grid grid-cols-1 gap-4 rounded-card bg-gray-50 p-4 sm:grid-cols-2">
+                <div>
+                  <div className="text-sm text-gray-500">Discount Type</div>
+                  <div className="text-sm font-medium text-gray-900">{getDiscountTypeLabel(selectedCard.discountType)}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500">ID Number</div>
+                  <div className="text-sm font-medium text-gray-900">{selectedCard.idNumber || 'N/A'}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500">ID Type</div>
+                  <div className="text-sm font-medium text-gray-900">{selectedCard.idType || 'N/A'}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500">Issuing Authority</div>
+                  <div className="text-sm font-medium text-gray-900">{selectedCard.issuingAuthority || 'N/A'}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Type-Specific Information */}
+            {selectedCard.discountType === 'STUDENT' && (
+              <div>
+                <h4 className="text-lg font-semibold text-gray-900 mb-3">Student Information</h4>
+                <div className="grid grid-cols-1 gap-4 rounded-card bg-gray-50 p-4 sm:grid-cols-2">
+                  <div>
+                    <div className="text-sm text-gray-500">School Name</div>
+                    <div className="text-sm font-medium text-gray-900">{selectedCard.schoolName || 'N/A'}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-500">Grade Level</div>
+                    <div className="text-sm font-medium text-gray-900">{selectedCard.gradeLevel || 'N/A'}</div>
+                  </div>
+                  <div className="col-span-2">
+                    <div className="text-sm text-gray-500">School Address</div>
+                    <div className="text-sm font-medium text-gray-900">{selectedCard.schoolAddress || 'N/A'}</div>
+                  </div>
+                  {selectedCard.schoolIdExpiry && (
+                    <div>
+                      <div className="text-sm text-gray-500">School ID Expiry</div>
+                      <div className="text-sm font-medium text-gray-900">{formatDate(selectedCard.schoolIdExpiry)}</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {selectedCard.discountType === 'PWD' && selectedCard.disabilityType && (
+              <div>
+                <h4 className="text-lg font-semibold text-gray-900 mb-3">PWD Information</h4>
+                <div className="grid grid-cols-1 gap-4 rounded-card bg-gray-50 p-4 sm:grid-cols-2">
+                  <div>
+                    <div className="text-sm text-gray-500">Disability Type</div>
+                    <div className="text-sm font-medium text-gray-900">{selectedCard.disabilityType}</div>
+                  </div>
+                  {selectedCard.pwdIdExpiry && (
+                    <div>
+                      <div className="text-sm text-gray-500">PWD ID Expiry</div>
+                      <div className="text-sm font-medium text-gray-900">{formatDate(selectedCard.pwdIdExpiry)}</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Verification Status */}
+            <div>
+              <h4 className="text-lg font-semibold text-gray-900 mb-3">Verification Status</h4>
+              <div className="grid grid-cols-1 gap-4 rounded-card bg-gray-50 p-4 sm:grid-cols-2">
+                <div>
+                  <div className="text-sm text-gray-500">Status</div>
+                  <div>
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusBadge(selectedCard.verificationStatus)}`}>
+                      {selectedCard.verificationStatus}
+                    </span>
+                  </div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500">Active</div>
+                  <div className="text-sm font-medium text-gray-900">{selectedCard.isActive ? 'Yes' : 'No'}</div>
+                </div>
+                {selectedCard.verifiedAt && (
+                  <>
+                    <div>
+                      <div className="text-sm text-gray-500">Verified At</div>
+                      <div className="text-sm font-medium text-gray-900">{formatDate(selectedCard.verifiedAt)}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-500">Verified By</div>
+                      <div className="text-sm font-medium text-gray-900">{selectedCard.verifiedBy || 'N/A'}</div>
+                    </div>
+                  </>
+                )}
+                {selectedCard.verificationNotes && (
+                  <div className="col-span-2">
+                    <div className="text-sm text-gray-500">Verification Notes</div>
+                    <div className="text-sm font-medium text-gray-900">{selectedCard.verificationNotes}</div>
+                  </div>
+                )}
+                {selectedCard.rejectionReason && (
+                  <div className="col-span-2">
+                    <div className="text-sm text-gray-500">Rejection Reason</div>
+                    <div className="text-sm font-medium text-red-600">{selectedCard.rejectionReason}</div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Admin Override */}
+            {selectedCard.isAdminOverride && (
+              <div>
+                <h4 className="text-lg font-semibold text-gray-900 mb-3">Admin Override</h4>
+                <div className="grid grid-cols-2 gap-4 bg-yellow-50 rounded-lg p-4 border border-yellow-200">
+                  <div>
+                    <div className="text-sm text-gray-500">Override By</div>
+                    <div className="text-sm font-medium text-gray-900">{selectedCard.overrideBy || 'N/A'}</div>
+                  </div>
+                  {selectedCard.overrideAt && (
+                    <div>
+                      <div className="text-sm text-gray-500">Override At</div>
+                      <div className="text-sm font-medium text-gray-900">{formatDate(selectedCard.overrideAt)}</div>
+                    </div>
+                  )}
+                  {selectedCard.overrideReason && (
+                    <div className="col-span-2">
+                      <div className="text-sm text-gray-500">Override Reason</div>
+                      <div className="text-sm font-medium text-gray-900">{selectedCard.overrideReason}</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Validity Period */}
+            <div>
+              <h4 className="text-lg font-semibold text-gray-900 mb-3">Validity Period</h4>
+              <div className="grid grid-cols-1 gap-4 rounded-card bg-gray-50 p-4 sm:grid-cols-2">
+                <div>
+                  <div className="text-sm text-gray-500">Valid From</div>
+                  <div className="text-sm font-medium text-gray-900">{formatDate(selectedCard.validFrom)}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500">Valid Until</div>
+                  <div className="text-sm font-medium text-gray-900">{formatDate(selectedCard.validUntil)}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Usage Statistics */}
+            <div>
+              <h4 className="text-lg font-semibold text-gray-900 mb-3">Usage Statistics</h4>
+              <div className="grid grid-cols-1 gap-4 rounded-card bg-gray-50 p-4 sm:grid-cols-3">
+                <div>
+                  <div className="text-sm text-gray-500">Total Usage</div>
+                  <div className="text-sm font-medium text-gray-900">{selectedCard.usageCount}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500">Daily Usage</div>
+                  <div className="text-sm font-medium text-gray-900">{selectedCard.dailyUsageCount}</div>
+                </div>
+                {selectedCard.lastUsedAt && (
+                  <div>
+                    <div className="text-sm text-gray-500">Last Used</div>
+                    <div className="text-sm font-medium text-gray-900">{formatDate(selectedCard.lastUsedAt)}</div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Timestamps */}
+            <div>
+              <h4 className="text-lg font-semibold text-gray-900 mb-3">Timestamps</h4>
+              <div className="grid grid-cols-1 gap-4 rounded-card bg-gray-50 p-4 sm:grid-cols-2">
+                <div>
+                  <div className="text-sm text-gray-500">Created At</div>
+                  <div className="text-sm font-medium text-gray-900">{formatDate(selectedCard.createdAt)}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500">Updated At</div>
+                  <div className="text-sm font-medium text-gray-900">{formatDate(selectedCard.updatedAt)}</div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+
+          <div className="mt-6 flex justify-end">
+            <button
+              onClick={() => setShowDetailsModal(false)}
+              className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              Close
+            </button>
+          </div>
+          </>
+        ) : null}
+      </Modal>
     </div>
   )
 }

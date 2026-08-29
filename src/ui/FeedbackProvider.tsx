@@ -88,8 +88,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
       {/* Toasts — above the mobile bottom nav via the shared height var */}
       <div
         aria-live="polite"
-        className="pointer-events-none fixed inset-x-0 z-50 flex flex-col items-center gap-2"
-        style={{ bottom: 'calc(var(--mobile-bottom-nav-height) + var(--mobile-safe-area-bottom) + 1rem)' }}
+        className="app-above-bottom-nav pointer-events-none fixed inset-x-0 z-sheet flex flex-col items-center gap-2"
       >
         {toasts.map((t) => {
           const Icon = TOAST_ICON[t.tone]

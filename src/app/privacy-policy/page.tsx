@@ -1,5 +1,5 @@
 import { CURRENT_PRIVACY_NOTICE_VERSION } from '@/lib/privacyNotice'
-import GradientHeader from '@/ui/GradientHeader'
+import PageShell from '@/ui/PageShell'
 
 export const metadata = {
   title: 'Privacy Notice — Basey Fare Check',
@@ -9,15 +9,13 @@ export const metadata = {
 
 export default function PrivacyPolicyPage() {
   return (
-    <div className="min-h-screen bg-surface-bg">
-      <div className="mx-auto max-w-3xl">
-        <GradientHeader
-          title="Privacy Notice"
-          subtitle={`Version ${CURRENT_PRIVACY_NOTICE_VERSION} — Basey FareCheck`}
-          backHref="/"
-        />
-        <div className="-mt-6 px-4 pb-12 lg:px-8">
-        <div className="rounded-card border border-surface-border bg-surface p-6 shadow-card sm:p-8">
+    <PageShell
+      title="Privacy Notice"
+      subtitle={`Version ${CURRENT_PRIVACY_NOTICE_VERSION} — Basey FareCheck`}
+      backHref="/"
+      width="narrow"
+    >
+      <div className="rounded-card border border-surface-border bg-surface p-6 shadow-card sm:p-8">
         <div className="mb-10">
           <p className="text-base text-gray-700">
             This Privacy Notice explains how Basey Fare Check collects, uses, and handles your
@@ -234,9 +232,7 @@ export default function PrivacyPolicyPage() {
           <br />
           Privacy Notice version {CURRENT_PRIVACY_NOTICE_VERSION}
         </div>
-        </div>
-        </div>
       </div>
-    </div>
+    </PageShell>
   )
 }

@@ -53,8 +53,8 @@ export default function AppShell({ children, user }: AppShellProps) {
   }
 
   return (
-    <div className="flex min-h-screen bg-surface-bg">
-      <aside className="hidden w-64 border-r border-surface-border bg-surface lg:flex lg:min-h-screen lg:flex-col">
+    <div className="flex min-h-dvh bg-surface-bg">
+      <aside className="hidden w-64 border-r border-surface-border bg-surface lg:sticky lg:top-0 lg:flex lg:h-dvh lg:flex-col">
         <div className="flex h-20 items-center border-b border-surface-border px-6 py-5">
           <div className="flex items-center gap-3">
             <BrandMark />
@@ -99,7 +99,7 @@ export default function AppShell({ children, user }: AppShellProps) {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <main className="app-mobile-nav-offset flex-1 overflow-auto">{children}</main>
+        <main className="app-mobile-nav-offset min-w-0 flex-1">{children}</main>
       </div>
 
       <AuthenticatedMobileBottomNavigation

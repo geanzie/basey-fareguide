@@ -175,11 +175,11 @@ export function AuthenticatedMobileProfileSheet({
       <button
         type="button"
         aria-label="Close profile sheet"
-        className="fixed inset-0 z-40 bg-slate-950/45 backdrop-blur-sm"
+        className="fixed inset-0 z-sheet bg-slate-950/45 backdrop-blur-sm"
         onClick={onClose}
       />
 
-      <section className="app-mobile-sheet-safe fixed inset-x-0 bottom-0 z-50 rounded-t-[28px] border border-surface-border bg-surface px-4 pt-4 shadow-raised">
+      <section className="app-mobile-sheet-safe fixed inset-x-0 bottom-0 z-sheet rounded-t-sheet border border-surface-border bg-surface px-4 pt-4 shadow-raised">
         <div className="mx-auto mb-4 h-1.5 w-14 rounded-full bg-surface-border" />
 
         <div className="mb-4 rounded-2xl border border-surface-border bg-surface-alt px-4 py-3">
@@ -226,7 +226,7 @@ export function AuthenticatedMobileProfileSheet({
       </section>
 
       {confirmOpen && (
-        <div className="fixed inset-0 z-60 flex items-end justify-center px-4 pb-8">
+        <div className="fixed inset-0 z-dialog flex items-end justify-center px-4 pb-8">
           <button
             type="button"
             aria-label="Cancel sign out"

@@ -31,6 +31,10 @@ export const viewport = {
   width: 'device-width',
   initialScale: 1,
   themeColor: '#16a34a',
+  // Required for env(safe-area-inset-*) to resolve to anything but 0px on
+  // notched devices — globals.css builds the tab bar and sheet padding on it,
+  // and manifest.json runs the app in standalone mode.
+  viewportFit: 'cover' as const,
 }
 
 export default async function RootLayout({
@@ -46,14 +50,13 @@ export default async function RootLayout({
   return (
     <html lang="en" data-scroll-behavior="smooth">
       <head>
-        <meta name="theme-color" content="#16a34a" />
         <link rel="icon" href="/favicon.ico" />
       </head>
       <body className={`${inter.className} bg-surface-bg antialiased overflow-x-hidden`} suppressHydrationWarning>
         <SWRProvider>
           <AuthProvider initialSession={initialSession}>
           <FeedbackProvider>
-          <div className="min-h-screen flex flex-col max-w-full">
+          <div className="flex min-h-dvh max-w-full flex-col">
 
             {/* Main Content with Conditional Sidebar */}
             <AuthAwareLayout>

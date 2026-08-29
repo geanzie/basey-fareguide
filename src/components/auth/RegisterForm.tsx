@@ -155,7 +155,7 @@ const RegisterForm = ({ onSwitchToLogin }: RegisterFormProps) => {
   }
 
   return (
-    <div className="min-h-screen bg-ink-strong px-4 py-10 sm:px-6 lg:px-8">
+    <div className="min-h-dvh bg-ink-strong px-4 py-10 sm:px-6 lg:px-8">
       <div className="mx-auto w-full max-w-lg">
         <div className="mb-6 text-center">
           <h1 className="text-[26px] font-extrabold text-white">Create your account</h1>

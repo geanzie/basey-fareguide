@@ -307,14 +307,14 @@ export default function QrComplianceTerminal() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom,0px))] right-4 z-[45] inline-flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-xl transition hover:bg-primary-dark lg:bottom-6 lg:right-6"
+        className="fixed app-above-bottom-nav right-4 z-fab inline-flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-xl transition hover:bg-primary-dark lg:right-6"
         aria-label="Open QR compliance terminal"
       >
         <DashboardIconSlot icon={DASHBOARD_ICONS.camera} size={22} className="text-white" />
       </button>
 
       {open ? (
-        <div className="fixed inset-0 z-[70] bg-slate-950/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-overlay bg-slate-950/50 backdrop-blur-sm">
           <div className="flex min-h-full items-end justify-center p-4 sm:items-center">
             <div className={`border border-surface-border bg-surface shadow-raised flex w-full max-w-5xl flex-col rounded-[1.5rem] p-4 shadow-2xl sm:rounded-3xl sm:p-5 ${shouldMaximizeTerminal ? 'h-[calc(100dvh-1rem)] overflow-hidden sm:h-[min(92dvh,860px)]' : 'max-h-[calc(100dvh-1rem)] overflow-y-auto sm:max-h-[min(92dvh,860px)]'}`}>
               <div className="mb-4 flex items-start justify-between gap-4">
@@ -396,7 +396,7 @@ export default function QrComplianceTerminal() {
 
                 {isAuthenticated && isEnforcer && unlockState?.unlocked ? (
                   <div className={shouldMaximizeTerminal ? 'flex h-full min-h-0 flex-col gap-4' : 'flex flex-col gap-4'}>
-                    <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
+                    <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4 sm:gap-2">
                     <button
                       type="button"
                       onClick={() => setView('camera-ready')}

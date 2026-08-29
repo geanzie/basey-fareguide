@@ -130,7 +130,7 @@ export default function AdminDashboard() {
       <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[...Array(4)].map((_, index) => (
-            <div key={index} className="border border-surface-border bg-surface shadow-card rounded-xl p-6 animate-pulse">
+            <div key={index} className="border border-surface-border bg-surface shadow-card rounded-card p-6 animate-pulse">
               <div className="h-4 bg-gray-200 rounded mb-2"></div>
               <div className="h-8 bg-gray-200 rounded"></div>
             </div>
@@ -158,7 +158,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-8">
-      <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-6 border border-gray-200/80">
+      <div className="border bg-surface shadow-card rounded-card p-6 border-gray-200/80">
         <div className="flex items-start gap-4">
           <div className={getDashboardIconChipClasses('emerald')}>
             <DashboardIconSlot
@@ -205,7 +205,7 @@ export default function AdminDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
+        <div className="border border-surface-border bg-surface shadow-card rounded-card p-6">
           <div className="mb-4 flex items-center gap-2">
             <DashboardIconSlot
               icon={DASHBOARD_ICONS.users}
@@ -228,7 +228,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
+        <div className="border border-surface-border bg-surface shadow-card rounded-card p-6">
           <div className="mb-4 flex items-center gap-2">
             <DashboardIconSlot
               icon={DASHBOARD_ICONS.list}
@@ -276,7 +276,7 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
+      <div className="border border-surface-border bg-surface shadow-card rounded-card p-6">
         <div className="mb-4 flex items-center gap-2">
           <DashboardIconSlot
             icon={DASHBOARD_ICONS.dashboard}
@@ -359,7 +359,7 @@ function StatCard({
   detail?: string
 }) {
   return (
-    <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
+    <div className="border border-surface-border bg-surface shadow-card rounded-card p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <div className="text-sm font-medium text-gray-500">{label}</div>

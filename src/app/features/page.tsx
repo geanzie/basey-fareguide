@@ -155,26 +155,26 @@ export default function FeaturesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-surface-bg">
+    <div className="min-h-dvh bg-surface-bg">
       <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/" className="flex items-center gap-3">
+        <div className="container mx-auto px-4">
+          <div className="flex h-16 items-center justify-between gap-3">
+            <Link href="/" className="flex min-w-0 items-center gap-3">
               <BrandMark size="sm" />
-              <span className="text-xl font-bold text-gray-800">Basey Fare Check</span>
+              <span className="truncate text-xl font-bold text-gray-800">Basey Fare Check</span>
             </Link>
 
-            <div className="flex space-x-4">
+            <div className="flex shrink-0 items-center gap-2">
               <Link
                 href="/"
-                className="inline-flex items-center gap-2 text-ink-muted hover:text-primary px-3 py-2 font-medium"
+                className="inline-flex items-center gap-2 px-3 py-2 font-medium text-ink-muted hover:text-primary"
               >
                 <DashboardIconSlot icon={DASHBOARD_ICONS.home} size={DASHBOARD_ICON_POLICY.sizes.button} />
-                <span>Home</span>
+                <span className="hidden sm:inline">Home</span>
               </Link>
               <Link
                 href="/auth"
-                className="inline-flex items-center gap-2 bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg font-medium"
+                className="inline-flex items-center gap-2 whitespace-nowrap rounded-lg bg-primary px-4 py-2 font-medium text-white hover:bg-primary-dark"
               >
                 <DashboardIconSlot icon={DASHBOARD_ICONS.arrowRight} size={DASHBOARD_ICON_POLICY.sizes.button} className="-rotate-45" />
                 <span>Get Started</span>
@@ -184,8 +184,8 @@ export default function FeaturesPage() {
         </div>
       </header>
 
-      <section className="bg-brand text-white py-16">
-        <div className="max-w-7xl mx-auto px-4 text-center">
+      <section className="bg-brand text-white py-12 lg:py-16">
+        <div className="container mx-auto px-4 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
             Complete Transportation Management
           </h1>
@@ -212,8 +212,8 @@ export default function FeaturesPage() {
         </div>
       </section>
 
-      <section className="py-16">
-        <div className="max-w-7xl mx-auto px-4">
+      <section className="py-12 lg:py-16">
+        <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">System Features</h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
@@ -264,8 +264,8 @@ export default function FeaturesPage() {
         </div>
       </section>
 
-      <section className="bg-white py-16">
-        <div className="max-w-7xl mx-auto px-4">
+      <section className="bg-white py-12 lg:py-16">
+        <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">User Access Levels</h2>
             <p className="text-gray-600">Different user types with specific permissions and capabilities.</p>
@@ -287,7 +287,7 @@ export default function FeaturesPage() {
         </div>
       </section>
 
-      <section className="bg-gray-900 text-white py-16">
+      <section className="bg-gray-900 text-white py-12 lg:py-16">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold mb-4">Ready to Get Started?</h2>
           <p className="text-gray-300 mb-8 text-lg">

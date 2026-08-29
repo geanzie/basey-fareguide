@@ -154,7 +154,7 @@ export default function BulkQrPrintSheet({ onClose }: BulkQrPrintSheetProps) {
       <style>{PRINT_STYLES}</style>
       <div
         id="bulk-qr-sheet"
-        className="fixed inset-0 z-[60] overflow-y-auto bg-white"
+        className="fixed inset-0 z-dialog overflow-y-auto bg-white"
       >
         {/* Controls bar — hidden in print */}
         <div className="bulk-qr-controls sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4 shadow-sm">

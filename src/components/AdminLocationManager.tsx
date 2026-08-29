@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { validateCoordinateFormat, generateMapsUrl } from '@/utils/locationValidation'
 import { useFeedback } from '@/ui/FeedbackProvider'
+import ResponsiveTable from '@/components/ResponsiveTable'
 
 interface Location {
   id: string
@@ -264,7 +265,7 @@ export default function AdminLocationManager() {
 
       {/* Add/Edit Form */}
       {showForm && (
-        <div className="border border-surface-border bg-surface shadow-card rounded-3xl p-6">
+        <div className="border border-surface-border bg-surface shadow-card rounded-card p-6">
           <h3 className="text-xl font-semibold mb-4">
             {editingLocation ? 'Edit Location' : 'Add New Location'}
           </h3>
@@ -467,7 +468,7 @@ export default function AdminLocationManager() {
       )}
 
       {/* Search and Filter */}
-      <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-4">
+      <div className="border border-surface-border bg-surface shadow-card rounded-card p-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <label htmlFor="admin-location-search" className="sr-only">Search locations</label>
           <input
@@ -510,78 +511,75 @@ export default function AdminLocationManager() {
         </div>
       </div>
 
-      {/* Locations Table */}
-      <div className="border border-surface-border bg-surface shadow-card rounded-2xl overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Barangay</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Coordinates</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {locations.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
-                  No locations found
-                </td>
-              </tr>
-            ) : (
-              locations.map((location) => (
-                <tr key={location.id} className={!location.isActive ? 'bg-gray-50 opacity-50' : ''}>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{location.name}</div>
-                    {location.description && (
-                      <div className="text-sm text-gray-500">{location.description}</div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {location.type}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {location.barangay || '-'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <a
-                      href={generateMapsUrl(location.coordinates, location.name)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline"
-                    >
-                      {location.coordinates}
-                    </a>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs rounded-full ${
-                      location.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                    }`}>
-                      {location.isActive ? 'Active' : 'Inactive'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <button
-                      onClick={() => handleEdit(location)}
-                      className="text-blue-600 hover:text-blue-900 mr-3"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(location.id)}
-                      className="text-red-600 hover:text-red-900"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      {/* Locations Table — ResponsiveTable stacks into cards below md, so the
+          six columns are readable on a phone instead of clipped off-screen. */}
+      <ResponsiveTable
+        data={locations}
+        emptyMessage="No locations found"
+        getRowKey={(row: Location) => row.id}
+        mobileCardClassName="bg-surface"
+        columns={[
+          {
+            key: 'name',
+            label: 'Name',
+            render: (_value: unknown, row: Location) => (
+              <div>
+                <div className="text-sm font-medium text-gray-900">{row.name}</div>
+                {row.description ? (
+                  <div className="text-sm text-gray-500">{row.description}</div>
+                ) : null}
+              </div>
+            ),
+          },
+          { key: 'type', label: 'Type' },
+          {
+            key: 'barangay',
+            label: 'Barangay',
+            render: (_value: unknown, row: Location) => row.barangay || '-',
+          },
+          {
+            key: 'coordinates',
+            label: 'Coordinates',
+            render: (_value: unknown, row: Location) => (
+              <a
+                href={generateMapsUrl(row.coordinates, row.name)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:underline"
+              >
+                {row.coordinates}
+              </a>
+            ),
+          },
+          {
+            key: 'isActive',
+            label: 'Status',
+            render: (_value: unknown, row: Location) => (
+              <span
+                className={`rounded-full px-2 py-1 text-xs ${
+                  row.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                }`}
+              >
+                {row.isActive ? 'Active' : 'Inactive'}
+              </span>
+            ),
+          },
+          {
+            key: 'actions',
+            label: 'Actions',
+            render: (_value: unknown, row: Location) => (
+              <div className="flex gap-3">
+                <button onClick={() => handleEdit(row)} className="text-blue-600 hover:text-blue-900">
+                  Edit
+                </button>
+                <button onClick={() => handleDelete(row.id)} className="text-red-600 hover:text-red-900">
+                  Delete
+                </button>
+              </div>
+            ),
+          },
+        ]}
+      />
     </div>
   )
 }

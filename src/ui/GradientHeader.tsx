@@ -9,8 +9,6 @@ interface Props {
   backHref?: string
   /** Optional element rendered on the right (e.g. an icon button). */
   right?: ReactNode
-  /** Tighter vertical padding for content-heavy screens. */
-  compact?: boolean
   /** Extra content rendered inside the band below the title (e.g. tabs, avatar). */
   children?: ReactNode
   className?: string
@@ -19,22 +17,24 @@ interface Props {
 /**
  * Slate→green hero band — the web twin of mobile/src/ui/GradientHeader.tsx.
  * Extends the login screen's color story (#0f172a → #16a34a) so both apps read
- * as one brand. Float the first Card below it up with -mt-6 for depth.
+ * as one brand.
+ *
+ * The band never floats page content itself. ui/PageShell owns the overlap: it
+ * pulls an opaque `rounded-t-plate` surface up over the band's bottom padding,
+ * so a page's first child is safe whether or not it happens to be a card.
  */
 export default function GradientHeader({
   title,
   subtitle,
   backHref,
   right,
-  compact,
   children,
   className = '',
 }: Props) {
   return (
-    // Bottom padding must exceed the content's -mt-6 float so cards overlap
-    // only empty gradient, never the title/subtitle text.
     <header
-      className={`bg-brand rounded-b-3xl px-6 pt-6 text-white ${compact ? 'pb-10' : 'pb-12'} ${className}`}
+      // pt clears the status bar in the standalone PWA (viewportFit: 'cover').
+      className={`bg-brand rounded-b-band px-6 pb-10 pt-[calc(1.5rem+env(safe-area-inset-top,0px))] text-white ${className}`}
     >
       <div className="flex items-center gap-3">
         {backHref ? (

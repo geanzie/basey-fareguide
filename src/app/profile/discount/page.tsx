@@ -3,24 +3,21 @@
 import { useAuth } from '@/components/AuthProvider'
 import DiscountApplication from '@/components/DiscountApplication'
 import RoleGuard from '@/components/RoleGuard'
-import GradientHeader from '@/ui/GradientHeader'
+import PageShell from '@/ui/PageShell'
 
 export default function DiscountApplicationPage() {
   const { user } = useAuth()
 
   return (
     <RoleGuard allowedRoles={['PUBLIC']}>
-      <div className="mx-auto max-w-4xl">
-        <GradientHeader
-          title="Apply for Discount Card"
-          subtitle="Senior Citizen, PWD, or Student discount"
-          backHref="/profile"
-          compact
-        />
-        <div className="-mt-6 px-4 pb-8 lg:px-8">
-          {user ? <DiscountApplication user={user} /> : null}
-        </div>
-      </div>
+      <PageShell
+        title="Apply for Discount Card"
+        subtitle="Senior Citizen, PWD, or Student discount"
+        backHref="/profile"
+        width="narrow"
+      >
+        {user ? <DiscountApplication user={user} /> : null}
+      </PageShell>
     </RoleGuard>
   )
 }

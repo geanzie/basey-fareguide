@@ -1177,7 +1177,7 @@ const RoutePlannerCalculator = ({
   )
 
   return (
-    <div className="mx-auto w-full max-w-md">
+    <div className="w-full">
       <div className="space-y-4">
         {!isOnline ? (
           <div className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 sm:text-sm">
@@ -1637,7 +1637,7 @@ const RoutePlannerCalculator = ({
                 : 'Pick your drop-off point'
               : 'Route map'
           }
-          className="fixed inset-0 z-[500] flex flex-col bg-white"
+          className="fixed inset-0 z-map flex flex-col bg-white"
         >
           <div className="flex items-center gap-2 border-b border-slate-200 px-3 py-2">
             <button

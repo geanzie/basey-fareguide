@@ -115,7 +115,7 @@ export default function FareRateBanner({
           <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
           <p className="mt-1 text-sm text-slate-600">{description}</p>
         </div>
-        <div className="border border-surface-border bg-surface-alt rounded-xl border border-primary/20 px-4 py-3 text-sm text-primary-dark">
+        <div className="rounded-card border border-primary/20 bg-surface-alt px-4 py-3 text-sm text-primary-dark">
           Active as of {formatManilaDateTimeLabel(data.current.effectiveAt)}
         </div>
       </div>

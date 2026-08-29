@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useId, useRef, type ReactNode } from 'react'
 import { X } from 'lucide-react'
 
 interface Props {
@@ -14,22 +14,34 @@ interface Props {
 }
 
 /**
- * Native <dialog>-based modal: Esc, focus trap and backdrop come for free.
- * Bottom sheet on small screens, centered card on lg+ — mirrors mobile AppModal.
+ * Native <dialog>-based modal: Esc, focus trap and backdrop come for free, and
+ * the top layer means no z-index to coordinate.
+ *
+ * Nothing renders while closed, so a modal's body never mounts (or fetches)
+ * until it is opened.
  */
 export default function Modal({ open, onClose, title, children, footer, size = 'md' }: Props) {
   const ref = useRef<HTMLDialogElement>(null)
+  const titleId = useId()
 
   useEffect(() => {
     const dialog = ref.current
-    if (!dialog) return
-    if (open && !dialog.open) dialog.showModal()
-    if (!open && dialog.open) dialog.close()
+    if (!dialog || !open || dialog.open) return
+    // showModal is missing in some test environments; the open attribute still
+    // renders the dialog inline there.
+    if (typeof dialog.showModal === 'function') {
+      dialog.showModal()
+    } else {
+      dialog.setAttribute('open', '')
+    }
   }, [open])
+
+  if (!open) return null
 
   return (
     <dialog
       ref={ref}
+      aria-labelledby={title ? titleId : undefined}
       onClose={onClose}
       onClick={(e) => {
         // click on ::backdrop registers on the dialog element itself
@@ -39,9 +51,15 @@ export default function Modal({ open, onClose, title, children, footer, size = '
         size === 'lg' ? 'lg:max-w-3xl' : 'lg:max-w-lg'
       }`}
     >
-      <div className="app-mobile-sheet-safe flex max-h-[85vh] flex-col lg:max-h-[80vh]">
+      <div className="app-mobile-sheet-safe flex max-h-[85dvh] flex-col lg:max-h-[80dvh]">
         <div className="flex items-center justify-between gap-3 px-6 pb-2 pt-5">
-          {title ? <h2 className="text-lg font-bold text-ink-strong">{title}</h2> : <span />}
+          {title ? (
+            <h2 id={titleId} className="text-lg font-bold text-ink-strong">
+              {title}
+            </h2>
+          ) : (
+            <span />
+          )}
           <button
             type="button"
             onClick={onClose}

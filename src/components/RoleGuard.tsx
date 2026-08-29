@@ -63,7 +63,7 @@ export default function RoleGuard({
 
   if (guardState === 'unauthorized') {
     return fallback || (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-dvh flex items-center justify-center">
         <div className="text-center">
           <div className="text-6xl mb-4">!</div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>

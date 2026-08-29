@@ -269,7 +269,7 @@ export default function AdminAnnouncementsManager() {
 
   if (loading && !data) {
     return (
-      <div className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
+      <div className="border border-surface-border bg-surface shadow-card rounded-card p-6">
         <p className="text-sm text-slate-500">Loading traffic announcement management...</p>
       </div>
     )
@@ -295,7 +295,7 @@ export default function AdminAnnouncementsManager() {
         </div>
       )}
 
-      <section className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
+      <section className="border border-surface-border bg-surface shadow-card rounded-card p-6">
         <div className="mb-5">
           <h2 className="text-xl font-semibold text-slate-900">
             {editingAnnouncement ? 'Edit Traffic Announcement' : 'Publish a Traffic Announcement'}
@@ -426,7 +426,7 @@ export default function AdminAnnouncementsManager() {
         </form>
       </section>
 
-      <section className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
+      <section className="border border-surface-border bg-surface shadow-card rounded-card p-6">
         <div className="mb-5">
           <h2 className="text-xl font-semibold text-slate-900">Active Announcements</h2>
           <p className="mt-1 text-sm text-slate-600">
@@ -451,7 +451,7 @@ export default function AdminAnnouncementsManager() {
         </div>
       </section>
 
-      <section className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
+      <section className="border border-surface-border bg-surface shadow-card rounded-card p-6">
         <div className="mb-5">
           <h2 className="text-xl font-semibold text-slate-900">Scheduled Announcements</h2>
           <p className="mt-1 text-sm text-slate-600">
@@ -476,7 +476,7 @@ export default function AdminAnnouncementsManager() {
         </div>
       </section>
 
-      <section className="border border-surface-border bg-surface shadow-card rounded-2xl p-6">
+      <section className="border border-surface-border bg-surface shadow-card rounded-card p-6">
         <div className="mb-5">
           <h2 className="text-xl font-semibold text-slate-900">Announcement History</h2>
           <p className="mt-1 text-sm text-slate-600">

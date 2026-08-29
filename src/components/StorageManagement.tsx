@@ -131,7 +131,7 @@ export default function StorageManagement() {
 
   if (loading) {
     return (
-      <div className="border border-surface-border bg-surface shadow-card rounded-3xl p-8">
+      <div className="border border-surface-border bg-surface shadow-card rounded-card p-8">
         <div className="animate-pulse">
           <div className="h-6 bg-gray-200 rounded mb-4"></div>
           <div className="space-y-3">
@@ -145,7 +145,7 @@ export default function StorageManagement() {
 
   return (
     <div className="space-y-6">
-      <div className="border border-surface-border bg-surface shadow-card rounded-3xl p-8">
+      <div className="border border-surface-border bg-surface shadow-card rounded-card p-8">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Evidence Storage Management</h2>
 
         {message ? (

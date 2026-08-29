@@ -266,7 +266,7 @@ describe('AdminUserManagement', () => {
         return
       }
 
-      expect(container.querySelector('[role="dialog"]')).not.toBeNull()
+      expect(container.querySelector('dialog')).not.toBeNull()
       expect(container.textContent).toContain('User Details')
     })
 
@@ -303,7 +303,7 @@ describe('AdminUserManagement', () => {
         await Promise.resolve()
       })
 
-      const modal = container.querySelector('[role="dialog"]')
+      const modal = container.querySelector('dialog')
       expect(modal).not.toBeNull()
 
       const deactivateBtn = Array.from((modal ?? container).querySelectorAll('button')).find(
