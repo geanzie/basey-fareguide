@@ -3,58 +3,52 @@ import type * as Leaflet from 'leaflet'
 const OSM_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 
-const OSM_TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+const PROTOMAPS_ATTRIBUTION = '<a href="https://protomaps.com">Protomaps</a>'
 
 /**
- * The area and zoom range actually present in `public/tiles`. Mirrors BBOX and
- * the zoom arguments of `scripts/fetch-tiles.mjs` — if the pack is ever
- * extended, raise LOCAL_MAX_NATIVE_ZOOM to match, or the extra tiles are never
- * requested.
+ * The self-hosted basemap archive. A single PMTiles file covering the Basey
+ * service-area bbox, built by `scripts/build-basemap.mjs` from the public
+ * Protomaps OSM build.
+ *
+ * Nothing here talks to tile.openstreetmap.org. Bulk-fetching that server is
+ * against its usage policy and gets the origin IP blocked, which is what the
+ * previous raster layer ran into.
+ *
+ * Override the location (e.g. to serve the archive from MinIO on the NAS
+ * instead of `public/`) with NEXT_PUBLIC_BASEMAP_URL.
  */
-const LOCAL_BBOX = { latMin: 11.1, latMax: 11.5, lngMin: 124.8, lngMax: 125.3 }
-const LOCAL_MIN_ZOOM = 11
-const LOCAL_MAX_NATIVE_ZOOM = 12
+const BASEMAP_URL = process.env.NEXT_PUBLIC_BASEMAP_URL || '/map/basey.pmtiles'
+
+/**
+ * The deepest zoom present in the archive — mirrors `--maxzoom` in
+ * `scripts/build-basemap.mjs`. Vector tiles are overzoomed past this rather
+ * than requested, so the map stays sharp up to MAX_ZOOM.
+ */
+const MAX_DATA_ZOOM = 15
 const MAX_ZOOM = 19
 
 /**
- * Add the base map tiles.
+ * Add the base map to `map`.
  *
- * Two layers, because the local pack covers only Basey at zoom 11-12 while the
- * planner opens at zoom 13:
+ * One vector layer rendered from the local PMTiles archive — no remote tile
+ * server, no API key, and the whole service area works offline once the
+ * archive is cached (see the `/map/` entry in `src/app/sw.ts`).
  *
- * - OSM underneath, covering every zoom and everywhere outside the bbox;
- * - the pre-packed `/tiles` on top, clamped to the bbox and to the zooms that
- *   exist on disk. Leaflet upscales the z12 tiles above `maxNativeZoom` rather
- *   than requesting tiles that would 404, and `bounds` stops it asking for
- *   anything outside the pack at all.
- *
- * Offline (service worker) the local pack still paints Basey; the OSM layer
- * underneath simply fails to load.
+ * Async because `protomaps-leaflet` is browser-only and must be imported the
+ * same way Leaflet itself is. Both callers already run inside a client effect.
  */
-export function addBaseTileLayer(L: typeof Leaflet, map: Leaflet.Map): Leaflet.TileLayer {
-  L.tileLayer(OSM_TILE_URL, {
-    attribution: OSM_ATTRIBUTION,
+export async function addBaseTileLayer(map: Leaflet.Map): Promise<Leaflet.Layer> {
+  const { leafletLayer } = await import('protomaps-leaflet')
+
+  const layer = leafletLayer({
+    url: BASEMAP_URL,
+    flavor: 'light',
+    lang: 'en',
+    maxDataZoom: MAX_DATA_ZOOM,
     maxZoom: MAX_ZOOM,
-  }).addTo(map)
+    attribution: `${OSM_ATTRIBUTION} | ${PROTOMAPS_ATTRIBUTION}`,
+  }) as unknown as Leaflet.Layer
 
-  const localLayer = L.tileLayer('/tiles/{z}/{x}/{y}.png', {
-    attribution: OSM_ATTRIBUTION,
-    minZoom: LOCAL_MIN_ZOOM,
-    maxZoom: MAX_ZOOM,
-    maxNativeZoom: LOCAL_MAX_NATIVE_ZOOM,
-    bounds: L.latLngBounds(
-      [LOCAL_BBOX.latMin, LOCAL_BBOX.lngMin],
-      [LOCAL_BBOX.latMax, LOCAL_BBOX.lngMax],
-    ),
-  })
-
-  // The bounds and zoom clamp should make this unreachable; keep it so a gap in
-  // the pack degrades to a transparent tile over OSM instead of a broken image.
-  localLayer.on('tileerror', (event: Leaflet.TileErrorEvent) => {
-    const tile = event.tile as HTMLImageElement
-    tile.style.display = 'none'
-  })
-
-  localLayer.addTo(map)
-  return localLayer
+  layer.addTo(map)
+  return layer
 }

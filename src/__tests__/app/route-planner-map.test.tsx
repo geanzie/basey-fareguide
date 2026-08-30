@@ -65,7 +65,8 @@ vi.mock('leaflet', () => ({
 }))
 
 vi.mock('@/lib/map/baseTileLayer', () => ({
-  addBaseTileLayer: vi.fn(),
+  // Async now: the real one lazily imports the browser-only PMTiles renderer.
+  addBaseTileLayer: vi.fn(() => Promise.resolve({})),
 }))
 
 describe('RoutePlannerMap', () => {

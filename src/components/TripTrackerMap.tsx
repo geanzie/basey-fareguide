@@ -68,7 +68,15 @@ export default function TripTrackerMap({
       const map = L.map(containerRef.current, { zoomControl: true })
       mapRef.current = map
 
-      addBaseTileLayer(L, map)
+      void addBaseTileLayer(map)
+        .then((layer) => {
+          if (cancelled) {
+            map.removeLayer(layer)
+          }
+        })
+        .catch((error) => {
+          console.error('Basemap failed to load', error)
+        })
 
       const fitBoundsCoords: [number, number][] = []
 

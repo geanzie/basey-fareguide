@@ -1,6 +1,6 @@
 import { defaultCache } from "@serwist/next/worker";
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
-import { CacheFirst, ExpirationPlugin, Serwist } from "serwist";
+import { CacheFirst, ExpirationPlugin, RangeRequestsPlugin, Serwist } from "serwist";
 
 declare global {
   interface WorkerGlobalScope extends SerwistGlobalConfig {
@@ -10,24 +10,23 @@ declare global {
 
 declare const self: ServiceWorkerGlobalScope;
 
-const TILE_CACHE = "basey-tiles-v1";
+const BASEMAP_CACHE = "basey-basemap-v1";
 const DATA_CACHE = "basey-data-v1";
 
-// Precache the pre-packed Basey bbox tiles on install so the map is fully
-// usable offline before the user pans anywhere. The list is emitted by
-// scripts/fetch-tiles.mjs as /tiles/manifest.json.
+/** Mirrors BASEMAP_URL in src/lib/map/baseTileLayer.ts. */
+const BASEMAP_PATH = "/map/basey.pmtiles";
+
+// Precache the basemap archive on install so the map is fully usable offline
+// before the user pans anywhere. One PMTiles file covering the Basey bbox,
+// built by scripts/build-basemap.mjs.
 self.addEventListener("install", (event) => {
   event.waitUntil(
     (async () => {
       try {
-        const res = await fetch("/tiles/manifest.json", { cache: "no-cache" });
-        if (res.ok) {
-          const urls = (await res.json()) as string[];
-          const cache = await caches.open(TILE_CACHE);
-          await cache.addAll(urls);
-        }
+        const cache = await caches.open(BASEMAP_CACHE);
+        await cache.add(BASEMAP_PATH);
       } catch {
-        // Manifest missing (tiles not fetched yet) — runtime caching still works.
+        // Archive missing (not built yet) — runtime caching still works.
       }
 
       try {
@@ -48,22 +47,15 @@ const serwist = new Serwist({
   navigationPreload: true,
   runtimeCaching: [
     {
-      // Pre-packed local Basey tiles.
-      matcher: ({ url }) => url.pathname.startsWith("/tiles/"),
+      // Self-hosted basemap archive. PMTiles is read with HTTP Range requests,
+      // so RangeRequestsPlugin is what lets the single cached full response
+      // satisfy the partial reads — without it every range request misses.
+      matcher: ({ url }) => url.pathname === BASEMAP_PATH,
       handler: new CacheFirst({
-        cacheName: TILE_CACHE,
+        cacheName: BASEMAP_CACHE,
         plugins: [
-          new ExpirationPlugin({ maxEntries: 4000, maxAgeSeconds: 60 * 60 * 24 * 180 }),
-        ],
-      }),
-    },
-    {
-      // Live OSM fallback tiles (areas outside the bbox / higher zooms).
-      matcher: ({ url }) => url.hostname.endsWith("tile.openstreetmap.org"),
-      handler: new CacheFirst({
-        cacheName: "osm-tiles-runtime",
-        plugins: [
-          new ExpirationPlugin({ maxEntries: 2000, maxAgeSeconds: 60 * 60 * 24 * 30 }),
+          new RangeRequestsPlugin(),
+          new ExpirationPlugin({ maxEntries: 4, maxAgeSeconds: 60 * 60 * 24 * 180 }),
         ],
       }),
     },

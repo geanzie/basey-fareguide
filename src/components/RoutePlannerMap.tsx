@@ -108,7 +108,18 @@ export default function RoutePlannerMap({
       const map = L.map(containerRef.current, { zoomControl: true })
       mapRef.current = map
 
-      addBaseTileLayer(L, map)
+      // Fire-and-forget: the basemap module is imported lazily, and nothing
+      // below depends on the layer existing. `cancelled` covers the case where
+      // the effect is torn down (and the map destroyed) mid-import.
+      void addBaseTileLayer(map)
+        .then((layer) => {
+          if (cancelled) {
+            map.removeLayer(layer)
+          }
+        })
+        .catch((error) => {
+          console.error('Basemap failed to load', error)
+        })
 
       map.setView(BASEY_CENTER, DEFAULT_ZOOM)
 

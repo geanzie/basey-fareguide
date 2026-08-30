@@ -1,56 +1,68 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+const mocks = vi.hoisted(() => ({
+  layerOptions: [] as Record<string, unknown>[],
+  addedTo: [] as unknown[],
+}))
+
+vi.mock('protomaps-leaflet', () => ({
+  leafletLayer: (options: Record<string, unknown>) => {
+    mocks.layerOptions.push(options)
+    const layer = {
+      addTo: (map: unknown) => {
+        mocks.addedTo.push(map)
+        return layer
+      },
+    }
+    return layer
+  },
+}))
 
 import { addBaseTileLayer } from '@/lib/map/baseTileLayer'
 
-type TileLayerCall = { url: string; options: Record<string, unknown> }
-
-function createLeafletStub() {
-  const calls: TileLayerCall[] = []
-  const addOrder: string[] = []
-
-  const L = {
-    tileLayer: (url: string, options: Record<string, unknown>) => {
-      calls.push({ url, options })
-      const layer = {
-        addTo: () => {
-          addOrder.push(url)
-          return layer
-        },
-        on: () => layer,
-      }
-      return layer
-    },
-    latLngBounds: (a: [number, number], b: [number, number]) => ({ a, b }),
-  }
-
-  return { L, calls, addOrder }
-}
-
 describe('addBaseTileLayer', () => {
-  it('puts live OSM underneath the pre-packed Basey tiles', () => {
-    const { L, addOrder } = createLeafletStub()
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    addBaseTileLayer(L as any, {} as any)
-
-    expect(addOrder).toHaveLength(2)
-    expect(addOrder[0]).toContain('tile.openstreetmap.org')
-    expect(addOrder[1]).toBe('/tiles/{z}/{x}/{y}.png')
+  beforeEach(() => {
+    mocks.layerOptions.length = 0
+    mocks.addedTo.length = 0
   })
 
-  it('never asks for a local tile the pack does not contain', () => {
-    // `public/tiles` holds zoom 11-12 for the Basey bbox only, while the
-    // planner opens at zoom 13. Without the clamp every tile 404s and each one
-    // is re-fetched from OSM — the console flood this test exists to prevent.
-    const { L, calls } = createLeafletStub()
+  it('adds exactly one layer, reading the self-hosted PMTiles archive', async () => {
+    const map = {}
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    addBaseTileLayer(L as any, {} as any)
+    await addBaseTileLayer(map as any)
 
-    const local = calls.find((call) => call.url.startsWith('/tiles/'))
-    expect(local).toBeDefined()
-    expect(local?.options.maxNativeZoom).toBe(12)
-    expect(local?.options.minZoom).toBe(11)
-    expect(local?.options.bounds).toBeDefined()
+    expect(mocks.layerOptions).toHaveLength(1)
+    expect(mocks.addedTo).toEqual([map])
+    expect(mocks.layerOptions[0].url).toBe('/map/basey.pmtiles')
+  })
+
+  it('never points at a remote tile server', async () => {
+    // Bulk-fetching tile.openstreetmap.org is against the OSM tile usage policy
+    // and got the origin IP blocked — every visible tile came back as a 403
+    // "Access blocked" image. The basemap must stay entirely self-hosted.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await addBaseTileLayer({} as any)
+
+    const url = String(mocks.layerOptions[0].url)
+    expect(url.startsWith('/')).toBe(true)
+    expect(url).not.toContain('openstreetmap.org')
+  })
+
+  it('credits OpenStreetMap, as ODbL requires', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await addBaseTileLayer({} as any)
+
+    expect(String(mocks.layerOptions[0].attribution)).toContain('OpenStreetMap')
+  })
+
+  it('stops requesting data past the deepest zoom the archive holds', async () => {
+    // Mirrors --maxzoom in scripts/build-basemap.mjs. Set higher, the renderer
+    // asks for tiles that are not in the file; set lower, detail is thrown away.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await addBaseTileLayer({} as any)
+
+    expect(mocks.layerOptions[0].maxDataZoom).toBe(15)
+    expect(mocks.layerOptions[0].maxZoom).toBe(19)
   })
 })

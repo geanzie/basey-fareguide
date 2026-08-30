@@ -66,3 +66,6 @@ next-env.d.ts
 
 # mobile app lives in its own repo at project root (../mobile), not here
 /mobile
+
+# go-pmtiles CLI fetched by scripts/build-basemap.mjs --install-cli
+/.cache
