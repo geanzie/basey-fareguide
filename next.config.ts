@@ -132,6 +132,17 @@ const withSerwist = withSerwistInit({
   swDest: 'public/sw.js',
   disable: process.env.NODE_ENV === 'development',
   reloadOnOnline: true,
+  // Everything in public/ is precached by default (`globPublicPatterns`
+  // defaults to `**/*`), and the precache route is matched ahead of
+  // runtimeCaching. That is wrong for the PMTiles basemap: the precache
+  // strategy answers with the whole archive and ignores the Range header, so
+  // the reader throws "content-length exceeding request" and no map draws.
+  //
+  // It has to be excluded here rather than via `manifestTransforms`, because
+  // the public/ files are appended to the manifest *after* every transform has
+  // run (see transformManifest in @serwist/build). The worker caches the
+  // archive deliberately instead — see src/lib/map/basemapRequest.ts.
+  globPublicPatterns: ['**/!(*.pmtiles)'],
 })
 
 export default withSerwist(withBundleAnalyzer(nextConfig as any) as any);

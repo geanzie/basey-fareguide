@@ -1,5 +1,7 @@
 import type * as Leaflet from 'leaflet'
 
+import { BASEMAP_PATH } from './basemapConstants'
+
 const OSM_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 
@@ -17,7 +19,7 @@ const PROTOMAPS_ATTRIBUTION = '<a href="https://protomaps.com">Protomaps</a>'
  * Override the location (e.g. to serve the archive from MinIO on the NAS
  * instead of `public/`) with NEXT_PUBLIC_BASEMAP_URL.
  */
-const BASEMAP_URL = process.env.NEXT_PUBLIC_BASEMAP_URL || '/map/basey.pmtiles'
+const BASEMAP_URL = process.env.NEXT_PUBLIC_BASEMAP_URL || BASEMAP_PATH
 
 /**
  * The deepest zoom present in the archive — mirrors `--maxzoom` in
