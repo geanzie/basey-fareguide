@@ -99,9 +99,17 @@ describe("POST /api/auth/login", () => {
       username: "public-user",
       userType: "PUBLIC",
     });
-    expect(json).not.toHaveProperty("token");
-    expect(res.headers.get("set-cookie")).toContain("auth-token=signed-session-token");
-    expect(res.headers.get("set-cookie")).toContain(`Max-Age=${AUTH_SESSION_MAX_AGE_SECONDS}`);
+    // The body token is the mobile contract: mobile/src/services/auth.ts throws
+    // without it and authenticates every later request with `Authorization: Bearer`.
+    // The browser client never reads it — its session is the httpOnly cookie below.
+    expect(json.token).toBe("signed-session-token");
+
+    const setCookie = res.headers.get("set-cookie") ?? "";
+    expect(setCookie).toContain("auth-token=signed-session-token");
+    expect(setCookie).toContain(`Max-Age=${AUTH_SESSION_MAX_AGE_SECONDS}`);
+    expect(setCookie).toContain("HttpOnly");
+    expect(setCookie).toContain("SameSite=strict");
+    expect(setCookie).toContain("Path=/");
     expect(jwtMock.sign).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: "user-1",

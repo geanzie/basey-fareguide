@@ -86,16 +86,22 @@ describe("GET /api/admin/reports", () => {
     expect(json.data.system).toBeUndefined();
     expect(JSON.stringify(json.data)).not.toContain("uptime");
     expect(JSON.stringify(json.data)).not.toContain("responseTime");
+    // Trend tiles read bounded, column-narrowed rows inside the requested period;
+    // the headline totals come from the aggregates asserted above, not from these.
     expect(prismaMock.incident.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        take: 5000,
+        take: 200,
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        select: { createdAt: true, status: true },
+        where: { createdAt: { gte: expect.any(Date) } },
       }),
     );
     expect(prismaMock.user.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        take: 5000,
+        take: 200,
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        select: { createdAt: true },
+        where: { createdAt: { gte: expect.any(Date) } },
       }),
     );
   });

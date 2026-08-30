@@ -90,6 +90,9 @@ vi.mock('@/components/EvidenceManager', () => ({
 
 import EnforcerIncidentsList from '@/components/EnforcerIncidentsList'
 
+// Mirrors PAGE_SIZE in EnforcerIncidentsList.tsx, which the SWR key is built from.
+const PAGE_SIZE = 50
+
 describe('EnforcerIncidentsList', () => {
   let container: HTMLDivElement
   let root: Root
@@ -276,7 +279,9 @@ describe('EnforcerIncidentsList', () => {
       await Promise.resolve()
     })
 
-    expect(vi.mocked(useSWR)).toHaveBeenCalledWith('/api/incidents/enforcer?scope=all&mode=dashboard')
+    expect(vi.mocked(useSWR)).toHaveBeenCalledWith(
+      `/api/incidents/enforcer?scope=all&mode=dashboard&page=1&limit=${PAGE_SIZE}`,
+    )
     expect(container.textContent).toContain('Queue overview')
     expect(container.textContent).toContain('Search incidents')
     expect(container.textContent).toContain('4 incidents returned')
@@ -414,9 +419,18 @@ describe('EnforcerIncidentsList', () => {
       '/api/incidents/incident-2/issue-ticket',
       expect.objectContaining({ method: 'PATCH' }),
     )
-    expect(mutateMock).toHaveBeenCalled()
-    expect(mutateCacheMock).toHaveBeenCalledWith('/api/incidents/enforcer?scope=all&mode=dashboard')
-    expect(mutateCacheMock).toHaveBeenCalledWith('/api/incidents/enforcer?scope=unresolved&mode=queue')
+    // One predicate mutate replaces the old pair of exact-key calls, so a ticket
+    // issued from the dashboard still refreshes the queue and every paged key.
+    expect(mutateCacheMock).toHaveBeenCalledWith(
+      expect.any(Function),
+      undefined,
+      { revalidate: true },
+    )
+    const matches = mutateCacheMock.mock.calls[0][0] as (key: unknown) => boolean
+    expect(matches(`/api/incidents/enforcer?scope=all&mode=dashboard&page=1&limit=${PAGE_SIZE}`)).toBe(true)
+    expect(matches(`/api/incidents/enforcer?scope=unresolved&mode=queue&page=1&limit=${PAGE_SIZE}`)).toBe(true)
+    expect(matches('/api/incidents?limit=100')).toBe(false)
+    expect(matches(undefined)).toBe(false)
     expect(container.textContent).toContain('Ticket issued')
     expect(container.textContent).toContain(
       'Ticket T-202 issued. Awaiting confirmed full payment before the incident is marked as resolved. Evidence remains available for 30 days.',
@@ -431,7 +445,9 @@ describe('EnforcerIncidentsList', () => {
       await Promise.resolve()
     })
 
-    expect(vi.mocked(useSWR)).toHaveBeenCalledWith('/api/incidents/enforcer?scope=unresolved&mode=queue')
+    expect(vi.mocked(useSWR)).toHaveBeenCalledWith(
+      `/api/incidents/enforcer?scope=unresolved&mode=queue&page=1&limit=${PAGE_SIZE}`,
+    )
     expect(container.textContent).toContain('Unresolved work queue')
     expect(container.textContent).toContain('2 incidents returned')
     expect(container.textContent).not.toContain('Queue overview')

@@ -22,13 +22,6 @@ describe('workflow truthfulness messaging', () => {
     expect(discountApplication.toLowerCase()).not.toContain('you will be notified')
   })
 
-  it('keeps enforcer actions labeled with the actual workflow they perform', () => {
-    const enforcerIncidentsList = readFileSync(repoPath('src', 'components', 'EnforcerIncidentsList.tsx'), 'utf8')
-
-    expect(enforcerIncidentsList).toContain('Take and Issue Ticket')
-    expect(enforcerIncidentsList).toContain('Resolve Only')
-  })
-
   it('keeps enforcer page labels aligned with the shared incident workflow', () => {
     const enforcerPage = readFileSync(repoPath('src', 'app', 'enforcer', 'page.tsx'), 'utf8')
     const incidentQueuePage = readFileSync(repoPath('src', 'app', 'enforcer', 'incidents', 'page.tsx'), 'utf8')

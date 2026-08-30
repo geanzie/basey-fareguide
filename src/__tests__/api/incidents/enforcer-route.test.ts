@@ -12,6 +12,7 @@ const authMock = vi.hoisted(() => ({
 const prismaMock = vi.hoisted(() => ({
   incident: {
     findMany: vi.fn(),
+    count: vi.fn(),
   },
 }))
 
@@ -69,6 +70,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   authMock.requireRequestRole.mockResolvedValue({ id: 'enforcer-1', userType: 'ENFORCER' })
   prismaMock.incident.findMany.mockResolvedValue([makeIncident('PENDING')])
+  prismaMock.incident.count.mockResolvedValue(1)
 })
 
 describe('GET /api/incidents/enforcer', () => {
@@ -82,6 +84,8 @@ describe('GET /api/incidents/enforcer', () => {
       expect.objectContaining({
         where: {},
         orderBy: { createdAt: 'desc' },
+        take: 50,
+        skip: 0,
       }),
     )
     expect(json.filters).toEqual(
@@ -97,6 +101,7 @@ describe('GET /api/incidents/enforcer', () => {
       makeIncident('PENDING'),
       makeIncident('TICKET_ISSUED'),
     ])
+    prismaMock.incident.count.mockResolvedValueOnce(2)
 
     const response = await GET(
       makeRequest('http://localhost/api/incidents/enforcer?scope=unresolved') as never,
@@ -110,6 +115,8 @@ describe('GET /api/incidents/enforcer', () => {
           status: { in: ['PENDING', 'TICKET_ISSUED'] },
         },
         orderBy: { createdAt: 'asc' },
+        take: 50,
+        skip: 0,
       }),
     )
     expect(json.filters).toEqual(
@@ -137,6 +144,7 @@ describe('GET /api/incidents/enforcer', () => {
       makeIncident('RESOLVED'),
       makeIncident('DISMISSED'),
     ])
+    prismaMock.incident.count.mockResolvedValueOnce(3)
 
     const response = await GET(
       makeRequest('http://localhost/api/incidents/enforcer?scope=all') as never,
@@ -150,4 +158,45 @@ describe('GET /api/incidents/enforcer', () => {
       'DISMISSED',
     ])
   })
+
+  it('applies the requested page window and reports it back', async () => {
+    prismaMock.incident.count.mockResolvedValueOnce(45)
+
+    const response = await GET(
+      makeRequest('http://localhost/api/incidents/enforcer?page=2&limit=10') as never,
+    )
+    const json = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(prismaMock.incident.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ take: 10, skip: 10 }),
+    )
+    expect(prismaMock.incident.count).toHaveBeenCalledWith({ where: {} })
+    expect(json.pagination).toEqual({ page: 2, limit: 10, total: 45, totalPages: 5 })
+  })
+
+  it('clamps an oversized limit to the route maximum', async () => {
+    const response = await GET(
+      makeRequest('http://localhost/api/incidents/enforcer?limit=500') as never,
+    )
+    const json = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(prismaMock.incident.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ take: 100, skip: 0 }),
+    )
+    expect(json.pagination.limit).toBe(100)
+  })
+
+  it('counts against the same filter it lists with', async () => {
+    const response = await GET(
+      makeRequest('http://localhost/api/incidents/enforcer?scope=unresolved') as never,
+    )
+
+    expect(response.status).toBe(200)
+    expect(prismaMock.incident.count).toHaveBeenCalledWith({
+      where: { status: { in: ['PENDING', 'TICKET_ISSUED'] } },
+    })
+  })
+
 })

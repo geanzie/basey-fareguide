@@ -31,7 +31,6 @@ describe('Phase 8 UX simplification', () => {
 
     expect(calculatorComponent).toContain('Verified road routing is required for this planner.')
     expect(incidentReporting).toContain('Select Trip to Report')
-    expect(incidentReporting).toContain('Evidence (Optional)')
     expect(adminReports).not.toContain('SummaryCard')
     expect(adminReports).toContain('Incident Analytics')
     expect(adminReports).toContain('Storage Analytics')

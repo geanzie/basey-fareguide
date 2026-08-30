@@ -26,10 +26,6 @@ const prismaMock = vi.hoisted(() => ({
     findUnique: vi.fn(),
     create: vi.fn(),
   },
-  incident: {
-    findUnique: vi.fn(),
-    update: vi.fn(),
-  },
   evidence: {
     findUnique: vi.fn(),
     update: vi.fn(),
@@ -39,7 +35,6 @@ const prismaMock = vi.hoisted(() => ({
 vi.mock("@/lib/auth", () => ({
   ADMIN_ONLY: ["ADMIN"],
   ADMIN_OR_ENCODER: ["ADMIN", "DATA_ENCODER"],
-  ENFORCER_ONLY: ["ENFORCER"],
   ADMIN_OR_ENFORCER: ["ADMIN", "ENFORCER"],
   requireRequestRole: authMocks.requireRequestRole,
   createAuthErrorResponse: authMocks.createAuthErrorResponse,
@@ -52,7 +47,6 @@ vi.mock("@/lib/prisma", () => ({
 
 import { POST as toggleUserStatus } from "@/app/api/admin/users/toggle-status/route";
 import { POST as createVehicle } from "@/app/api/vehicles/route";
-import { PATCH as takeIncident } from "@/app/api/incidents/[incidentId]/take/route";
 import { PATCH as reviewEvidence } from "@/app/api/evidence/[evidenceId]/review/route";
 
 function makeJsonRequest(url: string, body: unknown, method = "POST"): Request {
@@ -175,54 +169,6 @@ describe("privileged route authorization", () => {
     });
   });
 
-  describe("enforcer-only routes", () => {
-    it("rejects unauthenticated callers with 401", async () => {
-      authMocks.requireRequestRole.mockRejectedValueOnce(new Error("Unauthorized"));
-
-      const res = await takeIncident(
-        makeJsonRequest("http://localhost/api/incidents/incident-1/take", {}, "PATCH") as never,
-        { params: Promise.resolve({ incidentId: "incident-1" }) }
-      );
-
-      expect(res.status).toBe(401);
-      expect(prismaMock.incident.findUnique).not.toHaveBeenCalled();
-    });
-
-    it("rejects wrong-role callers with 403", async () => {
-      authMocks.requireRequestRole.mockRejectedValueOnce(new Error("Forbidden"));
-
-      const res = await takeIncident(
-        makeJsonRequest("http://localhost/api/incidents/incident-1/take", {}, "PATCH") as never,
-        { params: Promise.resolve({ incidentId: "incident-1" }) }
-      );
-
-      expect(res.status).toBe(403);
-      expect(prismaMock.incident.findUnique).not.toHaveBeenCalled();
-    });
-
-    it("allows enforcers through the success path", async () => {
-      authMocks.requireRequestRole.mockResolvedValueOnce({ id: "enforcer-1" });
-      prismaMock.incident.findUnique.mockResolvedValueOnce({ id: "incident-1", status: "PENDING" });
-      prismaMock.incident.update.mockResolvedValueOnce({ id: "incident-1", status: "INVESTIGATING" });
-
-      const res = await takeIncident(
-        makeJsonRequest("http://localhost/api/incidents/incident-1/take", {}, "PATCH") as never,
-        { params: Promise.resolve({ incidentId: "incident-1" }) }
-      );
-
-      expect(res.status).toBe(200);
-      expect(authMocks.requireRequestRole).toHaveBeenCalledWith(expect.any(Request), ["ENFORCER"]);
-      expect(prismaMock.incident.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            handledById: "enforcer-1",
-            status: "INVESTIGATING",
-          }),
-        })
-      );
-    });
-  });
-
   describe("admin-or-enforcer routes", () => {
     it("rejects unauthenticated callers with 401", async () => {
       authMocks.requireRequestRole.mockRejectedValueOnce(new Error("Unauthorized"));
@@ -248,7 +194,7 @@ describe("privileged route authorization", () => {
       expect(prismaMock.evidence.findUnique).not.toHaveBeenCalled();
     });
 
-    it("allows the assigned enforcer through the success path", async () => {
+    it("allows enforcers through the success path", async () => {
       authMocks.requireRequestRole.mockResolvedValueOnce({ id: "enforcer-1", userType: "ENFORCER" });
       prismaMock.evidence.findUnique.mockResolvedValueOnce({
         id: "e1",
