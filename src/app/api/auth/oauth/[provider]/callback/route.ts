@@ -16,7 +16,7 @@ import {
   readOAuthState,
 } from '@/lib/oauth/state'
 import { prisma } from '@/lib/prisma'
-import { checkRateLimit, getClientIdentifier, RATE_LIMITS } from '@/lib/rateLimit'
+import { checkRateLimit, getClientIdentifier, logRateLimitHit, RATE_LIMITS } from '@/lib/rateLimit'
 
 function failure(request: NextRequest, code: string): NextResponse {
   const response = NextResponse.redirect(new URL(`${LOGIN_ROUTE}?error=${code}`, request.url))
@@ -36,9 +36,10 @@ export async function GET(
       return NextResponse.json({ message: 'Sign-in provider not available' }, { status: 404 })
     }
 
-    const rateLimitResult = checkRateLimit(getClientIdentifier(request), RATE_LIMITS.AUTH_LOGIN)
+    const rateLimitResult = checkRateLimit(getClientIdentifier(request), RATE_LIMITS.OAUTH_REDIRECT)
 
     if (!rateLimitResult.success) {
+      logRateLimitHit(RATE_LIMITS.OAUTH_REDIRECT, 'ip', rateLimitResult.retryAfter)
       return failure(request, 'oauth_rate_limited')
     }
 

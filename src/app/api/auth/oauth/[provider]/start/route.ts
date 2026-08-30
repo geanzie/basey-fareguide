@@ -8,7 +8,7 @@ import {
   resolveProviderSlug,
 } from '@/lib/oauth/providers'
 import { applyOAuthStateCookie, createOAuthState } from '@/lib/oauth/state'
-import { checkRateLimit, getClientIdentifier, RATE_LIMITS } from '@/lib/rateLimit'
+import { checkRateLimit, getClientIdentifier, logRateLimitHit, RATE_LIMITS } from '@/lib/rateLimit'
 
 export async function GET(
   request: NextRequest,
@@ -23,9 +23,12 @@ export async function GET(
     }
 
     const clientId = getClientIdentifier(request)
-    const rateLimitResult = checkRateLimit(clientId, RATE_LIMITS.AUTH_LOGIN)
+    // Own namespace: this leg is a cheap redirect, and it must not spend the
+    // budget the user needs for the registration form it leads to.
+    const rateLimitResult = checkRateLimit(clientId, RATE_LIMITS.OAUTH_REDIRECT)
 
     if (!rateLimitResult.success) {
+      logRateLimitHit(RATE_LIMITS.OAUTH_REDIRECT, 'ip', rateLimitResult.retryAfter)
       return NextResponse.redirect(new URL(`${LOGIN_ROUTE}?error=oauth_rate_limited`, request.url))
     }
 

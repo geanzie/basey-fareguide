@@ -6,7 +6,13 @@ import { applyLoginSessionCookie, issueSessionForUser } from '@/lib/login'
 import { createOAuthUser } from '@/lib/oauth/signup'
 import { clearSignupTicketCookie, readSignupTicket } from '@/lib/oauth/state'
 import { CURRENT_PRIVACY_NOTICE_VERSION } from '@/lib/privacyNotice'
-import { checkRateLimit, getClientIdentifier, RATE_LIMITS } from '@/lib/rateLimit'
+import {
+  consumeRateLimit,
+  getClientIdentifier,
+  logRateLimitHit,
+  peekRateLimit,
+  RATE_LIMITS,
+} from '@/lib/rateLimit'
 
 const PH_MOBILE_REGEX = /^(09|\+639)\d{9}$/
 
@@ -20,9 +26,25 @@ const PH_MOBILE_REGEX = /^(09|\+639)\d{9}$/
 export async function POST(request: NextRequest) {
   try {
     const clientId = getClientIdentifier(request)
-    const rateLimitResult = checkRateLimit(clientId, RATE_LIMITS.AUTH_REGISTER)
+
+    // The ticket is read first so the limit can be keyed on the provider
+    // account rather than the IP: the caller already proved identity with the
+    // provider, and a shared telco NAT must not lock out unrelated users.
+    // Reading it is a signed-cookie decode, no database call.
+    const ticket = readSignupTicket(request)
+
+    if (!ticket) {
+      return NextResponse.json(
+        { message: 'Your sign-in session expired. Please sign in again.', code: 'oauth_ticket_expired' },
+        { status: 401 },
+      )
+    }
+
+    const rateLimitKey = ticket.providerAccountId
+    const rateLimitResult = peekRateLimit(rateLimitKey, RATE_LIMITS.OAUTH_COMPLETE_REJECT)
 
     if (!rateLimitResult.success) {
+      logRateLimitHit(RATE_LIMITS.OAUTH_COMPLETE_REJECT, 'oauth', rateLimitResult.retryAfter)
       return NextResponse.json(
         {
           message: `Too many registration attempts. Please try again in ${rateLimitResult.retryAfter} seconds.`,
@@ -32,13 +54,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const ticket = readSignupTicket(request)
-
-    if (!ticket) {
-      return NextResponse.json(
-        { message: 'Your sign-in session expired. Please sign in again.', code: 'oauth_ticket_expired' },
-        { status: 401 },
-      )
+    // Only an attempt the server actually rejected spends budget. A request
+    // that succeeds, or that never reached us because the connection dropped,
+    // costs the user nothing.
+    const rejected = <T extends NextResponse>(response: T): T => {
+      consumeRateLimit(rateLimitKey, RATE_LIMITS.OAUTH_COMPLETE_REJECT)
+      return response
     }
 
     const {
@@ -52,26 +73,26 @@ export async function POST(request: NextRequest) {
     } = await request.json()
 
     if (privacyNoticeAcknowledged !== true) {
-      return NextResponse.json(
+      return rejected(NextResponse.json(
         { message: 'You must acknowledge the Privacy Notice before creating an account.' },
         { status: 400 },
-      )
+      ))
     }
 
     if (!privacyNoticeVersion || privacyNoticeVersion !== CURRENT_PRIVACY_NOTICE_VERSION) {
-      return NextResponse.json(
+      return rejected(NextResponse.json(
         { message: 'Privacy Notice version mismatch. Please reload the page and try again.' },
         { status: 400 },
-      )
+      ))
     }
 
     const normalizedPhone = typeof phoneNumber === 'string' ? phoneNumber.replace(/\s/g, '') : ''
 
     if (!PH_MOBILE_REGEX.test(normalizedPhone)) {
-      return NextResponse.json(
+      return rejected(NextResponse.json(
         { message: 'Please enter a valid Philippine mobile number' },
         { status: 400 },
-      )
+      ))
     }
 
     const normalizedGovernmentId = typeof governmentId === 'string' ? governmentId.trim() : ''
@@ -99,30 +120,30 @@ export async function POST(request: NextRequest) {
         const target = Array.isArray(error.meta?.target) ? error.meta.target : []
 
         if (target.includes('email')) {
-          return NextResponse.json(
+          return rejected(NextResponse.json(
             { message: 'Email address already registered. Please log in instead.' },
             { status: 409 },
-          )
+          ))
         }
 
         if (target.includes('governmentId')) {
-          return NextResponse.json(
+          return rejected(NextResponse.json(
             { message: 'Government ID Number is already registered' },
             { status: 409 },
-          )
+          ))
         }
 
         if (target.includes('providerAccountId')) {
-          return NextResponse.json(
+          return rejected(NextResponse.json(
             { message: 'This account is already linked. Please sign in again.' },
             { status: 409 },
-          )
+          ))
         }
 
-        return NextResponse.json(
+        return rejected(NextResponse.json(
           { message: 'Account details are already registered' },
           { status: 409 },
-        )
+        ))
       }
 
       throw error

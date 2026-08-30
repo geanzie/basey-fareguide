@@ -4,9 +4,12 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { useAuth } from '@/components/AuthProvider'
+import type { SessionUserDto } from '@/lib/contracts'
+import { useRetryCountdown } from '@/components/auth/useRetryCountdown'
 import BrandMark from '@/components/BrandMark'
 import Button from '@/ui/Button'
 import { Field, Input, Select } from '@/ui/Field'
+import { authFetchFailureMessage, authPost, formatRetryCountdown } from '@/lib/authFetch'
 import { getAuthenticatedHomeRoute } from '@/lib/authRoutes'
 import { CURRENT_PRIVACY_NOTICE_VERSION } from '@/lib/privacyNotice'
 import { BARANGAYS, ID_TYPES } from '@/lib/registrationOptions'
@@ -36,6 +39,7 @@ const SocialSignupCompleteForm = ({ providerLabel, firstName, lastName, email }:
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const retry = useRetryCountdown()
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -48,6 +52,12 @@ const SocialSignupCompleteForm = ({ providerLabel, firstName, lastName, email }:
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Guard against re-entry: the button is disabled while loading, but an
+    // Enter-key submit can still fire before React re-renders, and a duplicate
+    // request would spend a second rate-limit attempt.
+    if (loading || retry.isCountingDown) return
+
     setError('')
 
     const phoneRegex = /^(09|\+639)\d{9}$/
@@ -69,26 +79,33 @@ const SocialSignupCompleteForm = ({ providerLabel, firstName, lastName, email }:
     setLoading(true)
 
     try {
-      const response = await fetch('/api/auth/oauth/complete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          privacyNoticeVersion: CURRENT_PRIVACY_NOTICE_VERSION,
-        }),
-      })
+      const result = await authPost<{ user: SessionUserDto; message?: string }>(
+        '/api/auth/oauth/complete',
+        {
+          body: {
+            ...formData,
+            privacyNoticeVersion: CURRENT_PRIVACY_NOTICE_VERSION,
+          },
+        },
+      )
 
-      const data = await response.json()
+      if (!result.ok) {
+        if (result.failure === 'rate-limited') {
+          retry.start(result.retryAfter)
+          setError('')
+          return
+        }
 
-      if (!response.ok) {
-        setError(data.message || 'Could not finish creating your account')
+        setError(
+          result.failure === 'rejected'
+            ? result.data?.message || 'Could not finish creating your account'
+            : authFetchFailureMessage(result.failure),
+        )
         return
       }
 
-      login(data.user)
-      router.replace(getAuthenticatedHomeRoute(data.user.userType))
-    } catch {
-      setError('Network error. Please try again.')
+      login(result.data.user)
+      router.replace(getAuthenticatedHomeRoute(result.data.user.userType))
     } finally {
       setLoading(false)
     }
@@ -107,7 +124,13 @@ const SocialSignupCompleteForm = ({ providerLabel, firstName, lastName, email }:
 
         <div className="rounded-3xl bg-surface p-6 shadow-raised sm:p-8">
           <form className="space-y-4" onSubmit={handleSubmit}>
-            {error ? (
+            {retry.isCountingDown ? (
+              <div className="rounded-xl bg-warning/10 px-4 py-3 text-sm font-medium text-warning-dark">
+                Too many attempts from this account. You can try again in{' '}
+                <span className="tabular-nums">{formatRetryCountdown(retry.secondsLeft)}</span>. Your
+                details are saved — leave this page open.
+              </div>
+            ) : error ? (
               <div className="rounded-xl bg-danger-soft px-4 py-3 text-sm font-medium text-danger">
                 {error}
               </div>
@@ -211,8 +234,17 @@ const SocialSignupCompleteForm = ({ providerLabel, firstName, lastName, email }:
               </p>
             </div>
 
-            <Button type="submit" loading={loading} className="w-full">
-              {loading ? 'Creating account...' : 'Create Account'}
+            <Button
+              type="submit"
+              loading={loading}
+              disabled={retry.isCountingDown}
+              className="w-full"
+            >
+              {loading
+                ? 'Creating account...'
+                : retry.isCountingDown
+                  ? `Try again in ${formatRetryCountdown(retry.secondsLeft)}`
+                  : 'Create Account'}
             </Button>
           </form>
         </div>

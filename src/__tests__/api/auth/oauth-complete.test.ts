@@ -9,8 +9,17 @@ const prismaMock = vi.hoisted(() => ({
 
 const rateLimitMock = vi.hoisted(() => ({
   checkRateLimit: vi.fn(),
+  peekRateLimit: vi.fn(),
+  consumeRateLimit: vi.fn(),
+  logRateLimitHit: vi.fn(),
   getClientIdentifier: vi.fn(),
-  RATE_LIMITS: { AUTH_REGISTER: { maxAttempts: 3 } },
+  RATE_LIMITS: {
+    OAUTH_COMPLETE_REJECT: {
+      name: "oauth-complete-reject",
+      windowMs: 3_600_000,
+      maxAttempts: 20,
+    },
+  },
 }));
 
 const signupMock = vi.hoisted(() => ({
@@ -61,6 +70,7 @@ beforeEach(() => {
   process.env.JWT_SECRET = "test-secret";
   rateLimitMock.getClientIdentifier.mockReturnValue("test-client");
   rateLimitMock.checkRateLimit.mockReturnValue({ success: true });
+  rateLimitMock.peekRateLimit.mockReturnValue({ success: true });
   prismaMock.user.update.mockResolvedValue({});
   signupMock.createOAuthUser.mockResolvedValue({
     id: "user-1",

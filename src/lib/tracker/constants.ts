@@ -20,10 +20,12 @@ export const BASEY_SERVICE_AREA = {
 
 export const TRACKER_RATE_LIMITS = {
   minute: {
+    name: "tracker-segment-minute",
     windowMs: 60_000,
     maxAttempts: 6,
   },
   hour: {
+    name: "tracker-segment-hour",
     windowMs: 60 * 60_000,
     maxAttempts: 240,
   },

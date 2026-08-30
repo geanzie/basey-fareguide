@@ -13,9 +13,14 @@ const bcryptMock = vi.hoisted(() => ({
 
 const rateLimitMock = vi.hoisted(() => ({
   checkRateLimit: vi.fn(),
+  peekRateLimit: vi.fn(),
+  consumeRateLimit: vi.fn(),
+  logRateLimitHit: vi.fn(),
   getClientIdentifier: vi.fn(),
   RATE_LIMITS: {
-    AUTH_REGISTER: { maxAttempts: 5 },
+    REGISTER_REJECT: { name: 'register-reject', windowMs: 900_000, maxAttempts: 10 },
+    REGISTER_CREATE: { name: 'register-create', windowMs: 3_600_000, maxAttempts: 5 },
+    REGISTER_IP_BURST: { name: 'register-burst', windowMs: 3_600_000, maxAttempts: 60 },
   },
 }))
 
@@ -59,6 +64,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   rateLimitMock.getClientIdentifier.mockReturnValue('test-client')
   rateLimitMock.checkRateLimit.mockReturnValue({ success: true })
+  rateLimitMock.peekRateLimit.mockReturnValue({ success: true })
 })
 
 describe('POST /api/auth/register — privacy notice enforcement', () => {

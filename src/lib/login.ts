@@ -126,6 +126,11 @@ export async function authenticateLoginAttempt(
 
   // DB-backed lockout check: cross-worker safe because it reads from the DB.
   const now = new Date()
+  // A lockout that has already elapsed is served. Clear the counter so the next
+  // single mistake does not immediately re-lock the account for a full window.
+  const lockoutExpired = Boolean(user.lockedUntil && user.lockedUntil <= now)
+  const priorAttempts = lockoutExpired ? 0 : user.loginAttempts ?? 0
+
   if (user.lockedUntil && user.lockedUntil > now) {
     const retryAfter = Math.ceil((user.lockedUntil.getTime() - now.getTime()) / 1000)
     return {
@@ -150,14 +155,19 @@ export async function authenticateLoginAttempt(
   if (!validPassword) {
     // Increment per-username failed attempt counter.
     // Provides cross-worker lockout that survives cold starts.
-    const nextAttempts = (user.loginAttempts ?? 0) + 1
+    const nextAttempts = priorAttempts + 1
     await prisma.user.update({
       where: { id: user.id },
       data: {
-        loginAttempts: { increment: 1 },
+        loginAttempts: nextAttempts,
+        // Stamp the lockout only on the attempt that crosses the threshold.
+        // Re-stamping it on every later failure would push the unlock time
+        // forward indefinitely, so a user who kept trying could never get back in.
         ...(nextAttempts >= MAX_FAILED_LOGIN_ATTEMPTS
           ? { lockedUntil: new Date(now.getTime() + LOGIN_LOCKOUT_DURATION_MS) }
-          : {}),
+          : lockoutExpired
+            ? { lockedUntil: null }
+            : {}),
       },
     })
     return {
@@ -241,4 +251,4 @@ export function applyLoginSessionCookie(response: NextResponse, token: string): 
     maxAge: AUTH_SESSION_MAX_AGE_SECONDS,
     path: '/',
   })
-}
+}

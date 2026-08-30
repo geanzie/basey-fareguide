@@ -4,9 +4,11 @@ import { useState } from 'react'
 import Button from '@/ui/Button'
 import { Field, Input, Select } from '@/ui/Field'
 import PasswordInput from '@/ui/PasswordInput'
+import { authFetchFailureMessage, authPost, formatRetryCountdown } from '@/lib/authFetch'
 import { CURRENT_PRIVACY_NOTICE_VERSION } from '@/lib/privacyNotice'
 import { BARANGAYS, ID_TYPES } from '@/lib/registrationOptions'
 import SocialSignInButtons, { type SocialProviderOption } from './SocialSignInButtons'
+import { useRetryCountdown } from './useRetryCountdown'
 
 interface RegisterFormProps {
   socialProviders?: SocialProviderOption[]
@@ -34,76 +36,86 @@ const RegisterForm = ({ socialProviders = [], onSwitchToLogin }: RegisterFormPro
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const retry = useRetryCountdown()
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
+
+    // Guard against re-entry: the button is disabled while loading, but an
+    // Enter-key submit can still fire before React re-renders, and a duplicate
+    // request would spend a second rate-limit attempt.
+    if (loading || retry.isCountingDown) return
+
     setError('')
     setSuccess('')
 
+    // Client-side validation runs before the loading state is set, so a
+    // correctable mistake never reaches the server and never costs an attempt.
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match')
-      setLoading(false)
       return
     }
 
     if (formData.password.length < 8) {
       setError('Password must be at least 8 characters long')
-      setLoading(false)
       return
     }
 
     const phoneRegex = /^(09|\+639)\d{9}$/
     if (formData.phoneNumber && !phoneRegex.test(formData.phoneNumber.replace(/\s/g, ''))) {
       setError('Please enter a valid Philippine mobile number (09XXXXXXXXX)')
-      setLoading(false)
       return
     }
 
     if (formData.governmentId && formData.governmentId.length < 8) {
       setError('Government ID number must be at least 8 characters')
-      setLoading(false)
       return
     }
 
     if (!formData.idType || formData.idType.trim() === '') {
       setError('Please select a Government ID Type')
-      setLoading(false)
       return
     }
 
     if (!formData.privacyNoticeAcknowledged) {
       setError('You must acknowledge the Privacy Notice before creating an account.')
-      setLoading(false)
       return
     }
+
+    setLoading(true)
 
     try {
       const { confirmPassword, ...registrationData } = formData
       void confirmPassword
 
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const result = await authPost<{ message?: string; canLoginImmediately?: boolean }>(
+        '/api/auth/register',
+        {
+          body: {
+            ...registrationData,
+            privacyNoticeVersion: CURRENT_PRIVACY_NOTICE_VERSION,
+          },
         },
-        body: JSON.stringify({
-          ...registrationData,
-          privacyNoticeVersion: CURRENT_PRIVACY_NOTICE_VERSION,
-        }),
-      })
+      )
 
-      if (response.ok) {
-        const responseData = await response.json()
-        setSuccess(responseData.message)
-        setTimeout(() => {
-          onSwitchToLogin()
-        }, responseData.canLoginImmediately ? 1500 : 3000)
-      } else {
-        const errorData = await response.json()
-        setError(errorData.message || 'Registration failed')
+      if (!result.ok) {
+        if (result.failure === 'rate-limited') {
+          retry.start(result.retryAfter)
+          return
+        }
+
+        setError(
+          result.failure === 'rejected'
+            ? result.data?.message || 'Registration failed'
+            : authFetchFailureMessage(result.failure),
+        )
+        return
       }
-    } catch {
-      setError('Network error. Please try again.')
+
+      setSuccess(result.data.message ?? 'Registration successful!')
+      setTimeout(() => {
+        onSwitchToLogin()
+      }, result.data.canLoginImmediately ? 1500 : 3000)
     } finally {
       setLoading(false)
     }
@@ -132,7 +144,15 @@ const RegisterForm = ({ socialProviders = [], onSwitchToLogin }: RegisterFormPro
           <SocialSignInButtons providers={socialProviders} action="signup" />
 
           <form className="space-y-4" onSubmit={handleSubmit} suppressHydrationWarning>
-            {error && (
+            {retry.isCountingDown && (
+              <div className="rounded-xl bg-warning/10 px-4 py-3 text-sm font-medium text-warning-dark">
+                Too many attempts for this email address. You can try again in{' '}
+                <span className="tabular-nums">{formatRetryCountdown(retry.secondsLeft)}</span>. Your
+                details are saved — leave this page open.
+              </div>
+            )}
+
+            {error && !retry.isCountingDown && (
               <div className="rounded-xl bg-danger-soft px-4 py-3 text-sm font-medium text-danger">
                 {error}
               </div>
@@ -349,8 +369,17 @@ const RegisterForm = ({ socialProviders = [], onSwitchToLogin }: RegisterFormPro
               </p>
             </div>
 
-            <Button type="submit" loading={loading} className="w-full">
-              {loading ? 'Creating account...' : 'Create Account'}
+            <Button
+              type="submit"
+              loading={loading}
+              disabled={retry.isCountingDown}
+              className="w-full"
+            >
+              {loading
+                ? 'Creating account...'
+                : retry.isCountingDown
+                  ? `Try again in ${formatRetryCountdown(retry.secondsLeft)}`
+                  : 'Create Account'}
             </Button>
 
             <p className="text-center text-sm text-ink-muted">

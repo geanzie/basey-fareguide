@@ -2,28 +2,43 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 import bcrypt from 'bcryptjs'
-import { checkRateLimit, getClientIdentifier, RATE_LIMITS } from '@/lib/rateLimit'
+import {
+  checkRateLimit,
+  consumeRateLimit,
+  getClientIdentifier,
+  logRateLimitHit,
+  peekRateLimit,
+  RATE_LIMITS,
+} from '@/lib/rateLimit'
 import { CURRENT_PRIVACY_NOTICE_VERSION } from '@/lib/privacyNotice'
+
+function tooManyAttempts(retryAfter: number | undefined) {
+  return NextResponse.json(
+    {
+      message: `Too many registration attempts. Please try again in ${retryAfter} seconds.`,
+      retryAfter,
+    },
+    {
+      status: 429,
+      headers: {
+        'Retry-After': String(retryAfter),
+      },
+    }
+  )
+}
 
 export async function POST(request: NextRequest) {
   try {
-    // Apply rate limiting
     const clientId = getClientIdentifier(request)
-    const rateLimitResult = checkRateLimit(clientId, RATE_LIMITS.AUTH_REGISTER)
 
-    if (!rateLimitResult.success) {
-      return NextResponse.json(
-        { 
-          message: `Too many registration attempts. Please try again in ${rateLimitResult.retryAfter} seconds.`,
-          retryAfter: rateLimitResult.retryAfter
-        },
-        { 
-          status: 429,
-          headers: {
-            'Retry-After': String(rateLimitResult.retryAfter)
-          }
-        }
-      )
+    // Coarse per-IP flood guard, applied before the body is parsed. Deliberately
+    // wide: it exists to stop a machine hammering the endpoint, not to ration
+    // registrations for a household or a shared telco NAT.
+    const burstResult = checkRateLimit(clientId, RATE_LIMITS.REGISTER_IP_BURST)
+
+    if (!burstResult.success) {
+      logRateLimitHit(RATE_LIMITS.REGISTER_IP_BURST, 'ip', burstResult.retryAfter)
+      return tooManyAttempts(burstResult.retryAfter)
     }
 
     const {
@@ -48,36 +63,62 @@ export async function POST(request: NextRequest) {
     const normalizedIdType = typeof idType === 'string' ? idType.trim() : ''
     const normalizedBarangayResidence = typeof barangayResidence === 'string' ? barangayResidence.trim() : ''
 
+    // Per-identity limits. Keyed on the email being registered rather than the
+    // IP so that one person retyping a typo cannot lock out everyone else
+    // behind the same connection.
+    const rejectResult = peekRateLimit(normalizedEmail, RATE_LIMITS.REGISTER_REJECT)
+
+    if (!rejectResult.success) {
+      logRateLimitHit(RATE_LIMITS.REGISTER_REJECT, 'email', rejectResult.retryAfter)
+      return tooManyAttempts(rejectResult.retryAfter)
+    }
+
+    // Accounts actually created per IP: the anti-mass-signup control.
+    const createResult = peekRateLimit(clientId, RATE_LIMITS.REGISTER_CREATE)
+
+    if (!createResult.success) {
+      logRateLimitHit(RATE_LIMITS.REGISTER_CREATE, 'ip', createResult.retryAfter)
+      return tooManyAttempts(createResult.retryAfter)
+    }
+
+    // Only an attempt the server actually rejected spends the identity budget.
+    // A success, or a request whose response never reached the user because
+    // their connection dropped, costs them nothing.
+    const rejected = <T extends NextResponse>(response: T): T => {
+      consumeRateLimit(normalizedEmail, RATE_LIMITS.REGISTER_REJECT)
+      return response
+    }
+
     // Validate required fields
     if (!normalizedUsername || !password || !firstName || !lastName || !normalizedEmail || !phoneNumber) {
-      return NextResponse.json(
+      return rejected(NextResponse.json(
         { message: 'All required fields must be provided' },
         { status: 400 }
-      )
+      ))
     }
 
     // Validate privacy notice acknowledgment
     if (privacyNoticeAcknowledged !== true) {
-      return NextResponse.json(
+      return rejected(NextResponse.json(
         { message: 'You must acknowledge the Privacy Notice before creating an account.' },
         { status: 400 }
-      )
+      ))
     }
 
     if (!privacyNoticeVersion || privacyNoticeVersion !== CURRENT_PRIVACY_NOTICE_VERSION) {
-      return NextResponse.json(
+      return rejected(NextResponse.json(
         { message: 'Privacy Notice version mismatch. Please reload the page and try again.' },
         { status: 400 }
-      )
+      ))
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(normalizedEmail)) {
-      return NextResponse.json(
+      return rejected(NextResponse.json(
         { message: 'Please enter a valid email address' },
         { status: 400 }
-      )
+      ))
     }
 
     // ID Type, Government ID Number, and Barangay of Residence are optional at
@@ -86,27 +127,27 @@ export async function POST(request: NextRequest) {
     // Validate phone number format (Philippine mobile)
     const phoneRegex = /^(09|\+639)\d{9}$/
     if (!phoneRegex.test(phoneNumber.replace(/\s/g, ''))) {
-      return NextResponse.json(
+      return rejected(NextResponse.json(
         { message: 'Please enter a valid Philippine mobile number' },
         { status: 400 }
-      )
+      ))
     }
 
     // Validate password strength
     if (password.length < 8) {
-      return NextResponse.json(
+      return rejected(NextResponse.json(
         { message: 'Password must be at least 8 characters long' },
         { status: 400 }
-      )
+      ))
     }
 
     // Validate user type
     const validUserTypes = ['PUBLIC', 'ENFORCER', 'DATA_ENCODER']
     if (!validUserTypes.includes(userType)) {
-      return NextResponse.json(
+      return rejected(NextResponse.json(
         { message: 'Invalid user type' },
         { status: 400 }
-      )
+      ))
     }
 
     // Hash the password
@@ -145,30 +186,30 @@ export async function POST(request: NextRequest) {
         const target = Array.isArray(error.meta?.target) ? error.meta.target : []
 
         if (target.includes('username')) {
-          return NextResponse.json(
+          return rejected(NextResponse.json(
             { message: 'Username already taken' },
             { status: 409 }
-          )
+          ))
         }
 
         if (target.includes('email')) {
-          return NextResponse.json(
+          return rejected(NextResponse.json(
             { message: 'Email address already registered' },
             { status: 409 }
-          )
+          ))
         }
 
         if (target.includes('governmentId')) {
-          return NextResponse.json(
+          return rejected(NextResponse.json(
             { message: 'Government ID Number is already registered' },
             { status: 409 }
-          )
+          ))
         }
 
-        return NextResponse.json(
+        return rejected(NextResponse.json(
           { message: 'Account details are already registered' },
           { status: 409 }
-        )
+        ))
       }
 
       throw error
@@ -177,6 +218,8 @@ export async function POST(request: NextRequest) {
     const message = isPublicUser 
       ? 'Registration successful! You can now log in to your account.'
       : 'Registration successful! Your account will be activated after admin approval.'
+
+    consumeRateLimit(clientId, RATE_LIMITS.REGISTER_CREATE)
 
     return NextResponse.json({
       message,

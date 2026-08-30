@@ -127,7 +127,27 @@ describe('DB-backed login lockout', () => {
     expect(prismaMock.user.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'user-1' },
-        data: expect.objectContaining({ loginAttempts: { increment: 1 } }),
+        data: expect.objectContaining({ loginAttempts: 1 }),
+      }),
+    )
+  })
+
+  it('restarts the counter after a served lockout instead of re-locking immediately', async () => {
+    // Lockout elapsed but loginAttempts was never cleared. One more wrong
+    // password must count as attempt 1, not re-lock for another full window.
+    const expiredLock = new Date(Date.now() - 1000)
+    prismaMock.user.findUnique.mockResolvedValueOnce(
+      buildUser({ loginAttempts: 5, lockedUntil: expiredLock }),
+    )
+    bcryptMock.compare.mockResolvedValueOnce(false)
+
+    const res = await POST(makeLoginRequest({ username: 'test-user', password: 'wrong' }))
+
+    expect(res.status).toBe(401)
+    expect(prismaMock.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'user-1' },
+        data: { loginAttempts: 1, lockedUntil: null },
       }),
     )
   })
