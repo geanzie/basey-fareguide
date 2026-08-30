@@ -52,6 +52,7 @@ export default function GoogleRoutePlannerMap({
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''
   const [map, setMap] = useState<google.maps.Map | null>(null)
   const lastFitTokenRef = useRef(fitBoundsToken)
+  const hasAutoFittedRef = useRef(false)
   const routePolylineRef = useRef<google.maps.Polyline | null>(null)
 
   const { isLoaded, loadError } = useJsApiLoader({
@@ -90,15 +91,21 @@ export default function GoogleRoutePlannerMap({
       return
     }
 
-    if (fitBoundsToken === lastFitTokenRef.current) {
+    const isRefitRequest = fitBoundsToken !== lastFitTokenRef.current
+    lastFitTokenRef.current = fitBoundsToken
+
+    // The map usually mounts inside a modal opened on an already-computed
+    // route, and nothing bumps the token in that path — so frame the route once
+    // on the first render that has one. After that only Recenter refits.
+    if (!isRefitRequest && hasAutoFittedRef.current) {
       return
     }
-
-    lastFitTokenRef.current = fitBoundsToken
 
     if (fitPoints.length === 0) {
       return
     }
+
+    hasAutoFittedRef.current = true
 
     const bounds = new google.maps.LatLngBounds()
     fitPoints.forEach((point) => bounds.extend(point))
@@ -116,6 +123,32 @@ export default function GoogleRoutePlannerMap({
     }
 
     if (routePath.length === 0) {
+      // No road polyline (offline estimate / GPS) — draw a dashed straight line
+      // so the estimated connection is visible, matching the Leaflet planner.
+      if (origin && destination) {
+        routePolylineRef.current = new google.maps.Polyline({
+          map,
+          path: [
+            { lat: origin.lat, lng: origin.lng },
+            { lat: destination.lat, lng: destination.lng },
+          ],
+          strokeOpacity: 0,
+          icons: [
+            {
+              icon: {
+                path: 'M 0,-1 0,1',
+                strokeColor: '#f59e0b',
+                strokeOpacity: 0.85,
+                strokeWeight: 4,
+                scale: 3,
+              },
+              offset: '0',
+              repeat: '16px',
+            },
+          ],
+        })
+      }
+
       return
     }
 
@@ -133,7 +166,7 @@ export default function GoogleRoutePlannerMap({
         routePolylineRef.current = null
       }
     }
-  }, [isLoaded, map, routePath])
+  }, [destination, isLoaded, map, origin, routePath])
 
   useEffect(() => {
     return () => {

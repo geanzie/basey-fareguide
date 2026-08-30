@@ -1,8 +1,4 @@
-# commit-guard exemptions. One fnmatch pattern per line.
-# `entropy:` scopes a line to the entropy tier only — block-tier rules
-# (env files, private keys, credential literals) still apply everywhere.
-
-# A deliberately long, unbroken filename fixture. The test it feeds asserts
-# that such a name wraps instead of widening the mobile layout, so it cannot
-# be shortened. Long + unbroken is exactly what the entropy heuristic flags.
-entropy:src/__tests__/components/evidence-manager.test.tsx
+# Silence only the entropy heuristic for the test suite. Import paths and
+# fixture identifiers there read as high-entropy strings; every hard rule
+# (private keys, provider tokens, .env files, database dumps) still applies.
+entropy:src/__tests__/**

@@ -869,7 +869,11 @@ const RoutePlannerCalculator = ({
   ) => {
     applySelection(target, source === 'gps' ? buildGpsSelection(point) : buildPinSelection(point))
 
-    if (source === 'map') {
+    // Closing belongs to the pick flow: one click and the rider is done. In the
+    // route preview (no pick target) the map is what they came to look at, and
+    // the helper text invites them to drag A or B — so it stays open and
+    // recalculates in place.
+    if (source === 'map' && mapPickTarget) {
       setMapOpen(false)
       setMapPickTarget(null)
     }
@@ -1665,10 +1669,13 @@ const RoutePlannerCalculator = ({
           </div>
 
           <div className="min-h-0 flex-1">
+            {/* routeResult outlives a pin move until the recompute lands, so the
+                polyline is passed only while it still describes these two pins —
+                otherwise the map draws the old route against the new ones. */}
             <ResolvedMapComponent
               origin={origin}
               destination={destination}
-              polyline={routeResult?.polyline}
+              polyline={hasFreshDisplayedRoute ? routeResult?.polyline : null}
               isCalculating={isCalculating}
               fitBoundsToken={fitBoundsToken}
               plannerState={plannerState}

@@ -774,6 +774,44 @@ describe('RoutePlannerCalculator', () => {
         destination: { type: 'pin', lat: 11.2854, lng: 125.0789 },
       })
     })
+
+    it('stays open when a pin is moved in the route preview', async () => {
+      routeQueue.push(makeResponse(ROUTE_OK))
+      await mountPlanner()
+      await quoteAmandayehan()
+
+      routeQueue.push(makeResponse(ROUTE_OK))
+      await click('View the route on the map')
+
+      expect(container.querySelector('[data-testid="mock-planner-map"]')).not.toBeNull()
+
+      // The map's own helper text invites the rider to drag A or B. Closing the
+      // map they came to look at would be the opposite of refining the route.
+      await click('Mock place B')
+
+      expect(container.querySelector('[data-testid="mock-planner-map"]')).not.toBeNull()
+
+      await settleQuote()
+
+      expect(container.querySelector('[data-testid="mock-planner-map"]')).not.toBeNull()
+    })
+
+    it('does not draw the previous route against a pin that has since moved', async () => {
+      routeQueue.push(makeResponse(ROUTE_OK))
+      await mountPlanner()
+      await quoteAmandayehan()
+
+      routeQueue.push(makeResponse(ROUTE_OK))
+      await click('View the route on the map')
+
+      expect(container.textContent).not.toContain('polyline:none')
+
+      await click('Mock place B')
+
+      // The quote for the moved pin has not landed yet, so there is no route to
+      // show — the old one belongs to the old pair.
+      expect(container.textContent).toContain('polyline:none')
+    })
   })
 
   describe('failures', () => {

@@ -1,43 +1,26 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import 'leaflet/dist/leaflet.css'
 
 import { addBaseTileLayer } from '@/lib/map/baseTileLayer'
 import { resolvePinLabel } from '@/lib/locations/pinLabelResolver'
+import { decodePolyline } from '@/lib/routeUtils'
 import type { PlannerPoint, PlannerViewState } from '@/lib/planner/routePlanner'
 
-function decodePolyline(encoded: string): [number, number][] {
-  const coordinates: [number, number][] = []
-  let index = 0
-  let lat = 0
-  let lng = 0
+/**
+ * One shared import for the whole page. Leaflet is client-only, so it cannot be
+ * imported at the top of a server-rendered module — but every mount firing its
+ * own `import()` means concurrent loads of the same module (React StrictMode
+ * remounts this effect immediately), so the promise is memoised.
+ */
+const importLeaflet = () => import('leaflet')
 
-  while (index < encoded.length) {
-    let byte: number
-    let shift = 0
-    let result = 0
+let leafletModulePromise: ReturnType<typeof importLeaflet> | null = null
 
-    do {
-      byte = encoded.charCodeAt(index++) - 63
-      result |= (byte & 0x1f) << shift
-      shift += 5
-    } while (byte >= 0x20)
-    lat += result & 1 ? ~(result >> 1) : result >> 1
-
-    shift = 0
-    result = 0
-    do {
-      byte = encoded.charCodeAt(index++) - 63
-      result |= (byte & 0x1f) << shift
-      shift += 5
-    } while (byte >= 0x20)
-    lng += result & 1 ? ~(result >> 1) : result >> 1
-
-    coordinates.push([lat / 1e5, lng / 1e5])
-  }
-
-  return coordinates
+function loadLeaflet() {
+  leafletModulePromise ??= importLeaflet()
+  return leafletModulePromise
 }
 
 const BASEY_CENTER: [number, number] = [11.2754, 125.0689]
@@ -77,16 +60,26 @@ export default function RoutePlannerMap({
   onDestinationChange,
 }: RoutePlannerMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
+  // Leaflet is loaded once, here, and reused by every effect below. Importing
+  // it per effect means several concurrent dynamic imports for the same module.
+  const leafletRef = useRef<typeof import('leaflet') | null>(null)
   const mapRef = useRef<import('leaflet').Map | null>(null)
   const originMarkerRef = useRef<import('leaflet').Marker | null>(null)
   const destinationMarkerRef = useRef<import('leaflet').Marker | null>(null)
   const routeLayerRef = useRef<import('leaflet').Polyline | null>(null)
   const fitCoordinatesRef = useRef<[number, number][]>([])
+  const resizeObserverRef = useRef<ResizeObserver | null>(null)
   const latestOriginRef = useRef(origin)
   const latestDestinationRef = useRef(destination)
   const onOriginChangeRef = useRef(onOriginChange)
   const onDestinationChangeRef = useRef(onDestinationChange)
   const lastFitTokenRef = useRef(fitBoundsToken)
+  const hasAutoFittedRef = useRef(false)
+  // Leaflet is imported and instantiated asynchronously, so the effects that
+  // draw onto the map have to wait for it. Without this flag they run once
+  // against a null map, bail, and — since their props never change again when
+  // the map is opened on an already-computed route — never run a second time.
+  const [mapReady, setMapReady] = useState(false)
 
   latestOriginRef.current = origin
   latestDestinationRef.current = destination
@@ -99,8 +92,10 @@ export default function RoutePlannerMap({
     let cancelled = false
 
     const initializeMap = async () => {
-      const L = (await import('leaflet')).default
+      const L = (await loadLeaflet()).default
       if (cancelled || !containerRef.current) return
+
+      leafletRef.current = L
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       delete (L.Icon.Default.prototype as any)._getIconUrl
@@ -116,6 +111,19 @@ export default function RoutePlannerMap({
       addBaseTileLayer(L, map)
 
       map.setView(BASEY_CENTER, DEFAULT_ZOOM)
+
+      setMapReady(true)
+
+      // The map lives in a full-screen modal: browser resizes, rotation and the
+      // mobile URL bar all change the container after Leaflet has cached its
+      // size. Without this the tiles leave grey bands.
+      if (typeof ResizeObserver !== 'undefined') {
+        const observer = new ResizeObserver(() => {
+          map.invalidateSize()
+        })
+        observer.observe(containerRef.current)
+        resizeObserverRef.current = observer
+      }
 
       map.on('click', (event: import('leaflet').LeafletMouseEvent) => {
         const point = createResolvedPlannerPoint(event.latlng.lat, event.latlng.lng)
@@ -135,22 +143,36 @@ export default function RoutePlannerMap({
 
     return () => {
       cancelled = true
+
+      resizeObserverRef.current?.disconnect()
+      resizeObserverRef.current = null
+
       if (mapRef.current) {
         mapRef.current.remove()
         mapRef.current = null
       }
+
+      // Everything below belonged to the map that was just destroyed. This
+      // effect can be torn down and set up again on the same component instance
+      // (StrictMode, Fast Refresh, a re-mounted subtree), and refs survive that
+      // — left populated, the draw effects would mistake layers of the discarded
+      // map for live ones and never redraw onto the new one.
+      originMarkerRef.current = null
+      destinationMarkerRef.current = null
+      routeLayerRef.current = null
+      fitCoordinatesRef.current = []
+      leafletRef.current = null
+      hasAutoFittedRef.current = false
+      setMapReady(false)
     }
   }, [])
 
   useEffect(() => {
-    if (!mapRef.current) return
+    const map = mapRef.current
+    const L = leafletRef.current
+    if (!mapReady || !map || !L) return
 
-    let cancelled = false
-
-    const updateMarkers = async () => {
-      const L = (await import('leaflet')).default
-      if (cancelled || !mapRef.current) return
-
+    const updateMarkers = () => {
       const createIcon = (letter: 'A' | 'B', background: string) =>
         L.divIcon({
           html: `<div style="background:${background};width:30px;height:30px;border-radius:9999px;border:3px solid white;box-shadow:0 2px 8px rgba(15,23,42,0.35);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:12px;">${letter}</div>`,
@@ -161,44 +183,50 @@ export default function RoutePlannerMap({
         })
 
       if (origin) {
-        if (!originMarkerRef.current) {
-          originMarkerRef.current = L.marker([origin.lat, origin.lng], {
+        let marker = originMarkerRef.current
+
+        if (!marker) {
+          marker = L.marker([origin.lat, origin.lng], {
             icon: createIcon('A', '#16a34a'),
             draggable: true,
-          }).addTo(mapRef.current)
+          }).addTo(map)
 
-          originMarkerRef.current.on('dragend', () => {
+          marker.on('dragend', () => {
             const latLng = originMarkerRef.current?.getLatLng()
             if (!latLng) return
             onOriginChangeRef.current(createResolvedPlannerPoint(latLng.lat, latLng.lng))
           })
+
+          originMarkerRef.current = marker
         }
 
-        originMarkerRef.current.setLatLng([origin.lat, origin.lng])
-        originMarkerRef.current.bindPopup(
-          `<strong>Pickup (A)</strong><br/>${origin.label ?? 'Pickup pin'}`,
-        )
+        marker.setLatLng([origin.lat, origin.lng])
+        marker.bindPopup(`<strong>Pickup (A)</strong><br/>${origin.label ?? 'Pickup pin'}`)
       } else if (originMarkerRef.current) {
         originMarkerRef.current.remove()
         originMarkerRef.current = null
       }
 
       if (destination) {
-        if (!destinationMarkerRef.current) {
-          destinationMarkerRef.current = L.marker([destination.lat, destination.lng], {
+        let marker = destinationMarkerRef.current
+
+        if (!marker) {
+          marker = L.marker([destination.lat, destination.lng], {
             icon: createIcon('B', '#dc2626'),
             draggable: true,
-          }).addTo(mapRef.current)
+          }).addTo(map)
 
-          destinationMarkerRef.current.on('dragend', () => {
+          marker.on('dragend', () => {
             const latLng = destinationMarkerRef.current?.getLatLng()
             if (!latLng) return
             onDestinationChangeRef.current(createResolvedPlannerPoint(latLng.lat, latLng.lng))
           })
+
+          destinationMarkerRef.current = marker
         }
 
-        destinationMarkerRef.current.setLatLng([destination.lat, destination.lng])
-        destinationMarkerRef.current.bindPopup(
+        marker.setLatLng([destination.lat, destination.lng])
+        marker.bindPopup(
           `<strong>Destination (B)</strong><br/>${destination.label ?? 'Drop-off pin'}`,
         )
       } else if (destinationMarkerRef.current) {
@@ -208,20 +236,14 @@ export default function RoutePlannerMap({
     }
 
     updateMarkers()
-
-    return () => {
-      cancelled = true
-    }
-  }, [origin, destination])
+  }, [mapReady, origin, destination])
 
   useEffect(() => {
-    if (!mapRef.current) return
+    const map = mapRef.current
+    const L = leafletRef.current
+    if (!mapReady || !map || !L) return
 
-    let cancelled = false
-
-    const updateRouteLayer = async () => {
-      const L = (await import('leaflet')).default
-      if (cancelled || !mapRef.current) return
+    const updateRouteLayer = () => {
 
       if (routeLayerRef.current) {
         routeLayerRef.current.remove()
@@ -237,7 +259,7 @@ export default function RoutePlannerMap({
             color: '#2563eb',
             weight: 5,
             opacity: 0.9,
-          }).addTo(mapRef.current)
+          }).addTo(map)
           fitCoordinates.push(...decoded)
         }
       } else if (origin && destination) {
@@ -249,7 +271,7 @@ export default function RoutePlannerMap({
             [destination.lat, destination.lng],
           ],
           { color: '#f59e0b', weight: 4, opacity: 0.85, dashArray: '8 8' },
-        ).addTo(mapRef.current)
+        ).addTo(map)
       }
 
       if (origin) {
@@ -261,17 +283,22 @@ export default function RoutePlannerMap({
       }
 
       fitCoordinatesRef.current = fitCoordinates
+
+      // Frame the route the first time there is one. The map usually mounts
+      // into a modal opened on an already-computed route, so there is no later
+      // prop change to trigger a fit.
+      if (!hasAutoFittedRef.current && fitCoordinates.length > 0) {
+        hasAutoFittedRef.current = true
+        map.invalidateSize()
+        map.fitBounds(fitCoordinates, { padding: [48, 48], maxZoom: 15 })
+      }
     }
 
     updateRouteLayer()
-
-    return () => {
-      cancelled = true
-    }
-  }, [polyline, origin, destination])
+  }, [mapReady, polyline, origin, destination])
 
   useEffect(() => {
-    if (!mapRef.current) return
+    if (!mapReady || !mapRef.current) return
     if (fitBoundsToken === lastFitTokenRef.current) return
     lastFitTokenRef.current = fitBoundsToken
 
@@ -286,7 +313,7 @@ export default function RoutePlannerMap({
       padding: [48, 48],
       maxZoom: 15,
     })
-  }, [fitBoundsToken])
+  }, [fitBoundsToken, mapReady])
 
   const helperText =
     plannerState === 'calculating'

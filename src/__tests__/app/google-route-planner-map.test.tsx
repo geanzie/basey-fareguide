@@ -62,6 +62,8 @@ describe('GoogleRoutePlannerMap', () => {
     document.body.appendChild(container)
     root = createRoot(container)
     polylineInstances.length = 0
+    PolylineConstructor.mockClear()
+    fakeMap.fitBounds.mockClear()
 
     ;(globalThis as typeof globalThis & { google?: typeof google }).google = {
       maps: googleMapsMock as unknown as typeof google.maps,
@@ -133,5 +135,53 @@ describe('GoogleRoutePlannerMap', () => {
 
     expect(polylineInstances[0].setMap).toHaveBeenCalledWith(null)
     expect(polylineInstances).toHaveLength(1)
+  })
+
+  it('frames the route it is mounted with, without waiting for a refit token', async () => {
+    // The planner modal opens on an already-computed route and never bumps
+    // `fitBoundsToken`. Fitting only on a token change leaves the map parked on
+    // the municipality centre with the route somewhere off-screen.
+    await act(async () => {
+      root.render(
+        React.createElement(GoogleRoutePlannerMap, {
+          origin: { lat: 11.2754, lng: 125.0689, label: 'Mercado' },
+          destination: { lat: 11.2854, lng: 125.0789, label: 'Wharf' },
+          polyline: 'encoded-polyline',
+          plannerState: 'route_ready',
+          fitBoundsToken: 0,
+          onOriginChange: vi.fn(),
+          onDestinationChange: vi.fn(),
+        }),
+      )
+    })
+
+    expect(fakeMap.fitBounds).toHaveBeenCalledTimes(1)
+  })
+
+  it('draws a dashed connection when the route is only an estimate', async () => {
+    // GPS/Haversine fallbacks carry no polyline. Drawing nothing leaves two
+    // pins floating in space; the Leaflet planner shows a dashed line here.
+    await act(async () => {
+      root.render(
+        React.createElement(GoogleRoutePlannerMap, {
+          origin: { lat: 11.2754, lng: 125.0689, label: 'Mercado' },
+          destination: { lat: 11.2854, lng: 125.0789, label: 'Wharf' },
+          polyline: null,
+          plannerState: 'route_ready',
+          onOriginChange: vi.fn(),
+          onDestinationChange: vi.fn(),
+        }),
+      )
+    })
+
+    expect(PolylineConstructor).toHaveBeenCalledTimes(1)
+
+    const [options] = PolylineConstructor.mock.calls[0] as unknown as [google.maps.PolylineOptions]
+    expect(options.path).toEqual([
+      { lat: 11.2754, lng: 125.0689 },
+      { lat: 11.2854, lng: 125.0789 },
+    ])
+    expect(options.strokeOpacity).toBe(0)
+    expect(options.icons).toBeDefined()
   })
 })
