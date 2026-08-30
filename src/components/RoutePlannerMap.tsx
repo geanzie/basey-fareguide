@@ -275,6 +275,10 @@ export default function RoutePlannerMap({
     if (fitBoundsToken === lastFitTokenRef.current) return
     lastFitTokenRef.current = fitBoundsToken
 
+    // The map mounts inside a modal that may still be sizing itself, so make
+    // Leaflet re-read the container before it computes a fit.
+    mapRef.current.invalidateSize()
+
     const fitCoordinates = fitCoordinatesRef.current
     if (fitCoordinates.length === 0) return
 
@@ -299,8 +303,8 @@ export default function RoutePlannerMap({
       : 'border-blue-200 bg-blue-50 text-blue-800'
 
   return (
-    <div className="relative">
-      <div ref={containerRef} className={className} style={{ zIndex: 0 }} />
+    <div className={`relative overflow-hidden ${className}`}>
+      <div ref={containerRef} className="h-full w-full" style={{ zIndex: 0 }} />
 
       <div className="pointer-events-none absolute bottom-3 left-3 z-[350] max-w-[calc(100%-1.5rem)] sm:max-w-sm">
         <div className={`rounded-2xl border px-3 py-2 text-xs shadow-lg backdrop-blur-md sm:text-sm ${toneClasses}`}>

@@ -161,10 +161,10 @@ export default function GoogleRoutePlannerMap({
   const googleMapsUnavailable = !apiKey || Boolean(loadError)
 
   return (
-    <div className="relative">
+    <div className={`relative overflow-hidden ${className}`}>
       {googleMapsUnavailable ? (
         <div
-          className={`${className} flex items-center justify-center rounded-2xl border border-amber-200 bg-amber-50 px-6 text-center text-sm text-amber-900`}
+          className="flex h-full w-full items-center justify-center border border-amber-200 bg-amber-50 px-6 text-center text-sm text-amber-900"
           role="status"
         >
           Google Maps is selected for this planner, but the browser map key is unavailable. Add
@@ -172,14 +172,14 @@ export default function GoogleRoutePlannerMap({
         </div>
       ) : !isLoaded ? (
         <div
-          className={`${className} flex items-center justify-center rounded-2xl border border-slate-200 bg-slate-100 text-sm text-slate-600`}
+          className="flex h-full w-full items-center justify-center border border-slate-200 bg-slate-100 text-sm text-slate-600"
           role="status"
         >
           Loading Google map...
         </div>
       ) : (
         <GoogleMap
-          mapContainerClassName={className}
+          mapContainerClassName="h-full w-full"
           center={BASEY_CENTER}
           zoom={DEFAULT_ZOOM}
           options={MAP_OPTIONS}

@@ -77,6 +77,30 @@ describe('GoogleRoutePlannerMap', () => {
     ;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false
   })
 
+  it('sizes the positioning wrapper, not just the Google map container', async () => {
+    // The planner modal passes `h-full w-full`. It has to land on the wrapper:
+    // an auto-height wrapper makes the map container's `height: 100%` resolve
+    // to zero and the modal renders blank.
+    await act(async () => {
+      root.render(
+        React.createElement(GoogleRoutePlannerMap, {
+          origin: { lat: 11.2754, lng: 125.0689, label: 'Mercado' },
+          destination: { lat: 11.2854, lng: 125.0789, label: 'Wharf' },
+          polyline: 'encoded-polyline',
+          plannerState: 'route_ready',
+          className: 'h-full w-full',
+          onOriginChange: vi.fn(),
+          onDestinationChange: vi.fn(),
+        }),
+      )
+    })
+
+    const wrapper = container.firstElementChild as HTMLElement
+    expect(wrapper.className).toContain('relative')
+    expect(wrapper.className).toContain('h-full')
+    expect(wrapper.className).toContain('w-full')
+  })
+
   it('clears the Google route overlay when the planner polyline is reset', async () => {
     await act(async () => {
       root.render(
