@@ -1,132 +1,336 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radii, spacing } from '@/ui/theme';
-import type { RouteCalculationResponse } from '@/types/fare';
+import { colors, radii, spacing, text } from '@/ui/theme';
+import type { RouteCalculationResponse, RouteSource } from '@/types/fare';
+import { OFFLINE_CACHE_REASON, OFFLINE_CURATED_REASON } from '@/lib/offline/offlineQuote';
 
 interface Props {
   result: RouteCalculationResponse;
-  originLabel: string;
-  destinationLabel: string;
+  /** Whether the breakdown ledger is open. */
+  expanded: boolean;
+  onToggleExpanded: () => void;
+  /** How the fare was categorised, e.g. "Student fare" or "Regular fare". */
+  passengerLabel: string;
+  /** True when an approved discount card produced the discount. */
+  discountCardApplied: boolean;
+  /** Offered only when the passenger has no usable card. */
+  onApplyForCard?: () => void;
 }
 
-type IoniconName = keyof typeof Ionicons.glyphMap;
+const peso = (n: number) => `₱${n.toFixed(2)}`;
 
-function getProviderLabel(method: 'ors' | 'google_routes' | null): string | null {
-  if (method === 'ors') return 'Via OpenRouteService';
-  if (method === 'google_routes') return 'Via Google Routes';
+/**
+ * Says where an offline fare came from.
+ *
+ * Both sources are exact — the surveyed corpus, or a replay of a route this
+ * phone already measured — so this reads as provenance rather than a warning.
+ * It is not an estimate notice: the app never shows an estimated fare.
+ */
+function offlineLabel(fallbackReason: string | null): string | null {
+  if (fallbackReason === OFFLINE_CURATED_REASON) {
+    return 'Offline — official surveyed distance for this route.';
+  }
+  if (fallbackReason === OFFLINE_CACHE_REASON) {
+    return 'Offline — the verified route you already measured for this pair.';
+  }
   return null;
 }
 
-export default function FareResultCard({ result, originLabel, destinationLabel }: Props) {
-  const isDiscounted = (result.fareBreakdown.discount ?? 0) > 0;
-  const regularFare = result.fareBreakdown.baseFare + result.fareBreakdown.additionalFare;
-  const providerLabel = getProviderLabel(result.method);
+function providerLabel(method: RouteSource | null): string | null {
+  if (method === 'ors') return 'Route measured via OpenRouteService';
+  if (method === 'google_routes') return 'Route measured via Google Routes';
+  if (method === 'valhalla') return 'Route measured on the Basey road network';
+  // A surveyed distance is the most trustworthy number here, so it says so
+  // rather than naming an engine that was never consulted.
+  if (method === 'curated') return 'Surveyed distance for this route';
+  return null;
+}
+
+function effectiveLabel(effectiveAt?: string | null): string {
+  if (!effectiveAt) return 'Ordinance 105, s. 2023';
+  const date = new Date(effectiveAt);
+  if (Number.isNaN(date.getTime())) return 'Ordinance 105, s. 2023';
+  const formatted = date.toLocaleDateString('en-PH', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+  return `Ordinance 105, s. 2023 · rate effective ${formatted}`;
+}
+
+/**
+ * The fare, set as a tariff record rather than a price quote: ink on paper,
+ * ruled above and below, cited to the ordinance it comes from. The breakdown
+ * below it is a ledger whose rows visibly sum to the total — including the
+ * whole-kilometre ceiling, which the old formula line hid.
+ */
+export default function FareResultCard({
+  result,
+  expanded,
+  onToggleExpanded,
+  passengerLabel,
+  discountCardApplied,
+  onApplyForCard,
+}: Props) {
+  const { fareBreakdown: breakdown, farePolicy: policy } = result;
+
+  const discount = breakdown.discount ?? 0;
+  const isDiscounted = discount > 0;
+  const subtotal = breakdown.baseFare + breakdown.additionalFare;
+  const billedKm = Math.ceil(breakdown.additionalKm);
+  const discountPercent = subtotal > 0 ? Math.round((discount / subtotal) * 100) : 0;
+  const provider = providerLabel(result.method);
+  const offlineSource = offlineLabel(result.fallbackReason);
 
   return (
-    <View style={s.card}>
-      {/* Route row */}
-      <View style={s.routeRow}>
-        <Text style={s.routeText} numberOfLines={1}>{originLabel}</Text>
-        <Ionicons name="arrow-forward" size={12} color={colors.textFaint} />
-        <Text style={s.routeText} numberOfLines={1}>{destinationLabel}</Text>
+    <View>
+      <View style={s.headingRow}>
+        <Text style={text.sectionLabel}>Fare</Text>
+        <View style={s.headingRule} />
       </View>
 
-      {/* Fare hero: label left, amount right */}
-      <View style={s.fareBox}>
-        <Text style={s.fareLabel}>FARE</Text>
-        <Text style={s.fareAmount}>₱{result.fare.toFixed(2)}</Text>
-      </View>
-
-      {/* Stats grid */}
-      <View style={s.grid}>
-        <Stat icon="navigate" label="Dist" value={`${result.distanceKm.toFixed(2)} km`} />
-        {result.durationMin != null && (
-          <Stat icon="time" label="Time" value={`${Math.round(result.durationMin)} min`} />
-        )}
-        <Stat icon="cash" label="Regular" value={`₱${regularFare.toFixed(2)}`} />
-        {isDiscounted && (
-          <Stat icon="pricetag" label="Discount" value={`-₱${result.fareBreakdown.discount.toFixed(2)}`} valueColor={colors.primary} />
-        )}
-      </View>
-
-      {/* Badges row */}
-      {(result.isEstimate || providerLabel) && (
-        <View style={s.badgeRow}>
-          {result.isEstimate && (
-            <View style={s.estimateBadge}>
-              <Text style={s.estimateText}>Estimated (straight-line)</Text>
-            </View>
-          )}
-          {providerLabel && (
-            <View style={s.providerBadge}>
-              <Text style={s.providerText}>{providerLabel}</Text>
-            </View>
-          )}
-        </View>
-      )}
-
-      {/* Formula */}
-      <View style={s.breakdown}>
-        <Text style={s.breakdownText}>
-          Base ₱{result.fareBreakdown.baseFare.toFixed(2)} + {result.fareBreakdown.additionalKm.toFixed(2)} km × ₱{result.farePolicy.perKmRate}/km
+      <View style={s.figureRow}>
+        <Text style={s.figure} accessibilityLabel={`Fare ${result.fare.toFixed(2)} pesos`}>
+          {peso(result.fare)}
         </Text>
+        {isDiscounted ? (
+          <View style={s.wasWrap}>
+            <Text style={s.wasLabel}>Regular</Text>
+            <Text style={s.wasValue}>{peso(subtotal)}</Text>
+          </View>
+        ) : null}
       </View>
+
+      <Text style={s.trip}>
+        {result.distanceKm.toFixed(2)} km
+        {result.durationMin != null ? ` · about ${Math.round(result.durationMin)} min` : ''}
+      </Text>
+
+      <View style={s.rule} />
+
+      <View style={s.passengerRow}>
+        {isDiscounted && discountCardApplied ? (
+          <View style={s.cardPill}>
+            <Ionicons name="ribbon-outline" size={13} color={colors.primaryDark} />
+            <Text style={s.cardPillText}>{passengerLabel} · card applied</Text>
+          </View>
+        ) : (
+          <Text style={s.passengerText}>{passengerLabel}</Text>
+        )}
+
+        {!isDiscounted && onApplyForCard ? (
+          <Pressable onPress={onApplyForCard} hitSlop={8} accessibilityRole="link">
+            <Text style={s.cardLink}>Get a discount card</Text>
+          </Pressable>
+        ) : null}
+      </View>
+
+      {offlineSource ? (
+        <View style={s.offlineNote}>
+          <Ionicons name="cloud-offline-outline" size={14} color={colors.textMuted} />
+          <Text style={s.offlineText}>{offlineSource}</Text>
+        </View>
+      ) : result.isEstimate ? (
+        <View style={s.estimateNote}>
+          <Ionicons name="alert-circle-outline" size={14} color={colors.warningDark} />
+          <Text style={s.estimateText}>
+            Straight-line estimate — no road route was available for this pair.
+          </Text>
+        </View>
+      ) : null}
+
+      <Pressable
+        style={({ pressed }) => [s.disclosure, pressed && s.disclosurePressed]}
+        onPress={onToggleExpanded}
+        accessibilityRole="button"
+        accessibilityState={{ expanded }}
+      >
+        <Ionicons name="information-circle-outline" size={16} color={colors.textMuted} />
+        <Text style={s.disclosureText}>How was this calculated?</Text>
+        <Ionicons
+          name={expanded ? 'chevron-up' : 'chevron-down'}
+          size={16}
+          color={colors.textMuted}
+        />
+      </Pressable>
+
+      {expanded ? (
+        <View style={s.ledger}>
+          <LedgerRow
+            label={`Base fare (first ${policy.baseDistanceKm} km)`}
+            amount={peso(breakdown.baseFare)}
+          />
+
+          {breakdown.additionalKm > 0 ? (
+            <>
+              <LedgerRow
+                label={`${billedKm} km × ${peso(policy.perKmRate)}/km`}
+                amount={peso(breakdown.additionalFare)}
+              />
+              <Text style={s.ledgerNote}>
+                {breakdown.additionalKm.toFixed(2)} km beyond the base, billed as {billedKm} km —
+                the ordinance charges whole kilometres.
+              </Text>
+            </>
+          ) : (
+            <Text style={s.ledgerNote}>
+              The trip is within the base distance, so no per-kilometre charge applies.
+            </Text>
+          )}
+
+          <View style={s.ledgerRule} />
+          <LedgerRow label="Subtotal" amount={peso(subtotal)} />
+
+          {isDiscounted ? (
+            <LedgerRow
+              label={`${passengerLabel} discount (${discountPercent}%)`}
+              amount={`−${peso(discount)}`}
+              tone={colors.primaryDark}
+            />
+          ) : null}
+
+          <View style={s.ledgerRuleStrong} />
+          <LedgerRow label="Total fare" amount={peso(result.fare)} strong />
+
+          <Text style={s.citation}>{effectiveLabel(policy.effectiveAt)}</Text>
+          {provider ? <Text style={s.citation}>{provider}</Text> : null}
+          {result.twoWheelerNotice ? (
+            // Google requires this notice wherever a two-wheeled route is shown.
+            <Text style={s.betaNotice}>
+              Two-wheeled routes are in beta and may be missing sidewalks, pedestrian paths,
+              or other restrictions.
+            </Text>
+          ) : null}
+        </View>
+      ) : null}
     </View>
   );
 }
 
-function Stat({ icon, label, value, valueColor }: { icon: IoniconName; label: string; value: string; valueColor?: string }) {
+function LedgerRow({
+  label,
+  amount,
+  strong,
+  tone,
+}: {
+  label: string;
+  amount: string;
+  strong?: boolean;
+  tone?: string;
+}) {
   return (
-    <View style={s.gridItem}>
-      <View style={s.gridLabelRow}>
-        <Ionicons name={icon} size={11} color={colors.textFaint} />
-        <Text style={s.gridLabel}>{label}</Text>
-      </View>
-      <Text style={[s.gridValue, valueColor ? { color: valueColor } : null]}>{value}</Text>
+    <View style={s.ledgerRow}>
+      <Text style={[s.ledgerLabel, strong && s.ledgerLabelStrong]} numberOfLines={2}>
+        {label}
+      </Text>
+      <Text
+        style={[
+          s.ledgerAmount,
+          strong && s.ledgerAmountStrong,
+          tone ? { color: tone } : null,
+        ]}
+      >
+        {amount}
+      </Text>
     </View>
   );
 }
 
 const s = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radii.xl,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
-    elevation: 3,
-  },
-  routeRow: {
+  headingRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  headingRule: { flex: 1, height: 1, backgroundColor: colors.border },
+
+  figureRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    gap: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.bg,
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    marginTop: 6,
   },
-  routeText: { flex: 1, fontSize: 12, fontWeight: '600', color: colors.textBody },
-  fareBox: {
-    backgroundColor: colors.textStrong,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
+  figure: { ...text.fareFigure },
+  wasWrap: { alignItems: 'flex-end', paddingBottom: 6 },
+  wasLabel: { ...text.sectionLabel, fontSize: 10 },
+  wasValue: {
+    fontSize: 15,
+    color: colors.textMuted,
+    textDecorationLine: 'line-through',
+    fontVariant: ['tabular-nums'],
+  },
+  trip: { fontSize: 14, color: colors.textBody, marginTop: 2 },
+
+  rule: { height: 1, backgroundColor: colors.rule, marginTop: spacing.md },
+
+  passengerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: spacing.sm,
+    minHeight: 34,
   },
-  fareLabel: { color: colors.textFaint, fontSize: 11, fontWeight: '700', letterSpacing: 1.5 },
-  fareAmount: { color: colors.onPrimary, fontSize: 26, fontWeight: '900' },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: spacing.sm, paddingVertical: 6, gap: 6 },
-  gridItem: { flex: 1, minWidth: '22%', backgroundColor: colors.surfaceAlt, borderRadius: radii.sm, padding: 7 },
-  gridLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  gridLabel: { fontSize: 9, color: colors.textFaint, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6 },
-  gridValue: { fontSize: 13, fontWeight: '700', color: colors.textStrong, marginTop: 1 },
-  badgeRow: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: spacing.sm, gap: 4 },
-  estimateBadge: { backgroundColor: '#fff7ed', borderRadius: 6, paddingHorizontal: spacing.sm, paddingVertical: 4 },
-  estimateText: { color: colors.warningDark, fontSize: 10 },
-  providerBadge: { backgroundColor: '#eff6ff', borderRadius: 6, paddingHorizontal: spacing.sm, paddingVertical: 4 },
-  providerText: { color: colors.info, fontSize: 10 },
-  breakdown: { paddingHorizontal: spacing.md, paddingVertical: 6 },
-  breakdownText: { color: colors.textFaint, fontSize: 10 },
+  passengerText: { fontSize: 13, fontWeight: '600', color: colors.textMuted },
+  cardPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: radii.sm,
+    backgroundColor: colors.surfaceTint,
+  },
+  cardPillText: { fontSize: 12, fontWeight: '700', color: colors.primaryDark },
+  cardLink: { fontSize: 13, fontWeight: '600', color: colors.info },
+
+  estimateNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 6,
+  },
+  estimateText: { flex: 1, fontSize: 12, color: colors.warningDark },
+
+  // Provenance, not a warning: an offline fare here is an exact figure, so it
+  // is styled in muted text rather than the amber an estimate would get.
+  offlineNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 6,
+  },
+  offlineText: { flex: 1, fontSize: 12, color: colors.textMuted },
+
+  disclosure: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    minHeight: 44,
+    paddingHorizontal: spacing.sm,
+    marginHorizontal: -spacing.sm,
+    borderRadius: radii.sm,
+  },
+  disclosurePressed: { backgroundColor: colors.surfaceAlt },
+  disclosureText: { flex: 1, fontSize: 14, fontWeight: '600', color: colors.textBody },
+
+  ledger: {
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    gap: 2,
+  },
+  ledgerRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    minHeight: 24,
+  },
+  ledgerLabel: { flex: 1, fontSize: 13, color: colors.textBody },
+  ledgerLabelStrong: { fontWeight: '700', color: colors.textStrong },
+  ledgerAmount: { ...text.ledger },
+  ledgerAmountStrong: { fontWeight: '700', fontSize: 15 },
+  ledgerNote: { fontSize: 11, color: colors.textMuted, lineHeight: 15, marginBottom: 4 },
+  ledgerRule: { height: 1, backgroundColor: colors.border, marginVertical: 6 },
+  ledgerRuleStrong: { height: 2, backgroundColor: colors.rule, marginVertical: 6 },
+  citation: { fontSize: 11, color: colors.textMuted, marginTop: 6 },
+  betaNotice: { fontSize: 11, color: colors.warningDark, marginTop: 6 },
 });

@@ -19,23 +19,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { api } from '@/services/api';
 import { useAuthStore } from '@/store/authStore';
-
-type DiscountType = 'SENIOR_CITIZEN' | 'PWD' | 'STUDENT';
-
-interface DiscountCard {
-  id: string;
-  discountType: DiscountType;
-  verificationStatus: string;
-  isActive: boolean;
-  validFrom: string;
-  validUntil: string;
-}
-
-interface CardStatusResponse {
-  hasDiscountCard: boolean;
-  isValid?: boolean;
-  discountCard: DiscountCard | null;
-}
+import type { CardStatusResponse, DiscountCardType as DiscountType } from '@/types/discount';
 
 const DISCOUNT_OPTIONS: { label: string; value: DiscountType; desc: string }[] = [
   { label: 'Senior Citizen', value: 'SENIOR_CITIZEN', desc: 'Age 60 and above' },

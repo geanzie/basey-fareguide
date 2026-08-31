@@ -1,4 +1,4 @@
-import { api } from './api';
+import { api, ApiError, readRetryAfter } from './api';
 import type {
   LoginRequest,
   LoginResponse,
@@ -7,13 +7,17 @@ import type {
 } from '@/types/auth';
 
 const API_BASE = process.env.EXPO_PUBLIC_API_BASE_URL ?? '';
-const LOGIN_TIMEOUT_MS = 15000;
-const REQUEST_TIMEOUT_MS = 15000;
 
-/** POST JSON with timeout; throws Error(data.message) on non-ok response. */
+// Registration and sign-in run over rural mobile data, where a request can
+// legitimately take most of a minute. A short deadline turns a slow connection
+// into a stream of failures, so these deliberately wait longer than the rest of
+// the app does. Matches AUTH_FETCH_TIMEOUT_MS on the web client.
+const AUTH_TIMEOUT_MS = 60000;
+
+/** POST JSON with timeout; throws ApiError carrying status and retryAfter. */
 async function postJson<T>(path: string, body: unknown): Promise<T> {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const timeoutId = setTimeout(() => controller.abort(), AUTH_TIMEOUT_MS);
 
   try {
     const res = await fetch(`${API_BASE}${path}`, {
@@ -27,14 +31,22 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
     const data = (await res.json().catch(() => ({}))) as T & { message?: string };
 
     if (!res.ok) {
-      throw new Error(data.message ?? 'Request failed. Please try again.');
+      throw new ApiError(
+        res.status,
+        data.message ?? 'Request failed. Please try again.',
+        undefined,
+        undefined,
+        res.status === 429 ? readRetryAfter(res, data) : undefined,
+      );
     }
 
     return data;
   } catch (err) {
     clearTimeout(timeoutId);
     if (err instanceof Error && err.name === 'AbortError') {
-      throw new Error('Request timed out. Please try again.');
+      throw new Error(
+        'Your connection is too slow to finish this right now. Nothing was lost — your details are still filled in, so you can try again.',
+      );
     }
     throw err;
   }
@@ -42,7 +54,7 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
 
 export async function loginRequest(credentials: LoginRequest): Promise<LoginResponse> {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), LOGIN_TIMEOUT_MS);
+  const timeoutId = setTimeout(() => controller.abort(), AUTH_TIMEOUT_MS);
 
   try {
     const res = await fetch(`${API_BASE}/api/auth/login`, {
@@ -56,7 +68,13 @@ export async function loginRequest(credentials: LoginRequest): Promise<LoginResp
     const data = await res.json() as LoginResponse & { message?: string };
 
     if (!res.ok) {
-      throw new Error(data.message ?? 'Login failed.');
+      throw new ApiError(
+        res.status,
+        data.message ?? 'Login failed.',
+        undefined,
+        undefined,
+        res.status === 429 ? readRetryAfter(res, data) : undefined,
+      );
     }
 
     if (!data.token) {
@@ -67,7 +85,7 @@ export async function loginRequest(credentials: LoginRequest): Promise<LoginResp
   } catch (err) {
     clearTimeout(timeoutId);
     if (err instanceof Error && err.name === 'AbortError') {
-      throw new Error('Login request timed out. Please try again.');
+      throw new Error('Your connection is too slow to finish signing in. Please try again.');
     }
     throw err;
   }

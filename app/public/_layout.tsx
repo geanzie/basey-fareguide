@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/store/authStore';
+import { colors } from '@/ui/theme';
 
 export default function PublicLayout() {
   const { user, status } = useAuthStore();
@@ -19,12 +20,12 @@ export default function PublicLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#16a34a',
-        tabBarInactiveTintColor: '#94a3b8',
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textFaint,
         tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
         tabBarStyle: {
-          backgroundColor: '#fff',
-          borderTopColor: '#e2e8f0',
+          backgroundColor: colors.surface,
+          borderTopColor: colors.border,
           height: 64 + insets.bottom,
           paddingTop: 6,
           paddingBottom: 8 + insets.bottom,

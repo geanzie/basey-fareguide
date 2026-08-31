@@ -6,39 +6,16 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { registerRequest } from '@/services/auth';
+import { ApiError, formatRetryCountdown } from '@/services/api';
+import { useRetryCountdown } from '@/hooks/useRetryCountdown';
 import { useFeedback } from '@/ui/FeedbackProvider';
 import PasswordInput from '@/ui/PasswordInput';
-
-const ID_TYPES = [
-  'NATIONAL_ID', 'DRIVERS_LICENSE', 'PASSPORT', 'VOTERS_ID',
-  'SSS_ID', 'PHILHEALTH_ID', 'TIN_ID', 'POSTAL_ID', 'STUDENT_ID',
-] as const;
-
-const ID_TYPE_LABELS: Record<typeof ID_TYPES[number], string> = {
-  NATIONAL_ID: 'National ID',
-  DRIVERS_LICENSE: "Driver's License",
-  PASSPORT: 'Passport',
-  VOTERS_ID: "Voter's ID",
-  SSS_ID: 'SSS ID',
-  PHILHEALTH_ID: 'PhilHealth ID',
-  TIN_ID: 'TIN ID',
-  POSTAL_ID: 'Postal ID',
-  STUDENT_ID: 'Student ID',
-};
-
-const BARANGAYS = [
-  'Amandayehan', 'Anglit', 'Bacubac', 'Baloog', 'Basiao', 'Buenavista', 'Burgos',
-  'Cambayan', 'Can-abay', 'Cancaiyas', 'Canmanila', 'Catadman', 'Cogon', 'Dolongan',
-  'Guintigui-an', 'Guirang', 'Balante', 'Iba', 'Inuntan', 'Loog', 'Mabini',
-  'Magallanes', 'Manlilinab', 'Del Pilar', 'May-it', 'Mongabong', 'New San Agustin',
-  'Nouvelas Occidental', 'Old San Agustin', 'Panugmonon', 'Pelit',
-  'Baybay (Poblacion)', 'Buscada (Poblacion)', 'Lawa-an (Poblacion)',
-  'Loyo (Poblacion)', 'Mercado (Poblacion)', 'Palaypay (Poblacion)', 'Sulod (Poblacion)',
-  'Roxas', 'Salvacion', 'San Antonio', 'San Fernando', 'Sawa', 'Serum',
-  'Sugca', 'Sugponon', 'Tinaogan', 'Tingib', 'Villa Aurora', 'Binongtu-an', 'Bulao',
-];
-
-const PRIVACY_NOTICE_VERSION = '2026-04-21' as const;
+import {
+  BARANGAYS,
+  ID_TYPES,
+  ID_TYPE_LABELS,
+  PRIVACY_NOTICE_VERSION,
+} from '@/lib/registrationOptions';
 
 interface FormState {
   firstName: string;
@@ -67,6 +44,7 @@ export default function RegisterScreen() {
   const [form, setForm] = useState<FormState>(EMPTY);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const retry = useRetryCountdown();
   const [barangaySearch, setBarangaySearch] = useState('');
   const [showBarangayModal, setShowBarangayModal] = useState(false);
 
@@ -90,6 +68,10 @@ export default function RegisterScreen() {
   };
 
   const handleSubmit = async () => {
+    // The button is disabled while loading, but guard anyway: a duplicate
+    // request would spend a second rate-limit attempt for nothing.
+    if (loading || retry.isCountingDown) return;
+
     const err = validate();
     if (err) { setError(err); return; }
     setError('');
@@ -116,6 +98,11 @@ export default function RegisterScreen() {
         onClose: () => router.replace('/login'),
       });
     } catch (e) {
+      if (e instanceof ApiError && e.status === 429) {
+        retry.start(e.retryAfter);
+        setError('');
+        return;
+      }
       setError(e instanceof Error ? e.message : 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
@@ -139,7 +126,15 @@ export default function RegisterScreen() {
           <Text style={s.title}>Create Account</Text>
           <Text style={s.sub}>Public user registration · Basey FareCheck</Text>
 
-          {error ? (
+          {retry.isCountingDown ? (
+            <View style={s.waitBox}>
+              <Text style={s.waitText}>
+                Too many attempts for this email address. You can try again in{' '}
+                {formatRetryCountdown(retry.secondsLeft)}. Your details are saved — stay on this
+                screen.
+              </Text>
+            </View>
+          ) : error ? (
             <View style={s.errorBox}>
               <Text style={s.errorText}>{error}</Text>
             </View>
@@ -221,13 +216,19 @@ export default function RegisterScreen() {
           </View>
 
           <Pressable
-            style={[s.submitBtn, loading && s.submitDisabled]}
+            style={[s.submitBtn, (loading || retry.isCountingDown) && s.submitDisabled]}
             onPress={handleSubmit}
-            disabled={loading}
+            disabled={loading || retry.isCountingDown}
           >
             {loading
               ? <ActivityIndicator color="#fff" />
-              : <Text style={s.submitText}>Create Account</Text>}
+              : (
+                <Text style={s.submitText}>
+                  {retry.isCountingDown
+                    ? `Try again in ${formatRetryCountdown(retry.secondsLeft)}`
+                    : 'Create Account'}
+                </Text>
+              )}
           </Pressable>
 
           <Text style={s.loginHint}>
@@ -287,6 +288,8 @@ const s = StyleSheet.create({
   sub: { fontSize: 12, color: '#64748b', marginBottom: 20 },
   errorBox: { backgroundColor: '#fef2f2', borderRadius: 12, padding: 14, marginBottom: 16 },
   errorText: { color: '#dc2626', fontSize: 13, fontWeight: '500', lineHeight: 18 },
+  waitBox: { backgroundColor: '#fffbeb', borderRadius: 12, padding: 14, marginBottom: 16 },
+  waitText: { color: '#b45309', fontSize: 13, fontWeight: '500', lineHeight: 18 },
   sectionLabel: { fontSize: 11, fontWeight: '700', color: '#64748b', letterSpacing: 1, marginBottom: 8, marginTop: 16 },
   card: { backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, elevation: 1 },
   fieldLabel: { fontSize: 12, fontWeight: '600', color: '#374151', marginBottom: 6, marginTop: 12 },

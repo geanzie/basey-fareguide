@@ -1,5 +1,5 @@
 /**
- * Minimal JWT helpers — read the `exp` claim without a dependency.
+ * Minimal JWT helpers — read claims without a dependency.
  * Only decodes the payload (no signature verification; the server is the
  * authority). Self-contained base64url decode so it works regardless of
  * whether `atob` / `Buffer` exist in the RN runtime.
@@ -26,18 +26,28 @@ function base64Decode(input: string): string {
   return output;
 }
 
-/** Returns the token's expiry in epoch ms, or null if it can't be read. */
-export function getTokenExpiryMs(token: string): number | null {
+/**
+ * Returns the token's payload claims, or null if they cannot be read.
+ * Unverified — only ever use this for display or for expiry checks that fail
+ * safe, never to decide what a user is allowed to do.
+ */
+export function decodeTokenPayload(token: string): Record<string, unknown> | null {
   const payload = token.split('.')[1];
   if (!payload) return null;
 
   try {
     const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
-    const exp = JSON.parse(base64Decode(base64)).exp;
-    return typeof exp === 'number' ? exp * 1000 : null;
+    const claims = JSON.parse(base64Decode(base64));
+    return typeof claims === 'object' && claims !== null ? claims : null;
   } catch {
     return null;
   }
+}
+
+/** Returns the token's expiry in epoch ms, or null if it can't be read. */
+export function getTokenExpiryMs(token: string): number | null {
+  const exp = decodeTokenPayload(token)?.exp;
+  return typeof exp === 'number' ? exp * 1000 : null;
 }
 
 /** True when the token is past its `exp` (or has no readable expiry — fail safe). */

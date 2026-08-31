@@ -1,5 +1,5 @@
 import { api } from './api';
-import type { VehicleLookup } from '@/types/fare';
+import type { RideTagLookupResult, VehicleLookup } from '@/types/fare';
 
 export async function searchVehicles(query: string): Promise<VehicleLookup[]> {
   if (query.trim().length < 2) return [];
@@ -13,10 +13,19 @@ export async function setVehicleActive(id: string, isActive: boolean): Promise<u
   return api.patch(`/api/vehicles/${id}`, { isActive });
 }
 
-export async function lookupByRideTag(token: string): Promise<VehicleLookup | null> {
-  const res = await api.post<{ matchFound: boolean; vehicle?: VehicleLookup }>(
-    '/api/public/ride-tag/lookup',
-    { token },
-  );
-  return res.matchFound && res.vehicle ? res.vehicle : null;
+/**
+ * Resolve a scanned permit QR token to its vehicle.
+ *
+ * Returns the whole result rather than just the vehicle: `permitStatus` can be
+ * EXPIRED / SUSPENDED / REVOKED on a match, and the caller has to warn before
+ * letting that vehicle carry a trip request.
+ */
+export async function lookupByRideTag(token: string): Promise<RideTagLookupResult> {
+  const res = await api.post<RideTagLookupResult>('/api/public/ride-tag/lookup', { token });
+  return {
+    matchFound: Boolean(res.matchFound),
+    permitStatus: res.permitStatus ?? null,
+    vehicle: res.vehicle ?? null,
+    message: res.message ?? '',
+  };
 }

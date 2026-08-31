@@ -1,3 +1,5 @@
+import type { TextStyle } from 'react-native';
+
 /**
  * Shared design tokens for the mobile app.
  *
@@ -30,6 +32,12 @@ export const colors = {
   surfaceAlt: '#f8fafc',
   surfaceTint: '#f0fdf4', // light green wash (cards, active chips, avatars)
   border: '#e2e8f0',
+  // A printed hairline: heavier than a card edge, used to rule the tariff block
+  // and the trip manifest so they read as one document rather than stacked cards.
+  rule: '#cbd5e1',
+  // The stretch a ride cannot cover — stairs, footpath, a gate on foot. Drawn
+  // in graphite rather than red: it marks where the ride stops, not a failure.
+  walkTail: '#475569',
   onPrimary: '#ffffff',
 } as const;
 
@@ -64,6 +72,28 @@ export const text = {
   body: { fontSize: 14, color: colors.textBody },
   meta: { fontSize: 12, color: colors.textFaint },
   label: { fontSize: 13, fontWeight: '600' as const, color: colors.textBody },
+  /** Small-caps section heading, paired with a hairline rule. */
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: '700' as const,
+    color: colors.textMuted,
+    letterSpacing: 0.9,
+    textTransform: 'uppercase' as const,
+  },
+  /** The fare itself. Tabular figures keep the digits from jittering between recalculations. */
+  fareFigure: {
+    fontSize: 40,
+    fontWeight: '800' as const,
+    color: colors.textStrong,
+    letterSpacing: -1,
+    fontVariant: ['tabular-nums'] as TextStyle['fontVariant'],
+  },
+  /** Right-aligned amounts in the fare breakdown. */
+  ledger: {
+    fontFamily: 'monospace' as const,
+    fontSize: 13,
+    color: colors.textStrong,
+  },
 } as const;
 
 export const shadow = {

@@ -1,3 +1,4 @@
+import { ApiError } from '@/services/api';
 import {
   registerRequest,
   requestPasswordReset,
@@ -43,6 +44,29 @@ describe('auth service', () => {
     expect(init.method).toBe('POST');
     expect(JSON.parse(init.body)).toMatchObject({ username: 'juandc', email: 'juan@example.com' });
     expect(res.token).toBe('tok');
+  });
+
+  it('registerRequest surfaces retryAfter from a 429 so the screen can count down', async () => {
+    mockFetch(429, {
+      message: 'Too many registration attempts. Please try again in 420 seconds.',
+      retryAfter: 420,
+    });
+
+    await expect(registerRequest(REGISTER_PAYLOAD)).rejects.toMatchObject({
+      status: 429,
+      retryAfter: 420,
+    });
+  });
+
+  it('registerRequest raises a plain rejection without a retryAfter', async () => {
+    mockFetch(409, { message: 'Email address already registered' });
+
+    const error = await registerRequest(REGISTER_PAYLOAD).catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect((error as ApiError).status).toBe(409);
+    expect((error as ApiError).retryAfter).toBeUndefined();
+    expect((error as ApiError).message).toBe('Email address already registered');
   });
 
   it('requestPasswordReset sends { email } to /api/auth/request-reset', async () => {

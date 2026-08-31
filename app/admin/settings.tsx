@@ -7,7 +7,7 @@ import { api } from '@/services/api';
 import { FormSkeleton } from '@/ui/Skeleton';
 import { useFeedback } from '@/ui/FeedbackProvider';
 
-type Provider = 'ors' | 'google_routes';
+type Provider = 'ors' | 'google_routes' | 'valhalla';
 
 interface RoutingSettings {
   primaryProvider: Provider;
@@ -19,6 +19,7 @@ interface RoutingSettings {
 }
 
 const PROVIDER_LABELS: Record<Provider, string> = {
+  valhalla: 'Valhalla (self-hosted)',
   ors: 'ORS (OpenRouteService)',
   google_routes: 'Google Routes',
 };
@@ -101,7 +102,7 @@ export default function AdminSettingsScreen() {
 
         <View style={s.section}>
           <Text style={s.sectionLabel}>PRIMARY PROVIDER</Text>
-          {(['ors', 'google_routes'] as Provider[]).map((provider) => {
+          {(['valhalla', 'ors', 'google_routes'] as Provider[]).map((provider) => {
             const active = settings.primaryProvider === provider;
             return (
               <Pressable

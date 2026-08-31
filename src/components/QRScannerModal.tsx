@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable, Modal } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { lookupByRideTag } from '@/services/vehicles';
 import { useFeedback } from '@/ui/FeedbackProvider';
+import { colors, radii } from '@/ui/theme';
 import type { VehicleLookup } from '@/types/fare';
 
 interface Props {
@@ -28,20 +29,39 @@ export default function QRScannerModal({ visible, onVehicleFound, onClose }: Pro
     scannedRef.current = true;
 
     try {
-      const vehicle = await lookupByRideTag(data);
-      if (vehicle) {
-        onVehicleFound(vehicle);
-        onClose();
-      } else {
+      const result = await lookupByRideTag(data);
+
+      if (!result.matchFound || !result.vehicle) {
         showConfirm({
-          title: 'Not Found',
-          message: 'No active vehicle matched this QR code.',
-          confirmLabel: 'Try Again',
+          title: 'No match',
+          message: result.message || 'No permit matched this QR code.',
+          confirmLabel: 'Scan again',
           cancelLabel: 'Cancel',
           onConfirm: () => { scannedRef.current = false; },
           onClose,
         });
+        return;
       }
+
+      const vehicle = result.vehicle;
+
+      // A permit can match while being expired, suspended or revoked. The
+      // server says so in `message`; the passenger has to acknowledge it
+      // before that vehicle can carry a trip request.
+      if (result.permitStatus && result.permitStatus !== 'ACTIVE') {
+        showConfirm({
+          title: `Permit ${result.permitStatus.toLowerCase()}`,
+          message: result.message || `This permit is ${result.permitStatus.toLowerCase()}.`,
+          confirmLabel: 'Use anyway',
+          cancelLabel: 'Scan again',
+          onConfirm: () => { onVehicleFound(vehicle); onClose(); },
+          onClose: () => { scannedRef.current = false; },
+        });
+        return;
+      }
+
+      onVehicleFound(vehicle);
+      onClose();
     } catch {
       showConfirm({
         title: 'Could not scan',
@@ -71,7 +91,7 @@ export default function QRScannerModal({ visible, onVehicleFound, onClose }: Pro
           >
             <View style={s.overlay}>
               <View style={s.topBar}>
-                <Text style={s.topBarTitle}>Scan Operator QR</Text>
+                <Text style={s.topBarTitle}>Scan operator QR</Text>
                 <Pressable onPress={onClose} style={s.closeBtn}>
                   <Text style={s.closeBtnText}>Cancel</Text>
                 </Pressable>
@@ -86,7 +106,7 @@ export default function QRScannerModal({ visible, onVehicleFound, onClose }: Pro
                 </View>
               </View>
 
-              <Text style={s.hint}>Point camera at the driver's QR code</Text>
+              <Text style={s.hint}>Point the camera at the QR code on the driver&apos;s permit.</Text>
             </View>
           </CameraView>
         ) : (
@@ -107,7 +127,7 @@ export default function QRScannerModal({ visible, onVehicleFound, onClose }: Pro
 
 const CORNER_SIZE = 22;
 const CORNER_THICKNESS = 4;
-const CORNER_COLOR = '#16a34a';
+const CORNER_COLOR = colors.primary;
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
@@ -120,9 +140,9 @@ const s = StyleSheet.create({
     padding: 16,
     paddingTop: 56,
   },
-  topBarTitle: { color: '#fff', fontSize: 17, fontWeight: '700' },
+  topBarTitle: { color: colors.onPrimary, fontSize: 17, fontWeight: '700' },
   closeBtn: { padding: 8 },
-  closeBtnText: { color: '#fff', fontSize: 16 },
+  closeBtnText: { color: colors.onPrimary, fontSize: 16 },
   finderWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   finder: {
     width: 240,
@@ -139,11 +159,11 @@ const s = StyleSheet.create({
   cornerTR: { top: 0, right: 0, borderTopWidth: CORNER_THICKNESS, borderRightWidth: CORNER_THICKNESS },
   cornerBL: { bottom: 0, left: 0, borderBottomWidth: CORNER_THICKNESS, borderLeftWidth: CORNER_THICKNESS },
   cornerBR: { bottom: 0, right: 0, borderBottomWidth: CORNER_THICKNESS, borderRightWidth: CORNER_THICKNESS },
-  hint: { color: '#fff', textAlign: 'center', fontSize: 14, paddingBottom: 60 },
+  hint: { color: colors.onPrimary, textAlign: 'center', fontSize: 14, paddingBottom: 60 },
   permissionWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
-  permissionText: { color: '#fff', textAlign: 'center', fontSize: 15, marginBottom: 24 },
-  permissionBtn: { backgroundColor: '#16a34a', borderRadius: 12, paddingHorizontal: 24, paddingVertical: 14 },
-  permissionBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  permissionText: { color: colors.onPrimary, textAlign: 'center', fontSize: 15, marginBottom: 24 },
+  permissionBtn: { backgroundColor: colors.primary, borderRadius: radii.md, paddingHorizontal: 24, paddingVertical: 14 },
+  permissionBtnText: { color: colors.onPrimary, fontWeight: '700', fontSize: 15 },
   cancelTextBtn: { marginTop: 16 },
-  cancelTextBtnText: { color: '#94a3b8', fontSize: 15 },
+  cancelTextBtnText: { color: colors.textFaint, fontSize: 15 },
 });

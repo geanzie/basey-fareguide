@@ -1,0 +1,128 @@
+{
+  "$comment": [
+    "SHARED CONTRACT — this file exists in TWO repositories and the copies must stay identical:",
+    "  frontend/src/lib/fare/__fixtures__/fare-golden-vectors.json",
+    "  mobile/src/lib/fare/fare-golden-vectors.json",
+    "",
+    "The mobile app carries its own copy of the fare math so it can price a trip offline.",
+    "There is no CI and no shared package between the two repos, so nothing but this fixture",
+    "stands between an ordinance change and the two clients quoting a rider different fares.",
+    "Whichever side changes its arithmetic turns its own `npm test` red.",
+    "",
+    "Expected values are hand-computed from Municipal Ordinance 105 s.2023, not captured from",
+    "an implementation. Recomputing them by running the code would make both suites tautological.",
+    "",
+    "Formula:",
+    "  additionalKm   = max(distanceKm - baseDistanceKm, 0)      <- reported un-ceiled",
+    "  additionalFare = ceil(additionalKm) * perKmRate           <- billed whole-km",
+    "  subtotal       = baseFare + additionalFare",
+    "  total          = STUDENT/SENIOR/PWD ? subtotal * 0.8 : subtotal",
+    "A null policy falls through to the legacy default: base P15, base distance 3 km, P3/km."
+  ],
+  "cases": [
+    {
+      "name": "zero distance bills the base fare alone",
+      "distanceKm": 0,
+      "passengerType": "REGULAR",
+      "policy": null,
+      "expectedFare": 15,
+      "expectedBreakdown": { "baseFare": 15, "additionalKm": 0, "additionalFare": 0, "discount": 0, "total": 15 }
+    },
+    {
+      "name": "exactly at the base distance is still the base fare",
+      "distanceKm": 3,
+      "passengerType": "REGULAR",
+      "policy": null,
+      "expectedFare": 15,
+      "expectedBreakdown": { "baseFare": 15, "additionalKm": 0, "additionalFare": 0, "discount": 0, "total": 15 }
+    },
+    {
+      "name": "a sliver past the base distance bills a whole kilometre",
+      "distanceKm": 3.0001,
+      "passengerType": "REGULAR",
+      "policy": null,
+      "expectedFare": 18,
+      "expectedBreakdown": { "baseFare": 15, "additionalKm": 0.0001, "additionalFare": 3, "discount": 0, "total": 18 }
+    },
+    {
+      "name": "one whole kilometre over does not round up to two",
+      "distanceKm": 4,
+      "passengerType": "REGULAR",
+      "policy": null,
+      "expectedFare": 18,
+      "expectedBreakdown": { "baseFare": 15, "additionalKm": 1, "additionalFare": 3, "discount": 0, "total": 18 }
+    },
+    {
+      "name": "a partial second kilometre bills as a full one",
+      "distanceKm": 4.2,
+      "passengerType": "REGULAR",
+      "policy": null,
+      "expectedFare": 21,
+      "expectedBreakdown": { "baseFare": 15, "additionalKm": 1.2, "additionalFare": 6, "discount": 0, "total": 21 }
+    },
+    {
+      "name": "a typical barangay-to-barangay trip",
+      "distanceKm": 7.8,
+      "passengerType": "REGULAR",
+      "policy": null,
+      "expectedFare": 30,
+      "expectedBreakdown": { "baseFare": 15, "additionalKm": 4.8, "additionalFare": 15, "discount": 0, "total": 30 }
+    },
+    {
+      "name": "student discount is 20 percent of the subtotal",
+      "distanceKm": 7.8,
+      "passengerType": "STUDENT",
+      "policy": null,
+      "expectedFare": 24,
+      "expectedBreakdown": { "baseFare": 15, "additionalKm": 4.8, "additionalFare": 15, "discount": 6, "total": 24 }
+    },
+    {
+      "name": "senior discount lands on a non-integer peso value",
+      "distanceKm": 4.2,
+      "passengerType": "SENIOR",
+      "policy": null,
+      "expectedFare": 16.8,
+      "expectedBreakdown": { "baseFare": 15, "additionalKm": 1.2, "additionalFare": 6, "discount": 4.2, "total": 16.8 }
+    },
+    {
+      "name": "PWD is discounted identically to senior",
+      "distanceKm": 4.2,
+      "passengerType": "PWD",
+      "policy": null,
+      "expectedFare": 16.8,
+      "expectedBreakdown": { "baseFare": 15, "additionalKm": 1.2, "additionalFare": 6, "discount": 4.2, "total": 16.8 }
+    },
+    {
+      "name": "a non-legacy rate version replaces base fare and per-km rate",
+      "distanceKm": 6.5,
+      "passengerType": "REGULAR",
+      "policy": { "versionId": "fare-v2", "baseDistanceKm": 3, "baseFare": 18, "perKmRate": 4, "effectiveAt": "2026-04-01T00:00:00.000Z" },
+      "expectedFare": 34,
+      "expectedBreakdown": { "baseFare": 18, "additionalKm": 3.5, "additionalFare": 16, "discount": 0, "total": 34 }
+    },
+    {
+      "name": "a non-legacy rate version discounts on its own subtotal",
+      "distanceKm": 6.5,
+      "passengerType": "STUDENT",
+      "policy": { "versionId": "fare-v2", "baseDistanceKm": 3, "baseFare": 18, "perKmRate": 4, "effectiveAt": "2026-04-01T00:00:00.000Z" },
+      "expectedFare": 27.2,
+      "expectedBreakdown": { "baseFare": 18, "additionalKm": 3.5, "additionalFare": 16, "discount": 6.8, "total": 27.2 }
+    },
+    {
+      "name": "an absent policy falls back to the legacy ordinance default",
+      "distanceKm": 5,
+      "passengerType": "REGULAR",
+      "policy": null,
+      "expectedFare": 21,
+      "expectedBreakdown": { "baseFare": 15, "additionalKm": 2, "additionalFare": 6, "discount": 0, "total": 21 }
+    },
+    {
+      "name": "an exact whole-kilometre overage is not pushed to the next kilometre",
+      "distanceKm": 6,
+      "passengerType": "REGULAR",
+      "policy": null,
+      "expectedFare": 24,
+      "expectedBreakdown": { "baseFare": 15, "additionalKm": 3, "additionalFare": 9, "discount": 0, "total": 24 }
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+# commit-guard suppressions. Format: `rule:glob` (or a bare glob for all rules).
+# Keep entries narrow — each one is a place we have confirmed holds no secret.
+
+# Placeholder values only; the real keys live in the untracked, gitignored .env.
+entropy:.env.example
+
+# Test fixtures use obviously-fake credentials for a fake user.
+password-assign:src/__tests__/*
+
+# B64_CHARS is the standard base64 alphabet, needed by the hand-rolled
+# base64url decoder that reads JWT claims without a dependency.
+entropy:src/lib/jwt.ts

@@ -1,15 +1,39 @@
-import { useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
-import MapView, { Marker, Polyline, UrlTile, type MapPressEvent } from 'react-native-maps';
+import MapView, { Marker, Polyline, type MapPressEvent, type Region } from 'react-native-maps';
+import { Ionicons } from '@expo/vector-icons';
+import { colors, radii, shadow, spacing } from '@/ui/theme';
+
+interface Coord {
+  lat: number;
+  lng: number;
+}
+
+/** The stretch from a drop-off to a point only reachable on foot. */
+export interface WalkTail {
+  from: Coord;
+  to: Coord;
+  walkMeters: number;
+  label: string;
+}
 
 interface Props {
-  originPin: { lat: number; lng: number } | null;
-  destPin: { lat: number; lng: number } | null;
-  snappedOrigin: { lat: number; lng: number } | null;
-  snappedDestination: { lat: number; lng: number } | null;
+  originPin: Coord | null;
+  destPin: Coord | null;
+  snappedOrigin: Coord | null;
+  snappedDestination: Coord | null;
   polyline: string | null;
-  pickMode: 'origin' | 'destination' | 'done';
-  onMapPress: (coord: { lat: number; lng: number }) => void;
+  /** Drawn when the requested point is past where a ride can go. */
+  walkTail?: WalkTail | null;
+  /** Which end a map tap fills. Null means taps are inert. */
+  activeSlot: 'origin' | 'destination' | null;
+  onMapPress: (coord: Coord) => void;
+  /** Called when the armed slot is dismissed from the on-map hint. */
+  onCancelPick?: () => void;
+  /** Height of the fare sheet covering the bottom of the map, so the route frames above it. */
+  bottomInset?: number;
+  /** Height of the trip panel covering the top of the map. */
+  topInset?: number;
 }
 
 /** Decodes a Google-encoded polyline string into lat/lng pairs. */
@@ -30,12 +54,22 @@ function decodePolyline(encoded: string): { latitude: number; longitude: number 
   return coords;
 }
 
-const BASEY_REGION = {
+const BASEY_REGION: Region = {
   latitude: 11.2800,
   longitude: 125.0700,
   latitudeDelta: 0.08,
   longitudeDelta: 0.08,
 };
+
+/** A close-in region around one point, for when there is nothing to fit between. */
+function regionAround(point: { latitude: number; longitude: number }): Region {
+  return {
+    latitude: point.latitude,
+    longitude: point.longitude,
+    latitudeDelta: 0.01,
+    longitudeDelta: 0.01,
+  };
+}
 
 export default function InteractiveCalculatorMap({
   originPin,
@@ -43,8 +77,12 @@ export default function InteractiveCalculatorMap({
   snappedOrigin,
   snappedDestination,
   polyline,
-  pickMode,
+  walkTail = null,
+  activeSlot,
   onMapPress,
+  onCancelPick,
+  bottomInset = 0,
+  topInset = 0,
 }: Props) {
   const mapRef = useRef<MapView>(null);
   const polylineCoords = polyline ? decodePolyline(polyline) : [];
@@ -61,26 +99,72 @@ export default function InteractiveCalculatorMap({
       ? { latitude: destPin.lat, longitude: destPin.lng }
       : null;
 
+  const walkTailCoords = walkTail
+    ? [
+        { latitude: walkTail.from.lat, longitude: walkTail.from.lng },
+        { latitude: walkTail.to.lat, longitude: walkTail.to.lng },
+      ]
+    : [];
+
+  const framed = [
+    ...polylineCoords,
+    ...walkTailCoords,
+    ...(originCoord ? [originCoord] : []),
+    ...(destCoord ? [destCoord] : []),
+  ];
+  const hasSomethingToFrame = framed.length > 0;
+
+  const recenter = useCallback(() => {
+    if (framed.length === 0) return;
+    if (framed.length === 1) {
+      mapRef.current?.animateToRegion(regionAround(framed[0]), 450);
+      return;
+    }
+    // Pad past the fare sheet so the route frames in the visible strip of map,
+    // not behind the panel covering the bottom of it.
+    mapRef.current?.fitToCoordinates(framed, {
+      edgePadding: {
+        top: Math.round(topInset) + 48,
+        right: 56,
+        bottom: Math.round(bottomInset) + 48,
+        left: 56,
+      },
+      animated: true,
+    });
+  }, [framed, bottomInset, topInset]);
+
+  // Frame whatever is drawn whenever it changes. Without this the camera stays
+  // on the municipality-wide initial region and a route picked by search can
+  // land entirely off-screen. Keyed on the coordinates, not the array identity.
+  const frameKey = [
+    polyline ?? '',
+    walkTail ? `${walkTail.from.lat},${walkTail.from.lng}->${walkTail.to.lat},${walkTail.to.lng}` : '',
+    originCoord ? `${originCoord.latitude},${originCoord.longitude}` : '',
+    destCoord ? `${destCoord.latitude},${destCoord.longitude}` : '',
+  ].join('|');
+
+  useEffect(() => {
+    if (!hasSomethingToFrame) return;
+    recenter();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [frameKey]);
+
   const handlePress = (e: MapPressEvent) => {
-    if (pickMode === 'done') return;
+    // Taps only mean something while a slot is armed for them.
+    if (activeSlot === null) return;
     const { latitude, longitude } = e.nativeEvent.coordinate;
     onMapPress({ lat: latitude, lng: longitude });
   };
 
-  const zoomIn = () => {
-    mapRef.current?.getCamera().then((cam) => {
-      mapRef.current?.animateCamera({ zoom: (cam.zoom ?? 13) + 1 });
-    });
-  };
-
-  const zoomOut = () => {
-    mapRef.current?.getCamera().then((cam) => {
-      mapRef.current?.animateCamera({ zoom: (cam.zoom ?? 13) - 1 });
-    });
-  };
-
   return (
     <View style={s.container}>
+      {/*
+        No UrlTile: the platform map SDK draws the basemap itself. This used to
+        overlay CARTO raster tiles, but CARTO now requires an API key and serves
+        unauthenticated tiles stamped "API KEY REQUIRED". The native basemap
+        needs no key in Expo Go and uses the restricted GOOGLE_MAPS_API_KEY in
+        real builds, and it matches RouteMapView.
+      */}
       <MapView
         ref={mapRef}
         style={s.map}
@@ -89,61 +173,120 @@ export default function InteractiveCalculatorMap({
         rotateEnabled={false}
         pitchEnabled={false}
       >
-        <UrlTile
-          urlTemplate="https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png"
-          maximumZ={19}
-          flipY={false}
-          shouldReplaceMapContent
-        />
-
         {polylineCoords.length > 0 && (
-          <Polyline coordinates={polylineCoords} strokeColor="#16a34a" strokeWidth={4} />
+          <Polyline coordinates={polylineCoords} strokeColor={colors.primary} strokeWidth={4} />
+        )}
+
+        {/*
+          The ride ends at the drop-off; the dashes carry on to the pin the
+          rider chose, so the map says where walking starts without a legend.
+        */}
+        {walkTailCoords.length === 2 && (
+          <Polyline
+            coordinates={walkTailCoords}
+            strokeColor={colors.walkTail}
+            strokeWidth={3}
+            lineDashPattern={[5, 7]}
+          />
+        )}
+
+        {walkTail && (
+          <Marker
+            coordinate={walkTailCoords[0]}
+            title={walkTail.label}
+            description={`${walkTail.walkMeters} m walk from here`}
+            anchor={{ x: 0.5, y: 0.5 }}
+            tracksViewChanges={false}
+          >
+            <View style={s.dropoffDot} />
+          </Marker>
         )}
 
         {originCoord && (
-          <Marker coordinate={originCoord} pinColor="#f97316" title="Origin" />
+          <Marker coordinate={originCoord} pinColor={colors.warning} title="Start" />
         )}
         {destCoord && (
-          <Marker coordinate={destCoord} pinColor="#16a34a" title="Destination" />
+          <Marker coordinate={destCoord} pinColor={colors.primary} title="Destination" />
         )}
       </MapView>
 
-      {/* Zoom controls */}
-      <View style={s.zoomControls}>
-        <Pressable style={s.zoomBtn} onPress={zoomIn}>
-          <Text style={s.zoomBtnText}>+</Text>
+      {activeSlot ? (
+        <View style={[s.pickHint, { top: topInset + spacing.sm }]} pointerEvents="box-none">
+          <Ionicons name="location" size={15} color={colors.primary} />
+          <Text style={s.pickHintText}>
+            {activeSlot === 'origin'
+              ? 'Tap the map to set the starting point'
+              : 'Tap the map to set the destination'}
+          </Text>
+          {onCancelPick ? (
+            <Pressable onPress={onCancelPick} hitSlop={10} accessibilityRole="button">
+              <Text style={s.pickHintCancel}>Cancel</Text>
+            </Pressable>
+          ) : null}
+        </View>
+      ) : hasSomethingToFrame ? (
+        <Pressable
+          style={({ pressed }) => [
+            s.recenterBtn,
+            { top: topInset + spacing.sm },
+            pressed && s.recenterBtnPressed,
+          ]}
+          onPress={recenter}
+          accessibilityRole="button"
+          accessibilityLabel="Recenter the map on the route"
+        >
+          <Ionicons name="locate" size={15} color={colors.textBody} />
+          <Text style={s.recenterText}>Recenter</Text>
         </Pressable>
-        <Pressable style={s.zoomBtn} onPress={zoomOut}>
-          <Text style={s.zoomBtnText}>−</Text>
-        </Pressable>
-      </View>
-
+      ) : null}
     </View>
   );
 }
 
 const s = StyleSheet.create({
+  dropoffDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: colors.walkTail,
+    borderWidth: 3,
+    borderColor: colors.surface,
+  },
   container: { flex: 1, position: 'relative' },
   map: { flex: 1 },
-  zoomControls: {
+
+  recenterBtn: {
     position: 'absolute',
-    top: 12,
-    left: 12,
-    borderRadius: 8,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.15,
-    elevation: 3,
-  },
-  zoomBtn: {
-    width: 36,
-    height: 36,
-    backgroundColor: '#fff',
+    right: spacing.md,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    gap: 6,
+    minHeight: 36,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    ...shadow.card,
   },
-  zoomBtnText: { fontSize: 20, fontWeight: '300', color: '#0f172a', lineHeight: 22 },
+  recenterBtnPressed: { backgroundColor: colors.surfaceAlt },
+  recenterText: { fontSize: 13, fontWeight: '600', color: colors.textBody },
+
+  pickHint: {
+    position: 'absolute',
+    left: spacing.md,
+    right: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    minHeight: 40,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    backgroundColor: colors.surface,
+    ...shadow.card,
+  },
+  pickHintText: { flex: 1, fontSize: 13, fontWeight: '600', color: colors.textStrong },
+  pickHintCancel: { fontSize: 13, fontWeight: '700', color: colors.textMuted },
 });
