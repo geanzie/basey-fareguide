@@ -98,11 +98,13 @@ Copy `.env.example` → `.env`:
 - `GOOGLE_MAPS_API_KEY` — Android Maps SDK key, restricted by package + SHA-1
 - `EXPO_PUBLIC_AUTH_IDLE_TIMEOUT_MS` (optional) — idle logout window, default 15 min
 
-`app.config.js` injects `GOOGLE_MAPS_API_KEY` into the static `app.json` at build time so the key never lands in git. For EAS builds, set it as a secret: `eas secret:create --name GOOGLE_MAPS_API_KEY --value <key>`.
+`app.config.js` injects `GOOGLE_MAPS_API_KEY` into the static `app.json` at build time so the key never lands in git. For EAS builds the key must be an EAS environment variable — `.easignore` excludes `.env` from the upload, so a cloud build cannot read your local file. Check with `eas env:list --environment production`. Keep exactly one variable of that name; duplicates are accepted by the server and the builder's choice between them is not observable from config.
 
 ## Builds
 
 EAS (`eas.json`), bundle id / package `com.basey.farecheck` for both iOS and Android.
 - `development` — dev client, internal distribution
 - `preview` — internal APK; points at the production API with a 10s idle timeout for testing expiry
-- `production` — APK with `autoIncrement` version
+- `production` — internal-distribution APK with `autoIncrement` version, pinned to the `production` EAS environment
+
+Full release procedure, including the Google Maps SHA-1 restriction that decides whether maps render at all, is in [`docs/RELEASE.md`](docs/RELEASE.md).
