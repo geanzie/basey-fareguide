@@ -43,8 +43,56 @@ const NATIVE_SCHEME = 'baseyfare:'
  * a developer testing there needs these too. They are accepted off production
  * only: widening the allowlist on the deployed server would let anyone with an
  * Expo dev server collect handoff tickets.
+ *
+ * A developer whose app points at a deployed server (so NODE_ENV is
+ * 'production') can name their own dev machine in OAUTH_DEV_REDIRECT_ORIGINS
+ * instead — see devRedirectOrigins below.
  */
 const DEV_SCHEMES = ['exp:', 'exp+basey-farecheck:']
+
+/**
+ * Non-special schemes have no meaningful `URL.origin` — it evaluates to the
+ * string "null", which would make every `exp://` URL compare equal. Build the
+ * origin by hand so the comparison actually distinguishes hosts.
+ */
+function originOf(url: URL): string {
+  return `${url.protocol}//${url.host}`
+}
+
+/**
+ * Exact dev-client origins to honour even on a production build, from
+ * OAUTH_DEV_REDIRECT_ORIGINS (comma-separated, e.g. `exp://192.168.1.5:8081`).
+ *
+ * This exists so a developer running Expo Go against a preview deployment can
+ * finish a social sign-in, and it is an exact-origin allowlist rather than a
+ * scheme toggle for a reason: allowing `exp:` wholesale would let an attacker
+ * point /start at their own Expo dev server and be handed the victim's handoff
+ * ticket. Entries are restricted to DEV_SCHEMES so the variable can never be
+ * used to allow an https:// target. Leave it unset on any deployment real
+ * users reach.
+ *
+ * Read per call rather than at module load so tests can stub the environment.
+ */
+function devRedirectOrigins(): string[] {
+  const raw = process.env.OAUTH_DEV_REDIRECT_ORIGINS
+
+  if (!raw) {
+    return []
+  }
+
+  return raw
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .flatMap((entry) => {
+      try {
+        const url = new URL(entry)
+        return DEV_SCHEMES.includes(url.protocol) ? [originOf(url)] : []
+      } catch {
+        return []
+      }
+    })
+}
 
 /**
  * Validates a deep-link target the OAuth callback may bounce back to.
@@ -66,9 +114,11 @@ export function resolveNativeRedirect(raw: string | null | undefined): string | 
     return null
   }
 
+  const isDevScheme = DEV_SCHEMES.includes(url.protocol)
   const allowed =
     url.protocol === NATIVE_SCHEME ||
-    (process.env.NODE_ENV !== 'production' && DEV_SCHEMES.includes(url.protocol))
+    (isDevScheme && process.env.NODE_ENV !== 'production') ||
+    (isDevScheme && devRedirectOrigins().includes(originOf(url)))
 
   return allowed ? url.toString() : null
 }

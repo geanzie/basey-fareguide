@@ -61,6 +61,51 @@ describe("resolveNativeRedirect", () => {
     expect(resolveNativeRedirect("exp+basey-farecheck://oauth")).toBeNull();
     expect(resolveNativeRedirect("baseyfare://oauth")).toBe("baseyfare://oauth");
   });
+
+  describe("OAUTH_DEV_REDIRECT_ORIGINS", () => {
+    beforeEach(() => {
+      setNodeEnv("production");
+    });
+
+    it("honours an exact dev origin the operator opted into", () => {
+      vi.stubEnv("OAUTH_DEV_REDIRECT_ORIGINS", "exp://192.168.1.5:8081");
+
+      expect(resolveNativeRedirect("exp://192.168.1.5:8081/--/oauth")).toBe(
+        "exp://192.168.1.5:8081/--/oauth",
+      );
+    });
+
+    it("reads a comma-separated list, ignoring surrounding space", () => {
+      vi.stubEnv(
+        "OAUTH_DEV_REDIRECT_ORIGINS",
+        "exp://192.168.1.5:8081, exp+basey-farecheck://expo-development-client",
+      );
+
+      expect(
+        resolveNativeRedirect("exp+basey-farecheck://expo-development-client/--/oauth"),
+      ).toBe("exp+basey-farecheck://expo-development-client/--/oauth");
+    });
+
+    it("rejects a different host or port on an allowed scheme", () => {
+      vi.stubEnv("OAUTH_DEV_REDIRECT_ORIGINS", "exp://192.168.1.5:8081");
+
+      // The whole point of an exact-origin allowlist: another Expo dev server
+      // must not be able to collect the handoff ticket.
+      expect(resolveNativeRedirect("exp://attacker.example/--/oauth")).toBeNull();
+      expect(resolveNativeRedirect("exp://192.168.1.5:9999/--/oauth")).toBeNull();
+    });
+
+    it("ignores an entry whose scheme is not a dev scheme", () => {
+      vi.stubEnv("OAUTH_DEV_REDIRECT_ORIGINS", "https://evil.example,not a url");
+
+      expect(resolveNativeRedirect("https://evil.example/steal")).toBeNull();
+    });
+
+    it("changes nothing when unset", () => {
+      expect(resolveNativeRedirect("exp://192.168.1.5:8081/--/oauth")).toBeNull();
+      expect(resolveNativeRedirect("baseyfare://oauth")).toBe("baseyfare://oauth");
+    });
+  });
 });
 
 describe("buildNativeRedirect", () => {

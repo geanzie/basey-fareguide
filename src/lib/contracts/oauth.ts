@@ -8,6 +8,12 @@ export interface OAuthProviderDto {
 
 export interface OAuthProvidersResponseDto {
   providers: OAuthProviderDto[];
+  /**
+   * Whether the deep link passed as `?redirect=` would be honoured by /start.
+   * Present only when the caller asked, so the app can disable its social
+   * buttons up front instead of dead-ending in the system browser.
+   */
+  redirectSupported?: boolean;
 }
 
 /** Body of POST /api/auth/oauth/native/exchange. */

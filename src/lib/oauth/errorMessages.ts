@@ -15,6 +15,9 @@ const OAUTH_ERROR_MESSAGES: Record<string, string> = {
   oauth_inactive: 'Your account is not yet approved. Please wait for admin approval.',
   oauth_failed: 'Sign-in failed. Please try again or use your username and password.',
   oauth_ticket_expired: 'Your sign-in session expired. Please sign in again.',
+  // The app asked us to return to a deep link this server will not honour.
+  oauth_bad_redirect:
+    'Social sign-in is not available in this version of the app. Please sign in with your username and password.',
 }
 
 /** Resolves a code to a message; non-OAuth values pass through unchanged. */
