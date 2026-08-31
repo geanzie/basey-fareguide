@@ -36,15 +36,29 @@ vi.mock("@/lib/oauth/providers", async (importOriginal) => {
 });
 
 import { GET } from "@/app/api/auth/oauth/[provider]/callback/route";
-import { applyOAuthStateCookie, createOAuthState } from "@/lib/oauth/state";
+import {
+  applyOAuthStateCookie,
+  createOAuthState,
+  parseSignupTicket,
+  readHandoffTicket,
+} from "@/lib/oauth/state";
 
 const params = Promise.resolve({ provider: "google" });
 
 /** Builds a callback request carrying a valid state cookie for the given code. */
-function buildRequest(overrides: { state?: string; code?: string | null; error?: string } = {}) {
+function buildRequest(
+  overrides: {
+    state?: string;
+    code?: string | null;
+    error?: string;
+    /** Set to run the request as if the mobile app had started the sign-in. */
+    nativeRedirectUri?: string;
+  } = {},
+) {
   const { payload } = createOAuthState(
     "GOOGLE",
     "http://localhost/api/auth/oauth/google/callback",
+    overrides.nativeRedirectUri,
   );
 
   // Round-trip the cookie through a response so it is signed exactly as in production.
@@ -202,5 +216,69 @@ describe("GET /api/auth/oauth/[provider]/callback", () => {
     const res = await GET(buildRequest(), { params });
 
     expect(locationOf(res)).toContain("/login?error=oauth_no_email");
+  });
+});
+
+describe("GET /api/auth/oauth/[provider]/callback (native)", () => {
+  const NATIVE = "baseyfare://oauth";
+
+  function nativeRequest(overrides: Parameters<typeof buildRequest>[0] = {}) {
+    return buildRequest({ ...overrides, nativeRedirectUri: NATIVE });
+  }
+
+  it("hands a linked identity a handoff ticket instead of a session cookie", async () => {
+    prismaMock.userOAuthAccount.findUnique.mockResolvedValueOnce({
+      id: "link-1",
+      user: buildUser(),
+    });
+    prismaMock.userOAuthAccount.update.mockResolvedValueOnce({});
+
+    const res = await GET(nativeRequest(), { params });
+    const location = locationOf(res);
+
+    expect(location.startsWith(`${NATIVE}?ticket=`)).toBe(true);
+    expect(res.headers.get("set-cookie") ?? "").not.toContain("auth-token=ey");
+
+    const ticket = new URL(location).searchParams.get("ticket") ?? "";
+    expect(readHandoffTicket(ticket)).toMatchObject({ typ: "oauth_handoff", userId: "user-1" });
+
+    // No session is issued at callback time, so a handoff the app never
+    // completes leaves no login recorded against the account.
+    expect(prismaMock.user.update).not.toHaveBeenCalled();
+  });
+
+  it("sends an unknown email the signup ticket in the deep link, not a cookie", async () => {
+    prismaMock.userOAuthAccount.findUnique.mockResolvedValueOnce(null);
+    prismaMock.user.findUnique.mockResolvedValueOnce(null);
+
+    const res = await GET(nativeRequest(), { params });
+    const location = locationOf(res);
+
+    expect(location.startsWith(`${NATIVE}?signup=`)).toBe(true);
+    expect(res.headers.get("set-cookie") ?? "").not.toContain("oauth-signup=ey");
+
+    const signup = new URL(location).searchParams.get("signup") ?? "";
+    expect(parseSignupTicket(signup)).toMatchObject({
+      typ: "oauth_signup",
+      provider: "GOOGLE",
+      providerAccountId: "google-sub-1",
+      email: "resident@example.com",
+    });
+  });
+
+  it("deep-links refusals back to the app rather than the web login page", async () => {
+    prismaMock.userOAuthAccount.findUnique.mockResolvedValueOnce(null);
+    prismaMock.user.findUnique.mockResolvedValueOnce(buildUser({ userType: "ADMIN" }));
+
+    const res = await GET(nativeRequest(), { params });
+
+    expect(locationOf(res)).toBe(`${NATIVE}?error=oauth_staff_account`);
+  });
+
+  it("deep-links a failed state check, which is read before the state is trusted", async () => {
+    const res = await GET(nativeRequest({ state: "tampered-state" }), { params });
+
+    expect(locationOf(res)).toBe(`${NATIVE}?error=oauth_state`);
+    expect(providersMock.exchangeCodeForProfile).not.toHaveBeenCalled();
   });
 });

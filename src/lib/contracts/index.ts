@@ -5,6 +5,7 @@ export * from "./fareRates";
 export * from "./announcements";
 export * from "./incidents";
 export * from "./locations";
+export * from "./oauth";
 export * from "./permits";
 export * from "./rideTag";
 export * from "./driverSession";

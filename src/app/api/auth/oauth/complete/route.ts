@@ -4,7 +4,7 @@ import { Prisma } from '@prisma/client'
 import { invalidateAuthUserCache } from '@/lib/auth'
 import { applyLoginSessionCookie, issueSessionForUser } from '@/lib/login'
 import { createOAuthUser } from '@/lib/oauth/signup'
-import { clearSignupTicketCookie, readSignupTicket } from '@/lib/oauth/state'
+import { clearSignupTicketCookie, parseSignupTicket, readSignupTicket } from '@/lib/oauth/state'
 import { CURRENT_PRIVACY_NOTICE_VERSION } from '@/lib/privacyNotice'
 import {
   consumeRateLimit,
@@ -17,8 +17,10 @@ import {
 const PH_MOBILE_REGEX = /^(09|\+639)\d{9}$/
 
 /**
- * Finishes a social sign-up: the caller holds a signup ticket cookie minted by
- * the OAuth callback and supplies the details the provider could not give us.
+ * Finishes a social sign-up: the caller holds a signup ticket minted by the
+ * OAuth callback and supplies the details the provider could not give us. The
+ * browser carries that ticket in an httpOnly cookie; the native app, which has
+ * no cookie jar, posts the same signed value as `signupTicket`.
  *
  * Responds with `{ user, token }` and sets the session cookie, matching
  * /api/auth/login so a native client can consume the same endpoint.
@@ -27,11 +29,14 @@ export async function POST(request: NextRequest) {
   try {
     const clientId = getClientIdentifier(request)
 
-    // The ticket is read first so the limit can be keyed on the provider
-    // account rather than the IP: the caller already proved identity with the
-    // provider, and a shared telco NAT must not lock out unrelated users.
-    // Reading it is a signed-cookie decode, no database call.
-    const ticket = readSignupTicket(request)
+    // The body is parsed up front only so the native client's ticket is
+    // available here; the ticket has to be resolved before the rate limit so
+    // the limit can be keyed on the provider account rather than the IP. The
+    // caller already proved identity with the provider, and a shared telco NAT
+    // must not lock out unrelated users. Both reads are signed-JWT decodes, no
+    // database call.
+    const body = await request.json().catch(() => ({}))
+    const ticket = readSignupTicket(request) ?? parseSignupTicket(body?.signupTicket)
 
     if (!ticket) {
       return NextResponse.json(
@@ -70,7 +75,7 @@ export async function POST(request: NextRequest) {
       governmentId,
       privacyNoticeAcknowledged,
       privacyNoticeVersion,
-    } = await request.json()
+    } = body
 
     if (privacyNoticeAcknowledged !== true) {
       return rejected(NextResponse.json(

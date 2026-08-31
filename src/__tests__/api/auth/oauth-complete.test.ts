@@ -31,7 +31,7 @@ vi.mock("@/lib/rateLimit", () => rateLimitMock);
 vi.mock("@/lib/oauth/signup", () => ({ createOAuthUser: signupMock.createOAuthUser }));
 
 import { POST } from "@/app/api/auth/oauth/complete/route";
-import { applySignupTicketCookie } from "@/lib/oauth/state";
+import { applySignupTicketCookie, signSignupTicket } from "@/lib/oauth/state";
 
 const VALID_BODY = {
   phoneNumber: "09171234567",
@@ -114,6 +114,38 @@ describe("POST /api/auth/oauth/complete", () => {
 
     expect(res.status).toBe(400);
     expect(signupMock.createOAuthUser).not.toHaveBeenCalled();
+  });
+
+  it("accepts the ticket in the body, which is how the native app sends it", async () => {
+    // The app has no cookie jar, so it carries the same signed ticket the
+    // callback deep-linked to it.
+    const request = new NextRequest("http://localhost/api/auth/oauth/complete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...VALID_BODY,
+        signupTicket: signSignupTicket({
+          provider: "GOOGLE",
+          providerAccountId: "google-sub-1",
+          email: "resident@example.com",
+          firstName: "Juan",
+          lastName: "Dela Cruz",
+        }),
+      }),
+    });
+
+    const res = await POST(request);
+
+    expect(res.status).toBe(201);
+    expect(signupMock.createOAuthUser).toHaveBeenCalledWith(
+      expect.objectContaining({ providerAccountId: "google-sub-1" }),
+    );
+    // Keyed on the provider account, not the IP, on both transports.
+    expect(rateLimitMock.peekRateLimit).toHaveBeenCalledWith(
+      "google-sub-1",
+      expect.anything(),
+    );
+    expect(typeof (await res.json()).token).toBe("string");
   });
 
   it("creates the account and returns both a token and a session cookie", async () => {

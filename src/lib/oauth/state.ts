@@ -10,6 +10,12 @@ export const OAUTH_SIGNUP_COOKIE = 'oauth-signup'
 
 const STATE_TTL_SECONDS = 10 * 60
 const SIGNUP_TICKET_TTL_SECONDS = 15 * 60
+/**
+ * The handoff ticket is a bearer credential that travels through a deep link,
+ * where the OS may log it. The app exchanges it the moment the browser closes,
+ * so it lives far shorter than the session token it buys.
+ */
+const HANDOFF_TICKET_TTL_SECONDS = 60
 
 /**
  * OAuth cookies must be sameSite 'lax', not 'strict' like the session cookie:
@@ -30,15 +36,76 @@ function base64url(buffer: Buffer): string {
   return buffer.toString('base64url')
 }
 
+/** The mobile app's own scheme, from `mobile/app.json`. */
+const NATIVE_SCHEME = 'baseyfare:'
+/**
+ * Expo Go serves the app from an `exp://` URL rather than the app's scheme, so
+ * a developer testing there needs these too. They are accepted off production
+ * only: widening the allowlist on the deployed server would let anyone with an
+ * Expo dev server collect handoff tickets.
+ */
+const DEV_SCHEMES = ['exp:', 'exp+basey-farecheck:']
+
+/**
+ * Validates a deep-link target the OAuth callback may bounce back to.
+ *
+ * This is an allowlist rather than a format check on purpose: /start would
+ * otherwise be an open redirect that hands a session ticket to whatever URL the
+ * caller asked for. Returns null for anything not explicitly permitted.
+ */
+export function resolveNativeRedirect(raw: string | null | undefined): string | null {
+  if (!raw) {
+    return null
+  }
+
+  let url: URL
+
+  try {
+    url = new URL(raw)
+  } catch {
+    return null
+  }
+
+  const allowed =
+    url.protocol === NATIVE_SCHEME ||
+    (process.env.NODE_ENV !== 'production' && DEV_SCHEMES.includes(url.protocol))
+
+  return allowed ? url.toString() : null
+}
+
+/** Appends a query parameter to a deep link, preserving any it already carries. */
+export function buildNativeRedirect(
+  nativeRedirectUri: string,
+  params: Record<string, string>,
+): string {
+  const url = new URL(nativeRedirectUri)
+
+  for (const [key, value] of Object.entries(params)) {
+    url.searchParams.set(key, value)
+  }
+
+  return url.toString()
+}
+
 export interface OAuthStatePayload {
   provider: OAuthProvider
   state: string
   codeVerifier: string
   redirectUri: string
+  /**
+   * Set when the sign-in was started by the mobile app. Its presence is what
+   * switches the callback from web redirects to deep links; it rides inside the
+   * signed state cookie so it cannot be swapped after /start validated it.
+   */
+  nativeRedirectUri?: string
 }
 
 /** Creates the CSRF state and PKCE pair for an authorization request. */
-export function createOAuthState(provider: OAuthProvider, redirectUri: string): {
+export function createOAuthState(
+  provider: OAuthProvider,
+  redirectUri: string,
+  nativeRedirectUri?: string | null,
+): {
   payload: OAuthStatePayload
   codeChallenge: string
 } {
@@ -51,6 +118,7 @@ export function createOAuthState(provider: OAuthProvider, redirectUri: string): 
       state: base64url(crypto.randomBytes(32)),
       codeVerifier,
       redirectUri,
+      ...(nativeRedirectUri ? { nativeRedirectUri } : {}),
     },
     codeChallenge,
   }
@@ -102,6 +170,28 @@ export function readOAuthState(
   return payload
 }
 
+/**
+ * Reads the native redirect out of the state cookie without checking the state
+ * parameter. The callback needs somewhere to send a native caller even when the
+ * CSRF check is what failed — otherwise the app sits on an HTML error page
+ * waiting for a deep link that never comes. It is only ever used to pick a
+ * redirect target, never to authenticate anything.
+ */
+export function peekNativeRedirect(request: NextRequest): string | null {
+  const cookie = request.cookies.get(OAUTH_STATE_COOKIE)?.value
+
+  if (!cookie) {
+    return null
+  }
+
+  try {
+    const payload = jwt.verify(cookie, getJWTSecret()) as OAuthStatePayload
+    return resolveNativeRedirect(payload.nativeRedirectUri)
+  } catch {
+    return null
+  }
+}
+
 export interface SignupTicket {
   typ: 'oauth_signup'
   provider: OAuthProvider
@@ -111,14 +201,25 @@ export interface SignupTicket {
   lastName: string
 }
 
+/**
+ * Signs the sign-up ticket. Shared by the cookie the web flow sets and the deep
+ * link the native flow returns, so the two cannot drift apart.
+ */
+export function signSignupTicket(ticket: Omit<SignupTicket, 'typ'>): string {
+  return jwt.sign({ ...ticket, typ: 'oauth_signup' }, getJWTSecret(), {
+    expiresIn: SIGNUP_TICKET_TTL_SECONDS,
+  })
+}
+
 export function applySignupTicketCookie(
   response: NextResponse,
   ticket: Omit<SignupTicket, 'typ'>,
 ): void {
-  const token = jwt.sign({ ...ticket, typ: 'oauth_signup' }, getJWTSecret(), {
-    expiresIn: SIGNUP_TICKET_TTL_SECONDS,
-  })
-  response.cookies.set(OAUTH_SIGNUP_COOKIE, token, cookieOptions(SIGNUP_TICKET_TTL_SECONDS))
+  response.cookies.set(
+    OAUTH_SIGNUP_COOKIE,
+    signSignupTicket(ticket),
+    cookieOptions(SIGNUP_TICKET_TTL_SECONDS),
+  )
 }
 
 export function clearSignupTicketCookie(response: NextResponse): void {
@@ -139,6 +240,41 @@ export function parseSignupTicket(cookie: string | undefined): SignupTicket | nu
     const payload = jwt.verify(cookie, getJWTSecret()) as SignupTicket
 
     if (payload.typ !== 'oauth_signup' || !payload.providerAccountId || !payload.email) {
+      return null
+    }
+
+    return payload
+  } catch {
+    return null
+  }
+}
+
+export interface HandoffTicket {
+  typ: 'oauth_handoff'
+  userId: string
+}
+
+/**
+ * Mints the ticket the native callback deep-links back with. It stands in for
+ * the session cookie the web flow would set: it names a user the server has
+ * already authenticated against the provider, and buys exactly one session at
+ * /api/auth/oauth/native/exchange.
+ */
+export function signHandoffTicket(userId: string): string {
+  return jwt.sign({ typ: 'oauth_handoff', userId }, getJWTSecret(), {
+    expiresIn: HANDOFF_TICKET_TTL_SECONDS,
+  })
+}
+
+export function readHandoffTicket(raw: unknown): HandoffTicket | null {
+  if (typeof raw !== 'string' || !raw) {
+    return null
+  }
+
+  try {
+    const payload = jwt.verify(raw, getJWTSecret()) as HandoffTicket
+
+    if (payload.typ !== 'oauth_handoff' || typeof payload.userId !== 'string' || !payload.userId) {
       return null
     }
 

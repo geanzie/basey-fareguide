@@ -277,6 +277,14 @@ export const RATE_LIMITS = {
     windowMs: 15 * 60 * 1000, // 15 minutes
     maxAttempts: 30
   },
+  // The native app trading a handoff ticket for a session. The ticket is a
+  // signed 60-second JWT, so this is a flood guard rather than a brute-force
+  // one, sized to match the redirect leg that always precedes it.
+  OAUTH_NATIVE_EXCHANGE: {
+    name: 'oauth-native-exchange',
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    maxAttempts: 30
+  },
   // Lenient for general API calls
   API_GENERAL: {
     name: 'api-general',
