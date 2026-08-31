@@ -22,6 +22,7 @@
       }
     },
     "production": {
+      "environment": "production",
       "distribution": "internal",
       "autoIncrement": true,
       "android": {
