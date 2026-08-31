@@ -1,6 +1,6 @@
 import { defaultCache } from "@serwist/next/worker";
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
-import { CacheFirst, Serwist } from "serwist";
+import { CacheFirst, Serwist, StaleWhileRevalidate } from "serwist";
 
 import { BASEMAP_PATH } from "@/lib/map/basemapConstants";
 import {
@@ -17,7 +17,16 @@ declare global {
 
 declare const self: ServiceWorkerGlobalScope;
 
-const DATA_CACHE = "basey-data-v1";
+/**
+ * The cache that held /data/basey-roads.geojson for the on-device road graph.
+ *
+ * That graph is gone: it produced distances that disagreed with the server's,
+ * and an offline fare that disagrees with the driver's app is a dispute under
+ * Ordinance 105. The name survives only so an already-installed worker can
+ * reclaim the 2.8 MB it is still holding, and can be deleted once installs have
+ * turned over.
+ */
+const RETIRED_DATA_CACHE = "basey-data-v1";
 
 // Precache the basemap archive on install so the map is fully usable offline
 // before the user pans anywhere. One PMTiles file covering the Basey bbox,
@@ -31,21 +40,20 @@ self.addEventListener("install", (event) => {
         // Archive missing (not built yet) — the fetch handler falls back to
         // the network, which byte-serves ranges correctly.
       }
-
-      try {
-        // Road graph for offline routing.
-        const cache = await caches.open(DATA_CACHE);
-        await cache.add("/data/basey-roads.geojson");
-      } catch {
-        // Graph not fetched yet — offline routing falls back to straight-line.
-      }
     })(),
   );
 });
 
 // A rebuilt archive must not be shadowed by the copy a client already holds.
 self.addEventListener("activate", (event) => {
-  event.waitUntil(evictStaleBasemap());
+  event.waitUntil(
+    (async () => {
+      await evictStaleBasemap();
+      // Reclaim the retired road graph from clients that installed before it
+      // was removed. Failure here must not block activation.
+      await caches.delete(RETIRED_DATA_CACHE).catch(() => false);
+    })(),
+  );
 });
 
 const serwist = new Serwist({
@@ -71,9 +79,17 @@ const serwist = new Serwist({
       handler: new CacheFirst({ cacheName: "leaflet-assets" }),
     },
     {
-      // Bundled road graph for offline routing.
-      matcher: ({ url }) => url.pathname.startsWith("/data/"),
-      handler: new CacheFirst({ cacheName: DATA_CACHE }),
+      // The curated distance corpus, which is what lets an offline quote agree
+      // with the server instead of estimating.
+      //
+      // The planner also keeps its own copy in localStorage, and that is what
+      // the offline quote actually reads. This entry covers the gap that copy
+      // cannot: a reload with no connection, where the fetch would otherwise
+      // reject and leave the planner holding whatever it last persisted with no
+      // way to notice a newer corpus. Stale-while-revalidate because a distance
+      // that is a few minutes out of date still beats no distance at all.
+      matcher: ({ url }) => url.pathname === "/api/curated-routes",
+      handler: new StaleWhileRevalidate({ cacheName: "curated-routes" }),
     },
     ...defaultCache,
   ],

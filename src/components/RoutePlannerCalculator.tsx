@@ -23,6 +23,7 @@ import type { RoutePlannerMapProps } from './RoutePlannerMap'
 import TripFields from './TripFields'
 import VehicleLookupField from './VehicleLookupField'
 import type {
+  CuratedRouteCorpusDto,
   DiscountCardDto,
   DiscountCardMeResponseDto,
   FareCalculationMutationResponseDto,
@@ -61,15 +62,16 @@ import {
   selectionToPoint,
   type PlannerSelection,
 } from '@/lib/planner/selection'
-import {
-  buildOfflineRouteFromCache,
-  resolveOfflineRoute,
-  OFFLINE_CACHE_REASON,
-  OFFLINE_FALLBACK_REASON,
-  OFFLINE_GRAPH_REASON,
-} from '@/lib/routing/offlineRoute'
-import type { CalculatedRouteResponse, PassengerType } from '@/lib/routing/types'
+import { calculateFare, getFareBreakdown } from '@/lib/fare/calculator'
+import type { PassengerType } from '@/lib/routing/types'
 import { loadLastFarePolicy, saveLastFarePolicy } from '@/lib/offline/farePolicyCache'
+import { OFFLINE_CACHE_REASON, offlineUnpricedMessage } from '@/lib/offline/offlineQuote'
+import {
+  findCuratedCorpusRoute,
+  loadCuratedCorpus,
+  OFFLINE_CURATED_REASON,
+  saveCuratedCorpus,
+} from '@/lib/offline/curatedCorpus'
 import { loadCachedRoute, routePairKeyForVehicle, saveCachedRoute } from '@/lib/offline/routeCache'
 import { SWR_KEYS } from '@/lib/swrKeys'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
@@ -360,6 +362,17 @@ const RoutePlannerCalculator = ({
     useSWR<PlannerLocationsResponse>(SWR_KEYS.plannerLocations)
   const places = useMemo(() => locationsData?.locations ?? [], [locationsData])
 
+  // Fetched on mount rather than on demand: its whole purpose is to already be
+  // on the device by the time the connection drops. A failure is silent — the
+  // offline path simply falls back to the route cache.
+  const { data: curatedCorpus } = useSWR<CuratedRouteCorpusDto>(SWR_KEYS.curatedRouteCorpus)
+
+  useEffect(() => {
+    if (curatedCorpus) {
+      saveCuratedCorpus(curatedCorpus)
+    }
+  }, [curatedCorpus])
+
   const origin = useMemo(() => selectionToPoint(originSelection), [originSelection])
   const destination = useMemo(() => selectionToPoint(destinationSelection), [destinationSelection])
   const hasTwoPoints = Boolean(origin && destination)
@@ -533,7 +546,26 @@ const RoutePlannerCalculator = ({
     setFitBoundsToken((current) => current + 1)
   }
 
-  const applyOfflineEstimate = async (
+  /**
+   * Price the trip from a distance the server measured, or say we cannot.
+   *
+   * There is deliberately no estimating fallback here. This used to degrade to
+   * an on-device road graph and then to straight-line distance x 1.4, both of
+   * which produce a number that disagrees with the server's. Under Ordinance
+   * 105 that disagreement is an argument between a rider and a driver at the
+   * roadside, so the only offline fare we will show is one the server itself
+   * measured. Everything else shows the official rates and no fare at all.
+   *
+   * Two sources qualify, in this order:
+   *
+   * 1. The curated corpus, when both ends are saved places. This is the same
+   *    tier `resolveRouteForQuote` consults before any routing engine, so the
+   *    answer equals the one the rider would have got online — and it answers
+   *    for pairs this browser has never requested.
+   * 2. A route this browser measured online earlier, which is all a dropped pin
+   *    or a GPS fix can ever have.
+   */
+  const applyOfflineQuote = async (
     nextPair: { origin: PlannerPoint; destination: PlannerPoint },
     requestId: number,
   ) => {
@@ -541,83 +573,122 @@ const RoutePlannerCalculator = ({
 
     const originCoord = { lat: nextPair.origin.lat, lng: nextPair.origin.lng }
     const destCoord = { lat: nextPair.destination.lat, lng: nextPair.destination.lng }
-    const farePolicy = loadLastFarePolicy()
-    const offlineInput = {
-      origin: originCoord,
-      destination: destCoord,
-      passengerType,
-      vehicleType,
-      farePolicy,
+    const lastPolicy = loadLastFarePolicy()
+
+    /** Builds the result both offline sources share, differing only in provenance. */
+    const buildResult = (
+      source: {
+        distanceKm: number
+        durationMin: number | null
+        polyline: string | null
+        farePolicy: FarePolicySnapshotDto
+        fallbackReason: string
+        sourceBadge: string
+      },
+    ): RouteResult => {
+      const fare = calculateFare(source.distanceKm, passengerType, source.farePolicy)
+      const breakdown = getFareBreakdown(source.distanceKm, passengerType, source.farePolicy)
+      const subtotal = breakdown.baseFare + breakdown.additionalFare
+      const hasDiscount = breakdown.discount > 0
+
+      return {
+        fare,
+        distanceKm: source.distanceKm,
+        durationMin: source.durationMin ?? 0,
+        durationText: buildDurationText(source.durationMin),
+        polyline: source.polyline,
+        method: null,
+        provider: null,
+        // Not an estimate either way: both are distances the server measured.
+        isEstimate: false,
+        fallbackReason: source.fallbackReason,
+        sourceBadge: source.sourceBadge,
+        twoWheelerNotice: false,
+        originalFare: hasDiscount ? subtotal : undefined,
+        discountApplied: hasDiscount ? breakdown.discount : undefined,
+        discountCard: userDiscountCard,
+        farePolicy: source.farePolicy,
+        breakdown: {
+          baseFare: breakdown.baseFare,
+          additionalDistance: breakdown.additionalKm,
+          additionalFare: breakdown.additionalFare,
+        },
+        originLabel: nextPair.origin.label || 'Start',
+        destinationLabel: nextPair.destination.label || 'Destination',
+      }
     }
 
-    // Resolution order: exact cached online result -> on-device road graph ->
-    // straight-line heuristic.
-    let estimate: CalculatedRouteResponse
+    const commit = (nextResult: RouteResult, message: string) => {
+      setRouteResult(nextResult)
+      displayedRouteVersionRef.current += 1
+      setDisplayedRoutePair(nextPair)
+      setSaveStatus('idle')
+      setPlannerState('route_ready')
+      setRouteMessage(message)
+
+      if (shouldFitNextSuccessRef.current) {
+        setFitBoundsToken((current) => current + 1)
+        shouldFitNextSuccessRef.current = false
+      }
+    }
+
+    // 1. The surveyed corpus. Only saved places carry the location ids it is
+    // keyed by, which is why a dropped pin can never be answered from here.
+    const curated = findCuratedCorpusRoute(
+      loadCuratedCorpus(),
+      originSelection?.place?.id,
+      destinationSelection?.place?.id,
+      vehicleType,
+    )
+
+    if (curated) {
+      // The corpus stores a distance, not a quote: a survey does not expire
+      // when the rates change. So it is priced with the newest policy this
+      // browser has seen rather than one captured alongside the measurement.
+      commit(
+        buildResult({
+          distanceKm: curated.distanceKm,
+          durationMin: curated.durationMin,
+          // The corpus omits geometry, so there is no line to draw.
+          polyline: null,
+          farePolicy: resolveFarePolicySnapshot(lastPolicy),
+          fallbackReason: OFFLINE_CURATED_REASON,
+          sourceBadge: 'Offline (surveyed distance)',
+        }),
+        'Offline — using the surveyed distance for this pair, the same one the server would quote.',
+      )
+      return
+    }
+
+    // 2. A route this browser measured online earlier.
     const cached = await loadCachedRoute(
       routePairKeyForVehicle(originCoord, destCoord, vehicleType),
     )
-    if (cached) {
-      estimate = buildOfflineRouteFromCache(
-        { ...offlineInput, farePolicy: cached.farePolicy ?? farePolicy },
-        cached,
-      )
-    } else {
-      estimate = await resolveOfflineRoute(offlineInput)
-    }
 
     // A newer request superseded this one while awaiting.
     if (requestId !== requestSequenceRef.current) return
 
-    const subtotal = estimate.fareBreakdown.baseFare + estimate.fareBreakdown.additionalFare
-    const hasDiscount = estimate.fareBreakdown.discount > 0
-
-    const nextResult: RouteResult = {
-      fare: estimate.fare,
-      distanceKm: estimate.distanceKm,
-      durationMin: estimate.durationMin ?? 0,
-      durationText: buildDurationText(estimate.durationMin),
-      polyline: estimate.polyline,
-      method: null,
-      provider: null,
-      isEstimate: true,
-      fallbackReason: estimate.fallbackReason,
-      sourceBadge:
-        estimate.fallbackReason === OFFLINE_CACHE_REASON
-          ? 'Offline (cached route)'
-          : estimate.fallbackReason === OFFLINE_GRAPH_REASON
-            ? 'Offline road estimate'
-            : 'Offline straight-line estimate',
-      twoWheelerNotice: false,
-      originalFare: hasDiscount ? subtotal : undefined,
-      discountApplied: hasDiscount ? estimate.fareBreakdown.discount : undefined,
-      discountCard: userDiscountCard,
-      farePolicy: estimate.farePolicy,
-      breakdown: {
-        baseFare: estimate.fareBreakdown.baseFare,
-        additionalDistance: estimate.fareBreakdown.additionalKm,
-        additionalFare: estimate.fareBreakdown.additionalFare,
-      },
-      originLabel: nextPair.origin.label || estimate.origin,
-      destinationLabel: nextPair.destination.label || estimate.destination,
+    if (!cached) {
+      setRouteResult(null)
+      setPlannerState('network_error')
+      setRouteMessage(offlineUnpricedMessage(lastPolicy))
+      return
     }
 
-    setRouteResult(nextResult)
-    displayedRouteVersionRef.current += 1
-    setDisplayedRoutePair(nextPair)
-    setSaveStatus('idle')
-    setPlannerState('route_ready')
-    setRouteMessage(
-      estimate.fallbackReason === OFFLINE_FALLBACK_REASON
-        ? 'Offline — straight-line estimate (pin off the road network).'
-        : estimate.fallbackReason === OFFLINE_CACHE_REASON
-          ? 'Offline — replaying your last verified route for this pair.'
-          : 'Offline — estimated road route from the on-device map.',
+    commit(
+      buildResult({
+        distanceKm: cached.distanceKm,
+        durationMin: cached.durationMin,
+        polyline: cached.polyline,
+        // The policy stored with the route wins: it was in force when the
+        // distance was measured. Recomputing the fare here rather than caching
+        // it is what stops a rate change replaying yesterday's price.
+        farePolicy: resolveFarePolicySnapshot(cached.farePolicy ?? lastPolicy),
+        fallbackReason: OFFLINE_CACHE_REASON,
+        sourceBadge: 'Offline (your last verified route)',
+      }),
+      'Offline — replaying the verified route you already measured for this pair.',
     )
-
-    if (shouldFitNextSuccessRef.current) {
-      setFitBoundsToken((current) => current + 1)
-      shouldFitNextSuccessRef.current = false
-    }
   }
 
   const calculateRoute = async (force = false) => {
@@ -649,9 +720,9 @@ const RoutePlannerCalculator = ({
     setPlannerState('calculating')
     setRouteMessage(routeResult ? 'Keeping your last good route visible while recalculating.' : null)
 
-    // No connection: skip the network round-trip and estimate locally.
+    // No connection: skip the round-trip and answer from what we already have.
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
-      await applyOfflineEstimate(nextPair, requestId)
+      await applyOfflineQuote(nextPair, requestId)
       if (requestId === requestSequenceRef.current) {
         setIsCalculating(false)
       }
@@ -788,9 +859,9 @@ const RoutePlannerCalculator = ({
         return
       }
 
-      // Network/API unreachable — degrade to a local offline estimate
-      // (cached route -> road graph -> straight-line) instead of blocking.
-      await applyOfflineEstimate(nextPair, requestId)
+      // Network/API unreachable — fall back to a route this browser already
+      // measured, or state plainly that no fare can be given.
+      await applyOfflineQuote(nextPair, requestId)
       if (onError) onError(message)
     } finally {
       if (requestId === requestSequenceRef.current) {

@@ -11,8 +11,11 @@ function toRad(deg: number): number {
 
 /**
  * Great-circle (straight-line) distance between two coordinates in kilometres.
- * Shared by the GPS provider (server) and the offline estimator (client) so both
- * paths use one source of truth.
+ *
+ * Used by the GPS provider, which serves the trip tracker. It is deliberately
+ * NOT reachable from the fare path: a straight-line distance produces a fare
+ * that disagrees with the driver's app, and under Ordinance 105 that is a
+ * dispute. The client-side estimator that used to share this was removed.
  */
 export function haversineKm(a: Coordinates, b: Coordinates): number {
   const dLat = toRad(b.lat - a.lat);
@@ -22,11 +25,6 @@ export function haversineKm(a: Coordinates, b: Coordinates): number {
   const chord =
     sin2Lat + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * sin2Lng;
   return 2 * EARTH_RADIUS_KM * Math.asin(Math.sqrt(chord));
-}
-
-/** Straight-line distance scaled by ROAD_FACTOR to approximate a road route. */
-export function estimatedRoadKm(a: Coordinates, b: Coordinates): number {
-  return haversineKm(a, b) * ROAD_FACTOR;
 }
 
 /**

@@ -1,4 +1,9 @@
-import type { CuratedRouteDto, CuratedRouteSourceDto } from "@/lib/contracts";
+import type {
+  CuratedRouteCorpusDto,
+  CuratedRouteCorpusRowDto,
+  CuratedRouteDto,
+  CuratedRouteSourceDto,
+} from "@/lib/contracts";
 import type { VehicleType } from "@prisma/client";
 
 function toIsoString(value: Date | string): string {
@@ -80,5 +85,72 @@ export function serializeCuratedRoute(record: CuratedRouteRecordInput): CuratedR
     surveyedByName: formatActorName(record.surveyedByUser),
     createdAt: toIsoString(record.createdAt),
     updatedAt: toIsoString(record.updatedAt),
+  };
+}
+
+interface CuratedRouteCorpusRecordInput {
+  originLocationId: string;
+  destinationLocationId: string;
+  vehicleType: VehicleType;
+  distanceMeters: number;
+  durationSeconds?: number | null;
+  isBidirectional: boolean;
+  updatedAt: Date | string;
+}
+
+/**
+ * Pack active curated rows into the compact corpus the mobile client caches.
+ *
+ * Builds the id and vehicle-type dictionaries in one pass over the rows rather
+ * than a separate query, so the encoding never disagrees with the data it came
+ * from.
+ */
+export function serializeCuratedRouteCorpus(
+  records: CuratedRouteCorpusRecordInput[],
+): CuratedRouteCorpusDto {
+  const locationIds: string[] = [];
+  const locationIndex = new Map<string, number>();
+  const vehicleTypes: VehicleType[] = [];
+  const vehicleIndex = new Map<VehicleType, number>();
+
+  const indexOfLocation = (id: string): number => {
+    const existing = locationIndex.get(id);
+    if (existing !== undefined) return existing;
+    const next = locationIds.push(id) - 1;
+    locationIndex.set(id, next);
+    return next;
+  };
+
+  const indexOfVehicle = (vehicleType: VehicleType): number => {
+    const existing = vehicleIndex.get(vehicleType);
+    if (existing !== undefined) return existing;
+    const next = vehicleTypes.push(vehicleType) - 1;
+    vehicleIndex.set(vehicleType, next);
+    return next;
+  };
+
+  let newest: number | null = null;
+  const routes: CuratedRouteCorpusRowDto[] = records.map((record) => {
+    const updatedAt = new Date(record.updatedAt).getTime();
+    if (Number.isFinite(updatedAt) && (newest === null || updatedAt > newest)) {
+      newest = updatedAt;
+    }
+
+    return [
+      indexOfLocation(record.originLocationId),
+      indexOfLocation(record.destinationLocationId),
+      indexOfVehicle(record.vehicleType),
+      record.distanceMeters,
+      record.durationSeconds ?? null,
+      record.isBidirectional ? 1 : 0,
+    ];
+  });
+
+  return {
+    locationIds,
+    vehicleTypes,
+    routes,
+    count: routes.length,
+    generatedAt: newest === null ? null : new Date(newest).toISOString(),
   };
 }

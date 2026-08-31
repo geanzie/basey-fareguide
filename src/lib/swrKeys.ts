@@ -27,6 +27,9 @@ export const SWR_KEYS = {
   // The curated barangay/landmark list the rider searches. Public and served
   // with a cache header, so one fetch covers the whole session.
   plannerLocations: '/api/locations',
+  // The full curated distance corpus, cached on-device so a rider can price a
+  // trip offline. Public and cache-headed like the place list above.
+  curatedRouteCorpus: '/api/curated-routes',
   locationRideAccess: '/api/locations/ride-access',
   adminStorage: '/api/admin/storage',
   adminAnnouncements: '/api/admin/announcements',
