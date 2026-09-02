@@ -40,6 +40,7 @@ describe('authenticated navigation registry', () => {
       'report',
       'profile',
       'about',
+      'feedback',
       'discount-card',
     ])
   })
@@ -53,6 +54,7 @@ describe('authenticated navigation registry', () => {
     expect(getAuthenticatedMobileSheetItems('DRIVER').map((item) => item.id)).toEqual([
       'profile',
       'about',
+      'feedback',
     ])
   })
 
@@ -75,7 +77,22 @@ describe('authenticated navigation registry', () => {
     expect(isAuthenticatedNavigationItemActive('/dashboard/report', reportTab!)).toBe(true)
   })
 
+  it('offers Send Feedback to every role, and the admin review screen to admins', () => {
+    for (const role of ['PUBLIC', 'ADMIN', 'DATA_ENCODER', 'ENFORCER', 'DRIVER'] as const) {
+      expect(getAuthenticatedMobileSheetItems(role).map((item) => item.id)).toContain('feedback')
+    }
+
+    expect(getAuthenticatedMobileSheetItems('ADMIN').map((item) => item.id)).toContain(
+      'admin-feedback',
+    )
+    expect(getAuthenticatedMobileSheetItems('PUBLIC').map((item) => item.id)).not.toContain(
+      'admin-feedback',
+    )
+  })
+
   it('treats secondary destinations as profile-sheet routes', () => {
+    expect(isAuthenticatedProfileSheetActive('/profile/feedback', 'PUBLIC')).toBe(true)
+    expect(isAuthenticatedProfileSheetActive('/admin/feedback', 'ADMIN')).toBe(true)
     expect(isAuthenticatedProfileSheetActive('/profile/discount', 'PUBLIC')).toBe(true)
     expect(isAuthenticatedProfileSheetActive('/history', 'PUBLIC')).toBe(true)
     expect(isAuthenticatedProfileSheetActive('/report', 'PUBLIC')).toBe(true)

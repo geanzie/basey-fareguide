@@ -18,6 +18,7 @@ export const SWR_KEYS = {
   vehicles: '/api/vehicles',
   tickets: '/api/tickets',
   enforcerIncidents: '/api/incidents/enforcer',
+  feedback: '/api/feedback',
   discountMe: '/api/discount-cards/me',
   discountApplication: '/api/discount-cards/my-application',
   terminalHistory: '/api/terminal/history',
@@ -33,6 +34,7 @@ export const SWR_KEYS = {
   locationRideAccess: '/api/locations/ride-access',
   adminStorage: '/api/admin/storage',
   adminAnnouncements: '/api/admin/announcements',
+  adminFeedback: '/api/admin/feedback',
   adminDiscountCards: '/api/admin/discount-cards',
   adminCuratedRoutes: '/api/admin/curated-routes',
   adminRoadRestrictions: '/api/admin/road-restrictions',
@@ -48,4 +50,6 @@ export const swrKey = {
   locationRideAccess: (status: string) => `/api/locations/ride-access?status=${status}`,
   adminCuratedRoutes: (query?: string) =>
     `/api/admin/curated-routes${query ? `?${query}` : ''}`,
+  adminFeedback: (query?: string) =>
+    `/api/admin/feedback${query ? `?${query}` : ''}`,
 } as const;

@@ -92,6 +92,25 @@ export default function ProfilePage() {
               </div>
             </Link>
           </Card>
+          <Card padded={false}>
+            <Link
+              href="/profile/feedback"
+              className="flex items-center gap-4 p-4 transition hover:bg-slate-50"
+            >
+              <div className={`${getDashboardIconChipClasses('violet')} h-10 w-10 shrink-0`}>
+                <DashboardIconSlot
+                  icon={DASHBOARD_ICONS.feedback}
+                  size={DASHBOARD_ICON_POLICY.sizes.card}
+                />
+              </div>
+              <div className="min-w-0">
+                <div className="font-semibold text-slate-900">Send Feedback</div>
+                <p className="text-sm text-slate-600">
+                  Tell us what works, what is broken, and what to improve
+                </p>
+              </div>
+            </Link>
+          </Card>
         </div>
       </PageShell>
     </RoleGuard>

@@ -1,6 +1,7 @@
 export * from "./common";
 export * from "./discounts";
 export * from "./fares";
+export * from "./feedback";
 export * from "./fareRates";
 export * from "./announcements";
 export * from "./incidents";

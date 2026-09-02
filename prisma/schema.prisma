@@ -84,6 +84,8 @@ model User {
   driverTripSessions            VehicleTripSession[]             @relation("DriverTripSessions")
   riderTripSessionEntries       VehicleTripSessionRider[]        @relation("RiderTripSessionEntries")
   driverTripSessionEvents       VehicleTripSessionRiderEvent[]   @relation("DriverTripSessionEvents")
+  submittedFeedback             UserFeedback[]                   @relation("UserFeedbackSubmitter")
+  reviewedFeedback              UserFeedback[]                   @relation("UserFeedbackReviewer")
 
   @@index([username])
   @@index([userType])
@@ -1187,4 +1189,41 @@ enum VerificationStatus {
   REJECTED
   SUSPENDED
   EXPIRED
+}
+
+model UserFeedback {
+  id           String           @id @default(cuid())
+  userId       String
+  user         User             @relation("UserFeedbackSubmitter", fields: [userId], references: [id], onDelete: Cascade)
+  category     FeedbackCategory
+  /// 1..5 stars. Range is enforced in the route handler.
+  rating       Int
+  message      String           @db.Text
+  status       FeedbackStatus   @default(NEW)
+  reviewedById String?
+  reviewedBy   User?            @relation("UserFeedbackReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt   DateTime?
+  reviewNotes  String?          @db.Text
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@index([status, createdAt])
+  @@index([userId])
+  @@index([category])
+  @@map("user_feedback")
+}
+
+enum FeedbackCategory {
+  FARE_CALCULATOR
+  MAP_ROUTES
+  ACCOUNT
+  BUG
+  SUGGESTION
+  OTHER
+}
+
+enum FeedbackStatus {
+  NEW
+  REVIEWED
+  RESOLVED
 }

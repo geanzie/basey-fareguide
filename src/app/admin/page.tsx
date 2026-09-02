@@ -57,6 +57,14 @@ const ADMIN_SHORTCUTS: Array<{
     tone: 'blue',
   },
   {
+    title: 'User feedback',
+    description: 'Read what riders and staff report about the app, and mark each one reviewed.',
+    href: '/admin/feedback',
+    actionLabel: 'Open Feedback',
+    icon: DASHBOARD_ICONS.feedback,
+    tone: 'violet',
+  },
+  {
     title: 'Routing settings',
     description: 'Manage the primary route provider from the dedicated routing settings page.',
     href: '/admin/settings/routing',
