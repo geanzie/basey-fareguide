@@ -65,6 +65,15 @@ const ADMIN_SHORTCUTS: Array<{
     tone: 'violet',
   },
   {
+    title: 'Driver session suspension',
+    description:
+      'Choose which vehicle types skip driver acceptance and let riders record trips by scanning the permit QR.',
+    href: '/admin/settings/driver-sessions',
+    actionLabel: 'Open Driver Sessions',
+    icon: DASHBOARD_ICONS.vehicle,
+    tone: 'emerald',
+  },
+  {
     title: 'Routing settings',
     description: 'Manage the primary route provider from the dedicated routing settings page.',
     href: '/admin/settings/routing',

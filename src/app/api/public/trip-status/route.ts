@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-import { DriverTripSessionRiderStatus, UserType } from '@prisma/client'
+import { DriverTripSessionInitiator, DriverTripSessionRiderStatus, UserType } from '@prisma/client'
 
 import type { RiderActiveTripStatusResponseDto, RiderTripStatusDto } from '@/lib/contracts'
 import { createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
+import { buildAvailableRiderActions } from '@/lib/driverSession'
 import { prisma } from '@/lib/prisma'
 
 const ACTIVE_RIDER_STATUSES = [
@@ -17,6 +18,7 @@ const riderStatusLabels: Record<DriverTripSessionRiderStatus, string> = {
   PENDING: 'Waiting for driver',
   ACCEPTED: 'Trip accepted',
   BOARDED: 'Trip accepted',
+  // riderInitiated overrides BOARDED below — nobody accepted anything there.
   COMPLETED: 'Completed',
   REJECTED_NOT_HERE: 'Not Here',
   REJECTED_FULL: 'Full',
@@ -79,6 +81,7 @@ export async function GET(request: NextRequest) {
         boardedAt: true,
         session: {
           select: {
+            initiatedBy: true,
             vehicle: {
               select: {
                 plateNumber: true,
@@ -99,11 +102,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(emptyResponse)
     }
 
+    // A rider-initiated trip is one the rider opened by scanning the vehicle's
+    // printed permit QR, so the rider — not a driver — ends it.
+    const riderInitiated = entry.session.initiatedBy === DriverTripSessionInitiator.RIDER
+
     const trip: RiderTripStatusDto = {
       id: entry.id,
       fareCalculationId: entry.fareCalculationId,
       status: entry.status as RiderTripStatusDto['status'],
-      statusLabel: riderStatusLabels[entry.status],
+      statusLabel:
+        riderInitiated && entry.status === DriverTripSessionRiderStatus.BOARDED
+          ? 'Trip in progress'
+          : riderStatusLabels[entry.status],
       origin: entry.originSnapshot,
       destination: entry.destinationSnapshot,
       fare: Number(entry.fareSnapshot),
@@ -114,6 +124,8 @@ export async function GET(request: NextRequest) {
       boardedAt: entry.boardedAt ? entry.boardedAt.toISOString() : null,
       vehiclePlateNumber: entry.session.vehicle.plateNumber,
       vehicleType: entry.session.vehicle.vehicleType,
+      riderInitiated,
+      availableRiderActions: buildAvailableRiderActions(entry.status, riderInitiated),
     }
 
     const response: RiderActiveTripStatusResponseDto = { hasActiveTrip: true, trip }

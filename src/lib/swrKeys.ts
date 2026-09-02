@@ -8,6 +8,9 @@ export const SWR_KEYS = {
   fareRates: "/api/fare-rates",
   announcements: "/api/announcements",
   riderTripStatus: "/api/public/trip-status",
+  // Which vehicle types are suspended from the driver session flow. Public, so
+  // a rider can scan a permit sticker before logging in.
+  tripFlowConfig: "/api/config/trip-flow",
   driverSession: "/api/driver/session/active",
   dashboardStats: '/api/dashboard/stats',
   dashboardActivity: '/api/dashboard/activity?limit=3',
@@ -39,6 +42,7 @@ export const SWR_KEYS = {
   adminCuratedRoutes: '/api/admin/curated-routes',
   adminRoadRestrictions: '/api/admin/road-restrictions',
   adminRoutingSettings: '/api/admin/settings/routing',
+  adminDriverSessionSettings: '/api/admin/settings/driver-sessions',
   adminIncidentStats: '/api/admin/incidents/stats',
   adminFareRates: '/api/admin/fare-rates',
 } as const;

@@ -36,5 +36,10 @@ export interface FareCalculationMutationResponseDto {
   calculation: FareCalculationDto | null;
   tripRequestId: string | null;
   requestStatus: DriverSessionRiderStatusDto | null;
+  /**
+   * True when this vehicle type is suspended from the driver session flow, so
+   * the trip started immediately instead of waiting on a driver to accept.
+   */
+  riderConfirmsTrip?: boolean;
   message: string;
 }

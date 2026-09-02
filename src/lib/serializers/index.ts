@@ -11,4 +11,5 @@ export * from "./tracker";
 export * from "./vehicles";
 export * from "./curatedRoutes";
 export * from "./roadRestrictions";
+export * from "./driverSessionSettings";
 export * from "./routingSettings";

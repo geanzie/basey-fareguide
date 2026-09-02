@@ -3,7 +3,8 @@ import { prisma } from '@/lib/prisma'
 import { buildPaginationMetadata, parsePaginationParams } from '@/lib/api/pagination'
 import { verifyAuth } from '@/lib/auth'
 import { evaluateDiscountCardPolicy } from '@/lib/discountCardPolicy'
-import { createPendingTripRequest } from '@/lib/driverSession'
+import { createPendingTripRequest, createRiderConfirmedTrip } from '@/lib/driverSession'
+import { isDriverAcceptSuspended } from '@/lib/driverSessionSettings/settingsService'
 import { serializeFareCalculation } from '@/lib/serializers'
 
 const fareCalculationSerializeSelect = {
@@ -223,6 +224,7 @@ export async function POST(request: NextRequest) {
       select: {
         id: true,
         isActive: true,
+        vehicleType: true,
       }
     })
 
@@ -294,7 +296,15 @@ export async function POST(request: NextRequest) {
       resolvedDiscountType = card.discountType
     }
 
-    const pendingTripRequest = await createPendingTripRequest(
+    // Suspended vehicle types have no driver app to accept the request: the
+    // rider has already scanned the permit QR printed on the vehicle and is
+    // aboard, so the trip is committed here instead of offered to a driver.
+    const riderConfirmsTrip = await isDriverAcceptSuspended(selectedVehicle.vehicleType)
+    const createTripRequest = riderConfirmsTrip
+      ? createRiderConfirmedTrip
+      : createPendingTripRequest
+
+    const pendingTripRequest = await createTripRequest(
       {
         userId,
         vehicleId: resolvedVehicleId,
@@ -326,7 +336,10 @@ export async function POST(request: NextRequest) {
       calculation: null,
       tripRequestId: pendingTripRequest.id,
       requestStatus: pendingTripRequest.status,
-      message: pendingTripRequest.created ? 'Trip request sent successfully' : 'Trip request already active'
+      riderConfirmsTrip,
+      message: riderConfirmsTrip
+        ? (pendingTripRequest.created ? 'Trip started' : 'Trip already in progress')
+        : (pendingTripRequest.created ? 'Trip request sent successfully' : 'Trip request already active')
     }, { status: 201 })
 
   } catch (error) {

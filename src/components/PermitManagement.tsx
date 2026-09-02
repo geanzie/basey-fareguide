@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import useSWR from 'swr'
 import { useSearchParams } from 'next/navigation'
 import { useAuth } from '@/components/AuthProvider'
 import PermitQrCard from '@/components/PermitQrCard'
@@ -9,10 +10,12 @@ import { VehicleType, PermitStatus } from '@prisma/client'
 import ResponsiveTable, { StatusBadge, ActionButton } from './ResponsiveTable'
 import VehicleLookupField from './VehicleLookupField'
 import { useFeedback } from '@/ui/FeedbackProvider'
+import { SWR_KEYS } from '@/lib/swrKeys'
 import Modal from '@/ui/Modal'
 import type {
   PermitDto,
   PermitsResponseDto,
+  TripFlowConfigDto,
   VehicleLookupDto,
 } from '@/lib/contracts'
 
@@ -30,6 +33,14 @@ export default function PermitManagement() {
   const { confirm } = useFeedback()
   const searchParams = useSearchParams()
   const [permits, setPermits] = useState<PermitDto[]>([])
+  /**
+   * Vehicle types whose drivers do not accept trips in the app. Their printed
+   * permit sticker is the only way a rider can record a trip, so a permit
+   * without a QR token is a service outage rather than a legacy quirk.
+   */
+  const { data: tripFlowConfig } = useSWR<TripFlowConfigDto>(SWR_KEYS.tripFlowConfig)
+  const riderScanRequired = (vehicleType: string) =>
+    Boolean(tripFlowConfig?.suspendedVehicleTypes?.includes(vehicleType as VehicleType))
   const [loading, setLoading] = useState(true)
   const [showAddForm, setShowAddForm] = useState(false)
   const [editingPermit, setEditingPermit] = useState<PermitDto | null>(null)
@@ -227,7 +238,13 @@ export default function PermitManagement() {
     if (action === 'rotate') {
       const confirmed = await confirm({
         title: 'Rotate QR token',
-        message: `Rotate the QR token for permit ${permit.permitPlateNumber}? Existing printed QR copies will stop working.`,
+        message:
+          `Rotate the QR token for permit ${permit.permitPlateNumber}? ` +
+          'The sticker already pasted on the vehicle will stop working immediately, ' +
+          'and riders cannot record a trip until a new one is printed and re-pasted.' +
+          (permit.qrIssuedAt
+            ? ` The current token was issued ${new Date(permit.qrIssuedAt).toLocaleDateString()}.`
+            : ''),
         destructive: true,
       })
       if (!confirmed) {
@@ -627,12 +644,24 @@ export default function PermitManagement() {
               mobileLabel: 'QR',
               render: (hasQrToken, permit) => (
                 <div>
-                  <div className="text-xs font-medium text-gray-900">
+                  <div
+                    className={`text-xs font-medium ${
+                      !hasQrToken && riderScanRequired(permit.vehicleType)
+                        ? 'text-red-700'
+                        : 'text-gray-900'
+                    }`}
+                  >
                     {hasQrToken ? 'Issued securely' : 'Not issued'}
                   </div>
                   {permit.qrIssuedAt ? (
                     <div className="text-xs text-gray-500">
                       Issued {new Date(permit.qrIssuedAt).toLocaleDateString()}
+                    </div>
+                  ) : riderScanRequired(permit.vehicleType) ? (
+                    // Riders cannot record a trip on this vehicle until a
+                    // sticker exists, since its drivers do not accept in-app.
+                    <div className="text-xs text-red-600">
+                      Issue and print before this vehicle goes into service
                     </div>
                   ) : (
                     <div className="text-xs text-gray-500">Legacy permit without QR</div>

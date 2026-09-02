@@ -67,6 +67,8 @@ model User {
   archivedAnnouncements         Announcement[]                   @relation("AnnouncementArchiver")
   updatedRoutingSettings        RoutingSettings[]                @relation("RoutingSettingsUpdater")
   routingSettingsAuditEntries   RoutingSettingsAudit[]           @relation("RoutingSettingsAuditActor")
+  updatedDriverSessionSettings  DriverSessionSettings[]          @relation("DriverSessionSettingsUpdater")
+  driverSessionSettingsAudits   DriverSessionSettingsAudit[]     @relation("DriverSessionSettingsAuditActor")
   surveyedCuratedRoutes         CuratedRouteDistance[]           @relation("CuratedRouteSurveyor")
   curatedRouteAuditEntries      CuratedRouteDistanceAudit[]      @relation("CuratedRouteAuditActor")
   updatedVehicleRoutingProfiles VehicleRoutingProfile[]          @relation("VehicleRoutingProfileUpdater")
@@ -157,6 +159,41 @@ model RoutingSettingsAudit {
   @@index([routingSettingsId, changedAt])
   @@index([changedAt])
   @@map("routing_settings_audit")
+}
+
+/// Municipal switch for the driver trip-session flow (Ordinance 105 operations).
+///
+/// Vehicle types listed here have the whole driver session flow suspended:
+/// going online/offline and every driver rider-action (Accept, Boarded,
+/// Dropped Off, Not Here, Full, Wrong Trip, Cancel) is refused, and riders
+/// record their own trips by scanning the printed permit QR instead. This is
+/// admin-owned state, so the suspension holds until an admin changes it.
+model DriverSessionSettings {
+  id                    String                       @id @default("global")
+  suspendedVehicleTypes VehicleType[]                @default([TRICYCLE, HABAL_HABAL])
+  createdAt             DateTime                     @default(now())
+  updatedAt             DateTime                     @updatedAt
+  updatedBy             String?
+  updatedByUser         User?                        @relation("DriverSessionSettingsUpdater", fields: [updatedBy], references: [id])
+  auditEntries          DriverSessionSettingsAudit[]
+
+  @@index([updatedAt])
+  @@map("driver_session_settings")
+}
+
+model DriverSessionSettingsAudit {
+  id                      String                @id @default(cuid())
+  driverSessionSettingsId String
+  previousSuspendedTypes  VehicleType[]
+  newSuspendedTypes       VehicleType[]
+  changedAt               DateTime              @default(now())
+  changedBy               String?
+  driverSessionSettings   DriverSessionSettings @relation(fields: [driverSessionSettingsId], references: [id], onDelete: Cascade)
+  changedByUser           User?                 @relation("DriverSessionSettingsAuditActor", fields: [changedBy], references: [id])
+
+  @@index([driverSessionSettingsId, changedAt])
+  @@index([changedAt])
+  @@map("driver_session_settings_audit")
 }
 
 /// A surveyed distance between two saved places for one vehicle type.
@@ -557,19 +594,24 @@ model FareCalculation {
 model VehicleTripSession {
   id           String                    @id @default(cuid())
   vehicleId    String
-  driverUserId String
+  /// Null for a rider-initiated session: when a vehicle type is suspended from
+  /// the driver session flow the trip is opened by the rider scanning the
+  /// printed permit QR, and no driver account is involved at all.
+  driverUserId String?
+  initiatedBy  DriverTripSessionInitiator @default(DRIVER)
   status       DriverTripSessionStatus   @default(OPEN)
   openedAt     DateTime                  @default(now())
   closedAt     DateTime?
   createdAt    DateTime                  @default(now())
   updatedAt    DateTime                  @updatedAt
   vehicle      Vehicle                   @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
-  driverUser   User                      @relation("DriverTripSessions", fields: [driverUserId], references: [id], onDelete: Cascade)
+  driverUser   User?                     @relation("DriverTripSessions", fields: [driverUserId], references: [id], onDelete: Cascade)
   riders       VehicleTripSessionRider[]
 
   @@index([vehicleId, status])
   @@index([driverUserId, status])
   @@index([openedAt])
+  @@index([initiatedBy, status])
   @@map("vehicle_trip_sessions")
 }
 
@@ -960,6 +1002,14 @@ enum DriverTripSessionStatus {
   OPEN
   IN_PROGRESS
   CLOSED
+}
+
+/// Who opened a VehicleTripSession. DRIVER is the original flow (the driver
+/// goes online on a phone). RIDER is the suspended-flow session a rider opens
+/// by scanning the vehicle's printed permit QR.
+enum DriverTripSessionInitiator {
+  DRIVER
+  RIDER
 }
 
 enum DriverTripSessionRiderStatus {

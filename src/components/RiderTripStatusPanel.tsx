@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import useSWR from 'swr'
 
-import type { RiderActiveTripStatusResponseDto } from '@/lib/contracts'
+import type { RiderActiveTripStatusResponseDto, RiderTripActionDto } from '@/lib/contracts'
 import { SWR_KEYS } from '@/lib/swrKeys'
 
 interface RiderTripStatusPanelProps {
@@ -16,12 +16,14 @@ function formatCurrency(value: number) {
 
 export default function RiderTripStatusPanel({ tripRequestId }: RiderTripStatusPanelProps) {
   const [showToast, setShowToast] = useState(false)
+  const [pendingAction, setPendingAction] = useState<RiderTripActionDto | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
   const prevStatusRef = useRef<string | null>(null)
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const swrKey = `${SWR_KEYS.riderTripStatus}?tripRequestId=${tripRequestId}`
 
-  const { data } = useSWR<RiderActiveTripStatusResponseDto>(swrKey, {
+  const { data, mutate } = useSWR<RiderActiveTripStatusResponseDto>(swrKey, {
     refreshInterval: (latestData) => {
       const status = latestData?.trip?.status
       if (!status || status === 'PENDING' || status === 'ACCEPTED' || status === 'BOARDED') return 5000
@@ -47,6 +49,35 @@ export default function RiderTripStatusPanel({ tripRequestId }: RiderTripStatusP
   const { trip } = data
   const isCompleted = trip.status === 'COMPLETED'
   const isAccepted = trip.status === 'ACCEPTED' || trip.status === 'BOARDED'
+
+  // Only a rider-initiated trip carries actions: on the driver-run flow the
+  // driver owns these transitions, and the server refuses them here.
+  const riderActions = trip.availableRiderActions ?? []
+
+  const runRiderAction = async (action: RiderTripActionDto) => {
+    setPendingAction(action)
+    setActionError(null)
+
+    try {
+      const response = await fetch(`/api/public/trips/${trip.id}/action`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
+      })
+      const payload = (await response.json().catch(() => ({}))) as { message?: string }
+
+      if (!response.ok) {
+        setActionError(payload.message || 'Unable to update this trip right now.')
+        return
+      }
+
+      await mutate()
+    } catch {
+      setActionError('Unable to update this trip right now.')
+    } finally {
+      setPendingAction(null)
+    }
+  }
 
   if (isCompleted) {
     return (
@@ -127,6 +158,34 @@ export default function RiderTripStatusPanel({ tripRequestId }: RiderTripStatusP
             </span>
           ) : null}
         </div>
+
+        {riderActions.length ? (
+          <div className="mt-3 border-t border-dashed border-slate-300 pt-3">
+            <p className="text-xs text-slate-600">
+              Tap when you get off so the trip is closed on your record.
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {riderActions.map((riderAction) => (
+                <button
+                  key={riderAction.action}
+                  type="button"
+                  onClick={() => void runRiderAction(riderAction.action)}
+                  disabled={pendingAction !== null}
+                  className={
+                    riderAction.kind === 'positive'
+                      ? 'rounded-full bg-primary px-4 py-2 text-xs font-semibold text-white transition hover:bg-primary disabled:cursor-not-allowed disabled:bg-primary/40'
+                      : 'rounded-full border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50'
+                  }
+                >
+                  {pendingAction === riderAction.action ? 'Saving...' : riderAction.label}
+                </button>
+              ))}
+            </div>
+            {actionError ? (
+              <p className="mt-2 text-xs text-red-600">{actionError}</p>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     </div>
   )

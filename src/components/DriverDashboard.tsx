@@ -11,7 +11,7 @@ import type {
 } from '@/lib/contracts'
 
 import { SWR_KEYS } from '@/lib/swrKeys'
-import { swrFetcher } from '@/lib/swr'
+import { ApiError, swrFetcher } from '@/lib/swr'
 import Link from 'next/link'
 import { useAuth } from './AuthProvider'
 import PermitQrCard from './PermitQrCard'
@@ -52,10 +52,13 @@ function toProblemActions(rider: DriverSessionRiderCardDto) {
 
 export default function DriverDashboard() {
   const { user } = useAuth()
-  const { data, isLoading: loading, mutate } = useSWR<DriverSessionActiveResponseDto>(
+  const { data, error: sessionError, isLoading: loading, mutate } = useSWR<DriverSessionActiveResponseDto>(
     SWR_KEYS.driverSession,
     swrFetcher,
     {
+      // Nothing to poll once the municipality suspends this vehicle type: the
+      // route answers 409 and there is no rider queue for the driver to work.
+      shouldRetryOnError: false,
       refreshInterval: (data: DriverSessionActiveResponseDto | undefined) => {
         if (!data?.session) return 30_000
         const hasPending = data.sections
@@ -234,7 +237,13 @@ export default function DriverDashboard() {
     )
   }
 
-  if (error) {
+  // The driver session flow is suspended for this vehicle type: riders record
+  // their own trips by scanning the permit QR printed on the vehicle, so there
+  // is no online/offline control and no queue to accept from.
+  const suspended =
+    sessionError instanceof ApiError && sessionError.info?.code === 'DRIVER_SESSION_SUSPENDED'
+
+  if (error && !suspended) {
     return (
       <div className="border border-surface-border bg-surface shadow-card rounded-card p-6">
         <h2 className="text-lg font-semibold text-gray-900">Trip Session</h2>
@@ -253,6 +262,98 @@ export default function DriverDashboard() {
   const archivedSection = data?.sections.find(isArchivedSection) ?? null
   const pendingSection = data?.sections.find((s) => s.key === 'pending') ?? null
   const visibleSections = data?.sections.filter((s) => s.key === 'boarded' || s.key === 'completed') ?? []
+
+  // Shown on both the working dashboard and the suspended notice: the on-screen
+  // QR is the fallback when a vehicle's printed sticker is damaged or missing.
+  const permitQrControls = (
+    <>
+    {/* Floating permit QR button */}
+    <button
+      type="button"
+      onClick={() => void handleViewPermitQr()}
+      disabled={permitQrLoading}
+      aria-label="View my permit QR"
+      className="app-above-bottom-nav fixed right-4 z-fab flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg transition hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-70 sm:right-6"
+    >
+      {permitQrLoading ? (
+        <svg className="h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+        </svg>
+      ) : (
+        <svg className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <rect x="3" y="3" width="7" height="7" rx="1" />
+          <rect x="14" y="3" width="7" height="7" rx="1" />
+          <rect x="3" y="14" width="7" height="7" rx="1" />
+          <path d="M14 14h2v2h-2zM18 14h3M14 18h2M18 18h3v3M21 14v2" />
+        </svg>
+      )}
+    </button>
+
+    {/* Permit QR modal */}
+    <Modal
+      open={showPermitQr && Boolean(permitQr)}
+      onClose={() => setShowPermitQr(false)}
+      title="My Permit QR"
+    >
+      <p className="mb-4 text-xs text-slate-500">Show this at the compliance terminal.</p>
+      {permitQr ? (
+        <PermitQrCard
+          permitPlateNumber={permitQr.permitPlateNumber}
+          qrToken={permitQr.qrToken}
+          driverFullName={permitQr.driverFullName}
+        />
+      ) : null}
+    </Modal>
+
+    {/* Permit QR error toast */}
+    {permitQrError && !showPermitQr ? (
+      <div
+        className="fixed bottom-[calc(var(--mobile-bottom-nav-height)+var(--mobile-safe-area-bottom)+5rem)] left-4 right-4 z-sheet rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 shadow-lg sm:left-auto sm:right-6 sm:max-w-xs"
+      >
+        {permitQrError}
+      </div>
+    ) : null}
+    </>
+  )
+
+  if (suspended) {
+    return (
+      <>
+        <div className="border border-surface-border bg-surface shadow-card rounded-card p-6">
+          <h2 className="text-lg font-semibold text-gray-900">Trip Session</h2>
+          <p className="mt-3 text-sm text-slate-700">
+            Accepting trips is suspended for your vehicle type by the municipality. You do
+            not need a phone to take passengers.
+          </p>
+          <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-slate-600">
+            <li>Keep the permit QR sticker on your vehicle clean and visible.</li>
+            <li>The rider scans it and records the trip themselves.</li>
+            <li>Your trip history and incident reports still work as before.</li>
+          </ul>
+          <p className="mt-3 text-xs text-slate-500">
+            If the sticker is damaged or missing, ask the encoder for a reprint. You can
+            also show the QR from this app using the button on this screen.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link
+              href="/driver/history"
+              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+            >
+              Trip History
+            </Link>
+            <Link
+              href="/driver/incidents"
+              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+            >
+              Incidents
+            </Link>
+          </div>
+        </div>
+        {permitQrControls}
+      </>
+    )
+  }
 
   return (
     <>
@@ -568,53 +669,7 @@ export default function DriverDashboard() {
             </div>
       </Modal>
 
-      {/* Floating permit QR button */}
-      <button
-        type="button"
-        onClick={() => void handleViewPermitQr()}
-        disabled={permitQrLoading}
-        aria-label="View my permit QR"
-        className="app-above-bottom-nav fixed right-4 z-fab flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg transition hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-70 sm:right-6"
-      >
-        {permitQrLoading ? (
-          <svg className="h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-          </svg>
-        ) : (
-          <svg className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <rect x="3" y="3" width="7" height="7" rx="1" />
-            <rect x="14" y="3" width="7" height="7" rx="1" />
-            <rect x="3" y="14" width="7" height="7" rx="1" />
-            <path d="M14 14h2v2h-2zM18 14h3M14 18h2M18 18h3v3M21 14v2" />
-          </svg>
-        )}
-      </button>
-
-      {/* Permit QR modal */}
-      <Modal
-        open={showPermitQr && Boolean(permitQr)}
-        onClose={() => setShowPermitQr(false)}
-        title="My Permit QR"
-      >
-        <p className="mb-4 text-xs text-slate-500">Show this at the compliance terminal.</p>
-        {permitQr ? (
-          <PermitQrCard
-            permitPlateNumber={permitQr.permitPlateNumber}
-            qrToken={permitQr.qrToken}
-            driverFullName={permitQr.driverFullName}
-          />
-        ) : null}
-      </Modal>
-
-      {/* Permit QR error toast */}
-      {permitQrError && !showPermitQr ? (
-        <div
-          className="fixed bottom-[calc(var(--mobile-bottom-nav-height)+var(--mobile-safe-area-bottom)+5rem)] left-4 right-4 z-sheet rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 shadow-lg sm:left-auto sm:right-6 sm:max-w-xs"
-        >
-          {permitQrError}
-        </div>
-      ) : null}
+      {permitQrControls}
     </>
   )
 }

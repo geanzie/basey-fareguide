@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 
 import {
   DiscountType,
+  DriverTripSessionInitiator,
   DriverTripSessionRiderAction,
   DriverTripSessionRiderStatus,
   DriverTripSessionStatus,
@@ -19,8 +20,11 @@ import type {
   DriverSessionHistoryRiderDto,
   DriverSessionRiderCardDto,
   DriverSessionSummaryDto,
+  RiderTripActionButtonDto,
+  RiderTripActionDto,
 } from '@/lib/contracts'
 import { verifyAuthWithSelect } from '@/lib/auth'
+import { isDriverAcceptSuspended } from '@/lib/driverSessionSettings/settingsService'
 import { prisma } from '@/lib/prisma'
 
 const DRIVER_HISTORY_DEFAULT_LIMIT = 10
@@ -124,6 +128,54 @@ const riderActionConfig: Record<
     from: [DriverTripSessionRiderStatus.PENDING, DriverTripSessionRiderStatus.ACCEPTED],
     to: DriverTripSessionRiderStatus.CANCELLED,
   },
+}
+
+/**
+ * The transitions a rider may make on their own trip. Only reachable on a
+ * rider-initiated trip: when the vehicle type is suspended from the driver
+ * session flow there is no driver app to press Dropped Off, so the rider ends
+ * the trip themselves. The driver's table above is deliberately left alone.
+ */
+const riderTripActionConfig: Record<
+  RiderTripActionDto,
+  {
+    label: string
+    kind: RiderTripActionButtonDto['kind']
+    from: DriverTripSessionRiderStatus[]
+    to: DriverTripSessionRiderStatus
+    event: DriverTripSessionRiderAction
+  }
+> = {
+  DROPPED_OFF: {
+    label: 'Dropped off',
+    kind: 'positive',
+    from: [DriverTripSessionRiderStatus.BOARDED],
+    to: DriverTripSessionRiderStatus.COMPLETED,
+    event: DriverTripSessionRiderAction.DROPPED_OFF,
+  },
+  CANCELLED: {
+    label: 'Cancel trip',
+    kind: 'negative',
+    from: [DriverTripSessionRiderStatus.BOARDED],
+    to: DriverTripSessionRiderStatus.CANCELLED,
+    event: DriverTripSessionRiderAction.CANCELLED,
+  },
+}
+
+export function buildAvailableRiderActions(
+  status: DriverTripSessionRiderStatus,
+  riderInitiated: boolean,
+): RiderTripActionButtonDto[] {
+  if (!riderInitiated) {
+    return []
+  }
+
+  return (Object.entries(riderTripActionConfig) as [
+    RiderTripActionDto,
+    (typeof riderTripActionConfig)[RiderTripActionDto],
+  ][])
+    .filter(([, config]) => config.from.includes(status))
+    .map(([action, config]) => ({ action, label: config.label, kind: config.kind }))
 }
 
 const riderStatusLabels: Record<DriverTripSessionRiderStatus, string> = {
@@ -525,6 +577,18 @@ async function requireAssignedDriverContext(request: NextRequest): Promise<Drive
     throw new DriverSessionError('Assigned vehicle was not found.', 404, 'DRIVER_VEHICLE_NOT_FOUND')
   }
 
+  // Every driver session route funnels through here, so one check suspends the
+  // whole flow for this vehicle type: going online, going offline, and each of
+  // Accept / Boarded / Dropped Off / Not Here / Full / Wrong Trip / Cancel.
+  // Read-only driver routes use requireDriverContext and stay available.
+  if (await isDriverAcceptSuspended(vehicle.vehicleType)) {
+    throw new DriverSessionError(
+      'Trip acceptance is suspended for this vehicle type. Riders record their own trips by scanning the permit QR on the vehicle.',
+      409,
+      'DRIVER_SESSION_SUSPENDED',
+    )
+  }
+
   return {
     id: currentUser.id,
     firstName: currentUser.firstName,
@@ -612,10 +676,29 @@ export async function expireAllStalePendingRequests(now?: Date): Promise<number>
   return result.count
 }
 
+/**
+ * The snapshot fields a fare calculation is built from. Structural rather than
+ * tied to DriverSessionRecord so the rider-confirmed path can pass the row it
+ * just created without re-reading the whole session.
+ */
+type FareCalculationRiderSnapshot = {
+  riderUserId: string
+  originSnapshot: string
+  destinationSnapshot: string
+  distanceSnapshot: Prisma.Decimal | number | string
+  fareSnapshot: Prisma.Decimal | number | string
+  calculationTypeSnapshot: string
+  routeDataSnapshot: string | null
+  discountCardIdSnapshot: string | null
+  originalFareSnapshot: Prisma.Decimal | number | string | null
+  discountAppliedSnapshot: Prisma.Decimal | number | string | null
+  discountTypeSnapshot: DiscountType | null
+}
+
 async function createFareCalculationFromPendingRequest(
   tx: Prisma.TransactionClient,
-  session: DriverSessionRecord,
-  rider: DriverSessionRecord['riders'][number],
+  session: { vehicleId: string },
+  rider: FareCalculationRiderSnapshot,
 ) {
   const fareCalculation = await tx.fareCalculation.create({
     data: {
@@ -814,6 +897,380 @@ export async function createPendingTripRequest(
       throw error
     }
   })
+}
+
+/**
+ * Records a trip the rider commits to themselves, for a vehicle type suspended
+ * from the driver session flow.
+ *
+ * The driver holds no phone here: the rider scans the permit QR printed on the
+ * vehicle, so by the time this runs they are already aboard. The row therefore
+ * starts at BOARDED and the FareCalculation is written immediately — there is
+ * nobody to accept it later, and nothing to time out. The rider ends the trip
+ * with applyRiderTripAction.
+ */
+export async function createRiderConfirmedTrip(
+  pendingTrip: PendingTripRequestCandidate,
+  userType: UserType,
+): Promise<PendingTripRequestResult | null> {
+  if (userType !== UserType.PUBLIC || !pendingTrip.userId || !pendingTrip.vehicleId) {
+    return null
+  }
+
+  const riderUserId = pendingTrip.userId
+  const vehicleId = pendingTrip.vehicleId
+  const now = pendingTrip.createdAt
+
+  return prisma.$transaction(async (tx) => {
+    // Reuse an open rider-initiated session for this vehicle rather than opening
+    // one per passenger: a tricycle carries several riders on the same run.
+    const existingSession = await tx.vehicleTripSession.findFirst({
+      where: {
+        vehicleId,
+        initiatedBy: DriverTripSessionInitiator.RIDER,
+        status: { in: [...ACTIVE_SESSION_STATUSES] },
+      },
+      orderBy: [{ openedAt: 'desc' }, { id: 'desc' }],
+      select: { id: true },
+    })
+
+    const session =
+      existingSession ??
+      (await tx.vehicleTripSession.create({
+        data: {
+          vehicleId,
+          driverUserId: null,
+          initiatedBy: DriverTripSessionInitiator.RIDER,
+          status: DriverTripSessionStatus.IN_PROGRESS,
+          openedAt: now,
+        },
+        select: { id: true },
+      }))
+
+    const activeRequestKey = buildActiveRequestKey(session.id, riderUserId)
+
+    await cancelSupersededPendingRequestsForRider(tx, riderUserId, activeRequestKey, now)
+
+    const existingEntry = await tx.vehicleTripSessionRider.findFirst({
+      where: { activeRequestKey },
+      select: {
+        id: true,
+        sessionId: true,
+        fareCalculationId: true,
+        status: true,
+      },
+    })
+
+    // The rider is already on this vehicle in this session — their previous
+    // scan stands rather than being double-charged by a retry.
+    if (existingEntry) {
+      return {
+        ...existingEntry,
+        fareCalculationId: existingEntry.fareCalculationId ?? null,
+        created: false,
+      }
+    }
+
+    const riderSnapshot = {
+      riderUserId,
+      originSnapshot: pendingTrip.fromLocation,
+      destinationSnapshot: pendingTrip.toLocation,
+      distanceSnapshot: toNumber(pendingTrip.distance),
+      fareSnapshot: toNumber(pendingTrip.calculatedFare),
+      calculationTypeSnapshot: pendingTrip.calculationType,
+      routeDataSnapshot: pendingTrip.routeData,
+      discountCardIdSnapshot: pendingTrip.discountCardId,
+      originalFareSnapshot: toNullableNumber(pendingTrip.originalFare),
+      discountAppliedSnapshot: toNullableNumber(pendingTrip.discountApplied),
+      discountTypeSnapshot: pendingTrip.discountType,
+    }
+
+    const fareCalculation = await createFareCalculationFromPendingRequest(
+      tx,
+      { vehicleId },
+      riderSnapshot,
+    )
+
+    const createdEntry = await tx.vehicleTripSessionRider.create({
+      data: {
+        sessionId: session.id,
+        riderUserId,
+        activeRequestKey,
+        fareCalculationId: fareCalculation.id,
+        status: DriverTripSessionRiderStatus.BOARDED,
+        originSnapshot: pendingTrip.fromLocation,
+        destinationSnapshot: pendingTrip.toLocation,
+        distanceSnapshot: toNumber(pendingTrip.distance),
+        fareSnapshot: toNumber(pendingTrip.calculatedFare),
+        calculationTypeSnapshot: pendingTrip.calculationType,
+        routeDataSnapshot: pendingTrip.routeData,
+        farePolicySnapshot: pendingTrip.farePolicySnapshot,
+        discountCardIdSnapshot: pendingTrip.discountCardId,
+        originalFareSnapshot: toNullableNumber(pendingTrip.originalFare),
+        discountAppliedSnapshot: toNullableNumber(pendingTrip.discountApplied),
+        discountTypeSnapshot: pendingTrip.discountType,
+        // No TTL: the rider is aboard, so there is no offer left hanging.
+        expiresAt: null,
+        acceptedAt: now,
+        boardedAt: now,
+      },
+      select: {
+        id: true,
+        sessionId: true,
+        fareCalculationId: true,
+        status: true,
+      },
+    })
+
+    await tx.vehicleTripSessionRiderEvent.create({
+      data: {
+        sessionRiderId: createdEntry.id,
+        action: DriverTripSessionRiderAction.ACCEPT,
+        fromStatus: DriverTripSessionRiderStatus.PENDING,
+        toStatus: DriverTripSessionRiderStatus.BOARDED,
+        actedByUserId: riderUserId,
+      },
+    })
+
+    return {
+      ...createdEntry,
+      fareCalculationId: createdEntry.fareCalculationId ?? null,
+      created: true,
+    }
+  })
+}
+
+/**
+ * Ends a rider-initiated trip. The rider owns these transitions because no
+ * driver is running the session.
+ */
+export async function applyRiderTripAction(
+  riderUserId: string,
+  sessionRiderId: string,
+  action: RiderTripActionDto,
+): Promise<{ status: DriverTripSessionRiderStatus; message: string }> {
+  const actionConfig = riderTripActionConfig[action]
+
+  if (!actionConfig) {
+    throw new DriverSessionError('Unsupported rider action.', 400, 'INVALID_RIDER_ACTION')
+  }
+
+  const rider = await prisma.vehicleTripSessionRider.findFirst({
+    where: { id: sessionRiderId, riderUserId },
+    select: {
+      id: true,
+      status: true,
+      sessionId: true,
+      session: { select: { id: true, initiatedBy: true, status: true } },
+    },
+  })
+
+  if (!rider) {
+    throw new DriverSessionError('Trip not found for this rider.', 404, 'SESSION_RIDER_NOT_FOUND')
+  }
+
+  if (rider.session.initiatedBy !== DriverTripSessionInitiator.RIDER) {
+    throw new DriverSessionError(
+      'This trip is managed by the driver. Ask the driver to close it.',
+      409,
+      'RIDER_ACTION_NOT_ALLOWED',
+    )
+  }
+
+  if (!actionConfig.from.includes(rider.status)) {
+    // Idempotency: a retry after a successful tap reports success rather than a
+    // confusing transition error.
+    if (rider.status === actionConfig.to) {
+      return { status: rider.status, message: `${actionConfig.label} saved.` }
+    }
+
+    throw new DriverSessionError(
+      "That action is not allowed for this trip's current status.",
+      409,
+      'INVALID_RIDER_TRANSITION',
+    )
+  }
+
+  const now = new Date()
+
+  await prisma.$transaction(async (tx) => {
+    const updateResult = await tx.vehicleTripSessionRider.updateMany({
+      where: { id: rider.id, status: rider.status },
+      data: {
+        status: actionConfig.to,
+        completedAt: actionConfig.to === DriverTripSessionRiderStatus.COMPLETED ? now : undefined,
+        activeRequestKey: null,
+        finalisedAt: now,
+      },
+    })
+
+    if (updateResult.count !== 1) {
+      throw new DriverSessionError(
+        'That trip was already updated by another action.',
+        409,
+        'SESSION_RIDER_ALREADY_UPDATED',
+      )
+    }
+
+    await tx.vehicleTripSessionRiderEvent.create({
+      data: {
+        sessionRiderId: rider.id,
+        action: actionConfig.event,
+        fromStatus: rider.status,
+        toStatus: actionConfig.to,
+        actedByUserId: riderUserId,
+      },
+    })
+
+    await closeRiderSessionIfEmpty(tx, rider.sessionId, now)
+  })
+
+  return { status: actionConfig.to, message: `${actionConfig.label} saved.` }
+}
+
+/**
+ * Closes a rider-initiated session once nobody is still aboard. Nobody goes
+ * offline on this flow, so the session's life is the life of its riders.
+ */
+async function closeRiderSessionIfEmpty(
+  tx: Prisma.TransactionClient,
+  sessionId: string,
+  now: Date,
+) {
+  const remaining = await tx.vehicleTripSessionRider.count({
+    where: {
+      sessionId,
+      status: { in: [...CLOSE_BLOCKING_RIDER_STATUSES] },
+    },
+  })
+
+  if (remaining > 0) {
+    return
+  }
+
+  await tx.vehicleTripSession.updateMany({
+    where: {
+      id: sessionId,
+      initiatedBy: DriverTripSessionInitiator.RIDER,
+      status: { in: [...ACTIVE_SESSION_STATUSES] },
+    },
+    data: {
+      status: DriverTripSessionStatus.CLOSED,
+      closedAt: now,
+    },
+  })
+}
+
+/** Riders who forget to tap Dropped off. The fare is already recorded, so
+ * completing the row states what happened rather than inventing anything. */
+export const RIDER_TRIP_AUTO_COMPLETE_AFTER_MS = 4 * 60 * 60 * 1000
+
+export async function autoCompleteStaleRiderTrips(now?: Date): Promise<number> {
+  const cutoffNow = now ?? new Date()
+  const cutoff = new Date(cutoffNow.getTime() - RIDER_TRIP_AUTO_COMPLETE_AFTER_MS)
+
+  const stale = await prisma.vehicleTripSessionRider.findMany({
+    where: {
+      status: DriverTripSessionRiderStatus.BOARDED,
+      boardedAt: { lte: cutoff },
+      session: { initiatedBy: DriverTripSessionInitiator.RIDER },
+    },
+    select: { id: true, sessionId: true },
+  })
+
+  if (stale.length === 0) {
+    return 0
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.vehicleTripSessionRider.updateMany({
+      where: { id: { in: stale.map((entry) => entry.id) } },
+      data: {
+        status: DriverTripSessionRiderStatus.COMPLETED,
+        completedAt: cutoffNow,
+        finalisedAt: cutoffNow,
+        activeRequestKey: null,
+      },
+    })
+
+    // No rider event row: VehicleTripSessionRiderEvent.actedByUserId records a
+    // person, and nobody acted here. expireAllStalePendingRequests takes the
+    // same line for its system transitions.
+
+    for (const sessionId of new Set(stale.map((entry) => entry.sessionId))) {
+      await closeRiderSessionIfEmpty(tx, sessionId, cutoffNow)
+    }
+  })
+
+  return stale.length
+}
+
+/**
+ * Closes every open session for vehicle types an admin has just suspended, so
+ * no driver is left stranded online with a queue they can no longer act on.
+ * Riders already aboard are completed — the fare was recorded on ACCEPT.
+ */
+export async function closeSessionsForSuspendedVehicleTypes(
+  vehicleTypes: readonly string[],
+  now: Date = new Date(),
+): Promise<number> {
+  if (vehicleTypes.length === 0) {
+    return 0
+  }
+
+  const sessions = await prisma.vehicleTripSession.findMany({
+    where: {
+      initiatedBy: DriverTripSessionInitiator.DRIVER,
+      status: { in: [...ACTIVE_SESSION_STATUSES] },
+      vehicle: { vehicleType: { in: vehicleTypes as never } },
+    },
+    select: { id: true },
+  })
+
+  if (sessions.length === 0) {
+    return 0
+  }
+
+  const sessionIds = sessions.map((session) => session.id)
+
+  await prisma.$transaction(async (tx) => {
+    await tx.vehicleTripSessionRider.updateMany({
+      where: {
+        sessionId: { in: sessionIds },
+        status: DriverTripSessionRiderStatus.PENDING,
+      },
+      data: {
+        status: DriverTripSessionRiderStatus.EXPIRED,
+        activeRequestKey: null,
+        finalisedAt: now,
+      },
+    })
+
+    await tx.vehicleTripSessionRider.updateMany({
+      where: {
+        sessionId: { in: sessionIds },
+        status: {
+          in: [DriverTripSessionRiderStatus.ACCEPTED, DriverTripSessionRiderStatus.BOARDED],
+        },
+      },
+      data: {
+        status: DriverTripSessionRiderStatus.COMPLETED,
+        completedAt: now,
+        finalisedAt: now,
+        activeRequestKey: null,
+      },
+    })
+
+    await tx.vehicleTripSession.updateMany({
+      where: { id: { in: sessionIds } },
+      data: {
+        status: DriverTripSessionStatus.CLOSED,
+        closedAt: now,
+      },
+    })
+  })
+
+  return sessionIds.length
 }
 
 async function findDriverSessionOrThrow(driverContext: DriverVehicleContext, sessionId: string) {

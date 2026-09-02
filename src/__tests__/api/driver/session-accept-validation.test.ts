@@ -33,6 +33,13 @@ vi.mock('@/lib/prisma', () => ({
   prisma: prismaMock,
 }))
 
+// These suites cover the driver-run flow, i.e. a vehicle type the municipality
+// has NOT suspended. The suspension itself is covered in
+// driver-session-suspension.test.ts.
+vi.mock('@/lib/driverSessionSettings/settingsService', () => ({
+  isDriverAcceptSuspended: vi.fn(async () => false),
+}))
+
 import { POST } from '@/app/api/driver/session/[sessionId]/riders/[sessionRiderId]/action/route'
 
 const DRIVER_USER = {

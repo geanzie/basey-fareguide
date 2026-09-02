@@ -30,6 +30,7 @@ import type {
   FarePolicySnapshotDto,
   PlannerLocationDto,
   RoutingPrimaryProviderDto,
+  TripFlowConfigDto,
   VehicleLookupDto,
 } from '@/lib/contracts'
 import { resolveFarePolicySnapshot } from '@/lib/fare/policy'
@@ -366,6 +367,15 @@ const RoutePlannerCalculator = ({
   // on the device by the time the connection drops. A failure is silent — the
   // offline path simply falls back to the route cache.
   const { data: curatedCorpus } = useSWR<CuratedRouteCorpusDto>(SWR_KEYS.curatedRouteCorpus)
+  // Which vehicle types the municipality has suspended from the driver session
+  // flow. For those the scan itself starts the trip — no driver taps Accept.
+  const { data: tripFlowConfig } = useSWR<TripFlowConfigDto>(SWR_KEYS.tripFlowConfig)
+  const riderConfirmsTrip = Boolean(
+    selectedVehicle?.vehicleType &&
+      tripFlowConfig?.suspendedVehicleTypes?.includes(
+        selectedVehicle.vehicleType as VehicleType,
+      ),
+  )
 
   useEffect(() => {
     if (curatedCorpus) {
@@ -1190,7 +1200,8 @@ const RoutePlannerCalculator = ({
                 <div>
                   <p className="text-sm font-semibold text-slate-900">Operator QR scanner</p>
                   <p className="mt-1 text-xs text-slate-600 sm:text-sm">
-                    Scan and confirm the operator details here.
+                    Scan the permit QR sticker on the vehicle, then confirm the operator
+                    details here.
                   </p>
                 </div>
                 <button
@@ -1580,13 +1591,13 @@ const RoutePlannerCalculator = ({
             {routeResult ? (
               <div className="space-y-2 rounded-[2rem] border border-surface-border bg-surface p-4 shadow-card">
                 <div className="text-xs text-slate-500">
-                  {!user && 'Log in to send this trip request.'}
-                  {user && saveStatus === 'saved' && 'Trip request sent to driver.'}
-                  {user && saveStatus === 'failed' && 'Unable to send this trip request right now.'}
-                  {user && saveStatus === 'saving' && 'Sending trip request...'}
+                  {!user && (riderConfirmsTrip ? 'Log in to start this trip.' : 'Log in to send this trip request.')}
+                  {user && saveStatus === 'saved' && (riderConfirmsTrip ? 'Trip started. Tap Dropped off when you get off.' : 'Trip request sent to driver.')}
+                  {user && saveStatus === 'failed' && (riderConfirmsTrip ? 'Unable to start this trip right now.' : 'Unable to send this trip request right now.')}
+                  {user && saveStatus === 'saving' && (riderConfirmsTrip ? 'Starting trip...' : 'Sending trip request...')}
                   {user && saveStatus === 'idle' && routeResult.method == null && 'Same-point results are not saved.'}
-                  {user && saveStatus === 'idle' && canSaveDisplayedRoute && 'This trip request has not been sent yet.'}
-                  {user && saveStatus === 'idle' && !selectedVehicle && routeResult.method != null && 'Select driver vehicle before sending trip request.'}
+                  {user && saveStatus === 'idle' && canSaveDisplayedRoute && (riderConfirmsTrip ? 'This trip has not been started yet.' : 'This trip request has not been sent yet.')}
+                  {user && saveStatus === 'idle' && !selectedVehicle && routeResult.method != null && 'Scan the permit QR on the vehicle before recording this trip.'}
                   {user && saveStatus === 'idle' && selectedVehicle && !canSaveDisplayedRoute && routeResult.method != null && 'Resolve the current verified route before sending request.'}
                 </div>
                 <button
@@ -1596,12 +1607,12 @@ const RoutePlannerCalculator = ({
                   className="w-full rounded-full bg-primary px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-primary disabled:cursor-not-allowed disabled:bg-primary/40"
                 >
                   {!user
-                    ? 'Log in to request'
+                    ? riderConfirmsTrip ? 'Log in to start trip' : 'Log in to request'
                     : saveStatus === 'saved'
-                      ? 'Sent'
+                      ? riderConfirmsTrip ? 'Trip started' : 'Sent'
                       : saveStatus === 'saving'
-                        ? 'Sending...'
-                        : 'Send trip request'}
+                        ? riderConfirmsTrip ? 'Starting...' : 'Sending...'
+                        : riderConfirmsTrip ? 'Start trip' : 'Send trip request'}
                 </button>
 
                 {saveStatus === 'saved' && pendingTripRequestId && user?.userType === 'PUBLIC' ? (
