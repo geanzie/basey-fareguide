@@ -175,7 +175,13 @@ describe("GET /api/auth/oauth/[provider]/callback", () => {
       }),
     );
     expect(locationOf(res)).toContain("/dashboard");
-    expect(res.headers.get("set-cookie") ?? "").toContain("auth-token=");
+
+    const setCookie = res.headers.get("set-cookie") ?? "";
+    expect(setCookie).toContain("auth-token=");
+    // The hop to /dashboard belongs to a redirect chain that started at the
+    // provider, so a strict session cookie would not be sent with it and the
+    // user would land back on /login.
+    expect(setCookie).toContain("SameSite=lax");
   });
 
   it("signs in an already-linked identity without touching the user lookup", async () => {
@@ -189,7 +195,13 @@ describe("GET /api/auth/oauth/[provider]/callback", () => {
 
     expect(prismaMock.user.findUnique).not.toHaveBeenCalled();
     expect(locationOf(res)).toContain("/dashboard");
-    expect(res.headers.get("set-cookie") ?? "").toContain("auth-token=");
+
+    const setCookie = res.headers.get("set-cookie") ?? "";
+    expect(setCookie).toContain("auth-token=");
+    // The hop to /dashboard belongs to a redirect chain that started at the
+    // provider, so a strict session cookie would not be sent with it and the
+    // user would land back on /login.
+    expect(setCookie).toContain("SameSite=lax");
   });
 
   it("hands an unknown email to the signup completion step", async () => {

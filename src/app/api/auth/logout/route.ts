@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { clearLoginSessionCookie } from '@/lib/login'
 import {
   clearTerminalUnlockCookie,
   invalidateTerminalUnlockSession,
@@ -17,14 +18,9 @@ export async function POST(request: NextRequest) {
       message: 'Logged out successfully'
     })
 
-    // Clear the httpOnly cookie
-    response.cookies.set('auth-token', '', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 0, // Expire immediately
-      path: '/'
-    })
+    // Clear the httpOnly cookie. Shares its attributes with the login path so
+    // the two can never drift and leave an uncleared cookie behind.
+    clearLoginSessionCookie(response)
     clearTerminalUnlockCookie(response)
 
     return response

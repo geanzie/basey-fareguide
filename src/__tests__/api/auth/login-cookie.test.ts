@@ -108,7 +108,9 @@ describe("POST /api/auth/login", () => {
     expect(setCookie).toContain("auth-token=signed-session-token");
     expect(setCookie).toContain(`Max-Age=${AUTH_SESSION_MAX_AGE_SECONDS}`);
     expect(setCookie).toContain("HttpOnly");
-    expect(setCookie).toContain("SameSite=strict");
+    // Lax, not strict: the OAuth callback sets this same cookie on a redirect
+    // chain that began at the provider, where a strict cookie is dropped.
+    expect(setCookie).toContain("SameSite=lax");
     expect(setCookie).toContain("Path=/");
     expect(jwtMock.sign).toHaveBeenCalledWith(
       expect.objectContaining({

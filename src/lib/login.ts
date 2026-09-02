@@ -243,12 +243,30 @@ export function buildLoginErrorResponse(error: LoginAttemptError): NextResponse 
   })
 }
 
-export function applyLoginSessionCookie(response: NextResponse, token: string): void {
-  response.cookies.set('auth-token', token, {
+export const AUTH_COOKIE_NAME = 'auth-token'
+
+/**
+ * `lax`, not `strict`: the OAuth callback sets this cookie on a redirect chain
+ * that started at the provider, and a strict cookie is dropped on the hop from
+ * the callback to the authenticated home page — the user lands logged out.
+ * Lax still withholds it from cross-site POSTs and subresource requests, which
+ * is where the CSRF risk actually lives.
+ */
+function sessionCookieOptions(maxAge: number) {
+  return {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    maxAge: AUTH_SESSION_MAX_AGE_SECONDS,
+    sameSite: 'lax' as const,
+    maxAge,
     path: '/',
-  })
+  }
+}
+
+export function applyLoginSessionCookie(response: NextResponse, token: string): void {
+  response.cookies.set(AUTH_COOKIE_NAME, token, sessionCookieOptions(AUTH_SESSION_MAX_AGE_SECONDS))
+}
+
+/** Clears the session cookie with the exact attributes it was set with. */
+export function clearLoginSessionCookie(response: NextResponse): void {
+  response.cookies.set(AUTH_COOKIE_NAME, '', sessionCookieOptions(0))
 }

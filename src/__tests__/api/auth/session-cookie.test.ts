@@ -96,7 +96,14 @@ describe("cookie-backed session flow", () => {
     );
 
     expect(logoutRes.status).toBe(200);
-    expect(logoutRes.headers.get("set-cookie")).toContain("auth-token=");
+
+    const clearedCookie = logoutRes.headers.get("set-cookie") ?? "";
+    expect(clearedCookie).toContain("auth-token=");
+    expect(clearedCookie).toContain("Max-Age=0");
+    // A cookie is only overwritten when the attributes match the ones it was
+    // set with, so this has to track applyLoginSessionCookie.
+    expect(clearedCookie).toContain("SameSite=lax");
+    expect(clearedCookie).toContain("Path=/");
 
     const profileRes = await getProfile(
       new NextRequest("http://localhost/api/user/profile")

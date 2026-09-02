@@ -56,7 +56,7 @@ export function AuthProvider({
   const router = useRouter()
   const pathname = usePathname()
   const { mutate: mutateCache } = useSWRConfig()
-  const { data, isLoading, mutate } = useSWR<SessionResponseDto | null>(
+  const { data, isLoading, isValidating, mutate } = useSWR<SessionResponseDto | null>(
     SWR_KEYS.authSession,
     fetchSessionResponse,
     {
@@ -68,10 +68,17 @@ export function AuthProvider({
   const logoutRef = useRef<() => Promise<void>>(async () => {})
 
   const user = data?.user ?? null
+  /**
+   * A null `fallbackData` is not proof of a logged-out user: the server render
+   * misses the session whenever the cookie was withheld from that navigation.
+   * Stay in 'loading' until the first client-side check answers, so RoleGuard
+   * shows its shell instead of bouncing a signed-in user to /login.
+   */
+  const bootstrapping = data == null && (isLoading || isValidating)
   const status: AuthStatus =
     transitionState === 'logging_out'
       ? 'logging_out'
-      : isLoading && data === undefined
+      : bootstrapping
         ? 'loading'
         : user
           ? 'authenticated'
