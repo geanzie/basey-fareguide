@@ -137,8 +137,8 @@ export default function PermitQrPrintSheet({
       <style>{PRINT_STYLES}</style>
       <div id={PRINT_SHEET_ID} className="fixed inset-0 z-dialog overflow-y-auto bg-white">
         {/* Controls bar — hidden in print */}
-        <div className="permit-qr-controls sticky top-0 z-10 border-b border-slate-200 bg-white px-6 py-4 shadow-sm">
-          <div className="flex items-center justify-between">
+        <div className="permit-qr-controls sticky top-0 z-10 border-b border-slate-200 bg-white px-4 py-4 shadow-sm sm:px-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-lg font-semibold text-slate-900">{heading}</h2>
               {fetchState === 'done' && (
@@ -149,19 +149,19 @@ export default function PermitQrPrintSheet({
                 </p>
               )}
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex shrink-0 items-center gap-3">
               <button
                 type="button"
                 onClick={handlePrint}
                 disabled={!isReady || permits.length === 0}
-                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
               >
                 {isSelection ? 'Print' : 'Print Queue'}
               </button>
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                className="flex-1 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 sm:flex-none"
               >
                 Close
               </button>
@@ -207,7 +207,7 @@ export default function PermitQrPrintSheet({
         </div>
 
         {/* Body */}
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {fetchState === 'loading' && (
             <div className="flex flex-col items-center justify-center py-24 text-slate-500">
               <div className="mb-3 h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-primary" />
@@ -254,7 +254,7 @@ export default function PermitQrPrintSheet({
           )}
 
           {fetchState === 'done' && genProgress === null && permits.length > 0 && (
-            <div className="permit-qr-print-grid grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+            <div className="permit-qr-print-grid grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4">
               {permits.map((permit) => (
                 <PermitQrSticker key={permit.id} permit={permit} qrDataUrl={qrImages[permit.id]} />
               ))}

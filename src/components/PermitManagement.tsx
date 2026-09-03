@@ -432,15 +432,17 @@ export default function PermitManagement() {
   return (
     <div className="space-y-6">
       {/* Header with Add Button */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Permit Management</h2>
           <p className="text-gray-600">Manage tricycle and habal-habal permits</p>
         </div>
-        <div className="flex gap-2">
+        {/* Three actions do not fit a phone side by side, so they stack full-width
+            below sm and sit inline from sm up. */}
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setPrintSheet({ mode: 'queue' })}
-            className="border border-primary text-primary-dark px-4 py-2 rounded-lg hover:bg-surface-tint transition-colors text-sm"
+            className="flex-1 whitespace-nowrap border border-primary text-primary-dark px-4 py-2 rounded-lg hover:bg-surface-tint transition-colors text-sm sm:flex-none"
           >
             Print queue ({printQueueCount})
           </button>
@@ -449,13 +451,13 @@ export default function PermitManagement() {
               setPrintSheet({ mode: 'selection', permitIds: selectedPrintableIds })
             }
             disabled={selectedPrintableIds.length === 0}
-            className="border border-surface-border text-gray-700 px-4 py-2 rounded-lg hover:bg-surface-tint transition-colors text-sm disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex-1 whitespace-nowrap border border-surface-border text-gray-700 px-4 py-2 rounded-lg hover:bg-surface-tint transition-colors text-sm disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
           >
             Print selected ({selectedPrintableIds.length})
           </button>
           <button
             onClick={() => setShowAddForm(true)}
-            className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark transition-colors text-sm"
+            className="flex-1 whitespace-nowrap bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark transition-colors text-sm sm:flex-none"
           >
             Add New Permit
           </button>
@@ -720,7 +722,7 @@ export default function PermitManagement() {
                 onChange={toggleSelectPage}
                 className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
               />
-              Select all QR-issued permits on this page
+              Select all on this page
             </label>
             {selectedPrintableIds.length > 0 && (
               <button
@@ -736,31 +738,29 @@ export default function PermitManagement() {
         <ResponsiveTable
           columns={[
             {
-              key: 'select',
-              label: '',
-              mobileLabel: 'Select',
-              render: (_, permit) => (
-                <input
-                  type="checkbox"
-                  checked={selectedIds.includes(permit.id)}
-                  disabled={!permit.hasQrToken}
-                  onChange={() => togglePermitSelected(permit.id)}
-                  aria-label={`Select permit ${permit.permitPlateNumber} for printing`}
-                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary disabled:cursor-not-allowed disabled:opacity-40"
-                />
-              )
-            },
-            {
               key: 'permitPlateNumber',
               label: 'Permit Plate',
               className: 'font-medium text-primary',
-              render: (permitPlateNumber) => (
-                <div>
-                  <div className="font-mono font-medium text-primary-dark">
-                    {permitPlateNumber}
-                  </div>
-                  <div className="text-xs text-primary">Permit ID</div>
-                </div>
+              // The print checkbox rides along with the plate rather than owning a
+              // column: ResponsiveTable's mobile card renders one row per column, and
+              // a lone checkbox row reads as noise on a phone.
+              render: (permitPlateNumber, permit) => (
+                <label className="-my-2 flex cursor-pointer items-center justify-end gap-2 py-2 md:justify-start">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.includes(permit.id)}
+                    disabled={!permit.hasQrToken}
+                    onChange={() => togglePermitSelected(permit.id)}
+                    aria-label={`Select permit ${permit.permitPlateNumber} for printing`}
+                    className="h-4 w-4 shrink-0 rounded border-gray-300 text-primary focus:ring-primary disabled:cursor-not-allowed disabled:opacity-40"
+                  />
+                  <span>
+                    <span className="block font-mono font-medium text-primary-dark">
+                      {permitPlateNumber}
+                    </span>
+                    <span className="block text-xs text-primary">Permit ID</span>
+                  </span>
+                </label>
               )
             },
             {
