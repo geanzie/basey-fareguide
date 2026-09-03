@@ -1,6 +1,6 @@
 import { defaultCache } from "@serwist/next/worker";
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
-import { CacheFirst, Serwist, StaleWhileRevalidate } from "serwist";
+import { CacheFirst, NetworkOnly, Serwist, StaleWhileRevalidate } from "serwist";
 
 import { BASEMAP_PATH } from "@/lib/map/basemapConstants";
 import {
@@ -90,6 +90,16 @@ const serwist = new Serwist({
       // that is a few minutes out of date still beats no distance at all.
       matcher: ({ url }) => url.pathname === "/api/curated-routes",
       handler: new StaleWhileRevalidate({ cacheName: "curated-routes" }),
+    },
+    {
+      // Enforcement state gates mutating actions, so it must never be served
+      // from cache. defaultCache ends with a catch-all NetworkFirst over every
+      // same-origin /api/ GET (cacheName "apis", 24h, 10s network timeout); on a
+      // slow connection that hands an enforcer a day-old queue whose rows still
+      // offer Issue Ticket for incidents the server has already moved on from.
+      // NetworkOnly, the same exemption defaultCache gives /api/auth/*.
+      matcher: ({ sameOrigin, url }) => sameOrigin && url.pathname.startsWith("/api/incidents"),
+      handler: new NetworkOnly({ networkTimeoutSeconds: 10 }),
     },
     ...defaultCache,
   ],

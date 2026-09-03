@@ -13,11 +13,17 @@ import PageShell from '@/ui/PageShell'
 import SearchBar from '@/ui/SearchBar'
 import { ListSkeleton, StatGridSkeleton } from '@/ui/Skeleton'
 import StatTile from '@/ui/StatTile'
+import { statusTone } from '@/ui/theme'
+import { formatIncidentStatusLabel } from '@/lib/serializers/incidents'
 import { swrFetcher } from '@/lib/swr'
 import { SWR_KEYS } from '@/lib/swrKeys'
 import type { IncidentsResponseDto } from '@/lib/contracts'
 
-const STATUSES = ['PENDING', 'INVESTIGATING', 'RESOLVED', 'DISMISSED'] as const
+// Every IncidentStatus, so an admin can filter to any state the data can hold.
+// INVESTIGATING is legacy-only: the take-ownership step that wrote it is now a
+// 410 tombstone (api/incidents/[incidentId]/take), so nothing produces new
+// INVESTIGATING rows — but old ones may exist and must stay findable.
+const STATUSES = ['PENDING', 'INVESTIGATING', 'TICKET_ISSUED', 'RESOLVED', 'DISMISSED'] as const
 
 export default function AdminIncidentsPage() {
   const { status, user } = useAuth()
@@ -55,6 +61,7 @@ export default function AdminIncidentsPage() {
     all: incidents.length,
     PENDING: incidents.filter(i => i.status === 'PENDING').length,
     INVESTIGATING: incidents.filter(i => i.status === 'INVESTIGATING').length,
+    TICKET_ISSUED: incidents.filter(i => i.status === 'TICKET_ISSUED').length,
     RESOLVED: incidents.filter(i => i.status === 'RESOLVED').length,
     DISMISSED: incidents.filter(i => i.status === 'DISMISSED').length,
   }
@@ -69,7 +76,7 @@ export default function AdminIncidentsPage() {
         <div className="space-y-4">
           {isLoading ? (
             <>
-              <StatGridSkeleton count={5} />
+              <StatGridSkeleton count={6} />
               <ListSkeleton count={4} />
             </>
           ) : error ? (
@@ -79,10 +86,11 @@ export default function AdminIncidentsPage() {
           ) : (
             <>
               {/* Statistics */}
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
                 <StatTile label="Total Incidents" value={incidentCounts.all} tone="muted" />
                 <StatTile label="Pending" value={incidentCounts.PENDING} tone="warning" />
                 <StatTile label="Investigating" value={incidentCounts.INVESTIGATING} tone="info" />
+                <StatTile label="Ticket Issued" value={incidentCounts.TICKET_ISSUED} tone="purple" />
                 <StatTile label="Resolved" value={incidentCounts.RESOLVED} tone="success" />
                 <StatTile label="Dismissed" value={incidentCounts.DISMISSED} tone="muted" />
               </div>
@@ -100,7 +108,7 @@ export default function AdminIncidentsPage() {
                       { value: 'all', label: 'All', count: incidentCounts.all },
                       ...STATUSES.map((s) => ({
                         value: s,
-                        label: s.charAt(0) + s.slice(1).toLowerCase(),
+                        label: formatIncidentStatusLabel(s),
                         count: incidentCounts[s],
                       })),
                     ]}
@@ -119,7 +127,7 @@ export default function AdminIncidentsPage() {
                     message={
                       statusFilter === 'all'
                         ? 'No incidents have been reported yet.'
-                        : `No incidents with status "${statusFilter}" found.`
+                        : `No incidents with status "${formatIncidentStatusLabel(statusFilter)}" found.`
                     }
                   />
                 </Card>
@@ -134,7 +142,7 @@ export default function AdminIncidentsPage() {
                             <p className="text-sm font-bold text-ink-strong">{incident.typeLabel}</p>
                             <p className="mt-1 text-sm text-ink-muted">{incident.location}</p>
                           </div>
-                          <Badge label={incident.status} />
+                          <Badge label={incident.statusLabel} tone={statusTone(incident.status)} />
                         </div>
                         <div className="mt-3 space-y-1.5 text-sm text-ink-muted">
                           <p>{incident.description}</p>
@@ -188,7 +196,7 @@ export default function AdminIncidentsPage() {
                               <div className="max-w-xs truncate text-sm text-ink-muted">{incident.description}</div>
                             </td>
                             <td className="px-6 py-4">
-                              <Badge label={incident.status} />
+                              <Badge label={incident.statusLabel} tone={statusTone(incident.status)} />
                             </td>
                             <td className="px-6 py-4 text-sm text-ink-body">{incident.location}</td>
                             <td className="px-6 py-4 text-sm text-ink-body">

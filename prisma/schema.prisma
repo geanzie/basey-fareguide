@@ -992,6 +992,11 @@ enum IncidentType {
 
 enum IncidentStatus {
   PENDING
+  // Legacy only. The take-ownership step that wrote INVESTIGATING is now a 410
+  // tombstone (src/app/api/incidents/[incidentId]/take/route.ts), so no code
+  // path produces it any more. Existing rows may still carry it, which is why
+  // the value stays and why the "unresolved" queries in driver/summary,
+  // terminal/lookup and violations/history keep pairing it with PENDING.
   INVESTIGATING
   TICKET_ISSUED
   RESOLVED

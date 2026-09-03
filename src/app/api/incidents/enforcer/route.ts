@@ -156,8 +156,11 @@ export async function GET(request: NextRequest) {
       }
     }, {
       headers: {
-        // Per-user browser cache for 30s with SWR
-        'Cache-Control': 'private, max-age=30, stale-while-revalidate=60'
+        // No browser cache. This queue gates mutating actions: every row decides
+        // whether the enforcer is offered Issue Ticket / Verify Evidence, so a
+        // cached copy makes the UI offer a button the server will reject with
+        // "Can only issue tickets for pending incidents."
+        'Cache-Control': 'no-store'
       }
     })
   } catch (error) {

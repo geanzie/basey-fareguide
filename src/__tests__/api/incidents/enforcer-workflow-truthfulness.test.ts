@@ -13,6 +13,7 @@ const prismaMock = vi.hoisted(() => ({
   $transaction: vi.fn(),
   incident: {
     findUnique: vi.fn(),
+    findMany: vi.fn(),
     count: vi.fn(),
     aggregate: vi.fn(),
     update: vi.fn(),
@@ -41,6 +42,7 @@ vi.mock('@/lib/evidenceCleanup', () => ({
 
 import { PATCH as takeIncident } from '@/app/api/incidents/[incidentId]/take/route'
 import { GET as getTicketPenaltyPreview, PATCH as issueTicket } from '@/app/api/incidents/[incidentId]/issue-ticket/route'
+import { GET as listEnforcerIncidents } from '@/app/api/incidents/enforcer/route'
 import { PATCH as markTicketPaid } from '@/app/api/incidents/[incidentId]/payment/route'
 import { PATCH as resolveIncident } from '@/app/api/incidents/[incidentId]/resolve/route'
 import { PATCH as verifyEvidence } from '@/app/api/incidents/[incidentId]/verify-evidence/route'
@@ -366,7 +368,7 @@ describe('enforcer workflow truthfulness', () => {
     expect(prismaMock.incident.update).not.toHaveBeenCalled()
   })
 
-  it('rejects ticket issuance when incident is not in PENDING status', async () => {
+  it('reports an already-ticketed incident as already ticketed, not as "not pending"', async () => {
     prismaMock.incident.findUnique.mockResolvedValueOnce({
       id: 'incident-1',
       status: 'TICKET_ISSUED',
@@ -387,9 +389,49 @@ describe('enforcer workflow truthfulness', () => {
     )
     const json = await response.json()
 
-    expect(response.status).toBe(400)
-    expect(json.message).toBe('Can only issue tickets for pending incidents.')
+    expect(response.status).toBe(409)
+    expect(json.message).toBe('Ticket has already been issued for this incident.')
     expect(prismaMock.incident.update).not.toHaveBeenCalled()
+  })
+
+  it('names the actual status when an unticketed incident is not PENDING', async () => {
+    prismaMock.incident.findUnique.mockResolvedValueOnce({
+      id: 'incident-1',
+      status: 'DISMISSED',
+      evidenceVerifiedAt: new Date(),
+      evidenceVerifiedById: 'enforcer-1',
+      handledById: 'enforcer-1',
+      ticketNumber: null,
+      plateNumber: 'ABC-123',
+      incidentDate: new Date('2026-04-03T08:00:00.000Z'),
+      createdAt: new Date('2026-04-03T08:05:00.000Z'),
+    })
+
+    const response = await issueTicket(
+      makeJsonRequest('http://localhost/api/incidents/incident-1/issue-ticket', {
+        ticketNumber: 'T-201',
+      }) as never,
+      { params: Promise.resolve({ incidentId: 'incident-1' }) },
+    )
+    const json = await response.json()
+
+    expect(response.status).toBe(400)
+    expect(json.message).toBe(
+      'Can only issue tickets for pending incidents. This incident is Dismissed.',
+    )
+    expect(prismaMock.incident.update).not.toHaveBeenCalled()
+  })
+
+  it('does not serve the enforcer queue from any cache', async () => {
+    prismaMock.incident.findMany.mockResolvedValueOnce([])
+    prismaMock.incident.count.mockResolvedValueOnce(0)
+
+    const response = await listEnforcerIncidents(
+      makeRequest('http://localhost/api/incidents/enforcer?scope=unresolved') as never,
+    )
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('cache-control')).toBe('no-store')
   })
 
   it('lets the encoder record confirmed full payment and auto-resolves the incident', async () => {

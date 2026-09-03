@@ -7,6 +7,7 @@ import {
   getOffenseTierLabel,
   normalizePlateNumber,
 } from '@/lib/incidents/penaltyRules'
+import { formatIncidentStatusLabel } from '@/lib/serializers/incidents'
 
 interface TicketIssuanceContext {
   incident: Awaited<ReturnType<typeof prisma.incident.findUnique>> extends infer T
@@ -18,7 +19,6 @@ interface TicketIssuanceContext {
 
 async function resolveTicketIssuanceContext(
   incidentId: string,
-  userId: string,
 ): Promise<{ response: NextResponse } | TicketIssuanceContext> {
   const incident = await prisma.incident.findUnique({
     where: { id: incidentId },
@@ -30,10 +30,25 @@ async function resolveTicketIssuanceContext(
     }
   }
 
+  // Order matters: issuance sets ticketNumber and status together, so an
+  // already-ticketed incident would otherwise fall out at the status check and
+  // be told it is "not pending" — true, but useless. Check the most specific
+  // state first.
+  if (incident.ticketNumber) {
+    return {
+      response: NextResponse.json(
+        { message: 'Ticket has already been issued for this incident.' },
+        { status: 409 },
+      ),
+    }
+  }
+
   if (incident.status !== 'PENDING') {
     return {
       response: NextResponse.json(
-        { message: 'Can only issue tickets for pending incidents.' },
+        {
+          message: `Can only issue tickets for pending incidents. This incident is ${formatIncidentStatusLabel(incident.status)}.`,
+        },
         { status: 400 },
       ),
     }
@@ -44,15 +59,6 @@ async function resolveTicketIssuanceContext(
       response: NextResponse.json(
         { message: 'Evidence must be verified before issuing a ticket.' },
         { status: 400 },
-      ),
-    }
-  }
-
-  if (incident.ticketNumber) {
-    return {
-      response: NextResponse.json(
-        { message: 'Ticket has already been issued for this incident.' },
-        { status: 409 },
       ),
     }
   }
@@ -128,9 +134,9 @@ export async function GET(
   context: { params: Promise<{ incidentId: string }> }
 ) {
   try {
-    const user = await requireRequestRole(request, [...ENFORCER_ONLY])
+    await requireRequestRole(request, [...ENFORCER_ONLY])
     const { incidentId } = await context.params
-    const contextResult = await resolveTicketIssuanceContext(incidentId, user.id)
+    const contextResult = await resolveTicketIssuanceContext(incidentId)
 
     if ('response' in contextResult) {
       return contextResult.response
@@ -168,7 +174,7 @@ export async function PATCH(
       }, { status: 400 })
     }
 
-    const contextResult = await resolveTicketIssuanceContext(incidentId, user.id)
+    const contextResult = await resolveTicketIssuanceContext(incidentId)
 
     if ('response' in contextResult) {
       return contextResult.response

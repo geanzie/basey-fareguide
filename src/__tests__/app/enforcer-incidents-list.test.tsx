@@ -157,6 +157,15 @@ describe('EnforcerIncidentsList', () => {
         )
       }
 
+      if (url.includes('/dismiss') && method === 'PATCH') {
+        return Promise.resolve(
+          new Response(JSON.stringify({ message: 'Incident dismissed. No ticket will be issued.' }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+        )
+      }
+
       return Promise.reject(new Error(`Unexpected fetch: ${url}`))
     })
     vi.stubGlobal('fetch', fetchMock)
@@ -289,7 +298,9 @@ describe('EnforcerIncidentsList', () => {
     expect(container.textContent).toContain('Evidence')
     expect(container.textContent).not.toContain('Verify Evidence')
     expect(container.textContent).toContain('Issue Ticket')
-    expect(container.textContent).not.toContain('Dismiss')
+    // Dismiss is the no-ticket exit from a pending incident and the only way to
+    // clear a report with no usable evidence. Mobile has always offered it.
+    expect(container.textContent).toContain('Dismiss')
     expect(container.textContent).not.toContain('Take and Issue Ticket')
     expect(container.textContent).not.toContain('Resolve Only')
 
@@ -373,6 +384,108 @@ describe('EnforcerIncidentsList', () => {
     })
 
     expect(penaltyInput).toBeUndefined()
+  })
+
+  it('renders the humanised status label rather than the raw enum', async () => {
+    await act(async () => {
+      root.render(React.createElement(EnforcerIncidentsList, { mode: 'dashboard' }))
+      await Promise.resolve()
+    })
+
+    expect(container.textContent).toContain('Pending')
+    expect(container.textContent).toContain('Resolved')
+    expect(container.textContent).not.toContain('ticket_issued')
+    expect(container.textContent).not.toContain('pending')
+  })
+
+  it('dismisses a pending incident with the field name the route reads', async () => {
+    await act(async () => {
+      root.render(React.createElement(EnforcerIncidentsList, { mode: 'dashboard' }))
+      await Promise.resolve()
+    })
+
+    const dismissButton = Array.from(container.querySelectorAll('button')).find(
+      (button) => (button.textContent || '').trim() === 'Dismiss',
+    )
+
+    expect(dismissButton).toBeTruthy()
+
+    await act(async () => {
+      dismissButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await Promise.resolve()
+    })
+
+    const remarksInput = container.querySelector('#dismiss-incident-remarks') as HTMLTextAreaElement | null
+    expect(remarksInput).not.toBeNull()
+
+    await act(async () => {
+      const descriptor = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')
+      descriptor?.set?.call(remarksInput, 'Duplicate report.')
+      remarksInput?.dispatchEvent(new Event('input', { bubbles: true }))
+      remarksInput?.dispatchEvent(new Event('change', { bubbles: true }))
+      await Promise.resolve()
+    })
+
+    const submitButton = Array.from(container.querySelectorAll('button')).find(
+      (button) => (button.textContent || '').trim() === 'Dismiss Incident',
+    )
+
+    expect(submitButton).toBeTruthy()
+
+    await act(async () => {
+      submitButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await Promise.resolve()
+    })
+
+    const dismissCall = fetchMock.mock.calls.find(([input]) => String(input).includes('/dismiss'))
+
+    expect(dismissCall).toBeTruthy()
+    // The route reads body.remarks; sending dismissRemarks silently 400s.
+    expect(JSON.parse((dismissCall?.[1] as RequestInit).body as string)).toEqual({
+      remarks: 'Duplicate report.',
+    })
+    expect(container.textContent).toContain('Incident dismissed. No ticket will be issued.')
+    expect(vi.mocked(globalThis.alert)).not.toHaveBeenCalled()
+  })
+
+  it('refreshes the queue when the server rejects the ticket preview', async () => {
+    // The server is the authority on incident status. A row can only offer
+    // Issue Ticket because the list said PENDING, so a rejection means the list
+    // is stale and must be refetched — otherwise the enforcer keeps clicking a
+    // button that can never succeed.
+    const rejectingFetch = vi.fn(() =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({ message: 'Ticket has already been issued for this incident.' }),
+          { status: 409, headers: { 'Content-Type': 'application/json' } },
+        ),
+      ),
+    )
+    vi.stubGlobal('fetch', rejectingFetch)
+
+    await act(async () => {
+      root.render(React.createElement(EnforcerIncidentsList, { mode: 'dashboard' }))
+      await Promise.resolve()
+    })
+
+    const issueTicketButton = Array.from(container.querySelectorAll('button')).find(
+      (button) => (button.textContent || '').trim() === 'Issue Ticket',
+    )
+
+    expect(issueTicketButton).toBeTruthy()
+
+    await act(async () => {
+      issueTicketButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await Promise.resolve()
+    })
+
+    expect(mutateCacheMock).toHaveBeenCalledWith(
+      expect.any(Function),
+      undefined,
+      { revalidate: true },
+    )
+    expect(container.textContent).toContain('Ticket has already been issued for this incident.')
+    expect(container.textContent).not.toContain('Enforced Penalty')
   })
 
   it('shows a polished in-app success notice instead of a browser alert after issuing a ticket', async () => {

@@ -58,11 +58,6 @@ const UNRESOLVED_INCIDENT_STATUSES = ['PENDING', 'TICKET_ISSUED'] as const
 const EVIDENCE_ASSIGNMENT_NOTICE = 'Evidence is only accessible to the enforcer or admin.'
 const PAGE_SIZE = 50
 
-const INCIDENT_LIST_CACHE_KEYS = [
-  '/api/incidents/enforcer?scope=all&mode=dashboard',
-  '/api/incidents/enforcer?scope=unresolved&mode=queue',
-] as const
-
 const ALLOWED_STATUS_FILTERS: Record<EnforcerIncidentsViewMode, readonly EnforcerStatusFilter[]> = {
   dashboard: DASHBOARD_STATUS_FILTERS,
   queue: QUEUE_STATUS_FILTERS,
@@ -154,6 +149,10 @@ export default function EnforcerIncidentsList({
     ticketNumber: '',
     remarks: '',
   })
+  const [dismissIncidentTarget, setDismissIncidentTarget] = useState<IncidentListItemDto | null>(null)
+  const [showDismissModal, setShowDismissModal] = useState(false)
+  const [dismissRemarks, setDismissRemarks] = useState('')
+  const [isDismissSubmitting, setIsDismissSubmitting] = useState(false)
 
   const isQueueMode = mode === 'queue'
   const [page, setPage] = useState(1)
@@ -341,6 +340,9 @@ export default function EnforcerIncidentsList({
 
       if (!response.ok) {
         closeTicketModal()
+        // The row we clicked is out of date with the server — refetch so the
+        // action buttons stop offering something the server will reject.
+        await revalidateIncidentLists()
         showActionNotice('error', 'Unable to load ticket details', payload.message || 'Failed to load ticket penalty details.')
         return
       }
@@ -365,38 +367,64 @@ export default function EnforcerIncidentsList({
     })
   }
 
-  const handleDismissIncident = async (incident: IncidentListItemDto) => {
-    let remarks = window.prompt('Dismissal remarks (required):', '')
+  const openDismissModal = (incident: IncidentListItemDto) => {
+    setDismissIncidentTarget(incident)
+    setDismissRemarks('')
+    setIsDismissSubmitting(false)
+    setShowDismissModal(true)
+  }
 
-    while (remarks !== null && remarks.trim() === '') {
-      remarks = window.prompt('Remarks cannot be blank. Enter dismissal remarks:', '')
-    }
+  const closeDismissModal = () => {
+    setShowDismissModal(false)
+    setDismissIncidentTarget(null)
+    setDismissRemarks('')
+    setIsDismissSubmitting(false)
+  }
 
-    if (remarks === null) {
+  const handleDismissSubmit = async (event: FormEvent) => {
+    event.preventDefault()
+
+    if (!dismissIncidentTarget) {
       return
     }
 
+    const remarks = dismissRemarks.trim()
+
+    if (!remarks) {
+      showActionNotice('error', 'Remarks required', 'Enter why this incident is being dismissed.')
+      return
+    }
+
+    setIsDismissSubmitting(true)
+
     try {
-      const response = await fetch(`/api/incidents/${incident.id}/dismiss`, {
+      const response = await fetch(`/api/incidents/${dismissIncidentTarget.id}/dismiss`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dismissRemarks: remarks }),
+        // The route reads `remarks`, and so does the mobile client
+        // (mobile/src/types/incidents.ts DismissIncidentRequest).
+        body: JSON.stringify({ remarks }),
       })
       const payload = await response.json()
 
       if (!response.ok) {
+        await revalidateIncidentLists()
         showActionNotice('error', 'Unable to dismiss incident', payload.message || 'Failed to dismiss incident.')
         return
       }
 
+      const dismissedId = dismissIncidentTarget.id
       showActionNotice('success', 'Incident dismissed', payload.message || 'Incident dismissed.')
-      if (selectedIncident?.id === incident.id) {
+      closeDismissModal()
+      if (selectedIncident?.id === dismissedId) {
         closeIncidentDetails()
       }
       await revalidateIncidentLists()
       onWorkflowComplete?.()
     } catch (_error) {
       showActionNotice('error', 'Unable to dismiss incident', 'Error dismissing incident. Please try again.')
+    } finally {
+      setIsDismissSubmitting(false)
     }
   }
 
@@ -427,6 +455,7 @@ export default function EnforcerIncidentsList({
       const payload = await response.json()
 
       if (!response.ok) {
+        await revalidateIncidentLists()
         showActionNotice('error', 'Unable to issue ticket', payload.message || 'Failed to issue ticket.')
         return
       }
@@ -832,7 +861,7 @@ export default function EnforcerIncidentsList({
                   render: (_, incident) => (
                     <div>
                       <StatusBadge
-                        status={incident.status.toLowerCase().replace('_', ' ')}
+                        status={incident.statusLabel}
                         className={getStatusColor(incident.status)}
                       />
                       {incident.ticketNumber ? (
@@ -892,6 +921,13 @@ export default function EnforcerIncidentsList({
                           </ActionLabel>
                         </ActionButton>
                       ) : null}
+                      {incident.status === 'PENDING' ? (
+                        <ActionButton onClick={() => openDismissModal(incident)} variant="secondary" size="xs">
+                          <ActionLabel icon={DASHBOARD_ICONS.close} iconClassName="text-gray-500">
+                            Dismiss
+                          </ActionLabel>
+                        </ActionButton>
+                      ) : null}
                     </div>
                   ),
                 },
@@ -946,7 +982,7 @@ export default function EnforcerIncidentsList({
                       {selectedIncident.typeLabel}
                     </span>
                     <StatusBadge
-                      status={selectedIncident.status.toLowerCase()}
+                      status={selectedIncident.statusLabel}
                       className={getStatusColor(selectedIncident.status)}
                     />
                     {selectedIncident.ticketNumber ? (
@@ -966,7 +1002,7 @@ export default function EnforcerIncidentsList({
                     label="Status"
                     value={(
                       <StatusBadge
-                        status={selectedIncident.status.toLowerCase()}
+                        status={selectedIncident.statusLabel}
                         className={getStatusColor(selectedIncident.status)}
                       />
                     )}
@@ -1044,6 +1080,23 @@ export default function EnforcerIncidentsList({
                         className="text-white"
                       />
                       <span>Issue Ticket</span>
+                    </button>
+                  ) : null}
+
+                  {selectedIncident.status === 'PENDING' ? (
+                    <button
+                      onClick={() => {
+                        closeIncidentDetails()
+                        openDismissModal(selectedIncident)
+                      }}
+                      className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-100"
+                    >
+                      <DashboardIconSlot
+                        icon={DASHBOARD_ICONS.close}
+                        size={DASHBOARD_ICON_POLICY.sizes.button}
+                        className="text-gray-500"
+                      />
+                      <span>Dismiss</span>
                     </button>
                   ) : null}
 
@@ -1185,6 +1238,65 @@ export default function EnforcerIncidentsList({
                   </button>
                 </div>
               </form>
+          </>
+        ) : null}
+      </Modal>
+
+      <Modal
+        open={showDismissModal && Boolean(dismissIncidentTarget)}
+        onClose={closeDismissModal}
+        title="Dismiss Incident"
+      >
+        {dismissIncidentTarget ? (
+          <>
+            <div className="border border-surface-border bg-surface-alt mb-6 rounded-lg p-4">
+              <h4 className="font-semibold text-gray-800 mb-2">Incident Details</h4>
+              <p className="text-sm text-gray-600"><strong>Type:</strong> {dismissIncidentTarget.typeLabel}</p>
+              <p className="text-sm text-gray-600"><strong>Plate:</strong> {dismissIncidentTarget.plateNumber || 'N/A'}</p>
+              <p className="text-sm text-gray-600"><strong>Location:</strong> {dismissIncidentTarget.location}</p>
+              <p className="text-sm text-gray-600"><strong>Date:</strong> {formatDate(dismissIncidentTarget.date)}</p>
+            </div>
+
+            <p className="mb-4 text-sm text-gray-600">
+              Dismissing closes the incident without a ticket. The remarks are recorded against your account and
+              cannot be edited afterwards.
+            </p>
+
+            <form onSubmit={handleDismissSubmit} className="space-y-4">
+              <div>
+                <label htmlFor="dismiss-incident-remarks" className="block text-sm font-medium text-gray-700 mb-2">
+                  Reason for dismissal *
+                </label>
+                <textarea
+                  id="dismiss-incident-remarks"
+                  name="remarks"
+                  autoComplete="off"
+                  value={dismissRemarks}
+                  onChange={(e) => setDismissRemarks(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                  rows={3}
+                  placeholder="Why is this incident being dismissed?"
+                  required
+                />
+              </div>
+
+              <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end sm:space-x-0">
+                <button
+                  type="button"
+                  onClick={closeDismissModal}
+                  className="w-full rounded-lg bg-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-400 sm:w-auto"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isDismissSubmitting || !dismissRemarks.trim()}
+                  className="w-full rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700 disabled:bg-red-300 sm:w-auto"
+                >
+                  {isDismissSubmitting ? 'Dismissing...' : 'Dismiss Incident'}
+                </button>
+              </div>
+            </form>
           </>
         ) : null}
       </Modal>
