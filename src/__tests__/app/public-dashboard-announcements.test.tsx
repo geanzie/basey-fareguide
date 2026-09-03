@@ -66,6 +66,35 @@ describe("public dashboard announcements", () => {
           return Promise.resolve(makeJsonResponse({ calculations: [] }));
         }
 
+        if (url.includes("/api/fare-rates/documents")) {
+          return Promise.resolve(
+            makeJsonResponse({
+              documents: [
+                {
+                  versionId: "fare-live",
+                  effectiveAt: "2026-04-01T00:00:00.000Z",
+                  baseFare: 15,
+                  perKmRate: 3,
+                  baseDistanceKm: 3,
+                  notes: "",
+                  isActive: true,
+                  isUpcoming: false,
+                  document: {
+                    title: "SB Resolution No. 42",
+                    reference: "SB Resolution No. 42, Series of 2026",
+                    fileName: "resolution-42.pdf",
+                    mimeType: "application/pdf",
+                    sizeBytes: 1024,
+                    uploadedAt: "2026-03-20T00:00:00.000Z",
+                    uploadedByName: "Admin",
+                    downloadUrl: "/api/fare-rates/fare-live/document",
+                  },
+                },
+              ],
+            }),
+          );
+        }
+
         if (url.includes("/api/fare-rates")) {
           return Promise.resolve(
             makeJsonResponse({
@@ -107,6 +136,12 @@ describe("public dashboard announcements", () => {
     expect(container.textContent).toContain("Traffic Announcements");
     expect(container.textContent).toContain("Weekend reroute");
     expect(container.textContent).toContain("Fare Notice");
+    // The notice must carry riders to the issuance that authorized the rate,
+    // otherwise a fare adjustment is announced with no way to check it.
+    const documentLink = Array.from(container.querySelectorAll("a")).find((anchor) =>
+      anchor.textContent?.includes("See the ordinance behind this rate"),
+    );
+    expect(documentLink?.getAttribute("href")).toBe("/fare-documents/fare-live");
     expect(container.textContent).toContain("Recent Fare Calculations");
     expect(container.textContent).toContain("Recent Incident Reports");
 

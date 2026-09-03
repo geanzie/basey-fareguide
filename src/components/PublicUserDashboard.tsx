@@ -18,7 +18,6 @@ import type {
   FareCalculationsResponseDto,
   IncidentListItemDto,
   IncidentsResponseDto,
-  RiderActiveTripStatusResponseDto,
 } from '@/lib/contracts'
 import { SWR_KEYS } from '@/lib/swrKeys'
 
@@ -51,13 +50,6 @@ function PublicUserDashboard() {
     useSWR<IncidentsResponseDto>(SWR_KEYS.incidents)
   const { data: fareCalculationsResponse, isLoading: fareCalculationsLoading } =
     useSWR<FareCalculationsResponseDto>(SWR_KEYS.fareCalculations)
-  const { data: activeTripData } = useSWR<RiderActiveTripStatusResponseDto>(SWR_KEYS.riderTripStatus, {
-    refreshInterval: (latestData) => {
-      const status = latestData?.trip?.status
-      if (!status || status === 'PENDING' || status === 'ACCEPTED' || status === 'BOARDED') return 5000
-      return 0
-    },
-  })
   const { data: dashboardStatsData, isLoading: statsLoading } =
     useSWR<DashboardStatsResponse>(SWR_KEYS.dashboardStats)
   const { data: dashboardActivityData, isLoading: activityLoading } =
@@ -90,37 +82,8 @@ function PublicUserDashboard() {
     )
   }
 
-  const tripActive =
-    activeTripData?.trip?.status === 'ACCEPTED' || activeTripData?.trip?.status === 'BOARDED'
-
   return (
     <div className="space-y-5">
-      {/* Active trip card — mirrors mobile ActiveTripCard, polls via SWR above */}
-      {activeTripData?.hasActiveTrip && activeTripData.trip ? (
-        <Card className={tripActive ? 'border-primary/40 bg-surface-tint' : 'border-warning/40 bg-warning/5'}>
-          <div className="flex items-center justify-between gap-2">
-            <span
-              className={`text-xs font-bold uppercase tracking-[0.14em] ${
-                tripActive ? 'text-primary-dark' : 'text-warning-dark'
-              }`}
-            >
-              {activeTripData.trip.statusLabel}
-            </span>
-            {activeTripData.trip.vehiclePlateNumber ? (
-              <span className="rounded-full border border-surface-border bg-surface px-2 py-0.5 text-xs font-medium text-ink-muted">
-                {activeTripData.trip.vehiclePlateNumber}
-              </span>
-            ) : null}
-          </div>
-          <div className="mt-1.5 text-sm font-medium text-ink-body">
-            {activeTripData.trip.origin} → {activeTripData.trip.destination}
-          </div>
-          <div className="mt-0.5 text-sm font-bold text-ink-strong">
-            PHP {activeTripData.trip.fare.toFixed(2)}
-          </div>
-        </Card>
-      ) : null}
-
       <TrafficAnnouncementsFeed
         title="Traffic Announcements"
         description="Newest municipal road and transport advisories for riders."

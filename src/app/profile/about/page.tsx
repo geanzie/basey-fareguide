@@ -104,7 +104,9 @@ export default function AboutPage() {
               </div>
             </div>
 
-            <div>
+            {/* Anchor target for FareRateBanner's fallback link, used whenever the
+                version it shows has no issuance uploaded yet. */}
+            <div id="fare-rate-documents" className="scroll-mt-24">
               <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-700">
                 <DashboardIconSlot icon={DASHBOARD_ICONS.fileText} size={16} />
                 <p>Official Documents</p>

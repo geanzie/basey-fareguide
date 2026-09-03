@@ -5,6 +5,7 @@ import { DriverTripSessionInitiator, DriverTripSessionRiderStatus, UserType } fr
 import type { RiderActiveTripStatusResponseDto, RiderTripStatusDto } from '@/lib/contracts'
 import { createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
 import { buildAvailableRiderActions } from '@/lib/driverSession'
+import { getFareRateVersionIdEffectiveAt } from '@/lib/fare/rateService'
 import { prisma } from '@/lib/prisma'
 
 const ACTIVE_RIDER_STATUSES = [
@@ -106,6 +107,9 @@ export async function GET(request: NextRequest) {
     // printed permit QR, so the rider — not a driver — ends it.
     const riderInitiated = entry.session.initiatedBy === DriverTripSessionInitiator.RIDER
 
+    // The version live when the rider joined is the one that priced this fare.
+    const fareVersionId = await getFareRateVersionIdEffectiveAt(entry.joinedAt)
+
     const trip: RiderTripStatusDto = {
       id: entry.id,
       fareCalculationId: entry.fareCalculationId,
@@ -124,6 +128,7 @@ export async function GET(request: NextRequest) {
       boardedAt: entry.boardedAt ? entry.boardedAt.toISOString() : null,
       vehiclePlateNumber: entry.session.vehicle.plateNumber,
       vehicleType: entry.session.vehicle.vehicleType,
+      fareVersionId,
       riderInitiated,
       availableRiderActions: buildAvailableRiderActions(entry.status, riderInitiated),
     }

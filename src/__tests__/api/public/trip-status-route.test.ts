@@ -14,6 +14,9 @@ const prismaMock = vi.hoisted(() => ({
     updateMany: vi.fn(),
     findFirst: vi.fn(),
   },
+  fareRateVersion: {
+    findFirst: vi.fn(),
+  },
 }))
 
 vi.mock('@/lib/auth', () => ({
@@ -34,6 +37,7 @@ function makeRequest(params = '') {
 beforeEach(() => {
   vi.clearAllMocks()
   prismaMock.vehicleTripSessionRider.updateMany.mockResolvedValue({ count: 0 })
+  prismaMock.fareRateVersion.findFirst.mockResolvedValue({ id: 'fare-version-1' })
 })
 
 describe('GET /api/public/trip-status', () => {
@@ -155,6 +159,67 @@ describe('GET /api/public/trip-status', () => {
     expect(response.status).toBe(200)
     expect(json.trip.status).toBe('BOARDED')
     expect(json.trip.statusLabel).toBe('Trip accepted')
+  })
+
+  it('resolves fareVersionId from the rate in force when the rider joined', async () => {
+    authMock.requireRequestRole.mockResolvedValueOnce({ id: 'user-1', userType: 'PUBLIC' })
+    prismaMock.vehicleTripSessionRider.findFirst.mockResolvedValueOnce({
+      id: 'sr-1',
+      fareCalculationId: 'calc-1',
+      status: 'BOARDED',
+      originSnapshot: 'Market',
+      destinationSnapshot: 'Terminal',
+      fareSnapshot: '35.00',
+      discountTypeSnapshot: null,
+      joinedAt: new Date('2026-04-16T08:00:00.000Z'),
+      expiresAt: null,
+      acceptedAt: new Date('2026-04-16T08:02:00.000Z'),
+      boardedAt: new Date('2026-04-16T08:04:00.000Z'),
+      session: {
+        vehicle: { plateNumber: 'ABC-123', vehicleType: 'TRICYCLE' },
+      },
+    })
+
+    const response = await GET(makeRequest())
+    const json = await response.json()
+
+    expect(json.trip.fareVersionId).toBe('fare-version-1')
+
+    // Must look up the rate live at joinedAt, not "now" — a rate change during
+    // a trip would otherwise point the rider at the wrong issuance.
+    const versionArgs = prismaMock.fareRateVersion.findFirst.mock.calls[0][0]
+    expect(versionArgs.where.effectiveAt.lte).toEqual(new Date('2026-04-16T08:00:00.000Z'))
+    expect(versionArgs.where.canceledAt).toBeNull()
+  })
+
+  it('still returns the trip when the fare rate version lookup fails', async () => {
+    authMock.requireRequestRole.mockResolvedValueOnce({ id: 'user-1', userType: 'PUBLIC' })
+    prismaMock.fareRateVersion.findFirst.mockRejectedValueOnce(new Error('relation does not exist'))
+    prismaMock.vehicleTripSessionRider.findFirst.mockResolvedValueOnce({
+      id: 'sr-1',
+      fareCalculationId: 'calc-1',
+      status: 'PENDING',
+      originSnapshot: 'Market',
+      destinationSnapshot: 'Terminal',
+      fareSnapshot: '35.00',
+      discountTypeSnapshot: null,
+      joinedAt: new Date('2026-04-16T08:00:00.000Z'),
+      expiresAt: null,
+      acceptedAt: null,
+      boardedAt: null,
+      session: {
+        vehicle: { plateNumber: 'ABC-123', vehicleType: 'TRICYCLE' },
+      },
+    })
+
+    const response = await GET(makeRequest())
+    const json = await response.json()
+
+    // The link target is decoration; losing it must not cost the rider their
+    // live trip status.
+    expect(response.status).toBe(200)
+    expect(json.trip.status).toBe('PENDING')
+    expect(json.trip.fareVersionId).toBeNull()
   })
 
   it('scopes query to the correct rider when tripRequestId is provided', async () => {

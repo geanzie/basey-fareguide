@@ -1,13 +1,36 @@
 'use client'
 
+import Link from 'next/link'
 import useSWR from 'swr'
 
-import type { FareRatesResponseDto } from '@/lib/contracts'
+import type {
+  FareRateDocumentEntryDto,
+  FareRateDocumentsResponseDto,
+  FareRatesResponseDto,
+} from '@/lib/contracts'
 import { formatManilaDateTimeLabel } from '@/lib/manilaTime'
 import { SWR_KEYS } from '@/lib/swrKeys'
 
+/**
+ * The About page's list of every issuance, newest first. Used as the fallback
+ * whenever the version on show has no document of its own — a rate can be
+ * published before its paper is uploaded, and getDocumentedFareRateVersions
+ * filters those out, so /fare-documents/[versionId] would dead-end there.
+ */
+const ABOUT_DOCUMENTS_HREF = '/profile/about#fare-rate-documents'
+
 function formatCurrency(value: number) {
   return `PHP ${value.toFixed(2)}`
+}
+
+function documentHref(
+  versionId: string | null | undefined,
+  documents: FareRateDocumentEntryDto[],
+) {
+  if (versionId && documents.some((entry) => entry.versionId === versionId)) {
+    return `/fare-documents/${versionId}`
+  }
+  return ABOUT_DOCUMENTS_HREF
 }
 
 interface FareRateBannerProps {
@@ -76,6 +99,9 @@ export default function FareRateBanner({
   variant = 'default',
 }: FareRateBannerProps) {
   const { data, isLoading } = useSWR<FareRatesResponseDto>(SWR_KEYS.fareRates)
+  // Same key FareRateDocumentsSection reads, so on /profile/about the two share
+  // one request. Only tells us which versions actually have an issuance on file.
+  const { data: documentsData } = useSWR<FareRateDocumentsResponseDto>(SWR_KEYS.fareRateDocuments)
 
   if (isLoading && !data) {
     return (
@@ -90,6 +116,14 @@ export default function FareRateBanner({
   }
 
   const announcement = getAnnouncementContent(data)
+  const documents = documentsData?.documents ?? []
+  // The announcement is about the change, so it points at the version that
+  // change introduces; the rate panel below is about what riders pay today.
+  const announcedHref = documentHref(
+    data.upcoming?.versionId ?? data.current.versionId,
+    documents,
+  )
+  const currentHref = documentHref(data.current.versionId, documents)
 
   return (
     <section className={`border border-surface-border bg-surface shadow-card rounded-2xl p-5 ${className}`.trim()}>
@@ -102,6 +136,14 @@ export default function FareRateBanner({
               </p>
               <h3 className="mt-2 text-2xl font-bold">{announcement.headline}</h3>
               <p className="mt-2 max-w-3xl text-sm opacity-90">{announcement.detail}</p>
+              <Link
+                href={announcedHref}
+                className="mt-3 inline-flex items-center rounded-card border border-current/25 bg-white/70 px-3 py-2 text-sm font-semibold underline-offset-2 hover:underline"
+              >
+                {data.upcoming
+                  ? 'See the issuance that authorized this change'
+                  : 'See the ordinance behind this rate'}
+              </Link>
             </div>
             <div className="rounded-xl border border-current/15 bg-white/70 px-4 py-3 text-sm font-medium">
               {announcement.effectiveLabel}
@@ -115,8 +157,16 @@ export default function FareRateBanner({
           <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
           <p className="mt-1 text-sm text-slate-600">{description}</p>
         </div>
-        <div className="rounded-card border border-primary/20 bg-surface-alt px-4 py-3 text-sm text-primary-dark">
-          Active as of {formatManilaDateTimeLabel(data.current.effectiveAt)}
+        <div className="flex flex-col items-start gap-2 lg:items-end">
+          <div className="rounded-card border border-primary/20 bg-surface-alt px-4 py-3 text-sm text-primary-dark">
+            Active as of {formatManilaDateTimeLabel(data.current.effectiveAt)}
+          </div>
+          <Link
+            href={currentHref}
+            className="text-sm font-semibold text-primary-dark underline-offset-2 hover:underline"
+          >
+            See the ordinance behind this rate
+          </Link>
         </div>
       </div>
 

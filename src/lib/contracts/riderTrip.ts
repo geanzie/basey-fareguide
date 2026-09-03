@@ -28,6 +28,15 @@ export interface RiderTripStatusDto {
   boardedAt: string | null;
   vehiclePlateNumber: string | null;
   vehicleType: string | null;
+  /**
+   * The FareRateVersion that was in force when this trip was priced, so a rider
+   * can open the issuance behind the fare they are being charged.
+   *
+   * Derived from joinedAt rather than stored: FareCalculation records no rate
+   * version, so this is the version live at that moment. Null when no version
+   * row applies (the legacy DEFAULT_FARE_POLICY, or before migrations run).
+   */
+  fareVersionId: string | null;
   /** True when the rider opened this trip by scanning the vehicle's permit QR. */
   riderInitiated: boolean;
   /** Empty on a driver-run trip: the driver owns those transitions. */

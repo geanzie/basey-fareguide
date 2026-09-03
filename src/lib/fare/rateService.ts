@@ -109,6 +109,41 @@ export async function getCurrentLiveFareRateVersion(
   });
 }
 
+/**
+ * The id of the version in force at a given moment, and nothing else.
+ *
+ * Deliberately separate from getCurrentLiveFareRateVersion: this one is called
+ * from /api/public/trip-status, which both clients poll every 5-10s, so it must
+ * not drag in fareRateVersionInclude's three user joins for a value nobody
+ * reads.
+ *
+ * Fails soft to null on any error. The value only decides where a "see the
+ * issuance behind this fare" link points; a rider watching a live trip must not
+ * lose the whole status response because fare rate history is unreachable or
+ * not migrated yet.
+ */
+export async function getFareRateVersionIdEffectiveAt(
+  at: Date,
+  client: FareRateVersionClient = prisma,
+): Promise<string | null> {
+  try {
+    const version = await client.fareRateVersion.findFirst({
+      where: {
+        canceledAt: null,
+        effectiveAt: {
+          lte: at,
+        },
+      },
+      orderBy: [{ effectiveAt: "desc" }, { createdAt: "desc" }],
+      select: { id: true },
+    });
+
+    return version?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function getUpcomingFareRateVersion(
   client: FareRateVersionClient = prisma,
   now: Date = new Date(),
