@@ -1,15 +1,39 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
-import type { AdminFareRatesResponseDto } from '@/lib/contracts'
+import type { AdminFareRatesResponseDto, FareRateVersionDto } from '@/lib/contracts'
+import { FARE_DOCUMENT_ACCEPT_ATTRIBUTE } from '@/lib/fare/documentTypes'
 import { formatManilaDateTimeInput, formatManilaDateTimeLabel } from '@/lib/manilaTime'
 import { useFeedback } from '@/ui/FeedbackProvider'
 
 type PublishMode = 'immediate' | 'scheduled'
 
+/** Which history row has its attach/replace form open, and what has been typed into it. */
+type AttachTarget = {
+  versionId: string
+  title: string
+  reference: string
+}
+
 function formatCurrency(value: number) {
   return `PHP ${value.toFixed(2)}`
+}
+
+function formatFileSize(bytes: number) {
+  if (bytes >= 1024 * 1024) {
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  }
+
+  return `${Math.max(1, Math.round(bytes / 1024))} KB`
+}
+
+/**
+ * Default document title for a version, so an admin attaching paper to an old
+ * row does not have to invent one.
+ */
+function suggestDocumentTitle(version: FareRateVersionDto) {
+  return `Fare rate effective ${formatManilaDateTimeLabel(version.effectiveAt)}`
 }
 
 function findPreviousEligibleVersion(data: AdminFareRatesResponseDto | null) {
@@ -50,6 +74,13 @@ export default function AdminFareRatesManager() {
   const [notes, setNotes] = useState('')
   const [cancelReason, setCancelReason] = useState('')
   const [revertReason, setRevertReason] = useState('')
+  const [documentTitle, setDocumentTitle] = useState('')
+  const [documentReference, setDocumentReference] = useState('')
+  const [attachTarget, setAttachTarget] = useState<AttachTarget | null>(null)
+  const [documentBusyVersionId, setDocumentBusyVersionId] = useState<string | null>(null)
+  const [warning, setWarning] = useState<string | null>(null)
+  const publishFormRef = useRef<HTMLFormElement | null>(null)
+  const attachFileRef = useRef<HTMLInputElement | null>(null)
   const setupRequired = Boolean(data?.warning)
   const previousEligibleVersion = findPreviousEligibleVersion(data)
 
@@ -81,11 +112,51 @@ export default function AdminFareRatesManager() {
     }
   }
 
+  /**
+   * POST the supporting document to a version that already exists.
+   *
+   * Throws on failure so each caller can decide what that means: a failed upload
+   * during publishing is a warning (the rate is already live), while a failed
+   * upload from the history list is a plain error.
+   */
+  async function uploadDocument(versionId: string, file: File, title: string, reference: string) {
+    const body = new FormData()
+    body.append('document', file)
+    body.append('title', title)
+    if (reference.trim()) {
+      body.append('reference', reference.trim())
+    }
+
+    const response = await fetch(`/api/admin/fare-rates/${versionId}/document`, {
+      method: 'POST',
+      body,
+    })
+
+    const payload = await response.json().catch(() => ({}))
+    if (!response.ok) {
+      throw new Error(payload.message || 'Failed to upload the supporting document')
+    }
+
+    return payload
+  }
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setSaving(true)
     setError(null)
     setSuccess(null)
+    setWarning(null)
+
+    const fileInput = publishFormRef.current?.querySelector<HTMLInputElement>(
+      'input[type="file"]',
+    )
+    const documentFile = fileInput?.files?.[0] ?? null
+
+    if (documentFile && !documentTitle.trim()) {
+      setError('A document title is required when attaching a supporting document.')
+      setSaving(false)
+      return
+    }
 
     try {
       const response = await fetch('/api/admin/fare-rates', {
@@ -107,8 +178,33 @@ export default function AdminFareRatesManager() {
         throw new Error(payload.message || 'Failed to save fare rate')
       }
 
+      // The rate is live from here on. A failed document upload must not be
+      // reported as a failed publish — it is a separate, retryable step from the
+      // history list below.
+      if (documentFile) {
+        try {
+          await uploadDocument(
+            payload.fareRateVersion.id,
+            documentFile,
+            documentTitle.trim(),
+            documentReference,
+          )
+        } catch (uploadError) {
+          setWarning(
+            `${payload.message || 'Fare rate saved.'} The supporting document did not upload (${
+              uploadError instanceof Error ? uploadError.message : 'unknown error'
+            }). Attach it from the fare rate history below.`,
+          )
+        }
+      }
+
       setSuccess(payload.message || 'Fare rate saved successfully.')
       setNotes('')
+      setDocumentTitle('')
+      setDocumentReference('')
+      if (fileInput) {
+        fileInput.value = ''
+      }
       if (mode === 'immediate') {
         setEffectiveAt('')
       }
@@ -117,6 +213,87 @@ export default function AdminFareRatesManager() {
       setError(saveError instanceof Error ? saveError.message : 'Failed to save fare rate')
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleAttachDocument(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!attachTarget) {
+      return
+    }
+
+    const file = attachFileRef.current?.files?.[0] ?? null
+    if (!file) {
+      setError('Choose a supporting document file to upload.')
+      return
+    }
+
+    if (!attachTarget.title.trim()) {
+      setError('A document title is required.')
+      return
+    }
+
+    setDocumentBusyVersionId(attachTarget.versionId)
+    setError(null)
+    setSuccess(null)
+    setWarning(null)
+
+    try {
+      const payload = await uploadDocument(
+        attachTarget.versionId,
+        file,
+        attachTarget.title.trim(),
+        attachTarget.reference,
+      )
+      setSuccess(payload.message || 'Supporting document attached successfully.')
+      setAttachTarget(null)
+      await fetchFareRates()
+    } catch (uploadError) {
+      setError(
+        uploadError instanceof Error
+          ? uploadError.message
+          : 'Failed to upload the supporting document',
+      )
+    } finally {
+      setDocumentBusyVersionId(null)
+    }
+  }
+
+  async function handleRemoveDocument(version: FareRateVersionDto) {
+    const confirmed = await confirm({
+      title: 'Remove supporting document',
+      message: `Permanently delete "${version.document?.title}" from storage? The fare rate version itself is kept.`,
+      confirmLabel: 'Remove document',
+      destructive: true,
+    })
+    if (!confirmed) {
+      return
+    }
+
+    setDocumentBusyVersionId(version.id)
+    setError(null)
+    setSuccess(null)
+    setWarning(null)
+
+    try {
+      const response = await fetch(`/api/admin/fare-rates/${version.id}/document`, {
+        method: 'DELETE',
+      })
+      const payload = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        throw new Error(payload.message || 'Failed to remove the supporting document')
+      }
+
+      setSuccess(payload.message || 'Supporting document removed successfully.')
+      await fetchFareRates()
+    } catch (removeError) {
+      setError(
+        removeError instanceof Error
+          ? removeError.message
+          : 'Failed to remove the supporting document',
+      )
+    } finally {
+      setDocumentBusyVersionId(null)
     }
   }
 
@@ -261,6 +438,12 @@ export default function AdminFareRatesManager() {
         </div>
       )}
 
+      {warning && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          {warning}
+        </div>
+      )}
+
       {success && (
         <div className="rounded-2xl border border-primary/20 bg-surface-tint px-4 py-3 text-sm text-primary-dark">
           {success}
@@ -323,7 +506,7 @@ export default function AdminFareRatesManager() {
           )}
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form ref={publishFormRef} onSubmit={handleSubmit} className="space-y-5">
           <div className="grid gap-4 md:grid-cols-2">
             <label className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
               <div className="flex items-center gap-3">
@@ -425,6 +608,62 @@ export default function AdminFareRatesManager() {
               className="w-full rounded-xl border border-slate-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-2 focus:ring-surface-tint"
             />
           </label>
+
+          <fieldset className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <legend className="px-1 text-sm font-semibold text-slate-900">
+              Supporting document (optional)
+            </legend>
+            <p className="mt-1 text-xs text-slate-600">
+              Attach the Sangguniang Bayan resolution or ordinance that authorized this change. Riders
+              see it on the About page beside Ordinance No. 105, so the new rate can be verified against
+              the issuance behind it. PDF, JPEG, PNG, or WebP up to 15MB.
+            </p>
+
+            <div className="mt-4 space-y-4">
+              <label className="block text-sm text-slate-700">
+                <span className="mb-2 block font-medium text-slate-900">Document file</span>
+                <input
+                  id="admin-fare-document-file"
+                  name="document"
+                  type="file"
+                  accept={FARE_DOCUMENT_ACCEPT_ATTRIBUTE}
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-slate-200 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-slate-700"
+                />
+              </label>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <label className="text-sm text-slate-700">
+                  <span className="mb-2 block font-medium text-slate-900">Document title</span>
+                  <input
+                    id="admin-fare-document-title"
+                    name="documentTitle"
+                    type="text"
+                    autoComplete="off"
+                    value={documentTitle}
+                    onChange={(event) => setDocumentTitle(event.target.value)}
+                    placeholder="Resolution approving the adjusted fare rates"
+                    className="w-full rounded-xl border border-slate-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-2 focus:ring-surface-tint"
+                  />
+                </label>
+
+                <label className="text-sm text-slate-700">
+                  <span className="mb-2 block font-medium text-slate-900">
+                    Document reference <span className="font-normal text-slate-500">(optional)</span>
+                  </span>
+                  <input
+                    id="admin-fare-document-reference"
+                    name="documentReference"
+                    type="text"
+                    autoComplete="off"
+                    value={documentReference}
+                    onChange={(event) => setDocumentReference(event.target.value)}
+                    placeholder="SB Resolution No. 42, Series of 2026"
+                    className="w-full rounded-xl border border-slate-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-2 focus:ring-surface-tint"
+                  />
+                </label>
+              </div>
+            </div>
+          </fieldset>
 
           <button
             type="submit"
@@ -546,9 +785,126 @@ export default function AdminFareRatesManager() {
                         {version.cancellationReason ? ` Reason: ${version.cancellationReason}` : ''}
                       </p>
                     )}
+
+                    {version.document ? (
+                      <div className="mt-3 rounded-xl border border-slate-300 bg-white p-3 text-sm">
+                        <p className="font-medium text-slate-900">{version.document.title}</p>
+                        {version.document.reference && (
+                          <p className="mt-0.5 text-xs text-slate-600">{version.document.reference}</p>
+                        )}
+                        <p className="mt-1 text-xs text-slate-500">
+                          {version.document.fileName} · {formatFileSize(version.document.sizeBytes)}
+                          {version.document.uploadedByName
+                            ? ` · uploaded by ${version.document.uploadedByName}`
+                            : ''}
+                        </p>
+                        <a
+                          href={version.document.downloadUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-2 inline-block text-sm font-semibold text-primary hover:text-primary-dark"
+                        >
+                          Open document
+                        </a>
+                      </div>
+                    ) : (
+                      <p className="mt-3 text-sm text-slate-500">
+                        No supporting document attached.
+                      </p>
+                    )}
+
+                    {attachTarget?.versionId === version.id && (
+                      <form
+                        onSubmit={handleAttachDocument}
+                        className="mt-3 space-y-3 rounded-xl border border-slate-300 bg-white p-3"
+                      >
+                        <label className="block text-sm text-slate-700">
+                          <span className="mb-1.5 block font-medium text-slate-900">Document file</span>
+                          <input
+                            ref={attachFileRef}
+                            type="file"
+                            accept={FARE_DOCUMENT_ACCEPT_ATTRIBUTE}
+                            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-slate-200 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-slate-700"
+                          />
+                        </label>
+
+                        <label className="block text-sm text-slate-700">
+                          <span className="mb-1.5 block font-medium text-slate-900">Document title</span>
+                          <input
+                            type="text"
+                            autoComplete="off"
+                            value={attachTarget.title}
+                            onChange={(event) =>
+                              setAttachTarget({ ...attachTarget, title: event.target.value })
+                            }
+                            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                          />
+                        </label>
+
+                        <label className="block text-sm text-slate-700">
+                          <span className="mb-1.5 block font-medium text-slate-900">
+                            Document reference <span className="font-normal text-slate-500">(optional)</span>
+                          </span>
+                          <input
+                            type="text"
+                            autoComplete="off"
+                            value={attachTarget.reference}
+                            onChange={(event) =>
+                              setAttachTarget({ ...attachTarget, reference: event.target.value })
+                            }
+                            placeholder="SB Resolution No. 42, Series of 2026"
+                            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                          />
+                        </label>
+
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="submit"
+                            disabled={documentBusyVersionId === version.id}
+                            className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-dark disabled:cursor-not-allowed disabled:bg-slate-300"
+                          >
+                            {documentBusyVersionId === version.id ? 'Uploading...' : 'Upload document'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setAttachTarget(null)}
+                            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    )}
                   </div>
-                  {!version.isActive && (
-                    <div className="flex shrink-0 items-start justify-end">
+
+                  <div className="flex shrink-0 flex-col items-stretch gap-2 lg:w-56">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setAttachTarget({
+                          versionId: version.id,
+                          title: version.document?.title ?? suggestDocumentTitle(version),
+                          reference: version.document?.reference ?? '',
+                        })
+                      }
+                      disabled={documentBusyVersionId === version.id || setupRequired}
+                      className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-slate-400 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400"
+                    >
+                      {version.document ? 'Replace document' : 'Attach document'}
+                    </button>
+
+                    {version.document && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveDocument(version)}
+                        disabled={documentBusyVersionId === version.id || setupRequired}
+                        className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-600 hover:border-rose-300 hover:text-rose-700 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400"
+                      >
+                        {documentBusyVersionId === version.id ? 'Working...' : 'Remove document'}
+                      </button>
+                    )}
+
+                    {!version.isActive && (
                       <button
                         type="button"
                         onClick={() => handleDeleteVersion(version.id, version.isUpcoming)}
@@ -557,8 +913,8 @@ export default function AdminFareRatesManager() {
                       >
                         {deletingVersionId === version.id ? 'Deleting...' : 'Delete permanently'}
                       </button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </article>
             ))

@@ -46,6 +46,7 @@ function buildFareRatesPayload(): AdminFareRatesResponseDto {
       cancellationReason: null,
       isActive: true,
       isUpcoming: false,
+      document: null,
     },
     upcomingVersion: {
       id: "fare-next",
@@ -63,6 +64,7 @@ function buildFareRatesPayload(): AdminFareRatesResponseDto {
       cancellationReason: null,
       isActive: false,
       isUpcoming: true,
+      document: null,
     },
     history: [
       {
@@ -81,6 +83,7 @@ function buildFareRatesPayload(): AdminFareRatesResponseDto {
         cancellationReason: null,
         isActive: false,
         isUpcoming: true,
+        document: null,
       },
       {
         id: "fare-live",
@@ -98,6 +101,7 @@ function buildFareRatesPayload(): AdminFareRatesResponseDto {
         cancellationReason: null,
         isActive: true,
         isUpcoming: false,
+        document: null,
       },
       {
         id: "fare-previous",
@@ -115,6 +119,7 @@ function buildFareRatesPayload(): AdminFareRatesResponseDto {
         cancellationReason: null,
         isActive: false,
         isUpcoming: false,
+        document: null,
       },
     ],
   }
@@ -152,6 +157,7 @@ function buildRevertedFareRatesPayload(): AdminFareRatesResponseDto {
       cancellationReason: null,
       isActive: true,
       isUpcoming: false,
+      document: null,
     },
     upcomingVersion: {
       id: "fare-next",
@@ -169,6 +175,7 @@ function buildRevertedFareRatesPayload(): AdminFareRatesResponseDto {
       cancellationReason: null,
       isActive: false,
       isUpcoming: true,
+      document: null,
     },
     history: [
       {
@@ -187,6 +194,7 @@ function buildRevertedFareRatesPayload(): AdminFareRatesResponseDto {
         cancellationReason: null,
         isActive: false,
         isUpcoming: true,
+        document: null,
       },
       {
         id: "fare-live",
@@ -204,6 +212,7 @@ function buildRevertedFareRatesPayload(): AdminFareRatesResponseDto {
         cancellationReason: "Reverted by administrator.",
         isActive: false,
         isUpcoming: false,
+        document: null,
       },
       {
         id: "fare-previous",
@@ -221,6 +230,7 @@ function buildRevertedFareRatesPayload(): AdminFareRatesResponseDto {
         cancellationReason: null,
         isActive: true,
         isUpcoming: false,
+        document: null,
       },
     ],
   }
@@ -232,6 +242,7 @@ describe("AdminFareRatesManager", () => {
   let fetchMock: ReturnType<typeof vi.fn>;
   let confirmMock: (message?: string) => boolean;
   let fareRatesPayload: AdminFareRatesResponseDto;
+  let documentUploadFails: boolean;
 
   beforeEach(() => {
     (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -240,6 +251,7 @@ describe("AdminFareRatesManager", () => {
     root = createRoot(container);
 
     fareRatesPayload = buildFareRatesPayload();
+    documentUploadFails = false;
     confirmMock = vi.fn<(message?: string) => boolean>(() => true);
 
     fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
@@ -252,6 +264,27 @@ describe("AdminFareRatesManager", () => {
 
       if (url.endsWith("/api/admin/fare-rates") && method === "GET") {
         return Promise.resolve(makeJsonResponse(fareRatesPayload));
+      }
+
+      if (url.endsWith("/api/admin/fare-rates") && method === "POST") {
+        return Promise.resolve(
+          makeJsonResponse({
+            success: true,
+            fareRateVersion: { id: "fare-created" },
+            message: "Fare rate published successfully.",
+          }),
+        );
+      }
+
+      if (url.endsWith("/api/admin/fare-rates/fare-created/document") && method === "POST") {
+        return Promise.resolve(
+          documentUploadFails
+            ? new Response(JSON.stringify({ message: "Supporting document file size must be less than 15MB" }), {
+                status: 400,
+                headers: { "Content-Type": "application/json" },
+              })
+            : makeJsonResponse({ success: true, message: "Supporting document attached successfully." }),
+        );
       }
 
       if (url.endsWith("/api/admin/fare-rates/revert") && method === "POST") {
@@ -357,5 +390,134 @@ describe("AdminFareRatesManager", () => {
     );
     expect(container.textContent).toContain("Fare rate version deleted permanently.");
     expect(container.textContent).not.toContain("Festival week schedule.");
+  });
+  async function renderManager() {
+    await act(async () => {
+      root.render(React.createElement(AdminFareRatesManager));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+  }
+
+  function attachFileToPublishForm(file: File) {
+    const fileInput = container.querySelector("#admin-fare-document-file") as HTMLInputElement;
+    // jsdom has no DataTransfer, and `files` is read-only on the element.
+    Object.defineProperty(fileInput, "files", { value: [file], configurable: true });
+    return fileInput;
+  }
+
+  function setInputValue(selector: string, value: string) {
+    const input = container.querySelector(selector) as HTMLInputElement | HTMLTextAreaElement;
+    const prototype = input instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+    Object.getOwnPropertyDescriptor(prototype, "value")!.set!.call(input, value);
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+
+  it("uploads the supporting document after the fare rate is published", async () => {
+    await renderManager();
+
+    setInputValue("#admin-fare-notes", "Fuel price adjustment.");
+    setInputValue("#admin-fare-document-title", "Resolution approving the adjusted fare rates");
+    setInputValue("#admin-fare-document-reference", "SB Resolution No. 42, Series of 2026");
+    attachFileToPublishForm(new File(["%PDF"], "resolution.pdf", { type: "application/pdf" }));
+
+    await act(async () => {
+      container.querySelector("form")?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    // The document is a second call against the version the first call created.
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/admin/fare-rates",
+      expect.objectContaining({ method: "POST" }),
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/admin/fare-rates/fare-created/document",
+      expect.objectContaining({ method: "POST" }),
+    );
+
+    const documentCall = fetchMock.mock.calls.find(
+      ([callUrl]) => callUrl === "/api/admin/fare-rates/fare-created/document",
+    );
+    const body = (documentCall?.[1] as RequestInit).body as FormData;
+    expect(body.get("title")).toBe("Resolution approving the adjusted fare rates");
+    expect(body.get("reference")).toBe("SB Resolution No. 42, Series of 2026");
+    expect(body.get("document")).toBeInstanceOf(File);
+
+    expect(container.textContent).toContain("Fare rate published successfully.");
+  });
+
+  it("still reports the fare rate as published when the document upload fails", async () => {
+    documentUploadFails = true;
+    await renderManager();
+
+    setInputValue("#admin-fare-notes", "Fuel price adjustment.");
+    setInputValue("#admin-fare-document-title", "Resolution approving the adjusted fare rates");
+    attachFileToPublishForm(new File(["%PDF"], "huge.pdf", { type: "application/pdf" }));
+
+    await act(async () => {
+      container.querySelector("form")?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    // The rate is live; only the paperwork is missing, and it is retryable below.
+    expect(container.textContent).toContain("Fare rate published successfully.");
+    expect(container.textContent).toContain("Supporting document file size must be less than 15MB");
+    expect(container.textContent).toContain("Attach it from the fare rate history below.");
+  });
+
+  it("refuses to publish with a document file but no title", async () => {
+    await renderManager();
+
+    setInputValue("#admin-fare-notes", "Fuel price adjustment.");
+    attachFileToPublishForm(new File(["%PDF"], "resolution.pdf", { type: "application/pdf" }));
+
+    await act(async () => {
+      container.querySelector("form")?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(container.textContent).toContain("A document title is required");
+    expect(fetchMock).not.toHaveBeenCalledWith(
+      "/api/admin/fare-rates",
+      expect.objectContaining({ method: "POST" }),
+    );
+  });
+
+  it("offers an attach action per history row and a replace action once one exists", async () => {
+    fareRatesPayload = {
+      ...fareRatesPayload,
+      history: fareRatesPayload.history.map((version) =>
+        version.id === "fare-live"
+          ? {
+              ...version,
+              document: {
+                title: "Resolution approving the adjusted fare rates",
+                reference: "SB Resolution No. 42, Series of 2026",
+                fileName: "resolution-42.pdf",
+                mimeType: "application/pdf",
+                sizeBytes: 240000,
+                uploadedAt: "2026-04-10T00:00:00.000Z",
+                uploadedByName: "Admin User (@admin)",
+                downloadUrl: "/api/fare-rates/fare-live/document",
+              },
+            }
+          : version,
+      ),
+    };
+
+    await renderManager();
+
+    const labels = Array.from(container.querySelectorAll("button")).map((button) => button.textContent);
+    expect(labels).toContain("Attach document");
+    expect(labels).toContain("Replace document");
+    expect(labels).toContain("Remove document");
+    expect(container.textContent).toContain("No supporting document attached.");
+    expect(container.querySelector('a[href="/api/fare-rates/fare-live/document"]')).not.toBeNull();
   });
 });

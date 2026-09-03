@@ -6,9 +6,9 @@ import {
   DASHBOARD_ICONS,
   DASHBOARD_ICON_POLICY,
   DashboardIconSlot,
-  getDashboardIconChipClasses,
 } from '@/components/dashboardIcons'
 import FareRateBanner from '@/components/FareRateBanner'
+import FareRateDocumentsSection from '@/components/FareRateDocumentsSection'
 import RoleGuard from '@/components/RoleGuard'
 import TrafficAnnouncementsFeed from '@/components/TrafficAnnouncementsFeed'
 import { AUTHENTICATED_ROLES } from '@/lib/authRoutes'
@@ -104,12 +104,29 @@ export default function AboutPage() {
               </div>
             </div>
 
+            <div>
+              <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-700">
+                <DashboardIconSlot icon={DASHBOARD_ICONS.fileText} size={16} />
+                <p>Official Documents</p>
+              </div>
+              <h2 className="mt-2 text-2xl font-bold text-slate-900">
+                The issuances behind every published fare
+              </h2>
+              <p className="mt-2 max-w-3xl text-sm text-slate-600">
+                Each fare change is approved by the Sangguniang Bayan. The resolution or ordinance
+                behind it is published here, newest first, so any rate shown in the app can be
+                checked against the document that authorized it.
+              </p>
+            </div>
+
+            <FareRateDocumentsSection />
+
             <div className="rounded-card border border-surface-border bg-surface p-5 shadow-card lg:p-6">
               <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
                 <div className="max-w-3xl">
                   <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700">
                     <DashboardIconSlot icon={DASHBOARD_ICONS.fileText} size={16} />
-                    <p>Official Ordinance</p>
+                    <p>Original Ordinance</p>
                   </div>
                   <h3 className="mt-2 text-2xl font-bold text-slate-900">
                     {ordinanceResource.shortTitle}
@@ -157,44 +174,6 @@ export default function AboutPage() {
                     Open PDF
                   </a>
                 </div>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <h2 className="mb-4 text-2xl font-bold text-gray-900">Key Features</h2>
-
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-              <div className="rounded-card border border-surface-border bg-surface p-5 text-center shadow-card">
-                <div className={`mx-auto mb-3 ${getDashboardIconChipClasses('emerald')} h-12 w-12`}>
-                  <DashboardIconSlot icon={DASHBOARD_ICONS.user} size={DASHBOARD_ICON_POLICY.sizes.card} />
-                </div>
-                <h3 className="mb-1 font-semibold text-gray-900">Authenticated Access</h3>
-                <p className="text-sm text-gray-600">Login required for calculator</p>
-              </div>
-
-              <div className="rounded-card border border-surface-border bg-surface p-5 text-center shadow-card">
-                <div className={`mx-auto mb-3 ${getDashboardIconChipClasses('red')} h-12 w-12`}>
-                  <DashboardIconSlot icon={DASHBOARD_ICONS.incidents} size={DASHBOARD_ICON_POLICY.sizes.card} />
-                </div>
-                <h3 className="mb-1 font-semibold text-gray-900">Incident Reports</h3>
-                <p className="text-sm text-gray-600">Online violation reporting</p>
-              </div>
-
-              <div className="rounded-card border border-surface-border bg-surface p-5 text-center shadow-card">
-                <div className={`mx-auto mb-3 ${getDashboardIconChipClasses('blue')} h-12 w-12`}>
-                  <DashboardIconSlot icon={DASHBOARD_ICONS.routes} size={DASHBOARD_ICON_POLICY.sizes.card} />
-                </div>
-                <h3 className="mb-1 font-semibold text-gray-900">95% Accuracy</h3>
-                <p className="text-sm text-gray-600">Road-based routing</p>
-              </div>
-
-              <div className="rounded-card border border-surface-border bg-surface p-5 text-center shadow-card">
-                <div className={`mx-auto mb-3 ${getDashboardIconChipClasses('amber')} h-12 w-12`}>
-                  <DashboardIconSlot icon={DASHBOARD_ICONS.safe} size={DASHBOARD_ICON_POLICY.sizes.card} />
-                </div>
-                <h3 className="mb-1 font-semibold text-gray-900">Data Integrity</h3>
-                <p className="text-sm text-gray-600">Legitimate user tracking</p>
               </div>
             </div>
           </div>

@@ -62,6 +62,7 @@ model User {
   accessVerifiedLocations       Location[]                       @relation("LocationAccessVerifier")
   createdFareRateVersions       FareRateVersion[]                @relation("FareRateVersionCreator")
   canceledFareRateVersions      FareRateVersion[]                @relation("FareRateVersionCanceller")
+  fareRateVersionDocuments      FareRateVersion[]                @relation("FareRateVersionDocumentUploader")
   createdAnnouncements          Announcement[]                   @relation("AnnouncementCreator")
   updatedAnnouncements          Announcement[]                   @relation("AnnouncementUpdater")
   archivedAnnouncements         Announcement[]                   @relation("AnnouncementArchiver")
@@ -109,8 +110,24 @@ model FareRateVersion {
   canceledAt         DateTime?
   canceledBy         String?
   cancellationReason String?
-  createdByUser      User?     @relation("FareRateVersionCreator", fields: [createdBy], references: [id])
-  canceledByUser     User?     @relation("FareRateVersionCanceller", fields: [canceledBy], references: [id])
+
+  // Supporting municipal issuance (Sangguniang Bayan resolution or ordinance) that
+  // authorized this rate. `documentKey` is the S3 OBJECT KEY, never a public URL —
+  // reads go through GET /api/fare-rates/[versionId]/document. Uploaded separately
+  // from the version itself, because a document is often attached long after the
+  // rate was published (backfilling past changes, and the legacy baseline row).
+  documentKey        String?
+  documentTitle      String?
+  documentReference  String?
+  documentMimeType   String?
+  documentFileName   String?
+  documentSize       Int?
+  documentUploadedAt DateTime?
+  documentUploadedBy String?
+
+  createdByUser          User? @relation("FareRateVersionCreator", fields: [createdBy], references: [id])
+  canceledByUser         User? @relation("FareRateVersionCanceller", fields: [canceledBy], references: [id])
+  documentUploadedByUser User? @relation("FareRateVersionDocumentUploader", fields: [documentUploadedBy], references: [id])
 
   @@index([effectiveAt])
   @@index([createdAt])

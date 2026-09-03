@@ -1,6 +1,13 @@
 const { spawnSync } = require('node:child_process')
 const path = require('node:path')
 
+// Load .env the way the Prisma CLI does for its own commands. This wrapper reads
+// DATABASE_URL itself, before Prisma is spawned, so without this a local run
+// fails with "DATABASE_URL is not configured" even though .env has one.
+// dotenv never overwrites a variable that is already set, so a real deployment
+// environment (Vercel, the NAS compose file) keeps whatever it injected.
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') })
+
 const DEFAULT_MAX_ATTEMPTS = 4
 const DEFAULT_INITIAL_RETRY_DELAY_MS = 5000
 const PG_SSLMODE_VERIFY_FULL_ALIASES = new Set(['prefer', 'require', 'verify-ca'])

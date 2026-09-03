@@ -27,6 +27,13 @@ export const fareRateVersionInclude = {
       username: true,
     },
   },
+  documentUploadedByUser: {
+    select: {
+      firstName: true,
+      lastName: true,
+      username: true,
+    },
+  },
 } as const;
 
 const FARE_RATE_CACHE_TTL_MS = 60_000;
@@ -142,6 +149,28 @@ export async function getFareRateVersionById(
 ) {
   return client.fareRateVersion.findUnique({
     where: { id },
+    include: fareRateVersionInclude,
+  });
+}
+
+/**
+ * Every rate change that carries a supporting municipal issuance, newest first.
+ *
+ * Canceled versions are excluded: a scheduled change that was replaced or called
+ * off is not an official update, and showing its resolution would misrepresent
+ * what is in force. Upcoming versions are kept, so a scheduled change is
+ * published together with the paper that authorized it — which is what
+ * FareRateBanner already announces on the same page.
+ */
+export async function getDocumentedFareRateVersions(
+  client: FareRateVersionClient = prisma,
+) {
+  return client.fareRateVersion.findMany({
+    where: {
+      canceledAt: null,
+      documentKey: { not: null },
+    },
+    orderBy: [{ effectiveAt: "desc" }, { createdAt: "desc" }],
     include: fareRateVersionInclude,
   });
 }

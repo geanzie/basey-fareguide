@@ -1,5 +1,7 @@
 import type {
   FarePolicySnapshotDto,
+  FareRateDocumentDto,
+  FareRateDocumentEntryDto,
   FareRateVersionDto,
 } from "@/lib/contracts";
 
@@ -49,29 +51,63 @@ export function serializeFarePolicySnapshot(input: {
   };
 }
 
+type ActorFields = {
+  firstName?: string | null;
+  lastName?: string | null;
+  username?: string | null;
+};
+
+export type FareRateVersionSerializerInput = {
+  id: string;
+  baseFare: unknown;
+  perKmRate: unknown;
+  effectiveAt: Date | string;
+  createdAt: Date | string;
+  createdBy?: string | null;
+  notes: string;
+  canceledAt?: Date | string | null;
+  canceledBy?: string | null;
+  cancellationReason?: string | null;
+  documentKey?: string | null;
+  documentTitle?: string | null;
+  documentReference?: string | null;
+  documentMimeType?: string | null;
+  documentFileName?: string | null;
+  documentSize?: number | null;
+  documentUploadedAt?: Date | string | null;
+  documentUploadedBy?: string | null;
+  createdByUser?: ActorFields | null;
+  canceledByUser?: ActorFields | null;
+  documentUploadedByUser?: ActorFields | null;
+};
+
+/**
+ * The document half of a version row, or null when nothing is attached.
+ *
+ * `documentKey` is the only field that decides whether a document exists; the
+ * rest are written and cleared with it in the same update.
+ */
+function serializeFareRateDocument(
+  input: FareRateVersionSerializerInput,
+): FareRateDocumentDto | null {
+  if (!input.documentKey) {
+    return null;
+  }
+
+  return {
+    title: input.documentTitle ?? "Supporting document",
+    reference: input.documentReference ?? null,
+    fileName: input.documentFileName ?? "document",
+    mimeType: input.documentMimeType ?? "application/octet-stream",
+    sizeBytes: input.documentSize ?? 0,
+    uploadedAt: toIsoString(input.documentUploadedAt),
+    uploadedByName: formatActorName(input.documentUploadedByUser),
+    downloadUrl: `/api/fare-rates/${input.id}/document`,
+  };
+}
+
 export function serializeFareRateVersion(
-  input: {
-    id: string;
-    baseFare: unknown;
-    perKmRate: unknown;
-    effectiveAt: Date | string;
-    createdAt: Date | string;
-    createdBy?: string | null;
-    notes: string;
-    canceledAt?: Date | string | null;
-    canceledBy?: string | null;
-    cancellationReason?: string | null;
-    createdByUser?: {
-      firstName?: string | null;
-      lastName?: string | null;
-      username?: string | null;
-    } | null;
-    canceledByUser?: {
-      firstName?: string | null;
-      lastName?: string | null;
-      username?: string | null;
-    } | null;
-  },
+  input: FareRateVersionSerializerInput,
   options: {
     baseDistanceKm: number;
     now?: Date;
@@ -97,5 +133,38 @@ export function serializeFareRateVersion(
     cancellationReason: input.cancellationReason ?? null,
     isActive: !isCanceled && effectiveAtDate <= now,
     isUpcoming: !isCanceled && effectiveAtDate > now,
+    document: serializeFareRateDocument(input),
+  };
+}
+
+/**
+ * A documented rate change for the About page listing.
+ *
+ * Returns null for a version with no document attached, so callers can filter a
+ * mixed list in one pass without re-checking `documentKey` themselves.
+ */
+export function serializeFareRateDocumentEntry(
+  input: FareRateVersionSerializerInput,
+  options: {
+    baseDistanceKm: number;
+    now?: Date;
+  },
+): FareRateDocumentEntryDto | null {
+  const version = serializeFareRateVersion(input, options);
+
+  if (!version.document) {
+    return null;
+  }
+
+  return {
+    versionId: version.id,
+    effectiveAt: version.effectiveAt,
+    baseFare: version.baseFare,
+    perKmRate: version.perKmRate,
+    baseDistanceKm: version.baseDistanceKm,
+    notes: version.notes,
+    isActive: version.isActive,
+    isUpcoming: version.isUpcoming,
+    document: version.document,
   };
 }

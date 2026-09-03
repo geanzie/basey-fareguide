@@ -116,6 +116,10 @@ describe("profile about page announcements", () => {
           );
         }
 
+        if (url.includes("/api/fare-rates/documents")) {
+          return Promise.resolve(makeJsonResponse({ documents: [] }));
+        }
+
         if (url.includes("/api/fare-rates")) {
           return Promise.resolve(
             makeJsonResponse({
@@ -148,7 +152,10 @@ describe("profile about page announcements", () => {
     expect(container.textContent).toContain("Traffic Announcements");
     expect(container.textContent).toContain("Road closure");
     expect(container.textContent).toContain("Fare Announcement");
-    expect(container.textContent).toContain("Key Features");
+    expect(container.textContent).toContain("Official Documents");
+    expect(container.textContent).toContain(
+      "No fare rate updates have been issued since Municipal Ordinance No. 105.",
+    );
     expect(container.querySelector(".bg-brand")).not.toBeNull();
     expect(routerMock.replace).not.toHaveBeenCalled();
   });
@@ -165,6 +172,10 @@ describe("profile about page announcements", () => {
         const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
         if (url.includes("/api/announcements")) {
           return Promise.resolve(makeJsonResponse({ announcements: [] }));
+        }
+
+        if (url.includes("/api/fare-rates/documents")) {
+          return Promise.resolve(makeJsonResponse({ documents: [] }));
         }
 
         if (url.includes("/api/fare-rates")) {
@@ -189,7 +200,78 @@ describe("profile about page announcements", () => {
     await renderAboutPage();
 
     expect(container.textContent).not.toContain("Access Denied");
-    expect(container.textContent).toContain("Official Ordinance");
+    expect(container.textContent).toContain("Original Ordinance");
+    expect(container.querySelector('a[href="/ordinance"]')).not.toBeNull();
+  });
+
+  it("lists the municipal issuance behind each documented fare change", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo | URL) => {
+        const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+        if (url.includes("/api/announcements")) {
+          return Promise.resolve(makeJsonResponse({ announcements: [] }));
+        }
+
+        if (url.includes("/api/fare-rates/documents")) {
+          return Promise.resolve(
+            makeJsonResponse({
+              documents: [
+                {
+                  versionId: "fare-live",
+                  effectiveAt: "2026-04-01T00:00:00.000Z",
+                  baseFare: 16,
+                  perKmRate: 3.5,
+                  baseDistanceKm: 3,
+                  notes: "Fuel price adjustment.",
+                  isActive: true,
+                  isUpcoming: false,
+                  document: {
+                    title: "Resolution approving the adjusted fare rates",
+                    reference: "SB Resolution No. 42, Series of 2026",
+                    fileName: "resolution-42.pdf",
+                    mimeType: "application/pdf",
+                    sizeBytes: 240000,
+                    uploadedAt: "2026-04-01T00:00:00.000Z",
+                    uploadedByName: "Admin User (@admin)",
+                    downloadUrl: "/api/fare-rates/fare-live/document",
+                  },
+                },
+              ],
+            }),
+          );
+        }
+
+        if (url.includes("/api/fare-rates")) {
+          return Promise.resolve(
+            makeJsonResponse({
+              current: {
+                versionId: "fare-live",
+                baseDistanceKm: 3,
+                baseFare: 16,
+                perKmRate: 3.5,
+                effectiveAt: "2026-04-01T00:00:00.000Z",
+              },
+              upcoming: null,
+            }),
+          );
+        }
+
+        throw new Error(`Unhandled fetch url: ${url}`);
+      }),
+    );
+
+    await renderAboutPage();
+
+    expect(container.textContent).toContain("Resolution approving the adjusted fare rates");
+    expect(container.textContent).toContain("SB Resolution No. 42, Series of 2026");
+    expect(container.textContent).toContain("Fuel price adjustment.");
+    // A PDF gets the in-app reader; every document gets the raw link.
+    expect(container.querySelector('a[href="/fare-documents/fare-live"]')).not.toBeNull();
+    expect(
+      container.querySelector('a[href="/api/fare-rates/fare-live/document"]'),
+    ).not.toBeNull();
+    // The original ordinance stays anchored below the newer issuances.
     expect(container.querySelector('a[href="/ordinance"]')).not.toBeNull();
   });
 

@@ -6,6 +6,8 @@ export const SWR_KEYS = {
   incidents: "/api/incidents?limit=100",
   fareCalculations: "/api/fare-calculations",
   fareRates: "/api/fare-rates",
+  // Municipal issuances behind each fare change. Authenticated, unlike fareRates.
+  fareRateDocuments: "/api/fare-rates/documents",
   announcements: "/api/announcements",
   riderTripStatus: "/api/public/trip-status",
   // Which vehicle types are suspended from the driver session flow. Public, so
