@@ -1,7 +1,6 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import useSWR from 'swr'
 import { History } from 'lucide-react'
@@ -13,6 +12,7 @@ import EmptyState from '@/ui/EmptyState'
 import FilterChips from '@/ui/FilterChips'
 import SearchBar from '@/ui/SearchBar'
 import { ListSkeleton } from '@/ui/Skeleton'
+import useUrlFilter from '@/hooks/useUrlFilter'
 import { swrFetcher } from '@/lib/swr'
 import type { FareCalculationsResponseDto, IncidentsResponseDto } from '@/lib/contracts'
 
@@ -30,7 +30,11 @@ interface HistoryItem {
   createdAt: string
 }
 
-type HistoryFilter = 'all' | 'routes' | 'incidents'
+const HISTORY_FILTERS = ['all', 'routes', 'incidents'] as const
+type HistoryFilter = (typeof HISTORY_FILTERS)[number]
+
+/** /dashboard and /dashboard/incidents link in with the older spelling. */
+const HISTORY_FILTER_ALIASES = { reports: 'incidents' } as const
 
 function formatDate(value: string) {
   return new Date(value).toLocaleDateString('en-US', {
@@ -41,11 +45,12 @@ function formatDate(value: string) {
 }
 
 export default function UserHistory() {
-  const searchParams = useSearchParams()
-  const urlFilter = searchParams.get('filter')
-  const initialFilter = (urlFilter === 'reports' ? 'incidents' : urlFilter) as HistoryFilter | null
-
-  const [filter, setFilter] = useState<HistoryFilter>(initialFilter || 'all')
+  const [filter, setFilter] = useUrlFilter<HistoryFilter>({
+    param: 'filter',
+    allowed: HISTORY_FILTERS,
+    fallback: 'all',
+    aliases: HISTORY_FILTER_ALIASES,
+  })
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
 

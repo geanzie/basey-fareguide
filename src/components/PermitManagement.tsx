@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import useSWR from 'swr'
 import { useSearchParams } from 'next/navigation'
 import { useAuth } from '@/components/AuthProvider'
@@ -9,6 +9,7 @@ import BulkQrPrintSheet from '@/components/BulkQrPrintSheet'
 import { VehicleType, PermitStatus } from '@prisma/client'
 import ResponsiveTable, { StatusBadge, ActionButton } from './ResponsiveTable'
 import VehicleLookupField from './VehicleLookupField'
+import useUrlFilter from '@/hooks/useUrlFilter'
 import { useFeedback } from '@/ui/FeedbackProvider'
 import { SWR_KEYS } from '@/lib/swrKeys'
 import Modal from '@/ui/Modal'
@@ -27,6 +28,15 @@ interface PermitQrLifecycleResponse {
 interface PermitQrReadResponse {
   permit: PermitDto
 }
+
+const PERMIT_STATUS_FILTERS = [
+  '',
+  PermitStatus.ACTIVE,
+  PermitStatus.EXPIRED,
+  PermitStatus.SUSPENDED,
+  PermitStatus.REVOKED,
+] as const
+
 
 export default function PermitManagement() {
   const { user } = useAuth()
@@ -68,12 +78,29 @@ export default function PermitManagement() {
     remarks: ''
   })
 
-  // Filter states
-  const [filters, setFilters] = useState({
-    status: '' as PermitStatus | '',
+  // Status lives in the URL so a dashboard tile can arrive pre-filtered;
+  // the rest is view-local.
+  const [status, setStatus] = useUrlFilter<PermitStatus | ''>({
+    param: 'status',
+    allowed: PERMIT_STATUS_FILTERS,
+    fallback: '',
+  })
+  const [localFilters, setLocalFilters] = useState({
     vehicleType: '' as VehicleType | '',
     search: ''
   })
+  // Memoised: the fetch effect depends on this object, and a fresh identity
+  // every render would refetch forever.
+  const filters = useMemo(
+    () => ({ ...localFilters, status }),
+    [localFilters, status],
+  )
+  const setFilters = (next: { status: PermitStatus | ''; vehicleType: VehicleType | ''; search: string }) => {
+    if (next.status !== status) {
+      setStatus(next.status)
+    }
+    setLocalFilters({ vehicleType: next.vehicleType, search: next.search })
+  }
 
   const fetchPermits = async () => {
     try {

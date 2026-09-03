@@ -413,11 +413,18 @@ export default function DriverDashboard() {
             </div>
           </div>
 
-          <div className="mt-6 grid gap-4 sm:grid-cols-3">
-            <SummaryCard label="Pending" value={String(data?.session.pendingCount ?? 0)} />
-            <SummaryCard label="Boarded" value={String(data?.session.boardedCount ?? 0)} />
-            <SummaryCard label="Started" value={formatDateTime(data?.session.openedAt ?? null)} />
-          </div>
+          {/*
+            "Pending" and "Boarded" used to sit here as cards too, repeating the
+            pending pill above and the count on the Boarded section header — and
+            the pill opens the queue while the card did nothing, so the same
+            number was clickable in one place and inert in the other. Only the
+            start time was unique, and it belongs with the session it describes.
+          */}
+          {data?.session.openedAt ? (
+            <p className="mt-4 text-sm text-ink-muted">
+              Started {formatDateTime(data.session.openedAt)}
+            </p>
+          ) : null}
         </div>
 
         {!data?.session.id ? (
@@ -460,7 +467,7 @@ export default function DriverDashboard() {
                   const problemExpanded = expandedProblemRiderId === rider.id
 
                   return (
-                    <article key={rider.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <article key={rider.id} className="rounded-card border border-surface-border bg-surface p-4 shadow-card">
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 <div className="space-y-1.5">
                             <div className="flex flex-wrap items-center gap-2">
@@ -553,7 +560,7 @@ export default function DriverDashboard() {
             {showArchived ? (
               <div className="mt-4 space-y-3">
                 {archivedSection.riders.map((rider) => (
-                  <article key={rider.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <article key={rider.id} className="rounded-card border border-surface-border bg-surface p-4 shadow-card">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
@@ -577,14 +584,7 @@ export default function DriverDashboard() {
 
       <aside className="border border-surface-border bg-surface shadow-card rounded-card p-6">
         <h2 className="text-lg font-semibold text-slate-900">Session Notes</h2>
-        <p className="mt-2 text-sm text-slate-500">Accept, board, and drop off riders in order. Use the problem button for exceptions.</p>
-
-        <Link
-          href="/driver/history"
-          className="mt-4 block w-full rounded-xl border border-slate-300 px-4 py-2.5 text-center text-sm font-semibold text-slate-700 hover:bg-slate-50"
-        >
-          View Trip History →
-        </Link>
+        <p className="mt-2 text-sm text-ink-muted">Accept, board, and drop off riders in order. Use the problem button for exceptions.</p>
       </aside>
     </div>
 
@@ -643,7 +643,7 @@ export default function DriverDashboard() {
                 const acceptAction = rider.availableActions.find((a) => a.kind === 'positive')
                 const isBusy = operation.targetId === rider.id
                 return (
-                  <div key={rider.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
+                  <div key={rider.id} className="flex items-center justify-between gap-3 rounded-card border border-surface-border bg-surface px-4 py-3">
                     <div className="min-w-0">
                       <div className="truncate text-sm font-semibold text-slate-900">
                         {rider.origin} → {rider.destination}
@@ -671,14 +671,5 @@ export default function DriverDashboard() {
 
       {permitQrControls}
     </>
-  )
-}
-
-function SummaryCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4">
-      <div className="text-sm font-medium text-slate-500">{label}</div>
-      <div className="mt-2 text-base font-semibold text-slate-900">{value}</div>
-    </div>
   )
 }

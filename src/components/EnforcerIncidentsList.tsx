@@ -22,7 +22,6 @@ import {
   DashboardIconSlot,
   getDashboardIconChipClasses,
   type DashboardIcon,
-  type DashboardIconTone,
 } from '@/components/dashboardIcons'
 
 interface TicketFormState {
@@ -301,8 +300,6 @@ export default function EnforcerIncidentsList({
     () => ({
       total: data?.pagination?.total ?? scopedIncidents.length,
       pending: scopedIncidents.filter((incident) => incident.status === 'PENDING').length,
-      forReview: scopedIncidents.filter((incident) => incident.status === 'PENDING' && !incident.evidenceVerifiedAt).length,
-      readyForTicket: scopedIncidents.filter((incident) => incident.status === 'PENDING' && incident.evidenceVerifiedAt).length,
       ticketIssued: scopedIncidents.filter((incident) => incident.status === 'TICKET_ISSUED').length,
       resolved: scopedIncidents.filter((incident) => incident.status === 'RESOLVED').length,
     }),
@@ -637,24 +634,37 @@ export default function EnforcerIncidentsList({
         </div>
       ) : null}
       <div className="space-y-6 sm:space-y-8">
+        {/*
+          The banner filters rather than just announcing. stats.pending used to
+          be printed three times on this screen — here, on a MetricCard, and in
+          the Pending tab's count — with only the tab able to do anything about
+          it. The cards are gone and this is now the page's call to action.
+        */}
         {!isEmbeddedQueueMode && stats.pending > 0 ? (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <div className="flex items-start gap-3">
-              <DashboardIconSlot
-                icon={DASHBOARD_ICONS.reports}
-                size={DASHBOARD_ICON_POLICY.sizes.alert}
-                className="mt-0.5 text-red-700"
-              />
-              <div>
-                <h3 className="text-lg font-semibold text-red-800">
-                  {stats.pending} incident{stats.pending === 1 ? '' : 's'} awaiting response
-                </h3>
-                <p className="text-red-600 text-sm">
-                  Scan the QR token and verify evidence before issuing a ticket.
-                </p>
-              </div>
+          <button
+            type="button"
+            onClick={() => setStatusFilter('PENDING')}
+            className="group flex w-full items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-left transition-colors hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger"
+          >
+            <DashboardIconSlot
+              icon={DASHBOARD_ICONS.reports}
+              size={DASHBOARD_ICON_POLICY.sizes.alert}
+              className="mt-0.5 text-red-700"
+            />
+            <div className="min-w-0 flex-1">
+              <h3 className="text-lg font-semibold text-red-800">
+                {stats.pending} incident{stats.pending === 1 ? '' : 's'} awaiting response
+              </h3>
+              <p className="text-red-600 text-sm">
+                Scan the QR token and verify evidence before issuing a ticket.
+              </p>
             </div>
-          </div>
+            <DashboardIconSlot
+              icon={DASHBOARD_ICONS.arrowRight}
+              size={DASHBOARD_ICON_POLICY.sizes.card}
+              className="mt-1 text-red-500 transition-transform group-hover:translate-x-0.5 motion-reduce:transform-none"
+            />
+          </button>
         ) : null}
 
         {isQueueMode && qrHandoffNotice ? (
@@ -719,35 +729,14 @@ export default function EnforcerIncidentsList({
           </div>
         ) : null}
 
-        {!isQueueMode ? (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <MetricCard
-              label="Total Incidents"
-              value={stats.total}
-              icon={DASHBOARD_ICONS.list}
-              tone="slate"
-            />
-            <MetricCard
-              label="For Review"
-              value={stats.forReview}
-              icon={DASHBOARD_ICONS.inspect}
-              tone="amber"
-            />
-            <MetricCard
-              label="Awaiting Payment"
-              value={stats.ticketIssued}
-              icon={DASHBOARD_ICONS.ticket}
-              tone="blue"
-            />
-            <MetricCard
-              label="Resolved"
-              value={stats.resolved}
-              icon={DASHBOARD_ICONS.check}
-              tone="emerald"
-            />
-          </div>
-        ) : null}
-
+        {/*
+          No metric row here. It printed Total / For Review / Awaiting Payment /
+          Resolved directly above status tabs that already show the same counts
+          and, unlike the cards, filter the table when clicked — three of the
+          four numbers appeared twice within about 90px. "For Review" was worse
+          than redundant: a strict subset of the Pending tab under a label
+          almost identical to it.
+        */}
         {!isEmbeddedQueueMode ? (
         <div className="border border-surface-border bg-surface shadow-card rounded-card p-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
@@ -1304,33 +1293,3 @@ export default function EnforcerIncidentsList({
   )
 }
 
-function MetricCard({
-  icon,
-  label,
-  tone = 'slate',
-  value,
-}: {
-  icon?: DashboardIcon
-  label: string
-  tone?: DashboardIconTone
-  value: number | string
-}) {
-  return (
-    <div className="border border-surface-border bg-surface shadow-card rounded-card p-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-sm font-medium text-gray-600">{label}</p>
-          <p className="text-2xl font-bold text-gray-900 mt-2">{value}</p>
-        </div>
-        {icon ? (
-          <div className={getDashboardIconChipClasses(tone)}>
-            <DashboardIconSlot
-              icon={icon}
-              size={DASHBOARD_ICON_POLICY.sizes.card}
-            />
-          </div>
-        ) : null}
-      </div>
-    </div>
-  )
-}

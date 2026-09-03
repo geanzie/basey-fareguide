@@ -66,13 +66,13 @@ describe('PageShell', () => {
 
   it('matches the band width to the content column', () => {
     render(
-      <PageShell title="Fare Calculator" width="form">
+      <PageShell title="Fare Calculator" width="narrow">
         content
       </PageShell>,
     )
 
     // the band and the plate share one wrapper, so they cannot disagree
-    const wrapper = container.querySelector('.max-w-xl')!
+    const wrapper = container.querySelector('.max-w-4xl')!
     expect(wrapper.querySelector('header')).not.toBeNull()
     expect(wrapper.querySelector('.-mt-6')).not.toBeNull()
   })

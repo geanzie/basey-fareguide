@@ -1,15 +1,15 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 
 import {
   DASHBOARD_ICONS,
   DASHBOARD_ICON_POLICY,
   DashboardIconSlot,
   getDashboardIconChipClasses,
-  type DashboardIcon,
-  type DashboardIconTone,
 } from '@/components/dashboardIcons'
+import StatTile from '@/ui/StatTile'
 
 interface DashboardStats {
   users: {
@@ -167,35 +167,51 @@ export default function AdminDashboard() {
               className="text-primary-dark"
             />
           </div>
-          <div>
+          <div className="min-w-0 flex-1">
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Administration Overview</h2>
             <p className="text-gray-600">
               Monitor live user, incident, and storage activity for the active Basey Fare Check system.
             </p>
           </div>
+          <button
+            type="button"
+            onClick={() => void fetchDashboardStats()}
+            className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-surface-border px-3 py-2 text-sm font-semibold text-ink-body transition-colors hover:bg-surface-alt focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
+            <DashboardIconSlot
+              icon={DASHBOARD_ICONS.refresh}
+              size={DASHBOARD_ICON_POLICY.sizes.button}
+            />
+            <span>Refresh</span>
+          </button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
+        {/* Only Total Users links: /admin/users *is* the list this counts.
+            "Open Incidents" is pending + investigating, and the incidents page
+            filters by one status at a time, so no view shows that number —
+            an arrow there would promise a filter that does not exist. */}
+        <StatTile
           label="Total Users"
           value={stats?.users.total || 0}
           icon={DASHBOARD_ICONS.users}
-          tone="blue"
+          tone="info"
+          href="/admin/users"
         />
-        <StatCard
+        <StatTile
           label="Pending Approvals"
           value={stats?.users.pending || 0}
           icon={DASHBOARD_ICONS.approval}
-          tone="amber"
+          tone="warning"
         />
-        <StatCard
+        <StatTile
           label="Open Incidents"
           value={(stats?.incidents.pending || 0) + (stats?.incidents.investigating || 0)}
           icon={DASHBOARD_ICONS.reports}
-          tone="red"
+          tone="danger"
         />
-        <StatCard
+        <StatTile
           label="Storage Used"
           value={`${stats?.storage.totalSizeMB || 0} MB`}
           detail={stats?.storage.cleanupRecommended ? 'Cleanup recommended' : undefined}
@@ -243,9 +259,10 @@ export default function AdminDashboard() {
                 const activityIcon = getActivityIcon(incident.status)
 
                 return (
-                  <div
+                  <Link
                     key={incident.id}
-                    className="border border-surface-border bg-surface-alt rounded-xl p-4"
+                    href="/admin/incidents"
+                    className="group block border border-surface-border bg-surface-alt rounded-xl p-4 transition-colors hover:bg-surface-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                   >
                     <div className="flex items-start gap-3">
                       <DashboardIconSlot
@@ -265,8 +282,13 @@ export default function AdminDashboard() {
                           {incident.location} - {incident.status}
                         </p>
                       </div>
+                      <DashboardIconSlot
+                        icon={DASHBOARD_ICONS.arrowRight}
+                        size={DASHBOARD_ICON_POLICY.sizes.card}
+                        className="mt-0.5 text-ink-faint transition-transform group-hover:translate-x-0.5 motion-reduce:transform-none"
+                      />
                     </div>
-                  </div>
+                  </Link>
                 )
               })}
             </div>
@@ -274,106 +296,6 @@ export default function AdminDashboard() {
             <p className="text-sm text-gray-500">No recent incident activity available.</p>
           )}
         </div>
-      </div>
-
-      <div className="border border-surface-border bg-surface shadow-card rounded-card p-6">
-        <div className="mb-4 flex items-center gap-2">
-          <DashboardIconSlot
-            icon={DASHBOARD_ICONS.dashboard}
-            size={DASHBOARD_ICON_POLICY.sizes.section}
-            className="text-slate-600"
-          />
-          <h3 className="text-lg font-semibold text-gray-900">Quick Actions</h3>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-          <button
-            onClick={() => window.location.reload()}
-            className="flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <DashboardIconSlot
-              icon={DASHBOARD_ICONS.refresh}
-              size={DASHBOARD_ICON_POLICY.sizes.button}
-              className="text-white"
-            />
-            <span>Refresh Data</span>
-          </button>
-
-          <button
-            onClick={() => {
-              const event = new CustomEvent('adminTabChange', { detail: 'storage' as const })
-              window.dispatchEvent(event)
-            }}
-            className="flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-          >
-            <DashboardIconSlot
-              icon={DASHBOARD_ICONS.storage}
-              size={DASHBOARD_ICON_POLICY.sizes.button}
-              className="text-white"
-            />
-            <span>Manage Storage</span>
-          </button>
-
-          <button
-            onClick={() => {
-              const event = new CustomEvent('adminTabChange', { detail: 'users' as const })
-              window.dispatchEvent(event)
-            }}
-            className="flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors"
-          >
-            <DashboardIconSlot
-              icon={DASHBOARD_ICONS.users}
-              size={DASHBOARD_ICON_POLICY.sizes.button}
-              className="text-white"
-            />
-            <span>Manage Users</span>
-          </button>
-
-          <a
-            href="/admin/fare-rates"
-            className="flex items-center justify-center gap-2 px-4 py-3 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
-          >
-            <DashboardIconSlot
-              icon={DASHBOARD_ICONS.fare}
-              size={DASHBOARD_ICON_POLICY.sizes.button}
-              className="text-white"
-            />
-            <span>Manage Fare Rates</span>
-          </a>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function StatCard({
-  icon,
-  label,
-  tone = 'slate',
-  value,
-  detail,
-}: {
-  icon?: DashboardIcon
-  label: string
-  tone?: DashboardIconTone
-  value: number | string
-  detail?: string
-}) {
-  return (
-    <div className="border border-surface-border bg-surface shadow-card rounded-card p-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="text-sm font-medium text-gray-500">{label}</div>
-          <div className="text-2xl font-bold text-gray-900 mt-1">{value}</div>
-          {detail ? <div className="text-xs text-red-600 font-medium mt-1">{detail}</div> : null}
-        </div>
-        {icon ? (
-          <div className={getDashboardIconChipClasses(tone)}>
-            <DashboardIconSlot
-              icon={icon}
-              size={DASHBOARD_ICON_POLICY.sizes.card}
-            />
-          </div>
-        ) : null}
       </div>
     </div>
   )

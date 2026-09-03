@@ -1,5 +1,7 @@
 'use client'
 
+import Link from 'next/link'
+
 import {
   useCallback,
   useEffect,
@@ -226,6 +228,11 @@ function vehicleTypeLabel(type: VehicleType): string {
   const spaced = type.replace(/_/g, ' ').toLowerCase()
   return spaced.charAt(0).toUpperCase() + spaced.slice(1)
 }
+
+/** The one small-caps label recipe. It was pasted seven times, drifting twice. */
+const ROUTE_EYEBROW = 'text-xs font-semibold uppercase tracking-[0.16em] text-slate-500'
+
+const PHASE_ORDER: Phase[] = ['vehicle', 'trip', 'fare']
 
 const PHASE_TITLES: Record<Phase, string> = {
   vehicle: 'How are you riding?',
@@ -1151,15 +1158,15 @@ const RoutePlannerCalculator = ({
   const identitySection = (
     <div className="space-y-3">
       {selectedVehicle ? (
-        <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3">
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-surface-border bg-surface px-3 py-3">
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-slate-900">
               {selectedVehicle.permitPlateNumber || selectedVehicle.plateNumber}
             </p>
+            {/* No vehicleType here: the Ride card above states it, and this
+                sub-line rendered it in a different casing 15 lines away. */}
             <p className="truncate text-xs text-slate-500">
-              {[selectedVehicle.vehicleType, selectedVehicle.make, selectedVehicle.model]
-                .filter(Boolean)
-                .join(' · ')}
+              {[selectedVehicle.make, selectedVehicle.model].filter(Boolean).join(' · ')}
             </p>
           </div>
           <button
@@ -1195,7 +1202,7 @@ const RoutePlannerCalculator = ({
           ) : null}
 
           {identityInputMode === 'scan' ? (
-            <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="rounded-[1.5rem] border border-surface-border bg-surface p-4 shadow-sm">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="text-sm font-semibold text-slate-900">Operator QR scanner</p>
@@ -1226,7 +1233,7 @@ const RoutePlannerCalculator = ({
           ) : null}
 
           {identityInputMode === 'manual' ? (
-            <div className="space-y-3 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="space-y-3 rounded-[1.5rem] border border-surface-border bg-surface p-4 shadow-sm">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="text-sm font-semibold text-slate-900">Manual vehicle lookup</p>
@@ -1278,13 +1285,21 @@ const RoutePlannerCalculator = ({
             onClick={() => stepBack()}
             disabled={phase === 'vehicle'}
             aria-label="Go back"
-            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-surface-border bg-surface text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <DashboardIconSlot icon={DASHBOARD_ICONS.back} size={18} />
           </button>
-          <h2 className="min-w-0 flex-1 truncate text-lg font-bold text-slate-900">
-            {PHASE_TITLES[phase]}
-          </h2>
+          {/* A step indicator, not a second page title. PageShell's band above
+              already carries "Fare Calculator" in heading weight; repeating a
+              bold heading here read as two titles stacked. */}
+          <p className="min-w-0 flex-1 truncate">
+            <span className={ROUTE_EYEBROW}>
+              Step {PHASE_ORDER.indexOf(phase) + 1} of {PHASE_ORDER.length}
+            </span>
+            <span className="block truncate text-sm font-semibold text-ink-strong">
+              {PHASE_TITLES[phase]}
+            </span>
+          </p>
           {originSelection || destinationSelection ? (
             <button
               type="button"
@@ -1297,7 +1312,7 @@ const RoutePlannerCalculator = ({
         </div>
 
         {phase === 'vehicle' ? (
-          <section className="space-y-4 rounded-[2rem] border border-surface-border bg-surface p-4 shadow-card">
+          <section className="space-y-4 rounded-sheet border border-surface-border bg-surface p-4 shadow-card">
             <p className="text-sm leading-6 text-slate-600">
               A habal-habal can take trails a tricycle cannot, so the ride you pick changes the
               distance and the fare.
@@ -1343,7 +1358,7 @@ const RoutePlannerCalculator = ({
 
             {user ? (
               <div className="space-y-2 border-t border-slate-200 pt-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                <p className={ROUTE_EYEBROW}>
                   Driver (optional)
                 </p>
                 {identitySection}
@@ -1392,13 +1407,19 @@ const RoutePlannerCalculator = ({
                 <p className="text-xs text-slate-600">
                   {CURRENT_LOCATION_MESSAGES[locationFailure]}
                 </p>
-                <button
-                  type="button"
-                  onClick={() => void acquireCurrentLocationOrigin()}
-                  className="mt-1 text-xs font-semibold text-primary hover:text-primary-dark"
-                >
-                  Use my location
-                </button>
+                {/* The search list below already offers "Use my location"
+                    whenever the origin field is active, and both guards could
+                    be true at once — two buttons, one handler, same viewport.
+                    Here the explanation is what is missing; the retry is not. */}
+                {(activeField ?? 'destination') !== 'origin' ? (
+                  <button
+                    type="button"
+                    onClick={() => void acquireCurrentLocationOrigin()}
+                    className="mt-1 text-xs font-semibold text-primary hover:text-primary-dark"
+                  >
+                    Use my location
+                  </button>
+                ) : null}
               </div>
             ) : null}
 
@@ -1456,7 +1477,7 @@ const RoutePlannerCalculator = ({
             ) : null}
 
             {routeResult ? (
-              <div className="overflow-hidden rounded-[2rem] border border-surface-border bg-surface shadow-card">
+              <div className="overflow-hidden rounded-sheet border border-surface-border bg-surface shadow-card">
                 <div className="px-4 pt-4 sm:px-5">
                   <div className="flex flex-wrap items-center gap-2">
                     <span
@@ -1468,11 +1489,6 @@ const RoutePlannerCalculator = ({
                     >
                       {routeResult.sourceBadge}
                     </span>
-                    {selectedVehicle ? (
-                      <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700">
-                        {selectedVehicle.permitPlateNumber || selectedVehicle.plateNumber}
-                      </span>
-                    ) : null}
                   </div>
 
                   {routeResult.twoWheelerNotice ? (
@@ -1482,20 +1498,23 @@ const RoutePlannerCalculator = ({
                     </p>
                   ) : null}
 
+                  {/* No origin → destination here: the summary button directly
+                      above this card already shows the pair, and tapping it is
+                      how you change it. */}
                   <div className="mt-3 flex items-start justify-between gap-4">
                     <div className="min-w-0">
-                      <p className="text-base font-semibold leading-tight text-slate-900 sm:text-lg">
-                        {routeResult.originLabel} <span className="text-slate-400">→</span>{' '}
-                        {routeResult.destinationLabel}
-                      </p>
-                      <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-slate-500">
+                      <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
                         <span>{routeResult.durationText}</span>
                         <span className="text-slate-300">•</span>
                         <span>{routeResult.distanceKm.toFixed(2)} km</span>
                       </div>
+                      <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-surface-tint px-2.5 py-1 text-xs font-semibold text-primary-dark">
+                        <DashboardIconSlot icon={DASHBOARD_ICONS.discount} size={13} />
+                        {passengerLabel}
+                      </p>
                     </div>
 
-                    <div className="shrink-0 rounded-[1.4rem] bg-slate-950 px-4 py-3 text-right text-white shadow-lg">
+                    <div className="shrink-0 rounded-plate bg-ink-strong px-4 py-3 text-right text-white shadow-lg">
                       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-300">
                         Fare
                       </p>
@@ -1504,34 +1523,38 @@ const RoutePlannerCalculator = ({
                   </div>
                 </div>
 
-                <div className="mt-4 grid grid-cols-2 gap-px border-t border-slate-200 bg-slate-200/80">
-                  <div className="bg-slate-50 px-4 py-3">
-                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                      Regular
-                    </p>
-                    <p className="mt-1 text-2xl font-bold text-slate-900">
-                      {regularFare ? formatCurrency(regularFare) : formatCurrency(routeResult.fare)}
-                    </p>
-                  </div>
-                  <div className="bg-slate-50 px-4 py-3">
-                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                      Your fare
-                    </p>
-                    <p className="mt-1 text-2xl font-bold text-primary-dark">
-                      {formatCurrency(routeResult.fare)}
-                    </p>
-                  </div>
-                  {routeResult.discountApplied ? (
+                {/*
+                  Only shown when a discount actually applies.
+
+                  This was a three-cell grid: Regular, Your fare, Discount.
+                  "Your fare" was the same expression as the plate above it, and
+                  "Regular" falls back to that same number when originalFare is
+                  null — so a rider with no discount card read one peso figure
+                  three times in a 120px band. It was also grid-cols-2 holding
+                  three cells, which orphaned the Discount cell onto a
+                  half-width row exactly when a discount did apply.
+
+                  What a rider needs here is not the fare restated, it is the
+                  arithmetic: what it would have cost, and what the entitlement
+                  took off. The entitlement is named above, because that is what
+                  settles an argument at the roadside.
+                */}
+                {routeResult.discountApplied && regularFare ? (
+                  <div className="mt-4 grid grid-cols-2 gap-px border-t border-slate-200 bg-slate-200/80">
                     <div className="bg-slate-50 px-4 py-3">
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                        Discount
+                      <p className={ROUTE_EYEBROW}>Regular</p>
+                      <p className="mt-1 text-2xl font-bold text-slate-900">
+                        {formatCurrency(regularFare)}
                       </p>
+                    </div>
+                    <div className="bg-slate-50 px-4 py-3">
+                      <p className={ROUTE_EYEBROW}>{passengerLabel}</p>
                       <p className="mt-1 text-2xl font-bold text-primary-dark">
                         -{formatCurrency(routeResult.discountApplied)}
                       </p>
                     </div>
-                  ) : null}
-                </div>
+                  </div>
+                ) : null}
 
                 {/* Offline replays, same-point results and "recalculating"
                     all explain themselves here. They used to sit on the map
@@ -1546,23 +1569,25 @@ const RoutePlannerCalculator = ({
                   <button
                     type="button"
                     onClick={openRoutePreview}
-                    className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                    className="rounded-full border border-surface-border bg-surface px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
                   >
                     View the route on the map
                   </button>
-                  <button
-                    type="button"
-                    onClick={resetRoute}
-                    className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                  {/* No "Clear trip" — it called resetRoute, exactly as the
+                      header's Clear does, and both were on screen at once.
+                      Reset is destructive; it gets one predictable place. */}
+                  <Link
+                    href="/ordinance"
+                    className="rounded-full border border-surface-border bg-surface px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
                   >
-                    Clear trip
-                  </button>
+                    Why this fare?
+                  </Link>
                 </div>
               </div>
             ) : null}
 
-            <section className="space-y-2 rounded-[2rem] border border-surface-border bg-surface p-4 shadow-card">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+            <section className="space-y-2 rounded-sheet border border-surface-border bg-surface p-4 shadow-card">
+              <p className={ROUTE_EYEBROW}>
                 Ride
               </p>
               <div className="flex items-center justify-between gap-3">
@@ -1580,8 +1605,8 @@ const RoutePlannerCalculator = ({
             </section>
 
             {user ? (
-              <section className="space-y-2 rounded-[2rem] border border-surface-border bg-surface p-4 shadow-card">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+              <section className="space-y-2 rounded-sheet border border-surface-border bg-surface p-4 shadow-card">
+                <p className={ROUTE_EYEBROW}>
                   Driver
                 </p>
                 {identitySection}
@@ -1589,7 +1614,7 @@ const RoutePlannerCalculator = ({
             ) : null}
 
             {routeResult ? (
-              <div className="space-y-2 rounded-[2rem] border border-surface-border bg-surface p-4 shadow-card">
+              <div className="space-y-2 rounded-sheet border border-surface-border bg-surface p-4 shadow-card">
                 <div className="text-xs text-slate-500">
                   {!user && (riderConfirmsTrip ? 'Log in to start this trip.' : 'Log in to send this trip request.')}
                   {user && saveStatus === 'saved' && (riderConfirmsTrip ? 'Trip started. Tap Dropped off when you get off.' : 'Trip request sent to driver.')}
@@ -1622,7 +1647,7 @@ const RoutePlannerCalculator = ({
             ) : null}
 
             {plannerState === 'no_vehicle_access' && dropoffSuggestion ? (
-              <section className="rounded-[2rem] border border-surface-border bg-surface p-4 shadow-card">
+              <section className="rounded-sheet border border-surface-border bg-surface p-4 shadow-card">
                 {/* A boundary, not a failure — kept out of the red error register. */}
                 <div className="rounded-2xl border border-slate-300 bg-slate-50 px-3 py-3 text-xs text-slate-700 sm:text-sm">
                   <p className="font-semibold text-slate-900">Ride can&rsquo;t reach this spot</p>
@@ -1659,8 +1684,8 @@ const RoutePlannerCalculator = ({
             ) : null}
 
             {errorPanelVisible ? (
-              <section className="rounded-[2rem] border border-surface-border bg-surface p-4 shadow-card">
-                <div className="rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800">
+              <section className="rounded-sheet border border-surface-border bg-surface p-4 shadow-card">
+                <div className="rounded-2xl border border-danger-softBorder bg-danger-soft px-3 py-2 text-xs text-red-800">
                   <p>
                     {plannerState === 'out_of_service_area'
                       ? 'Pin outside the service area.'
@@ -1673,36 +1698,30 @@ const RoutePlannerCalculator = ({
                             ? routeMessage || 'The only route between these points is closed.'
                             : 'Routing service unavailable right now.'}
                   </p>
+                  {plannerState === 'no_route_for_vehicle' ? (
+                    <p className="mt-1">Tap Change on the Ride card to pick another ride.</p>
+                  ) : null}
+                  {plannerState === 'route_blocked' || plannerState === 'no_route_found' ? (
+                    <p className="mt-1">Tap the trip summary above to change your locations.</p>
+                  ) : null}
                   <div className="mt-2 flex flex-wrap gap-2">
                     {hasTwoPoints && plannerState === 'network_error' ? (
                       <button
                         type="button"
                         onClick={() => void calculateRoute(true)}
-                        className="rounded-lg border border-red-300 bg-white px-2.5 py-1 text-xs font-medium text-red-700 transition hover:bg-red-50"
+                        className="rounded-lg border border-danger-softBorder bg-surface px-2.5 py-1 text-xs font-medium text-red-700 transition hover:bg-red-50"
                       >
                         Try again
                       </button>
                     ) : null}
-                    {plannerState === 'no_route_for_vehicle' ? (
-                      // The recovery for this one is a different ride, which is
-                      // exactly the step behind us.
-                      <button
-                        type="button"
-                        onClick={() => setPhase('vehicle')}
-                        className="rounded-lg border border-red-300 bg-white px-2.5 py-1 text-xs font-medium text-red-700 transition hover:bg-red-50"
-                      >
-                        Choose another ride
-                      </button>
-                    ) : null}
-                    {plannerState === 'route_blocked' || plannerState === 'no_route_found' ? (
-                      <button
-                        type="button"
-                        onClick={() => editTrip('destination')}
-                        className="rounded-lg border border-red-300 bg-white px-2.5 py-1 text-xs font-medium text-red-700 transition hover:bg-red-50"
-                      >
-                        Change locations
-                      </button>
-                    ) : null}
+                    {/*
+                      "Choose another ride" and "Change locations" used to be
+                      buttons here. Both called the same handlers as controls
+                      already on this screen — the Ride card's Change, and the
+                      trip summary at the top — so the same action sat on screen
+                      twice, in two visual languages. The recovery is named
+                      instead of duplicated.
+                    */}
                   </div>
                 </div>
               </section>
@@ -1730,7 +1749,7 @@ const RoutePlannerCalculator = ({
               type="button"
               onClick={closeMap}
               aria-label="Close the map"
-              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50"
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-surface-border bg-surface text-slate-600 transition hover:bg-slate-50"
             >
               <DashboardIconSlot icon={DASHBOARD_ICONS.close} size={18} />
             </button>
@@ -1744,7 +1763,7 @@ const RoutePlannerCalculator = ({
             <button
               type="button"
               onClick={refitRoute}
-              className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+              className="shrink-0 rounded-full border border-surface-border bg-surface px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
             >
               Recenter
             </button>

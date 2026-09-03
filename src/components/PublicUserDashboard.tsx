@@ -3,12 +3,13 @@
 import { memo, useMemo } from 'react'
 import Link from 'next/link'
 import useSWR from 'swr'
-import { AlertTriangle, BadgePercent, Banknote, Calculator, ClipboardList, History, Route, ShieldCheck } from 'lucide-react'
+import { AlertTriangle, BadgePercent, Banknote, ClipboardList, Route, ShieldCheck } from 'lucide-react'
 
 import FareRateBanner from '@/components/FareRateBanner'
 import TrafficAnnouncementsFeed from '@/components/TrafficAnnouncementsFeed'
 import Badge from '@/ui/Badge'
 import Card from '@/ui/Card'
+import NavCard from '@/ui/NavCard'
 import StatTile from '@/ui/StatTile'
 import { StatGridSkeleton, ListSkeleton } from '@/ui/Skeleton'
 import type {
@@ -130,29 +131,25 @@ function PublicUserDashboard() {
         description="Current public fare rates and the next approved increase or adjustment, when one is scheduled."
       />
 
-      {/* Quick actions */}
-      <section className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <ActionCard
-          href="/calculator"
-          icon={<Calculator className="h-5 w-5 text-primary" />}
-          title="Calculate Fare"
-          description="Plan a route or quick estimate."
-        />
-        <ActionCard
+      {/*
+        Only destinations the bottom nav cannot reach in one tap. /calculator is
+        a primary tab, and /history is now carried by the stat tiles below, which
+        link to it already filtered. /report and /profile/discount are demoted
+        into the profile sheet on mobile, so these two are a short path rather
+        than a second copy of the nav.
+      */}
+      <section className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        <NavCard
           href="/report"
-          icon={<AlertTriangle className="h-5 w-5 text-danger" />}
+          icon={AlertTriangle}
+          tone="red"
           title="Report Incident"
           description="Send one report with optional evidence."
         />
-        <ActionCard
-          href="/history"
-          icon={<History className="h-5 w-5 text-info" />}
-          title="View History"
-          description="Review saved fares and submitted reports."
-        />
-        <ActionCard
+        <NavCard
           href="/profile/discount"
-          icon={<BadgePercent className="h-5 w-5 text-brandPurple" />}
+          icon={BadgePercent}
+          tone="purple"
           title="Manage Discount Card"
           description="Check your approval and active discount."
         />
@@ -160,8 +157,22 @@ function PublicUserDashboard() {
 
       {/* Summary stats */}
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatTile label="Saved Routes" value={summary.routes} icon={Route} tone="info" />
-        <StatTile label="Incident Reports" value={summary.reports} icon={ClipboardList} tone="danger" />
+        <StatTile
+          label="Saved Routes"
+          value={summary.routes}
+          icon={Route}
+          tone="info"
+          href="/history?filter=routes"
+        />
+        {/* "My" is load-bearing: Enforcement Transparency below counts the
+            whole municipality's reports under a near-identical label. */}
+        <StatTile
+          label="My Reports"
+          value={summary.reports}
+          icon={ClipboardList}
+          tone="danger"
+          href="/history?filter=reports"
+        />
         <StatTile label="Total Fare Logged" value={formatCurrency(summary.totalFare)} icon={Banknote} tone="success" />
         <StatTile label="Discount Savings" value={formatCurrency(summary.totalSavings)} icon={BadgePercent} tone="purple" />
       </section>
@@ -171,8 +182,6 @@ function PublicUserDashboard() {
           <SectionHeader
             title="Recent Fare Calculations"
             description="Latest saved planner results."
-            href="/history?filter=routes"
-            linkLabel="View all fares"
           />
           <div className="p-4">
             {recentRoutes.length === 0 ? (
@@ -226,8 +235,6 @@ function PublicUserDashboard() {
           <SectionHeader
             title="Recent Incident Reports"
             description="Most recent reports you submitted."
-            href="/history?filter=reports"
-            linkLabel="View all reports"
           />
           <div className="p-4">
             {reportedIncidents.length === 0 ? (
@@ -263,8 +270,6 @@ function PublicUserDashboard() {
         <SectionHeader
           title="Enforcement Transparency"
           description="Community-wide incident handling — see that reports are being actioned."
-          href="/history?filter=reports"
-          linkLabel="View your reports"
         />
 
         {communityStats !== null && (
@@ -305,35 +310,6 @@ function PublicUserDashboard() {
   )
 }
 
-function ActionCard({
-  description,
-  href,
-  icon,
-  title,
-}: {
-  description: string
-  href: string
-  icon: React.ReactNode
-  title: string
-}) {
-  return (
-    <Link
-      href={href}
-      className="rounded-card border border-surface-border bg-surface p-4 shadow-card transition hover:-translate-y-0.5 hover:shadow-raised"
-    >
-      <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-tint">
-          {icon}
-        </div>
-        <div className="min-w-0">
-          <h3 className="text-base font-bold text-ink-strong">{title}</h3>
-          <p className="mt-1 text-sm text-ink-muted">{description}</p>
-        </div>
-      </div>
-    </Link>
-  )
-}
-
 function SectionHeader({
   description,
   href,
@@ -341,8 +317,9 @@ function SectionHeader({
   title,
 }: {
   description: string
-  href: string
-  linkLabel: string
+  /** Omit when a stat tile above already links to this panel's full view. */
+  href?: string
+  linkLabel?: string
   title: string
 }) {
   return (
@@ -351,9 +328,11 @@ function SectionHeader({
         <h3 className="text-lg font-bold text-ink-strong">{title}</h3>
         <p className="mt-1 text-sm text-ink-muted">{description}</p>
       </div>
-      <Link href={href} className="text-sm font-semibold text-primary hover:text-primary-dark">
-        {linkLabel}
-      </Link>
+      {href && linkLabel ? (
+        <Link href={href} className="text-sm font-semibold text-primary hover:text-primary-dark">
+          {linkLabel}
+        </Link>
+      ) : null}
     </div>
   )
 }

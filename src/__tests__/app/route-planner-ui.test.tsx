@@ -669,7 +669,9 @@ describe('RoutePlannerCalculator', () => {
 
       await mountPlanner()
       await quoteAmandayehan()
-      await click('Clear trip')
+      // Reset lives only in the header now. There used to be a second
+      // "Clear trip" button inside the result card calling the same handler.
+      await click('Clear')
 
       expect(container.textContent).toContain('Your trip')
       expect(container.textContent).not.toContain('PHP 24.00')
@@ -827,7 +829,10 @@ describe('RoutePlannerCalculator', () => {
       await quoteAmandayehan()
 
       expect(container.textContent).toContain('No road route could be found between these points.')
-      expect(container.textContent).toContain('Change locations')
+      // The panel names the control instead of duplicating it: the trip summary
+      // that changes the locations is already on screen above the error.
+      expect(container.textContent).toContain('Tap the trip summary above to change your locations.')
+      expect(container.querySelector('[aria-label="Change the trip"]')).not.toBeNull()
       expect(container.textContent).not.toContain('Try again')
     })
 
@@ -860,8 +865,10 @@ describe('RoutePlannerCalculator', () => {
       await quoteAmandayehan()
 
       expect(container.textContent).toContain('No route a tricycle can take.')
+      expect(container.textContent).toContain('Tap Change on the Ride card to pick another ride.')
 
-      await click('Choose another ride')
+      // the Ride card's own Change, rather than a second button in the panel
+      await click('Change')
 
       expect(container.textContent).toContain('How are you riding?')
     })

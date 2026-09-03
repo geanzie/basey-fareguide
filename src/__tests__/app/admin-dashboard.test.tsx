@@ -106,10 +106,17 @@ describe('AdminDashboard', () => {
     expect(container.textContent).toContain('Storage Used')
     expect(container.textContent).toContain('User Breakdown')
     expect(container.textContent).toContain('Recent Incident Activity')
-    expect(container.textContent).toContain('Refresh Data')
-    expect(container.textContent).toContain('Manage Storage')
-    expect(container.textContent).toContain('Manage Users')
-    expect(container.textContent).toContain('Manage Fare Rates')
+    expect(container.textContent).toContain('Refresh')
+
+    // The Quick Actions panel is gone. Every button in it duplicated something
+    // already on /admin: "Manage Storage" and "Manage Users" restated the tab
+    // bar directly above it, and "Manage Fare Rates" restated a shortcut card
+    // (as a raw <a>, which reloaded the whole page). Refresh survived, in the
+    // overview header, refetching instead of reloading.
+    expect(container.textContent).not.toContain('Quick Actions')
+    expect(container.textContent).not.toContain('Manage Storage')
+    expect(container.textContent).not.toContain('Manage Users')
+    expect(container.textContent).not.toContain('Manage Fare Rates')
 
     const controls = Array.from(container.querySelectorAll('button, a'))
 

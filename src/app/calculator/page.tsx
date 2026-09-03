@@ -20,9 +20,12 @@ export default async function CalculatorPage() {
       <PageShell
         title="Fare Calculator"
         subtitle="Plan a route and get the official fare under Ordinance 105"
-        width="form"
+        width="narrow"
       >
-        <LazyRoutePlannerCalculator initialPrimaryProvider={routingSettings.primaryProvider} />
+        {/* The band spans the page; only the controls are a form column. */}
+        <div className="mx-auto w-full max-w-xl">
+          <LazyRoutePlannerCalculator initialPrimaryProvider={routingSettings.primaryProvider} />
+        </div>
       </PageShell>
     </RoleGuard>
   )

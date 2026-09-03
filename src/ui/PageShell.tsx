@@ -12,10 +12,16 @@ interface Props {
   band?: ReactNode
   /**
    * Content column width. 'wide' (default) suits dashboards and tables,
-   * 'narrow' long-form reading, 'form' a single focused input column — the
-   * band matches it, so the header never spans wider than what's under it.
+   * 'narrow' long-form reading. The band matches it, so the header never spans
+   * wider than what's under it.
+   *
+   * There is deliberately no narrower option. A single focused input column is
+   * a property of the *controls*, not of the page: give the form its own
+   * max-width inside the plate. Sizing the band down to a form made
+   * /calculator's green header half the width of every other page's on
+   * desktop, which is the whole reason this variant is gone.
    */
-  width?: 'wide' | 'narrow' | 'form'
+  width?: 'wide' | 'narrow'
   children: ReactNode
 }
 
@@ -35,7 +41,6 @@ interface Props {
 const PAGE_WIDTHS = {
   wide: 'max-w-6xl',
   narrow: 'max-w-4xl',
-  form: 'max-w-xl',
 } as const
 
 export default function PageShell({

@@ -3,14 +3,9 @@
 import RoleGuard from '@/components/RoleGuard'
 import PermitManagement from '@/components/PermitManagement'
 import PermitStatistics from '@/components/PermitStatistics'
+import NavCard from '@/ui/NavCard'
 import PageShell from '@/ui/PageShell'
-import Link from 'next/link'
-import {
-  DASHBOARD_ICONS,
-  DASHBOARD_ICON_POLICY,
-  DashboardIconSlot,
-  getDashboardIconChipClasses,
-} from '@/components/dashboardIcons'
+import { DASHBOARD_ICONS } from '@/components/dashboardIcons'
 
 export default function EncoderPage() {
   return (
@@ -27,85 +22,30 @@ function EncoderContent() {
       subtitle="Manage vehicle permits for Basey Municipality"
     >
       <div className="space-y-6">
-        {/* Quick Actions */}
-        <div className="border border-surface-border bg-surface shadow-card rounded-card p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Link
-              href="/encoder/permits"
-              className="bg-surface-tint hover:bg-surface-tint border border-primary/20 rounded-lg p-4 transition-colors group"
-            >
-              <div className="text-center">
-                <div className="mb-3 flex justify-center">
-                  <div className={`${getDashboardIconChipClasses('emerald')} group-hover:scale-110 transition-transform`}>
-                    <DashboardIconSlot icon={DASHBOARD_ICONS.fileText} size={DASHBOARD_ICON_POLICY.sizes.hero} />
-                  </div>
-                </div>
-                <h3 className="font-semibold text-primary-dark">Manage Permits</h3>
-                <p className="text-sm text-primary mt-1">View and manage all permits</p>
-              </div>
-            </Link>
+        {/*
+          Permits, Vehicle Registry and Ticket Payments used to sit here too.
+          All three are encoder primary tabs, so the cards were the bottom nav
+          drawn a second time — and "Manage Permits" linked to a page whose
+          content PermitManagement already renders further down this one.
 
-            <Link
-              href="/encoder/vehicles/new"
-              className="bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg p-4 transition-colors group"
-            >
-              <div className="text-center">
-                <div className="mb-3 flex justify-center">
-                  <div className={`${getDashboardIconChipClasses('blue')} group-hover:scale-110 transition-transform`}>
-                    <DashboardIconSlot icon={DASHBOARD_ICONS.vehicle} size={DASHBOARD_ICON_POLICY.sizes.hero} />
-                  </div>
-                </div>
-                <h3 className="font-semibold text-blue-700">Register Vehicle</h3>
-                <p className="text-sm text-blue-600 mt-1">Add new vehicle to system</p>
-              </div>
-            </Link>
-
-            <Link
-              href="/encoder/vehicles"
-              className="bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg p-4 transition-colors group"
-            >
-              <div className="text-center">
-                <div className="mb-3 flex justify-center">
-                  <div className={`${getDashboardIconChipClasses('purple')} group-hover:scale-110 transition-transform`}>
-                    <DashboardIconSlot icon={DASHBOARD_ICONS.inspect} size={DASHBOARD_ICON_POLICY.sizes.hero} />
-                  </div>
-                </div>
-                <h3 className="font-semibold text-purple-700">Vehicle Registry</h3>
-                <p className="text-sm text-purple-600 mt-1">Browse all vehicles</p>
-              </div>
-            </Link>
-
-            <Link
-              href="/encoder/ride-access"
-              className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg p-4 transition-colors group"
-            >
-              <div className="text-center">
-                <div className="mb-3 flex justify-center">
-                  <div className={`${getDashboardIconChipClasses('slate')} group-hover:scale-110 transition-transform`}>
-                    <DashboardIconSlot icon={DASHBOARD_ICONS.routes} size={DASHBOARD_ICON_POLICY.sizes.hero} />
-                  </div>
-                </div>
-                <h3 className="font-semibold text-slate-700">Ride Access</h3>
-                <p className="text-sm text-slate-600 mt-1">Mark which places a ride can reach</p>
-              </div>
-            </Link>
-
-            <Link
-              href="/encoder/ticket-payments"
-              className="bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg p-4 transition-colors group"
-            >
-              <div className="text-center">
-                <div className="mb-3 flex justify-center">
-                  <div className={`${getDashboardIconChipClasses('amber')} group-hover:scale-110 transition-transform`}>
-                    <DashboardIconSlot icon={DASHBOARD_ICONS.ticket} size={DASHBOARD_ICON_POLICY.sizes.hero} />
-                  </div>
-                </div>
-                <h3 className="font-semibold text-amber-700">Ticket Payments</h3>
-                <p className="text-sm text-amber-600 mt-1">Record settlements and receipt notes</p>
-              </div>
-            </Link>
-          </div>
+          What is left is what the nav cannot reach: a create form, and
+          /encoder/ride-access, which is in no nav list at all.
+        */}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <NavCard
+            href="/encoder/vehicles/new"
+            icon={DASHBOARD_ICONS.vehicle}
+            tone="blue"
+            title="Register Vehicle"
+            description="Add a new vehicle to the system."
+          />
+          <NavCard
+            href="/encoder/ride-access"
+            icon={DASHBOARD_ICONS.routes}
+            tone="emerald"
+            title="Ride Access"
+            description="Mark which places a ride can reach."
+          />
         </div>
 
         <PermitStatistics />

@@ -9,7 +9,7 @@
 export type Tone = 'success' | 'danger' | 'warning' | 'info' | 'purple' | 'muted'
 
 /**
- * Hex values for SVG (DonutRing) and translucent icon chips (StatTile) only.
+ * Hex values for translucent icon chips (StatTile) only.
  * Everything else must use static Tailwind classes so purge keeps them.
  */
 export const TONE_HEX: Record<Tone, string> = {

@@ -110,17 +110,25 @@ describe("public dashboard announcements", () => {
     expect(container.textContent).toContain("Recent Fare Calculations");
     expect(container.textContent).toContain("Recent Incident Reports");
 
-    const actionLabels = [
-      "Calculate Fare",
-      "Report Incident",
-      "View History",
-      "Manage Discount Card",
-    ];
+    // Only destinations the bottom nav cannot reach in one tap survive as
+    // cards. "Calculate Fare" went because /calculator is a primary tab, and
+    // "View History" because the stat tiles link there already filtered — see
+    // docs/adr/0004-dashboard-cards-are-not-a-second-navigation.md.
+    const actionLabels = ["Report Incident", "Manage Discount Card"];
     const actionLinks = Array.from(container.querySelectorAll("a")).filter((anchor) =>
       actionLabels.some((label) => anchor.textContent?.includes(label)),
     );
 
-    expect(actionLinks).toHaveLength(4);
+    expect(actionLinks).toHaveLength(2);
     expect(actionLinks.every((anchor) => (anchor.textContent || "").trim().length > 0)).toBe(true);
+
+    expect(container.textContent).not.toContain("Calculate Fare");
+    expect(container.textContent).not.toContain("View History");
+
+    // the tiles are what carry /history now, and they arrive pre-filtered
+    const historyLinks = Array.from(container.querySelectorAll('a[href^="/history"]')).map(
+      (anchor) => anchor.getAttribute("href"),
+    );
+    expect(historyLinks).toEqual(["/history?filter=routes", "/history?filter=reports"]);
   });
 });

@@ -2,16 +2,15 @@
 
 import { useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
-import Link from 'next/link'
 import RoleGuard from '@/components/RoleGuard'
 import {
   DASHBOARD_ICONS,
   DASHBOARD_ICON_POLICY,
   DashboardIconSlot,
-  getDashboardIconChipClasses,
   type DashboardIcon,
   type DashboardIconTone,
 } from '@/components/dashboardIcons'
+import NavCard from '@/ui/NavCard'
 import PageShell from '@/ui/PageShell'
 
 const AdminUserManagement = dynamic(() => import('@/components/AdminUserManagement'), {
@@ -32,114 +31,51 @@ const AdminLocationManager = dynamic(() => import('@/components/AdminLocationMan
 
 type AdminTab = 'dashboard' | 'users' | 'storage' | 'locations'
 
+/**
+ * Admin destinations that are NOT one tap away on a phone.
+ *
+ * Everything here is a secondary action in authenticatedNavigation, i.e. it
+ * lives behind the mobile profile sheet, or (driver sessions) is in no nav list
+ * at all. /admin/announcements is deliberately absent: it is a primary tab, so
+ * a card for it would just be the bottom nav drawn twice.
+ * See docs/adr/0004-dashboard-cards-are-not-a-second-navigation.md.
+ */
 const ADMIN_SHORTCUTS: Array<{
   title: string
   description: string
   href: string
-  actionLabel: string
   icon: DashboardIcon
   tone: DashboardIconTone
 }> = [
   {
     title: 'Fare rate management',
-    description: 'Update the base fare and per-kilometer rate from the dedicated admin page.',
+    description: 'Update the base fare and per-kilometer rate.',
     href: '/admin/fare-rates',
-    actionLabel: 'Open Fare Rates',
     icon: DASHBOARD_ICONS.fare,
     tone: 'amber',
   },
   {
-    title: 'Traffic announcements',
-    description: 'Post road advisories and emergency notices for constituents.',
-    href: '/admin/announcements',
-    actionLabel: 'Open Announcements',
-    icon: DASHBOARD_ICONS.announcements,
-    tone: 'blue',
-  },
-  {
     title: 'User feedback',
-    description: 'Read what riders and staff report about the app, and mark each one reviewed.',
+    description: 'Read what riders and staff report, and mark each one reviewed.',
     href: '/admin/feedback',
-    actionLabel: 'Open Feedback',
     icon: DASHBOARD_ICONS.feedback,
     tone: 'violet',
   },
   {
     title: 'Driver session suspension',
-    description:
-      'Choose which vehicle types skip driver acceptance and let riders record trips by scanning the permit QR.',
+    description: 'Choose which vehicle types let riders record trips by scanning the permit QR.',
     href: '/admin/settings/driver-sessions',
-    actionLabel: 'Open Driver Sessions',
     icon: DASHBOARD_ICONS.vehicle,
     tone: 'emerald',
   },
   {
     title: 'Routing settings',
-    description: 'Manage the primary route provider from the dedicated routing settings page.',
+    description: 'Manage the primary route provider.',
     href: '/admin/settings/routing',
-    actionLabel: 'Open Routing Settings',
     icon: DASHBOARD_ICONS.map,
     tone: 'emerald',
   },
 ]
-
-const SHORTCUT_CARD_STYLES: Record<DashboardIconTone, {
-  border: string
-  eyebrow: string
-  title: string
-  description: string
-  button: string
-}> = {
-  slate: {
-    border: 'border-slate-200/80',
-    eyebrow: 'text-slate-600',
-    title: 'text-slate-900',
-    description: 'text-slate-700',
-    button: 'bg-slate-700 hover:bg-slate-800 text-white',
-  },
-  blue: {
-    border: 'border-blue-200/80',
-    eyebrow: 'text-blue-700',
-    title: 'text-blue-950',
-    description: 'text-blue-800',
-    button: 'bg-blue-600 hover:bg-blue-700 text-white',
-  },
-  emerald: {
-    border: 'border-primary/20',
-    eyebrow: 'text-primary-dark',
-    title: 'text-primary-dark',
-    description: 'text-primary-dark',
-    button: 'bg-primary hover:bg-primary-dark text-white',
-  },
-  red: {
-    border: 'border-red-200/80',
-    eyebrow: 'text-red-700',
-    title: 'text-red-950',
-    description: 'text-red-800',
-    button: 'bg-red-600 hover:bg-red-700 text-white',
-  },
-  violet: {
-    border: 'border-violet-200/80',
-    eyebrow: 'text-violet-700',
-    title: 'text-violet-950',
-    description: 'text-violet-800',
-    button: 'bg-violet-600 hover:bg-violet-700 text-white',
-  },
-  amber: {
-    border: 'border-amber-200/80',
-    eyebrow: 'text-amber-700',
-    title: 'text-amber-950',
-    description: 'text-amber-800',
-    button: 'bg-amber-600 hover:bg-amber-700 text-white',
-  },
-  purple: {
-    border: 'border-purple-200/80',
-    eyebrow: 'text-purple-700',
-    title: 'text-purple-950',
-    description: 'text-purple-800',
-    button: 'bg-purple-600 hover:bg-purple-700 text-white',
-  },
-}
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<AdminTab>('dashboard')
@@ -187,55 +123,16 @@ export default function AdminPage() {
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {ADMIN_SHORTCUTS.map((shortcut) => {
-              const cardStyles = SHORTCUT_CARD_STYLES[shortcut.tone]
-
-              return (
-                <article
-                  key={shortcut.href}
-                  className={`border border-surface-border bg-surface shadow-card flex h-full flex-col justify-between rounded-card p-5 transition-transform duration-200 hover:-translate-y-0.5 ${cardStyles.border}`}
-                >
-                  <div className="space-y-4">
-                    <div className="flex items-start gap-3">
-                      <div className={getDashboardIconChipClasses(shortcut.tone)}>
-                        <DashboardIconSlot
-                          icon={shortcut.icon}
-                          size={DASHBOARD_ICON_POLICY.sizes.hero}
-                          className={cardStyles.eyebrow}
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <p className={`text-xs font-semibold uppercase tracking-[0.18em] ${cardStyles.eyebrow}`}>
-                          Direct page
-                        </p>
-                        <h3 className={`text-lg font-semibold ${cardStyles.title}`}>{shortcut.title}</h3>
-                      </div>
-                    </div>
-
-                    <p className={`max-w-sm text-sm leading-6 ${cardStyles.description}`}>
-                      {shortcut.description}
-                    </p>
-                  </div>
-
-                  <div className="mt-6 flex items-center justify-between gap-3 border-t border-black/5 pt-4">
-                    <p className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
-                      Admin shortcut
-                    </p>
-                    <Link
-                      href={shortcut.href}
-                      className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${cardStyles.button}`}
-                    >
-                      <span>{shortcut.actionLabel}</span>
-                      <DashboardIconSlot
-                        icon={DASHBOARD_ICONS.arrowRight}
-                        size={DASHBOARD_ICON_POLICY.sizes.button}
-                        className="text-current"
-                      />
-                    </Link>
-                  </div>
-                </article>
-              )
-            })}
+            {ADMIN_SHORTCUTS.map((shortcut) => (
+              <NavCard
+                key={shortcut.href}
+                href={shortcut.href}
+                icon={shortcut.icon}
+                tone={shortcut.tone}
+                title={shortcut.title}
+                description={shortcut.description}
+              />
+            ))}
           </div>
         </section>
 

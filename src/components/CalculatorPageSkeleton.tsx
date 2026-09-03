@@ -12,15 +12,15 @@ export default function CalculatorPageSkeleton() {
     <PageShell
       title="Fare Calculator"
       subtitle="Plan a route and get the official fare under Ordinance 105"
-      width="form"
+      width="narrow"
     >
-      <div className="space-y-4">
+      <div className="mx-auto w-full max-w-xl space-y-4">
         <div className="flex items-center gap-2">
           <SkeletonBox className="h-10 w-10 rounded-full" />
           <SkeletonBox className="h-6 w-40" />
         </div>
 
-        <div className="rounded-[2rem] border border-surface-border bg-surface p-4 shadow-card">
+        <div className="rounded-sheet border border-surface-border bg-surface p-4 shadow-card">
           <SkeletonBox className="h-4 w-full" />
           <SkeletonBox className="mt-2 h-4 w-4/5" />
           <div className="mt-4 grid grid-cols-2 gap-3">

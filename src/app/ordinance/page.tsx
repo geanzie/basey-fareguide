@@ -8,6 +8,7 @@ import {
   getDashboardIconChipClasses,
 } from '@/components/dashboardIcons'
 import OrdinancePdfPreviewShell from '@/components/OrdinancePdfPreviewShell'
+import PageShell from '@/ui/PageShell'
 import { ordinanceResource } from '@/lib/ordinanceResource'
 
 export const metadata: Metadata = {
@@ -27,20 +28,17 @@ export const metadata: Metadata = {
 
 export default function OrdinancePage() {
   return (
-    <div className="min-h-dvh py-10 lg:py-12">
-      <div className="container mx-auto px-4">
-        <div className="mx-auto max-w-6xl space-y-6">
+    <PageShell title={ordinanceResource.shortTitle} subtitle={ordinanceResource.title}>
+      <div className="space-y-6">
           <section className="rounded-card border border-surface-border bg-surface p-6 shadow-card lg:p-8">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
               <div className="max-w-3xl">
+                {/* The band above carries the title and the full legal name;
+                    they used to be repeated here as an h1 and a subtitle. */}
                 <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary-dark">
                   <DashboardIconSlot icon={DASHBOARD_ICONS.fileText} size={16} />
                   <p>Public Legal Reference</p>
                 </div>
-                <h1 className="mt-3 text-3xl font-bold text-slate-900 lg:text-4xl">
-                  {ordinanceResource.shortTitle}
-                </h1>
-                <p className="mt-3 text-base text-slate-700">{ordinanceResource.title}</p>
                 <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600">
                   {ordinanceResource.summary} Review the ordinance inline when your browser supports PDF previews,
                   or open the original PDF in a new tab for the full official document.
@@ -116,8 +114,7 @@ export default function OrdinancePage() {
 
             <OrdinancePdfPreviewShell pdfUrl={ordinanceResource.pdfUrl} />
           </section>
-        </div>
       </div>
-    </div>
+    </PageShell>
   )
 }
