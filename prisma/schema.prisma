@@ -846,6 +846,8 @@ model Permit {
   qrToken           String?         @unique
   qrIssuedAt        DateTime?
   qrIssuedBy        String?
+  qrPrintedAt       DateTime?
+  qrPrintedBy       String?
   driverFullName    String
   vehicleType       VehicleType
   issuedDate        DateTime        @default(now())
@@ -866,6 +868,7 @@ model Permit {
   @@index([expiryDate])
   @@index([qrIssuedAt])
   @@index([status, vehicleType])
+  @@index([status, qrPrintedAt])
   @@map("permits")
 }
 
@@ -1107,6 +1110,7 @@ enum QrScanSource {
 enum PermitQrAuditAction {
   ISSUE_QR
   ROTATE_QR
+  PRINT_QR
 }
 
 enum EvidenceType {

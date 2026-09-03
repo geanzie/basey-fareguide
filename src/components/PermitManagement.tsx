@@ -5,7 +5,8 @@ import useSWR from 'swr'
 import { useSearchParams } from 'next/navigation'
 import { useAuth } from '@/components/AuthProvider'
 import PermitQrCard from '@/components/PermitQrCard'
-import BulkQrPrintSheet from '@/components/BulkQrPrintSheet'
+import PermitQrPrintSheet from '@/components/permits/PermitQrPrintSheet'
+import type { BulkQrResponse } from '@/components/permits/permitStickerPrint'
 import { VehicleType, PermitStatus } from '@prisma/client'
 import ResponsiveTable, { StatusBadge, ActionButton } from './ResponsiveTable'
 import VehicleLookupField from './VehicleLookupField'
@@ -49,6 +50,10 @@ export default function PermitManagement() {
    * without a QR token is a service outage rather than a legacy quirk.
    */
   const { data: tripFlowConfig } = useSWR<TripFlowConfigDto>(SWR_KEYS.tripFlowConfig)
+  const { data: printQueue, mutate: mutatePrintQueue } = useSWR<BulkQrResponse>(
+    SWR_KEYS.permitQrPrintQueueCount,
+  )
+  const printQueueCount = printQueue?.total ?? 0
   const riderScanRequired = (vehicleType: string) =>
     Boolean(tripFlowConfig?.suspendedVehicleTypes?.includes(vehicleType as VehicleType))
   const [loading, setLoading] = useState(true)
@@ -63,7 +68,14 @@ export default function PermitManagement() {
   } | null>(null)
   const [selectedQrPermit, setSelectedQrPermit] = useState<PermitDto | null>(null)
   const [loadingQrPermitId, setLoadingQrPermitId] = useState<string | null>(null)
-  const [showBulkPrint, setShowBulkPrint] = useState(false)
+  /**
+   * Which stickers the print sheet should render: the unprinted queue, or an
+   * explicit set the encoder ticked for a reprint.
+   */
+  const [printSheet, setPrintSheet] = useState<
+    { mode: 'queue' } | { mode: 'selection'; permitIds: string[] } | null
+  >(null)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -127,6 +139,39 @@ export default function PermitManagement() {
   useEffect(() => {
     fetchPermits()
   }, [pagination.page, filters])
+
+  // Only permits with a live token can be printed, so they are the only ones
+  // that are selectable.
+  const printablePermits = permits.filter((permit) => permit.hasQrToken)
+  const selectedPrintableIds = selectedIds.filter((id) =>
+    printablePermits.some((permit) => permit.id === id),
+  )
+  const allPageSelected =
+    printablePermits.length > 0 &&
+    printablePermits.every((permit) => selectedIds.includes(permit.id))
+
+  const togglePermitSelected = (permitId: string) => {
+    setSelectedIds((current) =>
+      current.includes(permitId)
+        ? current.filter((id) => id !== permitId)
+        : [...current, permitId],
+    )
+  }
+
+  const toggleSelectPage = () => {
+    const pageIds = printablePermits.map((permit) => permit.id)
+    setSelectedIds((current) =>
+      allPageSelected
+        ? current.filter((id) => !pageIds.includes(id))
+        : Array.from(new Set([...current, ...pageIds])),
+    )
+  }
+
+  const handleStickersPrinted = () => {
+    setSelectedIds([])
+    fetchPermits()
+    void mutatePrintQueue()
+  }
 
   // Check for modal parameter to auto-open add permit form
   useEffect(() => {
@@ -210,6 +255,7 @@ export default function PermitManagement() {
         }
         resetForm()
         fetchPermits()
+        void mutatePrintQueue()
       } else {
         const errorData = await response.json()
         alert(`Error: ${errorData.message}`)
@@ -268,7 +314,8 @@ export default function PermitManagement() {
         message:
           `Rotate the QR token for permit ${permit.permitPlateNumber}? ` +
           'The sticker already pasted on the vehicle will stop working immediately, ' +
-          'and riders cannot record a trip until a new one is printed and re-pasted.' +
+          'and riders cannot record a trip until a new one is printed and re-pasted. ' +
+          'The permit returns to the QR print queue.' +
           (permit.qrIssuedAt
             ? ` The current token was issued ${new Date(permit.qrIssuedAt).toLocaleDateString()}.`
             : ''),
@@ -296,6 +343,7 @@ export default function PermitManagement() {
       setSelectedQrPermit(updatedPermit)
       setLastCreatedPermit((current) => (current?.id === updatedPermit.id ? updatedPermit : current))
       fetchPermits()
+      void mutatePrintQueue()
 
       alert(
         payload.action === 'issued'
@@ -391,10 +439,19 @@ export default function PermitManagement() {
         </div>
         <div className="flex gap-2">
           <button
-            onClick={() => setShowBulkPrint(true)}
+            onClick={() => setPrintSheet({ mode: 'queue' })}
             className="border border-primary text-primary-dark px-4 py-2 rounded-lg hover:bg-surface-tint transition-colors text-sm"
           >
-            Bulk Print QR
+            Print queue ({printQueueCount})
+          </button>
+          <button
+            onClick={() =>
+              setPrintSheet({ mode: 'selection', permitIds: selectedPrintableIds })
+            }
+            disabled={selectedPrintableIds.length === 0}
+            className="border border-surface-border text-gray-700 px-4 py-2 rounded-lg hover:bg-surface-tint transition-colors text-sm disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Print selected ({selectedPrintableIds.length})
           </button>
           <button
             onClick={() => setShowAddForm(true)}
@@ -426,6 +483,10 @@ export default function PermitManagement() {
             permitPlateNumber={lastCreatedPermit.permitPlateNumber}
             qrToken={lastCreatedPermit.qrToken}
             driverFullName={lastCreatedPermit.driverFullName}
+            showToken
+            onPrintSticker={() =>
+              setPrintSheet({ mode: 'selection', permitIds: [lastCreatedPermit.id] })
+            }
           />
         </div>
       ) : null}
@@ -650,8 +711,45 @@ export default function PermitManagement() {
 
       {/* Permits Table */}
       <div className="border border-surface-border bg-surface shadow-card rounded-card overflow-hidden">
+        {printablePermits.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-surface-border bg-surface-alt px-4 py-3">
+            <label className="flex items-center gap-2 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                checked={allPageSelected}
+                onChange={toggleSelectPage}
+                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+              />
+              Select all QR-issued permits on this page
+            </label>
+            {selectedPrintableIds.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setSelectedIds([])}
+                className="text-sm font-medium text-primary-dark underline-offset-2 hover:underline"
+              >
+                Clear selection ({selectedPrintableIds.length})
+              </button>
+            )}
+          </div>
+        )}
         <ResponsiveTable
           columns={[
+            {
+              key: 'select',
+              label: '',
+              mobileLabel: 'Select',
+              render: (_, permit) => (
+                <input
+                  type="checkbox"
+                  checked={selectedIds.includes(permit.id)}
+                  disabled={!permit.hasQrToken}
+                  onChange={() => togglePermitSelected(permit.id)}
+                  aria-label={`Select permit ${permit.permitPlateNumber} for printing`}
+                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary disabled:cursor-not-allowed disabled:opacity-40"
+                />
+              )
+            },
             {
               key: 'permitPlateNumber',
               label: 'Permit Plate',
@@ -680,6 +778,22 @@ export default function PermitManagement() {
                   >
                     {hasQrToken ? 'Issued securely' : 'Not issued'}
                   </div>
+                  {hasQrToken ? (
+                    <div className="mt-1">
+                      {permit.qrPrintState === 'PRINTED' ? (
+                        <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-700">
+                          Printed{' '}
+                          {permit.qrPrintedAt
+                            ? new Date(permit.qrPrintedAt).toLocaleDateString()
+                            : ''}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800">
+                          Needs printing
+                        </span>
+                      )}
+                    </div>
+                  ) : null}
                   {permit.qrIssuedAt ? (
                     <div className="text-xs text-gray-500">
                       Issued {new Date(permit.qrIssuedAt).toLocaleDateString()}
@@ -916,12 +1030,20 @@ export default function PermitManagement() {
             permitPlateNumber={selectedQrPermit.permitPlateNumber}
             qrToken={selectedQrPermit.qrToken}
             driverFullName={selectedQrPermit.driverFullName}
+            showToken
+            onPrintSticker={() =>
+              setPrintSheet({ mode: 'selection', permitIds: [selectedQrPermit.id] })
+            }
           />
         ) : null}
       </Modal>
 
-      {showBulkPrint ? (
-        <BulkQrPrintSheet onClose={() => setShowBulkPrint(false)} />
+      {printSheet ? (
+        <PermitQrPrintSheet
+          permitIds={printSheet.mode === 'selection' ? printSheet.permitIds : undefined}
+          onClose={() => setPrintSheet(null)}
+          onPrinted={handleStickersPrinted}
+        />
       ) : null}
     </div>
   )

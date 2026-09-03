@@ -92,6 +92,9 @@ describe('PermitManagement QR actions', () => {
                 qrToken: null,
                 qrIssuedAt: null,
                 qrIssuedBy: null,
+                qrPrintedAt: null,
+                qrPrintedBy: null,
+                qrPrintState: 'NOT_ISSUED',
                 driverFullName: 'Pedro Santos',
                 vehicleType: 'TRICYCLE',
                 issuedDate: '2026-01-01T00:00:00.000Z',
@@ -114,6 +117,9 @@ describe('PermitManagement QR actions', () => {
                 qrToken: null,
                 qrIssuedAt: '2026-04-10T09:00:00.000Z',
                 qrIssuedBy: 'encoder-1',
+                qrPrintedAt: null,
+                qrPrintedBy: null,
+                qrPrintState: 'NEEDS_PRINT',
                 driverFullName: 'Maria Santos',
                 vehicleType: 'TRICYCLE',
                 issuedDate: '2026-01-01T00:00:00.000Z',
@@ -150,6 +156,9 @@ describe('PermitManagement QR actions', () => {
               qrToken: 'existing-qr-token',
               qrIssuedAt: '2026-04-10T09:00:00.000Z',
               qrIssuedBy: 'encoder-1',
+              qrPrintedAt: null,
+              qrPrintedBy: null,
+              qrPrintState: 'NEEDS_PRINT',
               driverFullName: 'Maria Santos',
               vehicleType: 'TRICYCLE',
               issuedDate: '2026-01-01T00:00:00.000Z',
@@ -180,6 +189,9 @@ describe('PermitManagement QR actions', () => {
               qrToken: 'issued-qr-token',
               qrIssuedAt: '2026-04-12T09:00:00.000Z',
               qrIssuedBy: 'encoder-1',
+              qrPrintedAt: null,
+              qrPrintedBy: null,
+              qrPrintState: 'NEEDS_PRINT',
               driverFullName: 'Pedro Santos',
               vehicleType: 'TRICYCLE',
               issuedDate: '2026-01-01T00:00:00.000Z',
@@ -262,5 +274,56 @@ describe('PermitManagement QR actions', () => {
 
     expect(fetchMock).toHaveBeenCalledWith('/api/permits/permit-existing/qr')
     expect(container.textContent).toContain('PERM-EXISTING:existing-qr-token')
+  })
+
+  it('flags an issued but unprinted permit as needing printing', async () => {
+    await act(async () => {
+      root.render(React.createElement(PermitManagement))
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(container.textContent).toContain('Needs printing')
+  })
+
+  it('enables Print selected only once a QR-issued permit is ticked', async () => {
+    await act(async () => {
+      root.render(React.createElement(PermitManagement))
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    const printSelected = Array.from(container.querySelectorAll('button')).find((button) =>
+      button.textContent?.startsWith('Print selected'),
+    ) as HTMLButtonElement | undefined
+
+    expect(printSelected?.textContent).toBe('Print selected (0)')
+    expect(printSelected?.disabled).toBe(true)
+
+    const checkboxes = Array.from(
+      container.querySelectorAll<HTMLInputElement>('input[type="checkbox"]'),
+    )
+    // A permit with no QR token cannot be printed, so its checkbox is disabled.
+    const legacyCheckbox = checkboxes.find((box) =>
+      box.getAttribute('aria-label')?.includes('PERM-LEGACY'),
+    )
+    const existingCheckbox = checkboxes.find((box) =>
+      box.getAttribute('aria-label')?.includes('PERM-EXISTING'),
+    )
+
+    expect(legacyCheckbox?.disabled).toBe(true)
+    expect(existingCheckbox?.disabled).toBe(false)
+
+    await act(async () => {
+      existingCheckbox?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await Promise.resolve()
+    })
+
+    const updated = Array.from(container.querySelectorAll('button')).find((button) =>
+      button.textContent?.startsWith('Print selected'),
+    ) as HTMLButtonElement | undefined
+
+    expect(updated?.textContent).toBe('Print selected (1)')
+    expect(updated?.disabled).toBe(false)
   })
 })

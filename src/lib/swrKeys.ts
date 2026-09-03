@@ -11,6 +11,9 @@ export const SWR_KEYS = {
   // Which vehicle types are suspended from the driver session flow. Public, so
   // a rider can scan a permit sticker before logging in.
   tripFlowConfig: "/api/config/trip-flow",
+  // Size of the QR sticker print queue: active permits whose current token has
+  // never been printed. countOnly skips shipping the live tokens.
+  permitQrPrintQueueCount: "/api/permits/bulk-qr?scope=unprinted&countOnly=1",
   driverSession: "/api/driver/session/active",
   dashboardStats: '/api/dashboard/stats',
   dashboardActivity: '/api/dashboard/activity?limit=3',

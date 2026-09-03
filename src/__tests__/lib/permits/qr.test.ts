@@ -4,7 +4,9 @@ const prismaMock = vi.hoisted(() => ({
   permit: {
     create: vi.fn(),
     findUnique: vi.fn(),
+    findMany: vi.fn(),
     update: vi.fn(),
+    updateMany: vi.fn(),
   },
   permitQrAudit: {
     create: vi.fn(),
@@ -28,7 +30,7 @@ vi.mock('@/lib/prisma', () => ({
 
 vi.mock('@/lib/permits/qrToken', () => qrTokenMock)
 
-import { createPermitWithQr, issuePermitQrToken } from '@/lib/permits/qr'
+import { createPermitWithQr, issuePermitQrToken, markPermitQrPrinted } from '@/lib/permits/qr'
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -126,5 +128,78 @@ describe('permit QR service', () => {
         }),
       }),
     )
+  })
+
+  it('clears the print state when a token is rotated', async () => {
+    qrTokenMock.generateQrToken.mockReturnValueOnce('rotated-qr-token')
+    prismaMock.permit.findUnique.mockResolvedValueOnce({
+      id: 'permit-1',
+      permitPlateNumber: 'PERM-100',
+      qrToken: 'old-qr-token',
+    })
+    prismaMock.permit.update.mockResolvedValueOnce({ id: 'permit-1' })
+    prismaMock.permitQrAudit.create.mockResolvedValueOnce({ id: 'audit-3' })
+
+    await issuePermitQrToken({ permitId: 'permit-1', issuedBy: 'encoder-2' })
+
+    expect(prismaMock.permit.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          qrToken: 'rotated-qr-token',
+          qrPrintedAt: null,
+          qrPrintedBy: null,
+        }),
+      }),
+    )
+  })
+
+  it('marks printed permits and writes one PRINT_QR audit row each', async () => {
+    prismaMock.permit.findMany.mockResolvedValueOnce([
+      { id: 'permit-1', permitPlateNumber: 'PERM-100', qrToken: 'token-1' },
+      { id: 'permit-2', permitPlateNumber: 'PERM-200', qrToken: 'token-2' },
+    ])
+    prismaMock.permit.updateMany.mockResolvedValueOnce({ count: 2 })
+    prismaMock.permitQrAudit.create.mockResolvedValue({ id: 'audit-print' })
+
+    const result = await markPermitQrPrinted({
+      permitIds: ['permit-1', 'permit-2', 'permit-1'],
+      printedBy: 'encoder-3',
+    })
+
+    expect(result.markedIds).toEqual(['permit-1', 'permit-2'])
+    expect(result.skippedIds).toEqual([])
+    expect(prismaMock.permit.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: { in: ['permit-1', 'permit-2'] } },
+        data: expect.objectContaining({ qrPrintedBy: 'encoder-3' }),
+      }),
+    )
+    expect(prismaMock.permitQrAudit.create).toHaveBeenCalledTimes(2)
+    expect(prismaMock.permitQrAudit.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          permitId: 'permit-1',
+          action: 'PRINT_QR',
+          actedBy: 'encoder-3',
+          previousTokenFingerprint: null,
+          currentTokenFingerprint: 'fp:token-1',
+        }),
+      }),
+    )
+  })
+
+  it('skips permits without a QR token instead of marking them printed', async () => {
+    prismaMock.permit.findMany.mockResolvedValueOnce([
+      { id: 'permit-1', permitPlateNumber: 'PERM-100', qrToken: null },
+    ])
+
+    const result = await markPermitQrPrinted({
+      permitIds: ['permit-1'],
+      printedBy: 'encoder-3',
+    })
+
+    expect(result).toEqual({ markedIds: [], skippedIds: ['permit-1'] })
+    expect(prismaMock.permit.updateMany).not.toHaveBeenCalled()
+    expect(prismaMock.permitQrAudit.create).not.toHaveBeenCalled()
   })
 })

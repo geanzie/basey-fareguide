@@ -7,14 +7,27 @@ interface PermitQrCardProps {
   permitPlateNumber: string
   qrToken: string
   driverFullName: string
+  /**
+   * Reveal the raw token behind a toggle. Encoder-only: the token is the QR
+   * payload, so it is a bearer secret and never belongs on a printed sticker.
+   */
+  showToken?: boolean
+  /**
+   * When provided, renders a "Print sticker" action. The parent owns the print
+   * sheet so the single-permit print uses the same A4 sticker layout as bulk.
+   */
+  onPrintSticker?: () => void
 }
 
 export default function PermitQrCard({
   permitPlateNumber,
   qrToken,
   driverFullName,
+  showToken = false,
+  onPrintSticker,
 }: PermitQrCardProps) {
   const [qrDataUrl, setQrDataUrl] = useState<string>('')
+  const [tokenRevealed, setTokenRevealed] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -37,6 +50,10 @@ export default function PermitQrCard({
     return () => {
       cancelled = true
     }
+  }, [qrToken])
+
+  useEffect(() => {
+    setTokenRevealed(false)
   }, [qrToken])
 
   return (
@@ -62,26 +79,47 @@ export default function PermitQrCard({
           <p className="text-sm text-slate-600">Assigned driver: {driverFullName}</p>
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Stored Token</div>
-          <div className="mt-2 break-all font-mono text-sm text-slate-900">{qrToken}</div>
-        </div>
+        {showToken ? (
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Stored Token</div>
+              <button
+                type="button"
+                onClick={() => setTokenRevealed((revealed) => !revealed)}
+                className="text-xs font-medium text-primary-dark underline-offset-2 hover:underline"
+              >
+                {tokenRevealed ? 'Hide token' : 'Show token'}
+              </button>
+            </div>
+            {tokenRevealed ? (
+              <div className="mt-2 break-all font-mono text-sm text-slate-900">{qrToken}</div>
+            ) : (
+              <p className="mt-2 text-xs text-slate-500">
+                Hidden so it never lands on a printed sticker.
+              </p>
+            )}
+          </div>
+        ) : null}
 
         <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark"
-          >
-            Print QR
-          </button>
-          <button
-            type="button"
-            onClick={() => navigator.clipboard?.writeText(qrToken).catch(() => {})}
-            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
-          >
-            Copy Token
-          </button>
+          {onPrintSticker ? (
+            <button
+              type="button"
+              onClick={onPrintSticker}
+              className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark"
+            >
+              Print sticker
+            </button>
+          ) : null}
+          {showToken ? (
+            <button
+              type="button"
+              onClick={() => navigator.clipboard?.writeText(qrToken).catch(() => {})}
+              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+            >
+              Copy Token
+            </button>
+          ) : null}
         </div>
       </div>
     </div>

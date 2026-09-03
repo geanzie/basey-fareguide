@@ -1,4 +1,4 @@
-import type { PermitDto } from "@/lib/contracts";
+import type { PermitDto, PermitQrPrintState } from "@/lib/contracts";
 
 interface SerializePermitOptions {
   includeQrToken?: boolean;
@@ -19,6 +19,8 @@ export function serializePermit(record: {
   qrToken?: string | null;
   qrIssuedAt?: Date | string | null;
   qrIssuedBy?: string | null;
+  qrPrintedAt?: Date | string | null;
+  qrPrintedBy?: string | null;
   driverFullName: string;
   vehicleType: string;
   issuedDate: Date | string;
@@ -47,6 +49,14 @@ export function serializePermit(record: {
   } | null;
 }, options: SerializePermitOptions = {}): PermitDto {
   const hasQrToken = Boolean(record.qrToken);
+  const qrPrintedAt = toIsoString(record.qrPrintedAt);
+  // Derived unconditionally: the print state is not the secret, the token is.
+  // A rotated token clears qrPrintedAt, so NEEDS_PRINT also covers "reprint required".
+  const qrPrintState: PermitQrPrintState = !hasQrToken
+    ? "NOT_ISSUED"
+    : qrPrintedAt
+      ? "PRINTED"
+      : "NEEDS_PRINT";
 
   return {
     id: record.id,
@@ -55,6 +65,9 @@ export function serializePermit(record: {
     qrToken: options.includeQrToken ? record.qrToken ?? null : null,
     qrIssuedAt: toIsoString(record.qrIssuedAt),
     qrIssuedBy: record.qrIssuedBy ?? null,
+    qrPrintedAt,
+    qrPrintedBy: record.qrPrintedBy ?? null,
+    qrPrintState,
     driverFullName: record.driverFullName,
     vehicleType: record.vehicleType,
     issuedDate: toIsoString(record.issuedDate) ?? new Date(0).toISOString(),

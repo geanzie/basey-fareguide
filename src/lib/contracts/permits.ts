@@ -19,6 +19,8 @@ export interface PermitVehicleSummaryDto {
   vehicleType: VehicleType | string;
 }
 
+export type PermitQrPrintState = "NOT_ISSUED" | "NEEDS_PRINT" | "PRINTED";
+
 export interface PermitDto {
   id: string;
   permitPlateNumber: string;
@@ -26,6 +28,9 @@ export interface PermitDto {
   qrToken: string | null;
   qrIssuedAt: string | null;
   qrIssuedBy: string | null;
+  qrPrintedAt: string | null;
+  qrPrintedBy: string | null;
+  qrPrintState: PermitQrPrintState;
   driverFullName: string;
   vehicleType: VehicleType | string;
   issuedDate: string;

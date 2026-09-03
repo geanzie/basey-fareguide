@@ -17,6 +17,16 @@ export interface IssuePermitQrTokenInput {
   issuedBy: string
 }
 
+export interface MarkPermitQrPrintedInput {
+  permitIds: string[]
+  printedBy: string
+}
+
+export interface MarkPermitQrPrintedResult {
+  markedIds: string[]
+  skippedIds: string[]
+}
+
 function isQrTokenUniqueConstraint(error: unknown): boolean {
   return (
     error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -140,6 +150,10 @@ export async function issuePermitQrToken(input: IssuePermitQrTokenInput) {
             qrToken,
             qrIssuedAt: issuedAt,
             qrIssuedBy: input.issuedBy,
+            // A new token kills the sticker already pasted on the vehicle, so the
+            // permit goes back to the print queue.
+            qrPrintedAt: null,
+            qrPrintedBy: null,
           },
           include: {
             renewalHistory: {
@@ -179,4 +193,61 @@ export async function issuePermitQrToken(input: IssuePermitQrTokenInput) {
   }
 
   throw new Error('Unable to generate a unique QR token for this permit')
+}
+
+export async function markPermitQrPrinted(
+  input: MarkPermitQrPrintedInput,
+): Promise<MarkPermitQrPrintedResult> {
+  const uniqueIds = Array.from(new Set(input.permitIds))
+
+  if (uniqueIds.length === 0) {
+    return { markedIds: [], skippedIds: [] }
+  }
+
+  const permits = await prisma.permit.findMany({
+    where: {
+      id: { in: uniqueIds },
+    },
+    select: {
+      id: true,
+      permitPlateNumber: true,
+      qrToken: true,
+    },
+  })
+
+  const printable = permits.filter(
+    (permit): permit is typeof permit & { qrToken: string } => Boolean(permit.qrToken),
+  )
+  const printableIds = new Set(printable.map((permit) => permit.id))
+  const skippedIds = uniqueIds.filter((id) => !printableIds.has(id))
+
+  if (printable.length === 0) {
+    return { markedIds: [], skippedIds }
+  }
+
+  const printedAt = new Date()
+
+  await prisma.$transaction(async (tx) => {
+    await tx.permit.updateMany({
+      where: {
+        id: { in: printable.map((permit) => permit.id) },
+      },
+      data: {
+        qrPrintedAt: printedAt,
+        qrPrintedBy: input.printedBy,
+      },
+    })
+
+    for (const permit of printable) {
+      await createPermitQrAudit(tx, {
+        permitId: permit.id,
+        permitPlateNumber: permit.permitPlateNumber,
+        action: 'PRINT_QR',
+        actedBy: input.printedBy,
+        currentToken: permit.qrToken,
+      })
+    }
+  })
+
+  return { markedIds: printable.map((permit) => permit.id), skippedIds }
 }
