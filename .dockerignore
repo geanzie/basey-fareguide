@@ -1,0 +1,43 @@
+# Build context excludes for the NAS image (compose.nas.yml -> farecheck_web).
+#
+# The Dockerfile does `COPY . .` in the builder stage. Without this file that
+# copies the developer's real .env / .env.local / .env.production into image
+# layers — a secret leak, and worse: `next build` runs with NODE_ENV=production,
+# so Next would load .env.production and bake ITS NEXT_PUBLIC_* values into the
+# client bundle instead of the NAS ones. The NAS values arrive as build args
+# (see Dockerfile), which only works if no .env file is present here.
+
+# Secrets — never in the image. Templates are kept for reference only.
+.env
+.env.*
+!.env.example
+!.env.local.example
+!.env.template
+!.env.production.template
+
+# Reinstalled/rebuilt inside the image
+node_modules
+.next
+.next-dev
+.next-prod
+*.tsbuildinfo
+
+# Host/tooling state
+.git
+.gitignore
+.vercel
+.cache
+.commitguardignore
+artifacts
+coverage
+knip.json
+
+# Stray file at the frontend root
+0
+
+# Runtime-written uploads: a volume is mounted at /app/public/uploads, so
+# anything here would be shadowed anyway. Do not ship developer test photos.
+public/uploads
+
+# Documentation is not needed to run the app
+docs

@@ -1,6 +1,8 @@
+import { HeadBucketCommand } from '@aws-sdk/client-s3'
 import { NextRequest, NextResponse } from 'next/server'
 import { ADMIN_ONLY, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { getMissingS3EnvVars, getS3Bucket, getS3Client } from '@/lib/s3Client'
 import {
   cleanupOldEvidenceFiles,
   clampEvidenceCleanupBatchSize,
@@ -17,12 +19,57 @@ function parsePositiveInteger(value: unknown, fallback: number): number {
   return parsedValue
 }
 
+/**
+ * Whether the evidence bucket is actually usable, not merely configured.
+ *
+ * The database rows say what SHOULD exist; this says whether the bucket behind
+ * them answers. Admin-only, so spending one HeadBucket call is fine — the
+ * unauthenticated /api/health deliberately checks configuration only.
+ */
+async function checkBucketReachable(): Promise<{
+  configured: boolean
+  missingEnvVars: string[]
+  reachable: boolean | null
+  bucket: string | null
+  error: string | null
+}> {
+  const missingEnvVars = getMissingS3EnvVars()
+
+  if (missingEnvVars.length > 0) {
+    return {
+      configured: false,
+      missingEnvVars,
+      reachable: null,
+      bucket: null,
+      error:
+        'Object storage is not configured. Evidence uploads and discount-card ID photos will be rejected until these environment variables are set.',
+    }
+  }
+
+  const bucket = getS3Bucket()
+
+  try {
+    await getS3Client().send(new HeadBucketCommand({ Bucket: bucket }))
+    return { configured: true, missingEnvVars: [], reachable: true, bucket, error: null }
+  } catch (error) {
+    // Credentials, bucket name, region, and endpoint all surface here.
+    return {
+      configured: true,
+      missingEnvVars: [],
+      reachable: false,
+      bucket,
+      error: error instanceof Error ? error.message : 'Bucket is not reachable',
+    }
+  }
+}
+
 // GET - Get storage statistics
 export async function GET(request: NextRequest) {
   try {
     await requireRequestRole(request, [...ADMIN_ONLY])
 
     const stats = await getEvidenceStorageStats()
+    const objectStorage = await checkBucketReachable()
 
     // Get additional statistics
     const incidentStats = await prisma.incident.groupBy({
@@ -46,13 +93,17 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       storage: stats,
+      objectStorage,
       incidents: {
         byStatus: incidentStats,
         oldResolvedIncidents: oldResolvedCount
       },
       recommendations: {
         cleanupNeeded: stats.total.sizeMB > 50, // Recommend cleanup if over 50MB
-        oldIncidentsCount: oldResolvedCount
+        oldIncidentsCount: oldResolvedCount,
+        // Louder than a cleanup hint: with storage down, every incident report
+        // carrying a file is rejected outright.
+        storageUnavailable: !objectStorage.configured || objectStorage.reachable === false
       }
     })
   } catch (error) {

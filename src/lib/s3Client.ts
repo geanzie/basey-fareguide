@@ -61,6 +61,26 @@ export function getSignedUrlTtl(): number {
 }
 
 /**
+ * Which required S3 variables are absent. Empty means configured.
+ *
+ * Separate from ensureS3Configured so a health or diagnostics endpoint can ask
+ * without catching an exception — this misconfiguration went unnoticed in
+ * production for two months because nothing reported it until an upload failed.
+ */
+export function getMissingS3EnvVars(): string[] {
+  const missing: string[] = [];
+  if (!process.env.S3_ENDPOINT) missing.push("S3_ENDPOINT");
+  if (!process.env.S3_ACCESS_KEY_ID) missing.push("S3_ACCESS_KEY_ID");
+  if (!process.env.S3_SECRET_ACCESS_KEY) missing.push("S3_SECRET_ACCESS_KEY");
+  return missing;
+}
+
+/** Whether uploads can work at all. Does not prove the bucket is reachable. */
+export function isS3Configured(): boolean {
+  return getMissingS3EnvVars().length === 0;
+}
+
+/**
  * Throws if required S3 env vars are missing.
  * Call before any S3 operation outside of test mode.
  */
@@ -69,10 +89,7 @@ export function ensureS3Configured(): void {
     return;
   }
 
-  const missing: string[] = [];
-  if (!process.env.S3_ENDPOINT) missing.push("S3_ENDPOINT");
-  if (!process.env.S3_ACCESS_KEY_ID) missing.push("S3_ACCESS_KEY_ID");
-  if (!process.env.S3_SECRET_ACCESS_KEY) missing.push("S3_SECRET_ACCESS_KEY");
+  const missing = getMissingS3EnvVars();
 
   if (missing.length > 0) {
     throw new Error(

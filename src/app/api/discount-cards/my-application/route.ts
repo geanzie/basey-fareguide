@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { writeFile, mkdir } from 'fs/promises'
-import { join } from 'path'
-import { randomUUID } from 'crypto'
 import { validateIDImage } from '@/lib/idValidation'
+import {
+  removeDiscountCardPhoto,
+  storeDiscountCardPhoto
+} from '@/lib/discountCardPhotoStorage'
 import { PUBLIC_ONLY, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
 import {
   buildDiscountCardResponse,
@@ -193,8 +194,10 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
-    // Handle photo upload if new photo provided
+    // Handle photo upload if new photo provided.
+    // photoUrl holds the object key in the private bucket, not a public path.
     let photoUrl = existingCard.photoUrl
+    const previousPhotoUrl = existingCard.photoUrl
 
     if (photo) {
       // Validate photo file
@@ -238,16 +241,7 @@ export async function PATCH(request: NextRequest) {
           )
         }
 
-        // Save new photo
-        const uploadDir = join(process.cwd(), 'public', 'uploads', 'discount-cards')
-        await mkdir(uploadDir, { recursive: true })
-
-        const fileExtension = photo.name.split('.').pop()
-        const fileName = `${userId}_${randomUUID()}.${fileExtension}`
-        const filePath = join(uploadDir, fileName)
-
-        await writeFile(filePath, buffer)
-        photoUrl = `/uploads/discount-cards/${fileName}`
+        photoUrl = await storeDiscountCardPhoto({ userId, file: photo, buffer })
 
         // Store validation result for admin review
         // (You can optionally add a field to the database to store this)
@@ -358,6 +352,13 @@ export async function PATCH(request: NextRequest) {
         updatedAt: true,
       }
     })
+
+    // The row now points at the new object, so the superseded ID photo can go.
+    // Best-effort: a leftover object is untidy, but failing the resubmission
+    // after it has already been committed would be worse.
+    if (photoUrl !== previousPhotoUrl) {
+      await removeDiscountCardPhoto(previousPhotoUrl).catch(() => {})
+    }
 
     return NextResponse.json({
       success: true,

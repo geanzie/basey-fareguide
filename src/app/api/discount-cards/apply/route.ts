@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { writeFile, mkdir } from 'fs/promises'
-import { join } from 'path'
-import { randomUUID } from 'crypto'
 import { validateIDImage } from '@/lib/idValidation'
+import { storeDiscountCardPhoto } from '@/lib/discountCardPhotoStorage'
 import { PUBLIC_ONLY, createAuthErrorResponse, requireRequestRole } from '@/lib/auth'
 
 /**
@@ -199,7 +197,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Save photo to filesystem with ID validation
+    // Store the photo in the private bucket after ID validation.
+    // photoUrl holds the object key, not a URL — reading it goes through
+    // GET /api/discount-cards/[cardId]/photo.
     let photoUrl: string
     try {
       const bytes = await photo.arrayBuffer()
@@ -227,15 +227,7 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      const uploadDir = join(process.cwd(), 'public', 'uploads', 'discount-cards')
-      await mkdir(uploadDir, { recursive: true })
-
-      const fileExtension = photo.name.split('.').pop()
-      const fileName = `${userId}_${randomUUID()}.${fileExtension}`
-      const filePath = join(uploadDir, fileName)
-
-      await writeFile(filePath, buffer)
-      photoUrl = `/uploads/discount-cards/${fileName}`
+      photoUrl = await storeDiscountCardPhoto({ userId, file: photo, buffer })
     } catch (fileError: any) {      return NextResponse.json(
         { 
           message: 'Failed to save or validate photo file',

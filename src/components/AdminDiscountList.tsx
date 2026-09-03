@@ -83,6 +83,10 @@ export default function AdminDiscountList({ onRefresh }: DiscountListProps) {
   const [activeFilter, setActiveFilter] = useState<string>('')
   const [overrideFilter, setOverrideFilter] = useState<string>('')
   const [selectedCard, setSelectedCard] = useState<DiscountCard | null>(null)
+  // Set when the ID photo endpoint fails — an application predating object
+  // storage, or an object that is genuinely gone. The reviewer needs to know
+  // they are deciding without seeing the ID.
+  const [photoUnavailable, setPhotoUnavailable] = useState(false)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
 
   useEffect(() => {
@@ -137,6 +141,7 @@ export default function AdminDiscountList({ onRefresh }: DiscountListProps) {
 
   const viewDetails = (card: DiscountCard) => {
     setSelectedCard(card)
+    setPhotoUnavailable(false)
     setShowDetailsModal(true)
   }
 
@@ -561,28 +566,42 @@ export default function AdminDiscountList({ onRefresh }: DiscountListProps) {
             </div>
 
             {/* Photo ID */}
+            {/*
+              The ID photo is a private object. This endpoint checks the caller
+              and redirects to a short-lived presigned URL; the browser sends
+              the auth cookie with the image request. Applications submitted
+              before photos moved to object storage answer 410, which lands on
+              the onError placeholder below.
+            */}
             {selectedCard.photoUrl && (
               <div>
                 <h4 className="text-lg font-semibold text-gray-900 mb-3">Uploaded Photo ID</h4>
                 <div className="bg-gray-50 rounded-lg p-4">
                   <div className="flex justify-center">
                     <img
-                      src={selectedCard.photoUrl}
+                      src={`/api/discount-cards/${selectedCard.id}/photo`}
                       alt="Discount Card Photo"
                       loading="lazy"
                       decoding="async"
                       className="max-w-md max-h-96 object-contain rounded-lg border-2 border-gray-300 shadow-sm"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = '/placeholder-image.png'
+                        setPhotoUnavailable(true)
                       }}
                     />
                   </div>
-                  <p className="text-xs text-gray-500 text-center mt-2">
-                    Click to view full size or download
-                  </p>
+                  {photoUnavailable ? (
+                    <p className="text-xs text-amber-700 text-center mt-2">
+                      This ID photo is no longer available. Ask the applicant to re-upload it before deciding.
+                    </p>
+                  ) : (
+                    <p className="text-xs text-gray-500 text-center mt-2">
+                      Click to view full size or download
+                    </p>
+                  )}
                   <div className="flex justify-center mt-2 gap-2">
                     <a
-                      href={selectedCard.photoUrl}
+                      href={`/api/discount-cards/${selectedCard.id}/photo`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
@@ -590,7 +609,7 @@ export default function AdminDiscountList({ onRefresh }: DiscountListProps) {
                       View Full Size
                     </a>
                     <a
-                      href={selectedCard.photoUrl}
+                      href={`/api/discount-cards/${selectedCard.id}/photo`}
                       download
                       className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm"
                     >

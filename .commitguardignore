@@ -9,3 +9,15 @@ entropy:src/__tests__/components/evidence-manager.test.tsx
 
 # A module path in a `vi.mock` call, long enough to read as a random token.
 entropy:src/__tests__/app/route-planner-ui.test.tsx
+
+# .env.local.example documents the variables a local checkout needs. It is an
+# example file, but its name misses the scanner's exempt suffixes, which come
+# after ".env", not after ".env.local". Its S3 values are the bundled MinIO
+# container's own dev credentials (farecheck_dev / farecheck_dev_secret against
+# 127.0.0.1:9000), already in compose.dev.yml and useless off localhost.
+# Content rules still apply: a real credential added here is still blocked.
+env-file:.env.local.example
+
+# Same file, entropy tier: the `your_google_..._here` style placeholders read as
+# high-entropy strings. Real key formats and PEM blocks still block here.
+entropy:.env.local.example
