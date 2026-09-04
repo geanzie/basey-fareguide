@@ -17,7 +17,7 @@ export function serializeVehicle(record: {
   model: string;
   year: number;
   color: string;
-  capacity: number;
+  capacity: number | null;
   isActive: boolean;
   ownerName: string;
   ownerContact: string;
@@ -43,7 +43,7 @@ export function serializeVehicle(record: {
     model: record.model,
     year: record.year,
     color: record.color,
-    capacity: record.capacity,
+    capacity: record.capacity ?? null,
     isActive: record.isActive,
     ownerName: record.ownerName,
     ownerContact: record.ownerContact,

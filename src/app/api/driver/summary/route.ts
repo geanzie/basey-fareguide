@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
         prisma.incident.count({
           where: {
             ...incidentWhere,
-            status: { in: ['PENDING', 'INVESTIGATING'] },
+            status: { in: ['PENDING', 'INVESTIGATING', 'REFERRED_FOR_FRANCHISE_ACTION'] },
           },
         }),
         prisma.incident.count({

@@ -49,6 +49,7 @@ export function serializeFareCalculation(record: {
   toLocation: string;
   distance: unknown;
   calculatedFare: unknown;
+  seatsPaid?: number | null;
   actualFare?: unknown;
   originalFare?: unknown;
   discountApplied?: unknown;
@@ -71,6 +72,7 @@ export function serializeFareCalculation(record: {
     to: formatFareLocationLabel(record.toLocation),
     distanceKm: toNullableNumber(record.distance) ?? 0,
     fare: toNullableNumber(record.calculatedFare) ?? 0,
+    seatsPaid: record.seatsPaid ?? 1,
     actualFare: toNullableNumber(record.actualFare),
     originalFare: toNullableNumber(record.originalFare),
     discountApplied: toNullableNumber(record.discountApplied),

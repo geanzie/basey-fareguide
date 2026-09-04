@@ -71,6 +71,21 @@ export async function GET(request: NextRequest) {
   }
 }
 
+/**
+ * Seat capacity is now an optional per-vehicle override beneath the admin-set
+ * per-type standard, so a missing or unparseable value means "use the
+ * standard" rather than being an error. Zero and negatives are rejected to
+ * null: a vehicle that seats nobody would block every scan against it.
+ */
+function parseSeatOverride(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') {
+    return null
+  }
+
+  const parsed = typeof value === 'number' ? value : parseInt(String(value), 10)
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null
+}
+
 export async function POST(request: NextRequest) {
   try {
     await requireRequestRole(request, [...ADMIN_OR_ENCODER])
@@ -92,7 +107,7 @@ export async function POST(request: NextRequest) {
     } = body
 
     // Validate required fields
-    if (!plateNumber || !vehicleType || !make || !model || !year || !color || !capacity || !ownerName || !ownerContact || !registrationExpiry) {
+    if (!plateNumber || !vehicleType || !make || !model || !year || !color || !ownerName || !ownerContact || !registrationExpiry) {
       return NextResponse.json(
         { message: 'Missing required fields' },
         { status: 400 }
@@ -127,7 +142,7 @@ export async function POST(request: NextRequest) {
         model,
         year: parseInt(year),
         color,
-        capacity: parseInt(capacity),
+        capacity: parseSeatOverride(capacity),
         ownerName,
         ownerContact,
         driverName: driverName || null,

@@ -25,6 +25,7 @@ import type {
 } from '@/lib/contracts'
 import { verifyAuthWithSelect } from '@/lib/auth'
 import { isDriverAcceptSuspended } from '@/lib/driverSessionSettings/settingsService'
+import { resolveSeatCapacity } from '@/lib/vehicleCapacitySettings/settingsService'
 import { prisma } from '@/lib/prisma'
 
 const DRIVER_HISTORY_DEFAULT_LIMIT = 10
@@ -214,6 +215,7 @@ const driverSessionSelect = {
       destinationSnapshot: true,
       distanceSnapshot: true,
       fareSnapshot: true,
+      seatsPaid: true,
       calculationTypeSnapshot: true,
       routeDataSnapshot: true,
       farePolicySnapshot: true,
@@ -255,6 +257,12 @@ type DriverVehicleContext = DriverContext & {
 type PendingTripRequestCandidate = {
   userId: string | null
   vehicleId: string | null
+  /**
+   * Seats this fare buys. 1 is an ordinary shared ride; the vehicle's capacity
+   * is a charter, where the rider pays for the whole vehicle to leave now.
+   * Absent means 1, so every existing caller keeps its current behaviour.
+   */
+  seatsPaid?: number | null
   fromLocation: string
   toLocation: string
   distance: Prisma.Decimal | number | string
@@ -317,12 +325,25 @@ type DriverHistorySessionRecord = Prisma.VehicleTripSessionGetPayload<{ select: 
 export class DriverSessionError extends Error {
   status: number
   code: string
+  /**
+   * Machine-readable context for errors a client must explain rather than just
+   * report — a capacity block needs to tell the rider how many seats are taken
+   * and by whom, or the refusal reads as an app bug and they board anyway with
+   * no record at all.
+   */
+  details?: Record<string, unknown>
 
-  constructor(message: string, status = 400, code = 'DRIVER_SESSION_ERROR') {
+  constructor(
+    message: string,
+    status = 400,
+    code = 'DRIVER_SESSION_ERROR',
+    details?: Record<string, unknown>,
+  ) {
     super(message)
     this.name = 'DriverSessionError'
     this.status = status
     this.code = code
+    this.details = details
   }
 }
 
@@ -683,6 +704,7 @@ export async function expireAllStalePendingRequests(now?: Date): Promise<number>
  */
 type FareCalculationRiderSnapshot = {
   riderUserId: string
+  seatsPaid: number
   originSnapshot: string
   destinationSnapshot: string
   distanceSnapshot: Prisma.Decimal | number | string
@@ -708,6 +730,7 @@ async function createFareCalculationFromPendingRequest(
       toLocation: rider.destinationSnapshot,
       distance: toNumber(rider.distanceSnapshot),
       calculatedFare: toNumber(rider.fareSnapshot),
+      seatsPaid: rider.seatsPaid,
       calculationType: rider.calculationTypeSnapshot,
       routeData: rider.routeDataSnapshot,
       discountCardId: rider.discountCardIdSnapshot,
@@ -723,6 +746,8 @@ async function createFareCalculationFromPendingRequest(
   const originalFare = toNullableNumber(rider.originalFareSnapshot)
   const discountApplied = toNullableNumber(rider.discountAppliedSnapshot)
   const finalFare = toNumber(rider.fareSnapshot)
+  const perSeatOriginalFare =
+    originalFare !== null && rider.seatsPaid > 0 ? originalFare / rider.seatsPaid : 0
 
   if (
     rider.discountCardIdSnapshot &&
@@ -737,7 +762,12 @@ async function createFareCalculationFromPendingRequest(
         originalFare,
         discountAmount: discountApplied,
         finalFare,
-        discountRate: originalFare > 0 ? discountApplied / originalFare : 0,
+        // Rate is a property of the card, not of the trip. On a charter the
+        // discount covers only the holder's own seat, so dividing by the
+        // whole-vehicle originalFare would record 0.067 for a 20% card and
+        // silently corrupt any audit of discount usage. Divide by what that one
+        // seat would have cost undiscounted instead.
+        discountRate: perSeatOriginalFare > 0 ? discountApplied / perSeatOriginalFare : 0,
         fromLocation: rider.originSnapshot,
         toLocation: rider.destinationSnapshot,
         distance: toNumber(rider.distanceSnapshot),
@@ -909,6 +939,22 @@ export async function createPendingTripRequest(
  * nobody to accept it later, and nothing to time out. The rider ends the trip
  * with applyRiderTripAction.
  */
+/**
+ * Seats are clamped, never trusted. A client computing a charter from a stale
+ * cached capacity would otherwise buy more seats than the vehicle has, and the
+ * ceiling — not the client — is authoritative.
+ */
+function clampSeatsRequested(
+  requested: number | null | undefined,
+  capacity: number,
+): number {
+  if (typeof requested !== 'number' || !Number.isFinite(requested)) {
+    return 1
+  }
+
+  return Math.min(Math.max(Math.floor(requested), 1), capacity)
+}
+
 export async function createRiderConfirmedTrip(
   pendingTrip: PendingTripRequestCandidate,
   userType: UserType,
@@ -921,6 +967,26 @@ export async function createRiderConfirmedTrip(
   const vehicleId = pendingTrip.vehicleId
   const now = pendingTrip.createdAt
 
+  // Resolved before the transaction opens on purpose: resolveSeatCapacity reads
+  // the settings cache through the global client, and taking a second
+  // connection while a transaction holds one can exhaust a pool of 5.
+  const vehicle = await prisma.vehicle.findUnique({
+    where: { id: vehicleId },
+    select: { vehicleType: true, capacity: true },
+  })
+
+  const resolvedCapacity = await resolveSeatCapacity(
+    vehicle?.vehicleType,
+    vehicle?.capacity,
+  )
+
+  // Null capacity means the type is not seat-managed: no ceiling, no charter,
+  // and every rider takes exactly one seat.
+  const seatsRequested =
+    resolvedCapacity === null
+      ? 1
+      : clampSeatsRequested(pendingTrip.seatsPaid, resolvedCapacity)
+
   return prisma.$transaction(async (tx) => {
     // Reuse an open rider-initiated session for this vehicle rather than opening
     // one per passenger: a tricycle carries several riders on the same run.
@@ -931,7 +997,7 @@ export async function createRiderConfirmedTrip(
         status: { in: [...ACTIVE_SESSION_STATUSES] },
       },
       orderBy: [{ openedAt: 'desc' }, { id: 'desc' }],
-      select: { id: true },
+      select: { id: true, seatCapacitySnapshot: true },
     })
 
     const session =
@@ -943,8 +1009,12 @@ export async function createRiderConfirmedTrip(
           initiatedBy: DriverTripSessionInitiator.RIDER,
           status: DriverTripSessionStatus.IN_PROGRESS,
           openedAt: now,
+          // Snapshotted so an admin lowering the standard mid-run cannot
+          // strand riders already aboard, and so a charter's price can never
+          // disagree with the ceiling that priced it.
+          seatCapacitySnapshot: resolvedCapacity,
         },
-        select: { id: true },
+        select: { id: true, seatCapacitySnapshot: true },
       }))
 
     const activeRequestKey = buildActiveRequestKey(session.id, riderUserId)
@@ -963,6 +1033,10 @@ export async function createRiderConfirmedTrip(
 
     // The rider is already on this vehicle in this session — their previous
     // scan stands rather than being double-charged by a retry.
+    //
+    // This must stay ahead of the capacity check below: a rider whose scan
+    // succeeded and whose network then dropped would otherwise be refused by
+    // the seats their own first scan is holding.
     if (existingEntry) {
       return {
         ...existingEntry,
@@ -971,8 +1045,43 @@ export async function createRiderConfirmedTrip(
       }
     }
 
+    // Sessions opened before seat accounting existed carry no snapshot; fall
+    // back to the ceiling in force now rather than treating null as unlimited.
+    const seatCeiling = session.seatCapacitySnapshot ?? resolvedCapacity
+
+    if (seatCeiling !== null) {
+      const aboard = await tx.vehicleTripSessionRider.findMany({
+        where: {
+          sessionId: session.id,
+          status: { in: [...CLOSE_BLOCKING_RIDER_STATUSES] },
+        },
+        select: { seatsPaid: true },
+      })
+
+      const occupied = aboard.reduce((sum, entry) => sum + entry.seatsPaid, 0)
+
+      if (occupied + seatsRequested > seatCeiling) {
+        // Refusing writes no FareCalculation, which is the point: issuing one
+        // would record a fare the ordinance does not permit. The rider is told
+        // why and offered a report instead — they are the natural witness, and
+        // a silent refusal just puts them aboard with no record at all.
+        throw new DriverSessionError(
+          'This vehicle has no seats left. Another passenger has already paid for them.',
+          409,
+          'VEHICLE_AT_CAPACITY',
+          {
+            occupied,
+            capacity: seatCeiling,
+            seatsRequested,
+            chartered: aboard.some((entry) => entry.seatsPaid > 1),
+          },
+        )
+      }
+    }
+
     const riderSnapshot = {
       riderUserId,
+      seatsPaid: seatsRequested,
       originSnapshot: pendingTrip.fromLocation,
       destinationSnapshot: pendingTrip.toLocation,
       distanceSnapshot: toNumber(pendingTrip.distance),
@@ -1002,6 +1111,7 @@ export async function createRiderConfirmedTrip(
         destinationSnapshot: pendingTrip.toLocation,
         distanceSnapshot: toNumber(pendingTrip.distance),
         fareSnapshot: toNumber(pendingTrip.calculatedFare),
+        seatsPaid: seatsRequested,
         calculationTypeSnapshot: pendingTrip.calculationType,
         routeDataSnapshot: pendingTrip.routeData,
         farePolicySnapshot: pendingTrip.farePolicySnapshot,

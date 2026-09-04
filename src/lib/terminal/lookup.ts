@@ -258,7 +258,7 @@ export async function lookupQrToken(scannedToken: string): Promise<{
     prisma.incident.count({
       where: {
         ...incidentWhere,
-        status: { in: ['PENDING', 'INVESTIGATING'] },
+        status: { in: ['PENDING', 'INVESTIGATING', 'REFERRED_FOR_FRANCHISE_ACTION'] },
       },
     }),
     prisma.incident.count({
@@ -281,7 +281,7 @@ export async function lookupQrToken(scannedToken: string): Promise<{
     prisma.incident.findMany({
       where: {
         ...incidentWhere,
-        status: { in: ['PENDING', 'INVESTIGATING'] },
+        status: { in: ['PENDING', 'INVESTIGATING', 'REFERRED_FOR_FRANCHISE_ACTION'] },
       },
       orderBy: [{ incidentDate: 'desc' }, { id: 'desc' }],
       take: 5,

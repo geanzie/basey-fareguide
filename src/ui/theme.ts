@@ -53,6 +53,7 @@ const STATUS_TONES: Record<string, Tone> = {
   // Incident
   PENDING: 'warning',
   INVESTIGATING: 'info',
+  REFERRED_FOR_FRANCHISE_ACTION: 'warning',
   TICKET_ISSUED: 'purple',
   RESOLVED: 'success',
   DISMISSED: 'muted',

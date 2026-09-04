@@ -32,16 +32,9 @@ vi.mock('@/lib/prisma', () => ({
   prisma: prismaMock,
 }))
 
-vi.mock('@/lib/incidents/penaltyRules', () => ({
-  normalizePlateNumber: (plateNumber: string | null | undefined) => {
-    if (!plateNumber) {
-      return null
-    }
-
-    const normalized = plateNumber.trim().toUpperCase()
-    return normalized.length > 0 ? normalized : null
-  },
-}))
+// Not mocked: this test used to reimplement normalizePlateNumber by hand, so a
+// change to the real function surfaced here as a pass. The module is pure and
+// pulls in no infrastructure, so use it directly.
 
 import { GET } from '@/app/api/driver/summary/route'
 

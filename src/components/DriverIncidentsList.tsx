@@ -12,6 +12,7 @@ const STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: '', label: 'All Statuses' },
   { value: 'PENDING', label: 'Pending' },
   { value: 'INVESTIGATING', label: 'Investigating' },
+  { value: 'REFERRED_FOR_FRANCHISE_ACTION', label: 'Referred for Franchise Action' },
   { value: 'TICKET_ISSUED', label: 'Ticket Issued' },
   { value: 'RESOLVED', label: 'Resolved' },
   { value: 'DISMISSED', label: 'Dismissed' },
@@ -45,6 +46,7 @@ function StatusBadge({ status }: { status: IncidentStatus | string }) {
   const styles: Record<string, string> = {
     PENDING: 'bg-amber-100 text-amber-700',
     INVESTIGATING: 'bg-blue-100 text-blue-700',
+    REFERRED_FOR_FRANCHISE_ACTION: 'bg-amber-100 text-amber-800',
     TICKET_ISSUED: 'bg-red-100 text-red-700',
     RESOLVED: 'bg-surface-tint text-primary-dark',
     DISMISSED: 'bg-slate-100 text-slate-600',
@@ -52,6 +54,7 @@ function StatusBadge({ status }: { status: IncidentStatus | string }) {
   const label: Record<string, string> = {
     PENDING: 'Pending',
     INVESTIGATING: 'Investigating',
+    REFERRED_FOR_FRANCHISE_ACTION: 'Referred for Franchise Action',
     TICKET_ISSUED: 'Ticket Issued',
     RESOLVED: 'Resolved',
     DISMISSED: 'Dismissed',

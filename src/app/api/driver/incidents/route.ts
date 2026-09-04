@@ -33,6 +33,7 @@ function labelForStatus(status: string): string {
   const map: Record<string, string> = {
     PENDING: 'Pending',
     INVESTIGATING: 'Investigating',
+    REFERRED_FOR_FRANCHISE_ACTION: 'Referred for Franchise Action',
     TICKET_ISSUED: 'Ticket Issued',
     RESOLVED: 'Resolved',
     DISMISSED: 'Dismissed',

@@ -11,6 +11,7 @@ export * from "./permits";
 export * from "./rideTag";
 export * from "./driverSession";
 export * from "./driverSessionSettings";
+export * from "./vehicleCapacitySettings";
 export * from "./session";
 export * from "./terminal";
 export * from "./tracker";

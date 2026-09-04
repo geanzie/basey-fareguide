@@ -69,6 +69,13 @@ const ADMIN_SHORTCUTS: Array<{
     tone: 'emerald',
   },
   {
+    title: 'Vehicle seat capacity',
+    description: 'Set how many passengers each vehicle type carries, and what a charter costs.',
+    href: '/admin/settings/vehicle-capacity',
+    icon: DASHBOARD_ICONS.vehicle,
+    tone: 'emerald',
+  },
+  {
     title: 'Routing settings',
     description: 'Manage the primary route provider.',
     href: '/admin/settings/routing',

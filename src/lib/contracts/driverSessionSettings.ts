@@ -1,5 +1,7 @@
 import type { VehicleType } from "@prisma/client";
 
+import type { SeatCapacityMap } from "./vehicleCapacitySettings";
+
 /**
  * Vehicle types the municipality has suspended from the driver trip-session
  * flow. For a suspended type the driver never goes online and never accepts:
@@ -31,4 +33,13 @@ export interface AdminDriverSessionSettingsUpdateRequestDto {
  */
 export interface TripFlowConfigDto {
   suspendedVehicleTypes: VehicleType[];
+  /**
+   * Seats each seat-managed type may sell. Carried on the same unauthenticated
+   * response as the suspension list because a rider needs both on one screen —
+   * which flow the scan takes, and how many seats a charter would buy — and a
+   * second round-trip on the scan path buys nothing.
+   *
+   * A type absent from this map is not seat-managed: no ceiling, no charter.
+   */
+  seatCapacities: SeatCapacityMap;
 }

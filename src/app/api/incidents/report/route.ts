@@ -9,6 +9,11 @@ import {
   buildTripRouteLabel,
   getReportableFareHistoryCutoff,
 } from '@/lib/incidents/reportTripSelection'
+import {
+  ENFORCER_ONLY_INCIDENT_TYPES,
+  PUBLIC_REPORTABLE_INCIDENT_TYPES,
+  isValidIncidentType,
+} from '@/lib/incidents/penaltyRules'
 import { resolvePinLabel } from '@/lib/locations/pinLabelResolver'
 import { prisma } from '@/lib/prisma'
 import { formatFareLocationLabel } from '@/lib/serializers/fares'
@@ -172,6 +177,33 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // incidentType used to be written through as `as never` with no check at
+    // all, so any authenticated caller could store any enum value. That now
+    // matters: the four franchise offences carry the ordinance's only fines,
+    // and this route is open to every role.
+    if (!isValidIncidentType(incidentType)) {
+      return NextResponse.json(
+        { message: 'Unknown incident type.', code: 'INVALID_INCIDENT_TYPE' },
+        { status: 400 },
+      )
+    }
+
+    const allowedTypes =
+      user.userType === 'ENFORCER' || user.userType === 'ADMIN'
+        ? [...PUBLIC_REPORTABLE_INCIDENT_TYPES, ...ENFORCER_ONLY_INCIDENT_TYPES]
+        : PUBLIC_REPORTABLE_INCIDENT_TYPES
+
+    if (!allowedTypes.includes(incidentType)) {
+      return NextResponse.json(
+        {
+          message:
+            'This violation can only be filed by an enforcer. Report what you observed and an enforcer will classify it.',
+          code: 'INCIDENT_TYPE_NOT_ALLOWED',
+        },
+        { status: 403 },
+      )
+    }
+
     if (evidenceFiles.length === 0) {
       return NextResponse.json(
         { message: 'At least one evidence file is required to submit an incident report.' },
@@ -274,7 +306,7 @@ export async function POST(request: NextRequest) {
 
     const incident = await prisma.incident.create({
       data: {
-        incidentType: incidentType as never,
+        incidentType,
         description,
         location: resolvedLocation,
         coordinates: selectedFareCalculation ? null : coordinates || null,

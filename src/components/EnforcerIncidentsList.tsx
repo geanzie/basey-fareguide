@@ -30,12 +30,20 @@ interface TicketFormState {
 }
 
 interface TicketPenaltyPreview {
+  /** This ticket alone. Zero when Ordinance 105 authorises no fine. */
   penaltyAmount: number
-  currentPenaltyAmount: number
-  carriedForwardPenaltyAmount: number
+  /** How to render it, including "not less than" for a Sec. 33(b)/(c) floor. */
+  amountLabel: string
+  /** Unpaid earlier tickets on the plate. Debt owed, not part of this penalty. */
+  outstandingArrears: number
+  totalOwedOnPlate: number
+  fineable: boolean
+  section: string | null
+  courtDiscretionNote: string | null
+  basis: { kind: string; groundSection?: string; processSection?: string }
   offenseNumber: number
-  offenseTier: 'FIRST' | 'SECOND' | 'THIRD_PLUS'
-  offenseTierLabel: string
+  offenseTier: 'FIRST' | 'SECOND' | 'THIRD_PLUS' | null
+  offenseTierLabel: string | null
   priorTicketCount: number
   priorUnpaidTicketCount: number
   ruleVersion: string
@@ -152,6 +160,7 @@ export default function EnforcerIncidentsList({
   const [showDismissModal, setShowDismissModal] = useState(false)
   const [dismissRemarks, setDismissRemarks] = useState('')
   const [isDismissSubmitting, setIsDismissSubmitting] = useState(false)
+  const [referringIncidentId, setReferringIncidentId] = useState<string | null>(null)
 
   const isQueueMode = mode === 'queue'
   const [page, setPage] = useState(1)
@@ -376,6 +385,55 @@ export default function EnforcerIncidentsList({
     setDismissIncidentTarget(null)
     setDismissRemarks('')
     setIsDismissSubmitting(false)
+  }
+
+  /**
+   * Ordinance 105 fines only the franchise offences in Sec. 33 and Sec. 28.
+   * Everything else -- a fare overcharge above all -- is a ground for
+   * cancelling the franchise under Sec. 29(a), decided by the Sangguniang
+   * Bayan under Sec. 30. Without this the only outcome for a verified
+   * overcharge is Dismiss, which tells the rider their report was thrown out.
+   */
+  const handleReferFranchiseAction = async (incident: IncidentListItemDto) => {
+    setReferringIncidentId(incident.id)
+
+    try {
+      const response = await fetch(`/api/incidents/${incident.id}/refer-franchise-action`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      })
+      const payload = await response.json()
+
+      if (!response.ok) {
+        await revalidateIncidentLists()
+        showActionNotice(
+          'error',
+          'Unable to refer incident',
+          payload.message || 'Failed to refer this incident for franchise action.',
+        )
+        return
+      }
+
+      showActionNotice(
+        'success',
+        'Referred for franchise action',
+        payload.message || 'Referred to the Sangguniang Bayan under Sec. 30.',
+      )
+      if (selectedIncident?.id === incident.id) {
+        closeIncidentDetails()
+      }
+      await revalidateIncidentLists()
+      onWorkflowComplete?.()
+    } catch (_error) {
+      showActionNotice(
+        'error',
+        'Unable to refer incident',
+        'Error referring this incident. Please try again.',
+      )
+    } finally {
+      setReferringIncidentId(null)
+    }
   }
 
   const handleDismissSubmit = async (event: FormEvent) => {
@@ -910,6 +968,22 @@ export default function EnforcerIncidentsList({
                           </ActionLabel>
                         </ActionButton>
                       ) : null}
+                      {incident.status === 'PENDING' && incident.evidenceVerifiedAt ? (
+                        <ActionButton
+                          onClick={() => {
+                            void handleReferFranchiseAction(incident)
+                          }}
+                          variant="secondary"
+                          size="xs"
+                          disabled={referringIncidentId === incident.id}
+                        >
+                          <ActionLabel icon={DASHBOARD_ICONS.ticket} iconClassName="text-amber-600">
+                            {referringIncidentId === incident.id
+                              ? 'Referring...'
+                              : 'Refer for franchise action'}
+                          </ActionLabel>
+                        </ActionButton>
+                      ) : null}
                       {incident.status === 'PENDING' ? (
                         <ActionButton onClick={() => openDismissModal(incident)} variant="secondary" size="xs">
                           <ActionLabel icon={DASHBOARD_ICONS.close} iconClassName="text-gray-500">
@@ -1151,6 +1225,31 @@ export default function EnforcerIncidentsList({
                     <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-4 py-3 text-sm text-gray-600">
                       Loading penalty details...
                     </div>
+                  ) : ticketPenaltyPreview && !ticketPenaltyPreview.fineable ? (
+                    /* Ordinance 105 fines only the franchise offences in Sec. 33
+                       and Sec. 28. Issuing here would impose a penalty nothing
+                       authorises, so the server refuses it and the enforcer is
+                       pointed at the remedy that does exist. */
+                    <div className="space-y-2 rounded-lg border border-amber-300 bg-amber-50 p-4">
+                      <p className="text-sm font-semibold text-amber-900">
+                        No fine applies to this violation
+                      </p>
+                      <p className="text-xs text-amber-900">
+                        Ordinance 105 imposes a fine only for the franchise offences in
+                        Sec. 33 and Sec. 28. For this violation the remedy is cancellation
+                        or revocation of the franchise &mdash; Sec. 29(a) is the ground,
+                        Sec. 30 the Sangguniang Bayan process. Close this dialog and use
+                        &ldquo;Refer for franchise action&rdquo; instead.
+                      </p>
+                      {ticketPenaltyPreview.outstandingArrears > 0 ? (
+                        <p className="text-xs text-amber-900">
+                          This plate separately owes PHP{' '}
+                          {ticketPenaltyPreview.outstandingArrears.toLocaleString()} on{' '}
+                          {ticketPenaltyPreview.priorUnpaidTicketCount} unpaid ticket
+                          {ticketPenaltyPreview.priorUnpaidTicketCount === 1 ? '' : 's'}.
+                        </p>
+                      ) : null}
+                    </div>
                   ) : ticketPenaltyPreview ? (
                     <div className="grid gap-3 rounded-lg border border-red-200 bg-red-50 p-4 md:grid-cols-4">
                       <div>
@@ -1158,31 +1257,49 @@ export default function EnforcerIncidentsList({
                         <p className="mt-1 text-sm font-semibold text-red-900">#{ticketPenaltyPreview.offenseNumber}</p>
                       </div>
                       <div>
-                        <p className="text-xs font-semibold uppercase tracking-wide text-red-600">Tier</p>
-                        <p className="mt-1 text-sm font-semibold text-red-900">{ticketPenaltyPreview.offenseTierLabel}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-wide text-red-600">Current Ticket</p>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-red-600">Authority</p>
                         <p className="mt-1 text-sm font-semibold text-red-900">
-                          PHP {ticketPenaltyPreview.currentPenaltyAmount.toLocaleString()}
+                          {ticketPenaltyPreview.offenseTierLabel
+                            ? `${ticketPenaltyPreview.offenseTierLabel} · Sec. ${ticketPenaltyPreview.section}`
+                            : `Sec. ${ticketPenaltyPreview.section}`}
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs font-semibold uppercase tracking-wide text-red-600">Amount Due</p>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-red-600">This Ticket</p>
                         <p className="mt-1 text-sm font-semibold text-red-900">
-                          PHP {ticketPenaltyPreview.penaltyAmount.toLocaleString()}
+                          {ticketPenaltyPreview.amountLabel}
                         </p>
                       </div>
-                      <div className="md:col-span-3">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-red-600">Total Owed On Plate</p>
+                        <p className="mt-1 text-sm font-semibold text-red-900">
+                          PHP {ticketPenaltyPreview.totalOwedOnPlate.toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="md:col-span-4">
                         <p className="text-xs text-red-700">
                           Based on {ticketPenaltyPreview.priorTicketCount} prior ticketed violation
-                          {ticketPenaltyPreview.priorTicketCount === 1 ? '' : 's'} for this plate number.
+                          {ticketPenaltyPreview.priorTicketCount === 1 ? '' : 's'} of this same
+                          offence for this plate number.
                         </p>
                       </div>
-                      {ticketPenaltyPreview.carriedForwardPenaltyAmount > 0 ? (
+                      {ticketPenaltyPreview.outstandingArrears > 0 ? (
+                        <div className="md:col-span-4">
+                          {/* Kept out of this ticket's amount on purpose: nothing in
+                              Ordinance 105 compounds an unpaid fine into a later one. */}
+                          <p className="text-xs text-red-700">
+                            Separately, this plate owes PHP{' '}
+                            {ticketPenaltyPreview.outstandingArrears.toLocaleString()} on{' '}
+                            {ticketPenaltyPreview.priorUnpaidTicketCount} earlier unpaid ticket
+                            {ticketPenaltyPreview.priorUnpaidTicketCount === 1 ? '' : 's'}. That is
+                            an existing balance, not part of this penalty.
+                          </p>
+                        </div>
+                      ) : null}
+                      {ticketPenaltyPreview.courtDiscretionNote ? (
                         <div className="md:col-span-4">
                           <p className="text-xs text-red-700">
-                            Includes PHP {ticketPenaltyPreview.carriedForwardPenaltyAmount.toLocaleString()} carried forward from {ticketPenaltyPreview.priorUnpaidTicketCount} earlier unpaid ticket{ticketPenaltyPreview.priorUnpaidTicketCount === 1 ? '' : 's'}.
+                            {ticketPenaltyPreview.courtDiscretionNote}
                           </p>
                         </div>
                       ) : null}
@@ -1220,8 +1337,12 @@ export default function EnforcerIncidentsList({
                   </button>
                   <button
                     type="submit"
-                    disabled={isTicketPenaltyLoading || !ticketPenaltyPreview}
-                    className="w-full rounded-lg bg-primary px-4 py-2 text-white hover:bg-primary-dark sm:w-auto"
+                    disabled={
+                      isTicketPenaltyLoading ||
+                      !ticketPenaltyPreview ||
+                      !ticketPenaltyPreview.fineable
+                    }
+                    className="w-full rounded-lg bg-primary px-4 py-2 text-white hover:bg-primary-dark disabled:cursor-not-allowed disabled:bg-primary/40 sm:w-auto"
                   >
                     Issue Ticket
                   </button>

@@ -3,7 +3,11 @@ import { prisma } from '@/lib/prisma'
 import { buildPaginationMetadata, parsePaginationParams } from '@/lib/api/pagination'
 import { verifyAuth } from '@/lib/auth'
 import { evaluateDiscountCardPolicy } from '@/lib/discountCardPolicy'
-import { createPendingTripRequest, createRiderConfirmedTrip } from '@/lib/driverSession'
+import {
+  createPendingTripRequest,
+  createRiderConfirmedTrip,
+  isDriverSessionError,
+} from '@/lib/driverSession'
 import { isDriverAcceptSuspended } from '@/lib/driverSessionSettings/settingsService'
 import { serializeFareCalculation } from '@/lib/serializers'
 
@@ -168,6 +172,11 @@ export async function POST(request: NextRequest) {
       discountApplied,
       discountType,
       farePolicySnapshot,
+      // Seats this fare buys. Omitted or 1 is an ordinary shared ride; the
+      // vehicle's capacity is a charter, where the rider pays for the whole
+      // vehicle so it leaves immediately. The server clamps this to the
+      // vehicle's real ceiling regardless of what the client asks for.
+      seats,
     } = body
     const userId = user.id
 
@@ -319,6 +328,7 @@ export async function POST(request: NextRequest) {
         originalFare: parsedOriginalFare,
         discountApplied: parsedDiscountApplied,
         discountType: resolvedDiscountType,
+        seatsPaid: parseRequestedSeats(seats),
         createdAt: new Date(),
       },
       user.userType,
@@ -343,6 +353,16 @@ export async function POST(request: NextRequest) {
     }, { status: 201 })
 
   } catch (error) {
+    // A capacity block is a deliberate refusal, not a crash. Reporting it as a
+    // 500 would leave the rider with an error they cannot act on, when the
+    // whole point is to tell them why and offer them a report.
+    if (isDriverSessionError(error)) {
+      return NextResponse.json(
+        { message: error.message, code: error.code, details: error.details },
+        { status: error.status }
+      )
+    }
+
     return NextResponse.json(
       { 
         message: 'Internal server error',
@@ -351,4 +371,14 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
+}
+
+/**
+ * Seats are advisory here and authoritative in driverSession: this only turns
+ * loose JSON into a positive integer, and the ceiling clamp happens against
+ * the vehicle's resolved capacity where the session is actually written.
+ */
+function parseRequestedSeats(value: unknown): number {
+  const parsed = typeof value === 'number' ? value : Number(value)
+  return Number.isFinite(parsed) && parsed >= 1 ? Math.floor(parsed) : 1
 }

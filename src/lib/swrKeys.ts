@@ -48,6 +48,7 @@ export const SWR_KEYS = {
   adminRoadRestrictions: '/api/admin/road-restrictions',
   adminRoutingSettings: '/api/admin/settings/routing',
   adminDriverSessionSettings: '/api/admin/settings/driver-sessions',
+  adminVehicleCapacitySettings: '/api/admin/settings/vehicle-capacity',
   adminIncidentStats: '/api/admin/incidents/stats',
   adminFareRates: '/api/admin/fare-rates',
 } as const;

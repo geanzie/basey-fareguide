@@ -224,7 +224,8 @@ describe('lookupQrToken', () => {
           { tripPermitPlateNumber: { in: ['BP-4004'] } },
           { driverLicense: 'DL-PUBLIC-1' },
         ],
-        status: { in: ['PENDING', 'INVESTIGATING'] },
+        // A franchise referral is unresolved until the Sangguniang Bayan acts.
+        status: { in: ['PENDING', 'INVESTIGATING', 'REFERRED_FOR_FRANCHISE_ACTION'] },
       },
       orderBy: [{ incidentDate: 'desc' }, { id: 'desc' }],
       take: 5,

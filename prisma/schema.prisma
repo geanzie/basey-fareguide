@@ -9,86 +9,89 @@ datasource db {
 }
 
 model User {
-  id                            String                           @id @default(cuid())
-  username                      String                           @unique
-  password                      String
-  email                         String?                          @unique
-  firstName                     String
-  lastName                      String
-  phoneNumber                   String?
-  address                       String?
-  userType                      UserType
-  isActive                      Boolean                          @default(true)
-  dateOfBirth                   DateTime?
-  governmentId                  String?                          @unique
-  idType                        String?
-  barangayResidence             String?
-  occupation                    String?
-  emergencyContact              String?
-  emergencyContactPhone         String?
-  reasonForRegistration         String?
-  assignedVehicleId             String?                          @unique
-  assignedVehicleAssignedAt     DateTime?
-  assignedVehicleAssignedBy     String?
-  isVerified                    Boolean                          @default(false)
-  verificationToken             String?
-  verificationExpiry            DateTime?
-  verifiedAt                    DateTime?
-  verifiedBy                    String?
-  registrationIp                String?
-  lastLoginAt                   DateTime?
-  lastLoginIp                   String?
-  loginAttempts                 Int                              @default(0)
-  lockedUntil                   DateTime?
-  passwordResetToken            String?
-  passwordResetExpiry           DateTime?
-  passwordResetOtp              String?
-  passwordResetOtpExpiry        DateTime?
-  privacyNoticeAcknowledgedAt   DateTime?
-  privacyNoticeVersion          String?
-  hasUsablePassword             Boolean                          @default(true)
-  createdAt                     DateTime                         @default(now())
-  updatedAt                     DateTime                         @updatedAt
-  fareCalculations              FareCalculation[]
-  handledIncidents              Incident[]                       @relation("HandledBy")
-  reportedIncidents             Incident[]                       @relation("ReportedBy")
-  uploadedEvidence              Evidence[]                       @relation("EvidenceUploader")
-  reviewedEvidence              Evidence[]                       @relation("EvidenceReviewer")
-  verificationLogs              UserVerificationLog[]
-  oauthAccounts                 UserOAuthAccount[]
-  discountCard                  DiscountCard?
-  createdLocations              Location[]                       @relation("LocationCreator")
-  verifiedLocations             Location[]                       @relation("LocationVerifier")
-  accessVerifiedLocations       Location[]                       @relation("LocationAccessVerifier")
-  createdFareRateVersions       FareRateVersion[]                @relation("FareRateVersionCreator")
-  canceledFareRateVersions      FareRateVersion[]                @relation("FareRateVersionCanceller")
-  fareRateVersionDocuments      FareRateVersion[]                @relation("FareRateVersionDocumentUploader")
-  createdAnnouncements          Announcement[]                   @relation("AnnouncementCreator")
-  updatedAnnouncements          Announcement[]                   @relation("AnnouncementUpdater")
-  archivedAnnouncements         Announcement[]                   @relation("AnnouncementArchiver")
-  updatedRoutingSettings        RoutingSettings[]                @relation("RoutingSettingsUpdater")
-  routingSettingsAuditEntries   RoutingSettingsAudit[]           @relation("RoutingSettingsAuditActor")
-  updatedDriverSessionSettings  DriverSessionSettings[]          @relation("DriverSessionSettingsUpdater")
-  driverSessionSettingsAudits   DriverSessionSettingsAudit[]     @relation("DriverSessionSettingsAuditActor")
-  surveyedCuratedRoutes         CuratedRouteDistance[]           @relation("CuratedRouteSurveyor")
-  curatedRouteAuditEntries      CuratedRouteDistanceAudit[]      @relation("CuratedRouteAuditActor")
-  updatedVehicleRoutingProfiles VehicleRoutingProfile[]          @relation("VehicleRoutingProfileUpdater")
-  createdRoadRestrictions       RoadRestrictionOverride[]        @relation("RoadRestrictionCreator")
-  updatedRoadRestrictions       RoadRestrictionOverride[]        @relation("RoadRestrictionUpdater")
-  roadRestrictionAuditEntries   RoadRestrictionOverrideAudit[]   @relation("RoadRestrictionAuditActor")
-  permitQrAuditEntries          PermitQrAudit[]                  @relation("PermitQrAuditActor")
-  fareRateDeletionAuditEntries  FareRateDeletionAudit[]          @relation("FareRateDeletionAuditActor")
-  verifiedIncidents             Incident[]                       @relation("IncidentEvidenceVerifier")
-  ticketIssuedIncidents         Incident[]                       @relation("IncidentTicketIssuer")
-  dismissedIncidents            Incident[]                       @relation("IncidentDismisser")
-  paymentRecordedIncidents      Incident[]                       @relation("IncidentPaymentRecorder")
-  assignedVehicle               Vehicle?                         @relation("DriverAssignedVehicle", fields: [assignedVehicleId], references: [id])
-  driverAssignmentHistory       DriverVehicleAssignmentHistory[] @relation("DriverAssignmentHistoryUser")
-  driverTripSessions            VehicleTripSession[]             @relation("DriverTripSessions")
-  riderTripSessionEntries       VehicleTripSessionRider[]        @relation("RiderTripSessionEntries")
-  driverTripSessionEvents       VehicleTripSessionRiderEvent[]   @relation("DriverTripSessionEvents")
-  submittedFeedback             UserFeedback[]                   @relation("UserFeedbackSubmitter")
-  reviewedFeedback              UserFeedback[]                   @relation("UserFeedbackReviewer")
+  id                             String                           @id @default(cuid())
+  username                       String                           @unique
+  password                       String
+  email                          String?                          @unique
+  firstName                      String
+  lastName                       String
+  phoneNumber                    String?
+  address                        String?
+  userType                       UserType
+  isActive                       Boolean                          @default(true)
+  dateOfBirth                    DateTime?
+  governmentId                   String?                          @unique
+  idType                         String?
+  barangayResidence              String?
+  occupation                     String?
+  emergencyContact               String?
+  emergencyContactPhone          String?
+  reasonForRegistration          String?
+  assignedVehicleId              String?                          @unique
+  assignedVehicleAssignedAt      DateTime?
+  assignedVehicleAssignedBy      String?
+  isVerified                     Boolean                          @default(false)
+  verificationToken              String?
+  verificationExpiry             DateTime?
+  verifiedAt                     DateTime?
+  verifiedBy                     String?
+  registrationIp                 String?
+  lastLoginAt                    DateTime?
+  lastLoginIp                    String?
+  loginAttempts                  Int                              @default(0)
+  lockedUntil                    DateTime?
+  passwordResetToken             String?
+  passwordResetExpiry            DateTime?
+  passwordResetOtp               String?
+  passwordResetOtpExpiry         DateTime?
+  privacyNoticeAcknowledgedAt    DateTime?
+  privacyNoticeVersion           String?
+  hasUsablePassword              Boolean                          @default(true)
+  createdAt                      DateTime                         @default(now())
+  updatedAt                      DateTime                         @updatedAt
+  fareCalculations               FareCalculation[]
+  handledIncidents               Incident[]                       @relation("HandledBy")
+  reportedIncidents              Incident[]                       @relation("ReportedBy")
+  uploadedEvidence               Evidence[]                       @relation("EvidenceUploader")
+  reviewedEvidence               Evidence[]                       @relation("EvidenceReviewer")
+  verificationLogs               UserVerificationLog[]
+  oauthAccounts                  UserOAuthAccount[]
+  discountCard                   DiscountCard?
+  createdLocations               Location[]                       @relation("LocationCreator")
+  verifiedLocations              Location[]                       @relation("LocationVerifier")
+  accessVerifiedLocations        Location[]                       @relation("LocationAccessVerifier")
+  createdFareRateVersions        FareRateVersion[]                @relation("FareRateVersionCreator")
+  canceledFareRateVersions       FareRateVersion[]                @relation("FareRateVersionCanceller")
+  fareRateVersionDocuments       FareRateVersion[]                @relation("FareRateVersionDocumentUploader")
+  createdAnnouncements           Announcement[]                   @relation("AnnouncementCreator")
+  updatedAnnouncements           Announcement[]                   @relation("AnnouncementUpdater")
+  archivedAnnouncements          Announcement[]                   @relation("AnnouncementArchiver")
+  updatedRoutingSettings         RoutingSettings[]                @relation("RoutingSettingsUpdater")
+  routingSettingsAuditEntries    RoutingSettingsAudit[]           @relation("RoutingSettingsAuditActor")
+  updatedDriverSessionSettings   DriverSessionSettings[]          @relation("DriverSessionSettingsUpdater")
+  driverSessionSettingsAudits    DriverSessionSettingsAudit[]     @relation("DriverSessionSettingsAuditActor")
+  updatedVehicleCapacitySettings VehicleCapacitySettings[]        @relation("VehicleCapacitySettingsUpdater")
+  vehicleCapacitySettingsAudits  VehicleCapacitySettingsAudit[]   @relation("VehicleCapacitySettingsAuditActor")
+  surveyedCuratedRoutes          CuratedRouteDistance[]           @relation("CuratedRouteSurveyor")
+  curatedRouteAuditEntries       CuratedRouteDistanceAudit[]      @relation("CuratedRouteAuditActor")
+  updatedVehicleRoutingProfiles  VehicleRoutingProfile[]          @relation("VehicleRoutingProfileUpdater")
+  createdRoadRestrictions        RoadRestrictionOverride[]        @relation("RoadRestrictionCreator")
+  updatedRoadRestrictions        RoadRestrictionOverride[]        @relation("RoadRestrictionUpdater")
+  roadRestrictionAuditEntries    RoadRestrictionOverrideAudit[]   @relation("RoadRestrictionAuditActor")
+  permitQrAuditEntries           PermitQrAudit[]                  @relation("PermitQrAuditActor")
+  fareRateDeletionAuditEntries   FareRateDeletionAudit[]          @relation("FareRateDeletionAuditActor")
+  verifiedIncidents              Incident[]                       @relation("IncidentEvidenceVerifier")
+  ticketIssuedIncidents          Incident[]                       @relation("IncidentTicketIssuer")
+  referredIncidents              Incident[]                       @relation("IncidentFranchiseReferrer")
+  dismissedIncidents             Incident[]                       @relation("IncidentDismisser")
+  paymentRecordedIncidents       Incident[]                       @relation("IncidentPaymentRecorder")
+  assignedVehicle                Vehicle?                         @relation("DriverAssignedVehicle", fields: [assignedVehicleId], references: [id])
+  driverAssignmentHistory        DriverVehicleAssignmentHistory[] @relation("DriverAssignmentHistoryUser")
+  driverTripSessions             VehicleTripSession[]             @relation("DriverTripSessions")
+  riderTripSessionEntries        VehicleTripSessionRider[]        @relation("RiderTripSessionEntries")
+  driverTripSessionEvents        VehicleTripSessionRiderEvent[]   @relation("DriverTripSessionEvents")
+  submittedFeedback              UserFeedback[]                   @relation("UserFeedbackSubmitter")
+  reviewedFeedback               UserFeedback[]                   @relation("UserFeedbackReviewer")
 
   @@index([username])
   @@index([userType])
@@ -211,6 +214,48 @@ model DriverSessionSettingsAudit {
   @@index([driverSessionSettingsId, changedAt])
   @@index([changedAt])
   @@map("driver_session_settings_audit")
+}
+
+/// Per-vehicle-type seat capacity, set by an admin and uniform across every
+/// vehicle of that type. Singleton row "global", mirroring
+/// DriverSessionSettings.
+///
+/// Kept separate from DriverSessionSettings on purpose: "who suspended
+/// tricycles" and "who raised tricycle capacity to 6" are different
+/// investigations, and a shared audit row makes both harder to read.
+///
+/// Only the two rider-scan types are modelled. Adding another means a column
+/// here, a column on the audit, and a case in resolveSeatCapacity — deliberate
+/// over a JSON map, which would let a typo silently mean "no ceiling".
+model VehicleCapacitySettings {
+  id                 String                         @id @default("global")
+  habalHabalCapacity Int                            @default(3)
+  tricycleCapacity   Int                            @default(6)
+  createdAt          DateTime                       @default(now())
+  updatedAt          DateTime                       @updatedAt
+  updatedBy          String?
+  updatedByUser      User?                          @relation("VehicleCapacitySettingsUpdater", fields: [updatedBy], references: [id])
+  auditEntries       VehicleCapacitySettingsAudit[]
+
+  @@index([updatedAt])
+  @@map("vehicle_capacity_settings")
+}
+
+model VehicleCapacitySettingsAudit {
+  id                         String                  @id @default(cuid())
+  vehicleCapacitySettingsId  String
+  previousHabalHabalCapacity Int
+  previousTricycleCapacity   Int
+  newHabalHabalCapacity      Int
+  newTricycleCapacity        Int
+  changedAt                  DateTime                @default(now())
+  changedBy                  String?
+  vehicleCapacitySettings    VehicleCapacitySettings @relation(fields: [vehicleCapacitySettingsId], references: [id], onDelete: Cascade)
+  changedByUser              User?                   @relation("VehicleCapacitySettingsAuditActor", fields: [changedBy], references: [id])
+
+  @@index([vehicleCapacitySettingsId, changedAt])
+  @@index([changedAt])
+  @@map("vehicle_capacity_settings_audit")
 }
 
 /// A surveyed distance between two saved places for one vehicle type.
@@ -437,7 +482,10 @@ model Vehicle {
   model                   String
   year                    Int
   color                   String
-  capacity                Int
+  /// Optional per-vehicle seat override. The authoritative number is the
+  /// per-type standard in VehicleCapacitySettings; this may only lower it,
+  /// never raise it (see resolveSeatCapacity). Null means "use the standard".
+  capacity                Int?
   ownerName               String
   ownerContact            String
   driverName              String?
@@ -507,6 +555,10 @@ model Incident {
   ticketIssuedAt   DateTime?
   ticketIssuedById String?
 
+  // Franchise-referral audit
+  referredAt   DateTime?
+  referredById String?
+
   // Dismissal audit
   dismissedAt    DateTime?
   dismissedById  String?
@@ -523,6 +575,7 @@ model Incident {
   evidence           Evidence[]
   evidenceVerifiedBy User?            @relation("IncidentEvidenceVerifier", fields: [evidenceVerifiedById], references: [id])
   ticketIssuedBy     User?            @relation("IncidentTicketIssuer", fields: [ticketIssuedById], references: [id])
+  referredBy         User?            @relation("IncidentFranchiseReferrer", fields: [referredById], references: [id])
   dismissedBy        User?            @relation("IncidentDismisser", fields: [dismissedById], references: [id])
   paymentRecordedBy  User?            @relation("IncidentPaymentRecorder", fields: [paymentRecordedById], references: [id])
 
@@ -540,6 +593,7 @@ model Incident {
   @@index([status, paymentStatus])
   @@index([evidenceVerifiedById])
   @@index([ticketIssuedById])
+  @@index([referredById])
   @@index([dismissedById])
   @@index([paymentRecordedById])
   @@index([tripPermitPlateNumber])
@@ -584,6 +638,9 @@ model FareCalculation {
   toLocation      String
   distance        Decimal
   calculatedFare  Decimal
+  /// Seats this one fare paid for. 1 on a shared ride; the vehicle's capacity
+  /// on a charter, where calculatedFare is the total for all of them.
+  seatsPaid       Int                      @default(1)
   actualFare      Decimal?
   calculationType String
   routeData       String?
@@ -609,21 +666,25 @@ model FareCalculation {
 }
 
 model VehicleTripSession {
-  id           String                    @id @default(cuid())
-  vehicleId    String
+  id                   String                     @id @default(cuid())
+  vehicleId            String
   /// Null for a rider-initiated session: when a vehicle type is suspended from
   /// the driver session flow the trip is opened by the rider scanning the
   /// printed permit QR, and no driver account is involved at all.
-  driverUserId String?
-  initiatedBy  DriverTripSessionInitiator @default(DRIVER)
-  status       DriverTripSessionStatus   @default(OPEN)
-  openedAt     DateTime                  @default(now())
-  closedAt     DateTime?
-  createdAt    DateTime                  @default(now())
-  updatedAt    DateTime                  @updatedAt
-  vehicle      Vehicle                   @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
-  driverUser   User?                     @relation("DriverTripSessions", fields: [driverUserId], references: [id], onDelete: Cascade)
-  riders       VehicleTripSessionRider[]
+  driverUserId         String?
+  initiatedBy          DriverTripSessionInitiator @default(DRIVER)
+  status               DriverTripSessionStatus    @default(OPEN)
+  openedAt             DateTime                   @default(now())
+  /// Seat ceiling resolved when the session opened. Snapshotted so an admin
+  /// lowering the standard mid-run cannot strand riders already aboard, and so
+  /// a charter's price can never disagree with the ceiling that priced it.
+  seatCapacitySnapshot Int?
+  closedAt             DateTime?
+  createdAt            DateTime                   @default(now())
+  updatedAt            DateTime                   @updatedAt
+  vehicle              Vehicle                    @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  driverUser           User?                      @relation("DriverTripSessions", fields: [driverUserId], references: [id], onDelete: Cascade)
+  riders               VehicleTripSessionRider[]
 
   @@index([vehicleId, status])
   @@index([driverUserId, status])
@@ -643,6 +704,9 @@ model VehicleTripSessionRider {
   destinationSnapshot     String
   distanceSnapshot        Decimal                        @db.Decimal(10, 2)
   fareSnapshot            Decimal                        @db.Decimal(10, 2)
+  /// Seats this rider occupies against the session's ceiling. 1 when sharing;
+  /// the full capacity when the rider chartered the vehicle.
+  seatsPaid               Int                            @default(1)
   calculationTypeSnapshot String
   routeDataSnapshot       String?
   farePolicySnapshot      String?
@@ -1001,6 +1065,15 @@ enum VehicleType {
   VAN
 }
 
+/// Every value here must exist in the database's "IncidentType" type, and
+/// every value the database holds must appear here. Prisma generates its
+/// client enum from this block, so a row carrying a value this list omits
+/// makes the deserializer throw and kills the whole query, not just the row.
+///
+/// The five values below the original six were added by hand-written
+/// migrations (20260409000100, 20260409000200) that were never mirrored back
+/// into this schema. Only EMPTY_SEAT_CHARGE has UI; the rest are declared so
+/// the client can read anything the column can hold.
 enum IncidentType {
   FARE_OVERCHARGE
   FARE_UNDERCHARGE
@@ -1008,6 +1081,26 @@ enum IncidentType {
   VEHICLE_VIOLATION
   ROUTE_VIOLATION
   OTHER
+  /// A rider paid for the vehicle's whole capacity and the driver picked up
+  /// more passengers anyway, reselling seats the rider had already bought.
+  EMPTY_SEAT_CHARGE
+  UNAUTHORIZED_CARGO_CHARGE
+  REFUSED_POSTED_FARE
+  OTHER_FARE_DISPUTE
+  REFUSED_VALID_DISCOUNT
+  /// Operating without an approved Franchise AND without an MTOP. This is the
+  /// one offence Ordinance 105 Sec. 33(a) attaches its 500/1,000/1,500 ladder
+  /// to; before this value existed the ladder had no subject that could be
+  /// filed, and was being applied to violations Sec. 33 does not fine.
+  NO_FRANCHISE_AND_MTOP
+  /// Operating on a cancelled franchise. Sec. 33(b): not less than P2,500.
+  CANCELLED_FRANCHISE_OPERATION
+  /// Deceit or fraud in the issuance or application of a franchise.
+  /// Sec. 33(c): not less than P2,500.
+  FRANCHISE_FRAUD
+  /// Sale, use of a dummy, rental, or any other transfer of a franchise.
+  /// Sec. 28: P2,000 or imprisonment not exceeding one month, or both.
+  FRANCHISE_TRANSFER_VIOLATION
 }
 
 enum IncidentStatus {
@@ -1019,6 +1112,14 @@ enum IncidentStatus {
   // terminal/lookup and violations/history keep pairing it with PENDING.
   INVESTIGATING
   TICKET_ISSUED
+  /// Ordinance 105 fines only the franchise offences in Sec. 33 and Sec. 28.
+  /// For everything else -- a fare overcharge above all -- its remedy is
+  /// cancellation or revocation of the franchise: Sec. 29(a) is the ground,
+  /// Sec. 30 the process, read in session by the Sangguniang Bayan on the
+  /// Secretariat's recommendation. This status is that referral.
+  ///
+  /// Counts as unresolved alongside PENDING, because the SB has not acted yet.
+  REFERRED_FOR_FRANCHISE_ACTION
   RESOLVED
   DISMISSED
 }

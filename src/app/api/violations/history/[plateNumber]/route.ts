@@ -200,7 +200,9 @@ export async function GET(
           ...incidentWhere,
           ticketNumber: null,
           status: {
-            in: ['PENDING', 'INVESTIGATING'],
+            // A referral is unresolved until the Sangguniang Bayan acts on
+            // it under Sec. 30.
+            in: ['PENDING', 'INVESTIGATING', 'REFERRED_FOR_FRANCHISE_ACTION'],
           },
         },
       }),

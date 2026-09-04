@@ -66,6 +66,7 @@ import {
   type PlannerSelection,
 } from '@/lib/planner/selection'
 import { calculateFare, getFareBreakdown } from '@/lib/fare/calculator'
+import { getCharterFareBreakdown } from '@/lib/fare/charter'
 import type { PassengerType } from '@/lib/routing/types'
 import { loadLastFarePolicy, saveLastFarePolicy } from '@/lib/offline/farePolicyCache'
 import { OFFLINE_CACHE_REASON, offlineUnpricedMessage } from '@/lib/offline/offlineQuote'
@@ -266,12 +267,18 @@ function selectionsEffectivelyEqual(
   )
 }
 
-function buildFareCalculationPayload(routeResult: RouteResult, vehicle: VehicleLookupDto | null) {
+function buildFareCalculationPayload(
+  routeResult: RouteResult,
+  vehicle: VehicleLookupDto | null,
+  charter: { seats: number; total: number; originalTotal: number; discountApplied: number } | null,
+) {
   return {
     fromLocation: routeResult.originLabel,
     toLocation: routeResult.destinationLabel,
     distance: routeResult.distanceKm,
-    calculatedFare: routeResult.fare,
+    calculatedFare: charter ? charter.total : routeResult.fare,
+    // Omitted for a shared ride so the server's default of 1 applies.
+    seats: charter ? charter.seats : undefined,
     calculationType: 'Road Route Planner',
     routeData: {
       method: routeResult.method,
@@ -284,8 +291,12 @@ function buildFareCalculationPayload(routeResult: RouteResult, vehicle: VehicleL
     },
     vehicleId: vehicle?.id || null,
     discountCardId: routeResult.discountCard?.id || null,
-    originalFare: routeResult.originalFare || null,
-    discountApplied: routeResult.discountApplied || null,
+    // On a charter the discount covers only the holder's own seat, so both
+    // figures are recomputed across every seat rather than scaled.
+    originalFare: charter ? charter.originalTotal : routeResult.originalFare || null,
+    discountApplied: charter
+      ? charter.discountApplied || null
+      : routeResult.discountApplied || null,
     discountType: routeResult.discountCard?.discountType || null,
     farePolicySnapshot: routeResult.farePolicy,
   }
@@ -328,6 +339,13 @@ const RoutePlannerCalculator = ({
   const [dropoffSuggestion, setDropoffSuggestion] = useState<DropoffSuggestion | null>(null)
   const [isCalculating, setIsCalculating] = useState(false)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle')
+  // Set when the server refuses the scan because the vehicle's seats are
+  // already paid for. Kept separate from a generic failure so the rider is
+  // told why and offered a report, rather than reading it as an app bug.
+  const [capacityBlock, setCapacityBlock] = useState<{
+    message: string
+    chartered: boolean
+  } | null>(null)
   const [pendingTripRequestId, setPendingTripRequestId] = useState<string | null>(null)
   const [userDiscountCard, setUserDiscountCard] = useState<DiscountCardDto | null>(null)
   const [fitBoundsToken, setFitBoundsToken] = useState(0)
@@ -383,6 +401,23 @@ const RoutePlannerCalculator = ({
         selectedVehicle.vehicleType as VehicleType,
       ),
   )
+
+  // Seats this vehicle type may sell. Absent means the type is not
+  // seat-managed: no ceiling, and no charter to offer.
+  const seatCapacity =
+    (selectedVehicle?.vehicleType &&
+      tripFlowConfig?.seatCapacities?.[selectedVehicle.vehicleType as VehicleType]) ||
+    null
+
+  // A rider in a hurry buys every seat so the vehicle leaves now, instead of
+  // waiting at the per-seat fare for it to fill.
+  const [chartering, setChartering] = useState(false)
+  const canCharter = riderConfirmsTrip && seatCapacity !== null && seatCapacity > 1
+
+  // Scanning a different vehicle must not carry a charter choice across.
+  useEffect(() => {
+    setChartering(false)
+  }, [selectedVehicle?.id])
 
   useEffect(() => {
     if (curatedCorpus) {
@@ -541,6 +576,7 @@ const RoutePlannerCalculator = ({
     setPlannerState('placing_points')
     setIsCalculating(false)
     setSaveStatus('idle')
+    setCapacityBlock(null)
     setPendingTripRequestId(null)
     setDropoffSuggestion(null)
     setQuery('')
@@ -887,6 +923,29 @@ const RoutePlannerCalculator = ({
     }
   }
 
+  // Priced from the same route the rider is looking at. Null whenever the
+  // rider is sharing, so the shared path sends exactly what it always did.
+  const charterQuote = useMemo(() => {
+    if (!chartering || !canCharter || !routeResult || seatCapacity === null) {
+      return null
+    }
+
+    const breakdown = getCharterFareBreakdown(
+      routeResult.distanceKm,
+      seatCapacity,
+      passengerType,
+      routeResult.farePolicy,
+    )
+
+    return {
+      seats: breakdown.seats,
+      total: breakdown.total,
+      originalTotal: breakdown.originalTotal,
+      discountApplied: breakdown.discountApplied,
+      perSeatFare: breakdown.perSeatFare,
+    }
+  }, [chartering, canCharter, routeResult, seatCapacity, passengerType])
+
   const saveCurrentRoute = async () => {
     if (!routeResult || !canSaveDisplayedRoute) {
       return
@@ -901,11 +960,15 @@ const RoutePlannerCalculator = ({
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(buildFareCalculationPayload(routeResult, selectedVehicle)),
+        body: JSON.stringify(
+          buildFareCalculationPayload(routeResult, selectedVehicle, charterQuote),
+        ),
       })
 
       const data = (await response.json()) as Partial<FareCalculationMutationResponseDto> & {
         message?: string
+        code?: string
+        details?: { chartered?: boolean }
       }
 
       if (displayedRouteVersion !== displayedRouteVersionRef.current) {
@@ -914,12 +977,25 @@ const RoutePlannerCalculator = ({
 
       if (!response.ok || !data.success) {
         setSaveStatus('failed')
+
+        // The vehicle's seats are already paid for. Say so plainly: a bare
+        // failure reads as an app bug, and the rider boards anyway with no
+        // record at all — worse than the overcharge this is meant to catch.
+        if (data.code === 'VEHICLE_AT_CAPACITY') {
+          setCapacityBlock({
+            message: data.message || 'This vehicle has no seats left.',
+            chartered: Boolean(data.details?.chartered),
+          })
+          return
+        }
+
         if (onError) {
           onError(data.message || 'Unable to save this route right now.')
         }
         return
       }
 
+      setCapacityBlock(null)
       setSaveStatus('saved')
       setPendingTripRequestId(data.tripRequestId ?? null)
     } catch {
@@ -939,6 +1015,7 @@ const RoutePlannerCalculator = ({
     displayedRouteVersionRef.current += 1
     setDisplayedRoutePair(null)
     setSaveStatus('idle')
+    setCapacityBlock(null)
     setPendingTripRequestId(null)
     setDropoffSuggestion(null)
 
@@ -1056,6 +1133,7 @@ const RoutePlannerCalculator = ({
     displayedRouteVersionRef.current += 1
     setDisplayedRoutePair(null)
     setSaveStatus('idle')
+    setCapacityBlock(null)
     setPendingTripRequestId(null)
     setDropoffSuggestion(null)
     setRouteResult(null)
@@ -1068,6 +1146,7 @@ const RoutePlannerCalculator = ({
     displayedRouteVersionRef.current += 1
     setDisplayedRoutePair(null)
     setSaveStatus('idle')
+    setCapacityBlock(null)
     setPendingTripRequestId(null)
     setDropoffSuggestion(null)
     setOriginSelection(destinationSelection)
@@ -1518,7 +1597,17 @@ const RoutePlannerCalculator = ({
                       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-300">
                         Fare
                       </p>
-                      <p className="mt-1 text-2xl font-bold">{formatCurrency(routeResult.fare)}</p>
+                      {/* The charter total is what the rider actually owes, so
+                          the plate shows that rather than a per-seat figure
+                          they will not be charged. */}
+                      <p className="mt-1 text-2xl font-bold">
+                        {formatCurrency(charterQuote?.total ?? routeResult.fare)}
+                      </p>
+                      {charterQuote ? (
+                        <p className="mt-0.5 text-[11px] text-slate-300">
+                          whole vehicle, {charterQuote.seats} seats
+                        </p>
+                      ) : null}
                     </div>
                   </div>
                 </div>
@@ -1610,6 +1699,105 @@ const RoutePlannerCalculator = ({
                   Driver
                 </p>
                 {identitySection}
+              </section>
+            ) : null}
+
+            {/* A rider in a hurry may buy every seat so the vehicle leaves at
+                once. Ordinance 105 prices a passenger's trip and is silent on
+                this, so the charter is simply what those seats would otherwise
+                have earned — the per-seat fare, times the seats. */}
+            {canCharter && routeResult && seatCapacity !== null ? (
+              <section className="space-y-3 rounded-sheet border border-surface-border bg-surface p-4 shadow-card">
+                <p className={ROUTE_EYEBROW}>Seats</p>
+
+                <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3">
+                  <input
+                    type="radio"
+                    name="seat-choice"
+                    checked={!chartering}
+                    onChange={() => setChartering(false)}
+                    className="mt-1 h-4 w-4"
+                  />
+                  <span className="flex-1">
+                    <span className="flex items-center justify-between gap-2 text-sm font-semibold text-slate-900">
+                      Share the ride
+                      <span>{formatCurrency(routeResult.fare)}</span>
+                    </span>
+                    <span className="mt-0.5 block text-xs text-slate-600">
+                      You pay for your seat. The driver may pick up other
+                      passengers along the way while seats remain.
+                    </span>
+                  </span>
+                </label>
+
+                <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3">
+                  <input
+                    type="radio"
+                    name="seat-choice"
+                    checked={chartering}
+                    onChange={() => setChartering(true)}
+                    className="mt-1 h-4 w-4"
+                  />
+                  <span className="flex-1">
+                    <span className="flex items-center justify-between gap-2 text-sm font-semibold text-slate-900">
+                      Charter the whole vehicle
+                      <span>
+                        {formatCurrency(
+                          charterQuote?.total ??
+                            getCharterFareBreakdown(
+                              routeResult.distanceKm,
+                              seatCapacity,
+                              passengerType,
+                              routeResult.farePolicy,
+                            ).total,
+                        )}
+                      </span>
+                    </span>
+                    <span className="mt-0.5 block text-xs text-slate-600">
+                      You pay for all {seatCapacity} seats and leave now, without
+                      waiting for the vehicle to fill. Nobody else may board.
+                    </span>
+                  </span>
+                </label>
+
+                {chartering && charterQuote ? (
+                  <p className="rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                    {formatCurrency(charterQuote.perSeatFare)} per seat ×{' '}
+                    {charterQuote.seats} seats.
+                    {charterQuote.discountApplied > 0
+                      ? ` Your discount card takes ${formatCurrency(
+                          charterQuote.discountApplied,
+                        )} off your own seat — the seats nobody sits in are charged in full.`
+                      : ''}
+                  </p>
+                ) : null}
+              </section>
+            ) : null}
+
+            {/* The refusal has to explain itself. A rider who reads it as an app
+                bug simply boards without a record, which is worse than the
+                overcharge — and they are the only witness to it. */}
+            {capacityBlock ? (
+              <section className="space-y-3 rounded-sheet border border-amber-300 bg-amber-50 p-4 shadow-card">
+                <p className="text-sm font-semibold text-amber-900">
+                  No seats left on this vehicle
+                </p>
+                <p className="text-xs text-amber-900">
+                  {capacityBlock.message}
+                  {capacityBlock.chartered
+                    ? ' Another passenger has paid for the whole vehicle, so it should not be picking anyone else up. No fare has been recorded for you.'
+                    : ' Every seat is taken by passengers who have already paid. No fare has been recorded for you.'}
+                </p>
+                <Link
+                  href={`/report?type=EMPTY_SEAT_CHARGE${
+                    selectedVehicle?.plateNumber
+                      ? `&plateNumber=${encodeURIComponent(selectedVehicle.plateNumber)}`
+                      : ''
+                  }`}
+                  className="inline-flex rounded-full bg-amber-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-amber-700"
+                >
+                  Report this vehicle
+                </Link>
               </section>
             ) : null}
 

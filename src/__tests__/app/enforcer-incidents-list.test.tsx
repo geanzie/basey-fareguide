@@ -123,15 +123,20 @@ describe('EnforcerIncidentsList', () => {
           new Response(
             JSON.stringify({
               penalty: {
+                fineable: true,
+                section: '33(a)',
+                basis: { kind: 'TIERED', section: '33(a)' },
                 offenseNumber: 1,
                 offenseTier: 'FIRST',
                 offenseTierLabel: '1st offense',
                 penaltyAmount: 500,
-                currentPenaltyAmount: 500,
-                carriedForwardPenaltyAmount: 0,
+                amountLabel: 'PHP 500',
+                outstandingArrears: 0,
+                totalOwedOnPlate: 500,
+                courtDiscretionNote: null,
                 priorTicketCount: 0,
                 priorUnpaidTicketCount: 0,
-                ruleVersion: '2026-04-municipal-v1',
+                ruleVersion: '2023-ord105-sec33-v1',
               },
             }),
             {
@@ -374,8 +379,10 @@ describe('EnforcerIncidentsList', () => {
     expect(fetchMock).toHaveBeenCalledWith('/api/incidents/incident-2/issue-ticket')
     expect(container.textContent).toContain('Enforced Penalty')
     expect(container.textContent).toContain('1st offense')
-    expect(container.textContent).toContain('Current Ticket')
-    expect(container.textContent).toContain('Amount Due')
+    // The provision that authorises the amount is shown beside it.
+    expect(container.textContent).toContain('Sec. 33(a)')
+    expect(container.textContent).toContain('This Ticket')
+    expect(container.textContent).toContain('Total Owed On Plate')
     expect(container.textContent).toContain('PHP 500')
 
     const penaltyInput = Array.from(container.querySelectorAll('input')).find((input) => {

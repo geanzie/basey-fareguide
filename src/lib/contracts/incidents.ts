@@ -3,6 +3,7 @@ import type { PaginationDto, UserRole } from "./common";
 export type IncidentStatus =
   | "PENDING"
   | "INVESTIGATING"
+  | "REFERRED_FOR_FRANCHISE_ACTION"
   | "TICKET_ISSUED"
   | "RESOLVED"
   | "DISMISSED";

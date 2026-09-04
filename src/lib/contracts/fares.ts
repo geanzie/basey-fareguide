@@ -14,7 +14,14 @@ export interface FareCalculationDto {
   from: string;
   to: string;
   distanceKm: number;
+  /** Total owed. On a charter this covers every seat, not one. */
   fare: number;
+  /**
+   * Seats this fare bought. 1 on a shared ride. Greater than 1 means the
+   * rider chartered the vehicle, which is what makes `fare` larger than a
+   * single-passenger fare for the same distance.
+   */
+  seatsPaid: number;
   actualFare: number | null;
   originalFare: number | null;
   discountApplied: number | null;

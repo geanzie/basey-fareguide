@@ -14,6 +14,7 @@ const INCIDENT_TYPE_LABELS: Record<string, string> = {
   VEHICLE_VIOLATION: "Vehicle Violation",
   ROUTE_VIOLATION: "Route Violation",
   OTHER: "Other Violation",
+  EMPTY_SEAT_CHARGE: "Paid Seats Resold",
   OVERCHARGING: "Overcharging",
   NO_PERMIT: "No Permit",
 };
@@ -21,6 +22,7 @@ const INCIDENT_TYPE_LABELS: Record<string, string> = {
 const INCIDENT_STATUS_LABELS: Record<string, string> = {
   PENDING: "Pending",
   INVESTIGATING: "Investigating",
+  REFERRED_FOR_FRANCHISE_ACTION: "Referred for Franchise Action",
   TICKET_ISSUED: "Ticket Issued",
   RESOLVED: "Resolved",
   DISMISSED: "Dismissed",

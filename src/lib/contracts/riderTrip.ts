@@ -21,6 +21,11 @@ export interface RiderTripStatusDto {
   origin: string;
   destination: string;
   fare: number;
+  /**
+   * Seats this rider is holding. 1 on a shared ride; the vehicle's capacity
+   * on a charter, where `fare` is the total for all of them.
+   */
+  seatsPaid: number;
   discountType: string | null;
   joinedAt: string;
   expiresAt: string | null;

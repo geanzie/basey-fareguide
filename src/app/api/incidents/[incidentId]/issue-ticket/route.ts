@@ -97,9 +97,22 @@ async function resolveTicketIssuanceContext(
     ],
   }
 
-  const [priorTicketCount, unpaidPriorTicketSummary] = await Promise.all([
+  // The offence tier and the arrears answer different questions, so they are
+  // counted differently.
+  //
+  // Sec. 33(a) speaks of a first, second and third *offence* -- a repeat of the
+  // same offence. Counting an unrelated ticket toward the ladder raises the
+  // fine on a basis the ordinance does not give, which is what the previous
+  // plate-wide, type-blind count did.
+  //
+  // Arrears are the opposite: money already owed on the plate, whatever it was
+  // owed for. That stays plate-wide, and stays out of this ticket's amount.
+  const [priorSameTypeTicketCount, unpaidPriorTicketSummary] = await Promise.all([
     prisma.incident.count({
-      where: priorTicketWhere,
+      where: {
+        ...priorTicketWhere,
+        incidentType: incident.incidentType,
+      },
     }),
     prisma.incident.aggregate({
       where: {
@@ -115,15 +128,16 @@ async function resolveTicketIssuanceContext(
     }),
   ])
 
-  const carriedForwardPenaltyAmount = Number(unpaidPriorTicketSummary._sum.penaltyAmount ?? 0)
+  const outstandingArrears = Number(unpaidPriorTicketSummary._sum.penaltyAmount ?? 0)
   const priorUnpaidTicketCount = unpaidPriorTicketSummary._count.id
 
   return {
     incident,
     normalizedPlateNumber,
     penaltyDecision: buildOffensePenaltyDecision(
-      priorTicketCount,
-      carriedForwardPenaltyAmount,
+      incident.incidentType,
+      priorSameTypeTicketCount,
+      outstandingArrears,
       priorUnpaidTicketCount,
     ),
   }
@@ -148,7 +162,9 @@ export async function GET(
       plateNumber: normalizedPlateNumber,
       penalty: {
         ...penaltyDecision,
-        offenseTierLabel: getOffenseTierLabel(penaltyDecision.offenseTier),
+        offenseTierLabel: penaltyDecision.offenseTier
+          ? getOffenseTierLabel(penaltyDecision.offenseTier)
+          : null,
       },
     })
   } catch (error) {
@@ -182,6 +198,26 @@ export async function PATCH(
 
     const { incident, normalizedPlateNumber, penaltyDecision } = contextResult
 
+    // Ordinance 105 fines only the franchise offences in Sec. 33 and Sec. 28.
+    // For anything else its remedy is franchise action, not money, so a ticket
+    // here would impose a penalty no provision authorises. Refuse and name the
+    // route that does exist.
+    if (!penaltyDecision.fineable) {
+      return NextResponse.json(
+        {
+          message:
+            'Ordinance 105 imposes no fine for this violation. Refer it for franchise action instead: Sec. 29(a) is the ground, Sec. 30 the Sangguniang Bayan process.',
+          code: 'NO_PENALTY_BASIS',
+          details: {
+            incidentType: incident.incidentType,
+            groundSection: '29(a)',
+            processSection: '30',
+          },
+        },
+        { status: 400 },
+      )
+    }
+
     // Check if ticket number is already in use
     const existingTicket = await prisma.incident.findUnique({
       where: { ticketNumber }
@@ -199,7 +235,10 @@ export async function PATCH(
       data: {
         plateNumber: normalizedPlateNumber,
         ticketNumber,
-        penaltyAmount: penaltyDecision.currentPenaltyAmount,
+        // The tier amount alone. Arrears are a separate plate balance and
+        // must never be folded in here, or the next ticket's arrears sum
+        // would count them twice.
+        penaltyAmount: penaltyDecision.penaltyAmount,
         offenseNumberAtIssuance: penaltyDecision.offenseNumber,
         offenseTierAtIssuance: penaltyDecision.offenseTier,
         penaltyRuleVersion: penaltyDecision.ruleVersion,
@@ -241,7 +280,9 @@ export async function PATCH(
       incident: updatedIncident,
       penalty: {
         ...penaltyDecision,
-        offenseTierLabel: getOffenseTierLabel(penaltyDecision.offenseTier),
+        offenseTierLabel: penaltyDecision.offenseTier
+          ? getOffenseTierLabel(penaltyDecision.offenseTier)
+          : null,
       },
       message: `Ticket ${ticketNumber} issued. Awaiting confirmed full payment before the incident is marked as resolved. Evidence remains available for ${RESOLVED_EVIDENCE_RETENTION_DAYS} days.`,
       evidenceRetainedUntilCleanup: true,

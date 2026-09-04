@@ -17,7 +17,9 @@ export interface VehicleDto {
   model: string;
   year: number;
   color: string;
-  capacity: number;
+  /// Per-vehicle seat override. Null means the vehicle uses its type's
+  /// admin-set standard capacity; a number may only lower that standard.
+  capacity: number | null;
   isActive: boolean;
   ownerName: string;
   ownerContact: string;

@@ -47,6 +47,7 @@ import { PATCH as markTicketPaid } from '@/app/api/incidents/[incidentId]/paymen
 import { PATCH as resolveIncident } from '@/app/api/incidents/[incidentId]/resolve/route'
 import { PATCH as verifyEvidence } from '@/app/api/incidents/[incidentId]/verify-evidence/route'
 import { PATCH as dismissIncident } from '@/app/api/incidents/[incidentId]/dismiss/route'
+import { POST as referFranchiseAction } from '@/app/api/incidents/[incidentId]/refer-franchise-action/route'
 
 function makeJsonRequest(url: string, body: unknown = {}): Request {
   return new Request(url, {
@@ -206,6 +207,7 @@ describe('enforcer workflow truthfulness', () => {
     prismaMock.incident.findUnique
       .mockResolvedValueOnce({
         id: 'incident-1',
+        incidentType: 'NO_FRANCHISE_AND_MTOP',
         status: 'PENDING',
         evidenceVerifiedAt: new Date('2026-04-01T09:50:00.000Z'),
         evidenceVerifiedById: 'enforcer-1',
@@ -238,15 +240,17 @@ describe('enforcer workflow truthfulness', () => {
     )
     expect(json.penalty).toEqual(
       expect.objectContaining({
+        section: '33(a)',
+        fineable: true,
         offenseNumber: 1,
         offenseTier: 'FIRST',
         offenseTierLabel: '1st offense',
         penaltyAmount: 500,
-        currentPenaltyAmount: 500,
-        carriedForwardPenaltyAmount: 0,
+        outstandingArrears: 0,
+        totalOwedOnPlate: 500,
         priorTicketCount: 0,
         priorUnpaidTicketCount: 0,
-        ruleVersion: '2026-04-municipal-v1',
+        ruleVersion: '2023-ord105-sec33-v1',
       }),
     )
     expect(prismaMock.incident.update).toHaveBeenCalledWith(
@@ -256,7 +260,7 @@ describe('enforcer workflow truthfulness', () => {
           penaltyAmount: 500,
           offenseNumberAtIssuance: 1,
           offenseTierAtIssuance: 'FIRST',
-          penaltyRuleVersion: '2026-04-municipal-v1',
+          penaltyRuleVersion: '2023-ord105-sec33-v1',
           status: 'TICKET_ISSUED',
         }),
       }),
@@ -269,6 +273,7 @@ describe('enforcer workflow truthfulness', () => {
   it('returns a computed penalty preview for a pending verified-evidence incident', async () => {
     prismaMock.incident.findUnique.mockResolvedValueOnce({
       id: 'incident-1',
+      incidentType: 'NO_FRANCHISE_AND_MTOP',
       status: 'PENDING',
       evidenceVerifiedAt: new Date('2026-04-03T07:50:00.000Z'),
       evidenceVerifiedById: 'enforcer-1',
@@ -292,22 +297,29 @@ describe('enforcer workflow truthfulness', () => {
 
     expect(response.status).toBe(200)
     expect(json.plateNumber).toBe('ABC-123')
-    expect(json.penalty).toEqual({
-      offenseNumber: 2,
-      offenseTier: 'SECOND',
-      offenseTierLabel: '2nd offense',
-      penaltyAmount: 1500,
-      currentPenaltyAmount: 1000,
-      carriedForwardPenaltyAmount: 500,
-      priorTicketCount: 1,
-      priorUnpaidTicketCount: 1,
-      ruleVersion: '2026-04-municipal-v1',
-    })
+    // This ticket is PHP 1,000. The PHP 500 already owed is a plate balance,
+    // not part of the penalty imposed here -- nothing in Ordinance 105
+    // compounds an unpaid fine into a later one.
+    expect(json.penalty).toEqual(
+      expect.objectContaining({
+        section: '33(a)',
+        offenseNumber: 2,
+        offenseTier: 'SECOND',
+        offenseTierLabel: '2nd offense',
+        penaltyAmount: 1000,
+        outstandingArrears: 500,
+        totalOwedOnPlate: 1500,
+        priorTicketCount: 1,
+        priorUnpaidTicketCount: 1,
+        ruleVersion: '2023-ord105-sec33-v1',
+      }),
+    )
   })
 
   it('caps the computed penalty at the third-and-above tier', async () => {
     prismaMock.incident.findUnique.mockResolvedValueOnce({
       id: 'incident-1',
+      incidentType: 'NO_FRANCHISE_AND_MTOP',
       status: 'PENDING',
       evidenceVerifiedAt: new Date('2026-04-03T07:50:00.000Z'),
       evidenceVerifiedById: 'enforcer-1',
@@ -334,12 +346,224 @@ describe('enforcer workflow truthfulness', () => {
       expect.objectContaining({
         offenseNumber: 5,
         offenseTier: 'THIRD_PLUS',
-        penaltyAmount: 6000,
-        currentPenaltyAmount: 1500,
-        carriedForwardPenaltyAmount: 4500,
+        // The tier caps at PHP 1,500; the arrears keep their own figure.
+        penaltyAmount: 1500,
+        outstandingArrears: 4500,
+        totalOwedOnPlate: 6000,
         priorUnpaidTicketCount: 4,
       }),
     )
+    expect(json.penalty.courtDiscretionNote).toContain('discretion of the Court')
+  })
+
+  it('refuses to fine a violation Ordinance 105 does not fine', async () => {
+    // Sec. 33 is the only penal provision and covers four franchise offences.
+    // A fare overcharge is a Sec. 24 breach; its remedy is franchise action.
+    prismaMock.incident.findUnique.mockResolvedValueOnce({
+      id: 'incident-1',
+      incidentType: 'FARE_OVERCHARGE',
+      status: 'PENDING',
+      evidenceVerifiedAt: new Date('2026-04-03T07:50:00.000Z'),
+      evidenceVerifiedById: 'enforcer-1',
+      handledById: null,
+      ticketNumber: null,
+      plateNumber: 'ABC-123',
+      incidentDate: new Date('2026-04-03T08:00:00.000Z'),
+      createdAt: new Date('2026-04-03T08:05:00.000Z'),
+    })
+    prismaMock.incident.count.mockResolvedValueOnce(0)
+    prismaMock.incident.aggregate.mockResolvedValueOnce({
+      _count: { id: 0 },
+      _sum: { penaltyAmount: null },
+    })
+
+    const response = await issueTicket(
+      makeJsonRequest('http://localhost/api/incidents/incident-1/issue-ticket', {
+        ticketNumber: 'T-200',
+      }) as never,
+      { params: Promise.resolve({ incidentId: 'incident-1' }) },
+    )
+    const json = await response.json()
+
+    expect(response.status).toBe(400)
+    expect(json.code).toBe('NO_PENALTY_BASIS')
+    expect(json.message).toMatch(/Sec\. 29\(a\)/)
+    expect(prismaMock.incident.update).not.toHaveBeenCalled()
+  })
+
+  it('previews an unfined violation as a referral rather than an amount', async () => {
+    prismaMock.incident.findUnique.mockResolvedValueOnce({
+      id: 'incident-1',
+      incidentType: 'EMPTY_SEAT_CHARGE',
+      status: 'PENDING',
+      evidenceVerifiedAt: new Date('2026-04-03T07:50:00.000Z'),
+      evidenceVerifiedById: 'enforcer-1',
+      handledById: null,
+      ticketNumber: null,
+      plateNumber: 'ABC-123',
+      incidentDate: new Date('2026-04-03T08:00:00.000Z'),
+      createdAt: new Date('2026-04-03T08:05:00.000Z'),
+    })
+    prismaMock.incident.count.mockResolvedValueOnce(0)
+    prismaMock.incident.aggregate.mockResolvedValueOnce({
+      _count: { id: 0 },
+      _sum: { penaltyAmount: null },
+    })
+
+    const json = await (
+      await getTicketPenaltyPreview(
+        makeRequest('http://localhost/api/incidents/incident-1/issue-ticket') as never,
+        { params: Promise.resolve({ incidentId: 'incident-1' }) },
+      )
+    ).json()
+
+    expect(json.penalty).toEqual(
+      expect.objectContaining({
+        fineable: false,
+        section: null,
+        penaltyAmount: 0,
+        offenseTier: null,
+        offenseTierLabel: null,
+      }),
+    )
+    expect(json.penalty.basis).toEqual(
+      expect.objectContaining({ kind: 'NO_FINE', groundSection: '29(a)', processSection: '30' }),
+    )
+  })
+
+  it('counts the offence tier from prior tickets of the same violation only', async () => {
+    // Sec. 33(a) tiers a repeat of the same offence. Counting an unrelated
+    // ticket toward it raises the fine on a basis the ordinance never gives.
+    prismaMock.incident.findUnique.mockResolvedValueOnce({
+      id: 'incident-1',
+      incidentType: 'NO_FRANCHISE_AND_MTOP',
+      status: 'PENDING',
+      evidenceVerifiedAt: new Date('2026-04-03T07:50:00.000Z'),
+      evidenceVerifiedById: 'enforcer-1',
+      handledById: null,
+      ticketNumber: null,
+      plateNumber: 'ABC-123',
+      incidentDate: new Date('2026-04-03T08:00:00.000Z'),
+      createdAt: new Date('2026-04-03T08:05:00.000Z'),
+    })
+    prismaMock.incident.count.mockResolvedValueOnce(0)
+    prismaMock.incident.aggregate.mockResolvedValueOnce({
+      _count: { id: 0 },
+      _sum: { penaltyAmount: null },
+    })
+
+    await getTicketPenaltyPreview(
+      makeRequest('http://localhost/api/incidents/incident-1/issue-ticket') as never,
+      { params: Promise.resolve({ incidentId: 'incident-1' }) },
+    )
+
+    expect(prismaMock.incident.count).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ incidentType: 'NO_FRANCHISE_AND_MTOP' }),
+      }),
+    )
+    // Arrears stay plate-wide: debt is debt, whatever it was incurred for.
+    expect(prismaMock.incident.aggregate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.not.objectContaining({ incidentType: expect.anything() }),
+      }),
+    )
+  })
+
+  describe('referring for franchise action', () => {
+    function pendingIncident(incidentType: string) {
+      return {
+        id: 'incident-1',
+        incidentType,
+        status: 'PENDING',
+        evidenceVerifiedAt: new Date('2026-04-03T07:50:00.000Z'),
+        evidenceVerifiedById: 'enforcer-1',
+        handledById: null,
+        ticketNumber: null,
+        plateNumber: ' abc-123 ',
+        incidentDate: new Date('2026-04-03T08:00:00.000Z'),
+        createdAt: new Date('2026-04-03T08:05:00.000Z'),
+        remarks: null,
+      }
+    }
+
+    it('gives a verified overcharge an outcome that is not dismissal', async () => {
+      prismaMock.incident.findUnique.mockResolvedValueOnce(pendingIncident('FARE_OVERCHARGE'))
+      prismaMock.incident.update.mockResolvedValueOnce({
+        id: 'incident-1',
+        status: 'REFERRED_FOR_FRANCHISE_ACTION',
+      })
+
+      const response = await referFranchiseAction(
+        makeJsonRequest('http://localhost/api/incidents/incident-1/refer-franchise-action', {
+          remarks: 'Charged PHP 50 for a PHP 15 ride.',
+        }) as never,
+        { params: Promise.resolve({ incidentId: 'incident-1' }) },
+      )
+      const json = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(json.referral).toEqual(
+        expect.objectContaining({ groundSection: '29(a)', processSection: '30' }),
+      )
+      expect(prismaMock.incident.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            status: 'REFERRED_FOR_FRANCHISE_ACTION',
+            referredById: 'enforcer-1',
+            // Normalised on the way in, like ticket issuance does.
+            plateNumber: 'ABC-123',
+          }),
+        }),
+      )
+    })
+
+    it('refuses to refer a violation the ordinance does fine', async () => {
+      // Referring a franchise offence would quietly drop a lawful penalty.
+      prismaMock.incident.findUnique.mockResolvedValueOnce(
+        pendingIncident('NO_FRANCHISE_AND_MTOP'),
+      )
+
+      const response = await referFranchiseAction(
+        makeJsonRequest('http://localhost/api/incidents/incident-1/refer-franchise-action') as never,
+        { params: Promise.resolve({ incidentId: 'incident-1' }) },
+      )
+
+      expect(response.status).toBe(400)
+      expect((await response.json()).code).toBe('PENALTY_BASIS_EXISTS')
+      expect(prismaMock.incident.update).not.toHaveBeenCalled()
+    })
+
+    it('refuses to refer before evidence is verified', async () => {
+      prismaMock.incident.findUnique.mockResolvedValueOnce({
+        ...pendingIncident('FARE_OVERCHARGE'),
+        evidenceVerifiedAt: null,
+        evidenceVerifiedById: null,
+      })
+
+      const response = await referFranchiseAction(
+        makeJsonRequest('http://localhost/api/incidents/incident-1/refer-franchise-action') as never,
+        { params: Promise.resolve({ incidentId: 'incident-1' }) },
+      )
+
+      expect(response.status).toBe(400)
+      expect(prismaMock.incident.update).not.toHaveBeenCalled()
+    })
+
+    it('refuses to refer an incident that already has a ticket', async () => {
+      prismaMock.incident.findUnique.mockResolvedValueOnce({
+        ...pendingIncident('FARE_OVERCHARGE'),
+        ticketNumber: 'T-1',
+      })
+
+      const response = await referFranchiseAction(
+        makeJsonRequest('http://localhost/api/incidents/incident-1/refer-franchise-action') as never,
+        { params: Promise.resolve({ incidentId: 'incident-1' }) },
+      )
+
+      expect(response.status).toBe(409)
+      expect((await response.json()).code).toBe('TICKET_ALREADY_ISSUED')
+    })
   })
 
   it('rejects ticket issuance when evidence has not been verified', async () => {

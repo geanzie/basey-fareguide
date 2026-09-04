@@ -62,6 +62,7 @@ const incidentTypes = [
   { value: 'RECKLESS_DRIVING', label: 'Reckless Driving' },
   { value: 'VEHICLE_VIOLATION', label: 'Vehicle Violation' },
   { value: 'ROUTE_VIOLATION', label: 'Route Violation' },
+  { value: 'EMPTY_SEAT_CHARGE', label: 'Paid Seats Resold' },
   { value: 'OTHER', label: 'Other Violation' },
 ]
 
@@ -139,7 +140,22 @@ const IncidentReporting = () => {
   const qrHandoffParam = searchParams.get('qrHandoff')
   const auth = useAuth()
   const authStatus = auth.status ?? (auth.user ? 'authenticated' : 'unauthenticated')
-  const [formData, setFormData] = useState<IncidentFormState>(getDefaultFormState())
+  // A refused scan links here with the violation and vehicle already chosen,
+  // so the rider who was turned away reports in one tap rather than retyping a
+  // plate they may only have seen from the roadside.
+  const [formData, setFormData] = useState<IncidentFormState>(() => {
+    const base = getDefaultFormState()
+    const prefillType = searchParams.get('type')
+    const prefillPlate = searchParams.get('plateNumber')
+
+    return {
+      ...base,
+      incidentType: incidentTypes.some((option) => option.value === prefillType)
+        ? (prefillType as string)
+        : base.incidentType,
+      plateNumber: prefillPlate ?? base.plateNumber,
+    }
+  })
   const [currentLocation, setCurrentLocation] = useState<GPSPosition | null>(null)
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleLookupDto | null>(null)
   const [recentTrips, setRecentTrips] = useState<FareCalculationDto[]>([])

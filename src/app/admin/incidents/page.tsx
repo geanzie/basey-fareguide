@@ -23,7 +23,14 @@ import type { IncidentsResponseDto } from '@/lib/contracts'
 // INVESTIGATING is legacy-only: the take-ownership step that wrote it is now a
 // 410 tombstone (api/incidents/[incidentId]/take), so nothing produces new
 // INVESTIGATING rows — but old ones may exist and must stay findable.
-const STATUSES = ['PENDING', 'INVESTIGATING', 'TICKET_ISSUED', 'RESOLVED', 'DISMISSED'] as const
+const STATUSES = [
+  'PENDING',
+  'INVESTIGATING',
+  'REFERRED_FOR_FRANCHISE_ACTION',
+  'TICKET_ISSUED',
+  'RESOLVED',
+  'DISMISSED',
+] as const
 
 export default function AdminIncidentsPage() {
   const { status, user } = useAuth()
@@ -61,6 +68,7 @@ export default function AdminIncidentsPage() {
     all: incidents.length,
     PENDING: incidents.filter(i => i.status === 'PENDING').length,
     INVESTIGATING: incidents.filter(i => i.status === 'INVESTIGATING').length,
+    REFERRED_FOR_FRANCHISE_ACTION: incidents.filter(i => i.status === 'REFERRED_FOR_FRANCHISE_ACTION').length,
     TICKET_ISSUED: incidents.filter(i => i.status === 'TICKET_ISSUED').length,
     RESOLVED: incidents.filter(i => i.status === 'RESOLVED').length,
     DISMISSED: incidents.filter(i => i.status === 'DISMISSED').length,
@@ -90,6 +98,7 @@ export default function AdminIncidentsPage() {
                 <StatTile label="Total Incidents" value={incidentCounts.all} tone="muted" />
                 <StatTile label="Pending" value={incidentCounts.PENDING} tone="warning" />
                 <StatTile label="Investigating" value={incidentCounts.INVESTIGATING} tone="info" />
+                <StatTile label="Referred (Franchise)" value={incidentCounts.REFERRED_FOR_FRANCHISE_ACTION} tone="warning" />
                 <StatTile label="Ticket Issued" value={incidentCounts.TICKET_ISSUED} tone="purple" />
                 <StatTile label="Resolved" value={incidentCounts.RESOLVED} tone="success" />
                 <StatTile label="Dismissed" value={incidentCounts.DISMISSED} tone="muted" />
