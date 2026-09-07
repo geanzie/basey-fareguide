@@ -241,6 +241,16 @@ export const RATE_LIMITS = {
     windowMs: 60 * 60 * 1000, // 1 hour
     maxAttempts: 3 // 3 attempts per hour
   },
+  // Guards OTP verification/consumption (verify-otp, reset-password) by IP.
+  // Defense in depth alongside the per-account attempt counter in
+  // src/lib/passwordResetOtp.ts: this slows a single source hammering many
+  // different accounts, while the DB-backed counter bounds guesses against
+  // one account regardless of how many source IPs are used.
+  AUTH_OTP_VERIFY: {
+    name: 'auth-otp-verify',
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    maxAttempts: 10 // 10 attempts per 15 minutes, per IP
+  },
   // Registration attempts the server actually rejected (duplicate email, bad
   // input). Keyed on the email being registered, not the IP, so one household
   // or one shared telco NAT cannot lock out a barangay. Generous, because a

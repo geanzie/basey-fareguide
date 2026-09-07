@@ -2,18 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { checkRateLimit, getClientIdentifier, RATE_LIMITS } from '@/lib/rateLimit'
 import { getPasswordResetEmailCapability, sendOTPEmail } from '@/lib/email'
-
-// Generate a 6-digit OTP code
-function generateOTP(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString()
-}
-
-// Get OTP expiry date (10 minutes from now)
-function getOTPExpiry(): Date {
-  const expiry = new Date()
-  expiry.setMinutes(expiry.getMinutes() + 10)
-  return expiry
-}
+import { generateOTP, getOTPExpiry } from '@/lib/passwordResetOtp'
 
 export async function POST(request: NextRequest) {
   try {
@@ -101,6 +90,9 @@ export async function POST(request: NextRequest) {
       data: {
         passwordResetOtp: otp,
         passwordResetOtpExpiry: otpExpiry,
+        // A fresh OTP gets a fresh guess budget; the old one's attempts must
+        // not carry over and shrink the new code's allowance.
+        passwordResetOtpAttempts: 0,
         passwordResetToken: null,
         passwordResetExpiry: null,
       }

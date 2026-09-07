@@ -47,7 +47,12 @@ export async function POST(request: NextRequest) {
       type,
       description,
       locationId: body.locationId
-    }, baseUrl);
+    }, baseUrl, {
+      // Forwarded because /api/geocode/reverse requires its own session — this
+      // admin request already proved one via requireRequestRole above.
+      cookie: request.headers.get('cookie'),
+      authorization: request.headers.get('authorization'),
+    });
 
     let persisted = false;
 

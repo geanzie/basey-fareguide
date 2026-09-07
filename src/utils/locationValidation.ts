@@ -1,7 +1,7 @@
 // Location validation utilities for admin location management
 // Validates coordinates against municipality boundaries and Google Maps API
 
-import { reverseGeocode, GoogleMapsVerificationResult } from './googleMapsVerification';
+import { reverseGeocode, GoogleMapsVerificationResult, ReverseGeocodeAuth } from './googleMapsVerification';
 import { findContainingBarangay } from './polygonVerification';
 
 export interface LocationValidationRequest {
@@ -104,10 +104,14 @@ function validateCoordinateRange(lat: number, lng: number): { valid: boolean; me
  * Comprehensive location validation
  * @param request Location data to validate
  * @param baseUrl Optional base URL for server-side Google Maps API calls
+ * @param auth Forwarded caller credential for the internal reverse-geocode
+ *   call — that endpoint requires a session, so a server-to-server caller must
+ *   carry its own request's auth through. See ReverseGeocodeAuth.
  */
 export async function validateLocation(
   request: LocationValidationRequest,
-  baseUrl?: string
+  baseUrl?: string,
+  auth?: ReverseGeocodeAuth
 ): Promise<LocationValidationResult> {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -213,7 +217,7 @@ export async function validateLocation(
   
   // 6. Validate with Google Maps API - REQUIRED for data accuracy
   try {
-    googleMapsResult = await reverseGeocode([parsedCoords.lat, parsedCoords.lng], baseUrl);
+    googleMapsResult = await reverseGeocode([parsedCoords.lat, parsedCoords.lng], baseUrl, auth);
     
     googleMapsValid = googleMapsResult.isValidLocation;
     googlePlaceId = googleMapsResult.address?.placeId || null;

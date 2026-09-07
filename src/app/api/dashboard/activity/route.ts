@@ -6,15 +6,26 @@ import { serializeDashboardActivityItem } from '@/lib/serializers'
 
 export async function GET(request: NextRequest) {
   try {
-    await requireRequestUser(request)
+    const user = await requireRequestUser(request)
     const { searchParams } = new URL(request.url)
     const pagination = parsePaginationParams(searchParams, {
       defaultLimit: 10,
       maxLimit: 50,
     })
 
+    // Same rule as GET /api/incidents: staff see every incident, everyone
+    // else sees only what they reported. Previously unscoped, so any
+    // authenticated caller — including a self-registered PUBLIC account —
+    // could page through every incident system-wide (descriptions,
+    // locations, and the reporting/handling officers' names).
+    const whereClause =
+      user.userType === 'ADMIN' || user.userType === 'ENFORCER' || user.userType === 'DATA_ENCODER'
+        ? {}
+        : { reportedById: user.id }
+
     const [recentIncidents, total] = await Promise.all([
       prisma.incident.findMany({
+        where: whereClause,
         skip: pagination.skip,
         take: pagination.limit,
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
@@ -33,7 +44,7 @@ export async function GET(request: NextRequest) {
           }
         }
       }),
-      prisma.incident.count(),
+      prisma.incident.count({ where: whereClause }),
     ])
 
     return NextResponse.json({

@@ -127,4 +127,25 @@ describe('request reset route', () => {
     expect(json.email).toBe('u***e@example.com')
     expect(json.deliveryMode).toBe('provider')
   })
+
+  it('resets the OTP attempt counter whenever a fresh code is issued', async () => {
+    // A carried-over counter would let a request-reset silently shrink (or
+    // exhaust) the budget of a code the user has not even seen yet.
+    prismaMock.user.findUnique.mockResolvedValue({
+      id: 'user-1',
+      email: 'username@example.com',
+      username: 'sampleuser',
+    })
+    prismaMock.user.update.mockResolvedValue({ id: 'user-1' })
+    emailMock.sendOTPEmail.mockResolvedValue({ success: true, mode: 'provider' })
+
+    await POST(makeRequest({ email: 'username@example.com' }) as never)
+
+    expect(prismaMock.user.update).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        data: expect.objectContaining({ passwordResetOtpAttempts: 0 }),
+      }),
+    )
+  })
 })

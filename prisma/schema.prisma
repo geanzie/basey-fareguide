@@ -44,6 +44,11 @@ model User {
   passwordResetExpiry            DateTime?
   passwordResetOtp               String?
   passwordResetOtpExpiry         DateTime?
+  /// Failed guesses against the current passwordResetOtp. Bounds brute force
+  /// independent of the caller's IP: the OTP is invalidated after
+  /// MAX_OTP_VERIFY_ATTEMPTS regardless of how many source addresses are used.
+  /// Reset to 0 whenever request-reset issues a fresh OTP.
+  passwordResetOtpAttempts       Int                              @default(0)
   privacyNoticeAcknowledgedAt    DateTime?
   privacyNoticeVersion           String?
   hasUsablePassword              Boolean                          @default(true)

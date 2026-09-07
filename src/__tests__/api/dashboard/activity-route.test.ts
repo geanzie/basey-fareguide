@@ -95,4 +95,42 @@ describe('GET /api/dashboard/activity', () => {
       }),
     )
   })
+
+  it('scopes a PUBLIC caller to their own reported incidents', async () => {
+    // Previously unscoped for every role: any authenticated user, including a
+    // self-registered PUBLIC account, could page through every incident
+    // system-wide. This is the fix.
+    authMock.requireRequestUser.mockResolvedValue({ id: 'rider-1', userType: 'PUBLIC' })
+
+    await GET(new Request('http://localhost/api/dashboard/activity') as never)
+
+    expect(prismaMock.incident.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { reportedById: 'rider-1' } }),
+    )
+    expect(prismaMock.incident.count).toHaveBeenCalledWith({
+      where: { reportedById: 'rider-1' },
+    })
+  })
+
+  it('scopes a DRIVER caller to their own reported incidents too', async () => {
+    authMock.requireRequestUser.mockResolvedValue({ id: 'driver-1', userType: 'DRIVER' })
+
+    await GET(new Request('http://localhost/api/dashboard/activity') as never)
+
+    expect(prismaMock.incident.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { reportedById: 'driver-1' } }),
+    )
+  })
+
+  it('leaves ADMIN, ENFORCER, and DATA_ENCODER unscoped, matching GET /api/incidents', async () => {
+    for (const userType of ['ADMIN', 'ENFORCER', 'DATA_ENCODER']) {
+      authMock.requireRequestUser.mockResolvedValue({ id: 'staff-1', userType })
+
+      await GET(new Request('http://localhost/api/dashboard/activity') as never)
+
+      expect(prismaMock.incident.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: {} }),
+      )
+    }
+  })
 })

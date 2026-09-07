@@ -52,13 +52,27 @@ interface GoogleMapsApiResult {
 }
 
 /**
+ * Auth to forward into the internal /api/geocode/reverse call. That route
+ * requires a session (it spends the paid Google Maps key on every call), so a
+ * server-to-server caller must carry the original request's own credential
+ * through rather than reaching it anonymously.
+ */
+export interface ReverseGeocodeAuth {
+  cookie?: string | null;
+  authorization?: string | null;
+}
+
+/**
  * Reverse geocode coordinates using Google Maps API
  * @param coords [latitude, longitude]
+ * @param baseUrl Origin to call when used server-side (the browser path needs none)
+ * @param auth Forwarded credential for a server-side call — see ReverseGeocodeAuth
  * @returns Promise with geocoding result
  */
 export async function reverseGeocode(
   coords: [number, number],
   baseUrl?: string,
+  auth?: ReverseGeocodeAuth,
 ): Promise<GoogleMapsVerificationResult> {
   const [lat, lng] = coords;
 
@@ -73,11 +87,15 @@ export async function reverseGeocode(
       throw new Error('Google Maps verification cannot be performed in server-side context without baseUrl. Please validate from the UI.');
     }
 
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (auth?.cookie) headers['cookie'] = auth.cookie;
+    if (auth?.authorization) headers['authorization'] = auth.authorization;
+
     const response = await fetch(apiUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify({ lat, lng }),
     });
 
