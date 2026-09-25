@@ -8,11 +8,14 @@ function repoPath(...parts: string[]) {
 
 describe('Phase 8 UX simplification', () => {
   it('keeps the public dashboard focused on one action grid and two recent-activity sections', () => {
-    const dashboard = readFileSync(repoPath('src', 'components', 'PublicUserDashboard.tsx'), 'utf8')
+    const dashboard = readFileSync(
+      repoPath('src', 'components', 'rider-operations', 'RiderControlCenter.tsx'),
+      'utf8',
+    )
 
     expect(dashboard).not.toContain('Quick Actions')
-    expect(dashboard).toContain('Recent Fare Calculations')
-    expect(dashboard).toContain('Recent Incident Reports')
+    expect(dashboard).toContain('Recent fare calculations')
+    expect(dashboard).toContain('Recent incident reports')
   })
 
   it('keeps the history page focused on one timeline view', () => {

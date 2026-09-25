@@ -213,7 +213,7 @@ export const OUTCOME_ORDER = [
 export type Outcome = (typeof OUTCOME_ORDER)[number];
 
 export function outcomeCounts(
-  records: readonly EnforcerOperationsRecordDto[],
+  records: readonly Pick<EnforcerOperationsRecordDto, "status">[],
 ): Array<{ status: Outcome; count: number }> {
   const counts = new Map<Outcome, number>(OUTCOME_ORDER.map((status) => [status, 0]));
   for (const record of records) {
@@ -241,7 +241,7 @@ export interface CloseTimeSummary {
 }
 
 export function closeTimes(
-  records: readonly EnforcerOperationsRecordDto[],
+  records: readonly Pick<EnforcerOperationsRecordDto, "createdAt" | "closedAt" | "open">[],
   now: Date,
 ): CloseTimeSummary {
   const hours: number[] = [];

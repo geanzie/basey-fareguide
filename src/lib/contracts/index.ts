@@ -22,3 +22,4 @@ export * from "./routingSettings";
 export * from "./riderTrip";
 export * from "./enforcerOperations";
 export * from "./encoderOperations";
+export * from "./riderOperations";

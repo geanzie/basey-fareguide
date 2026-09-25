@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createRoot, type Root } from "react-dom/client";
 import { SWRConfig } from "swr";
 
-import PublicUserDashboard from "@/components/PublicUserDashboard";
+import { RiderDashboardBody } from "@/components/rider-operations/RiderControlCenter";
 
 function makeJsonResponse(body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -13,6 +13,28 @@ function makeJsonResponse(body: unknown): Response {
     headers: { "Content-Type": "application/json" },
   });
 }
+
+const emptyOperations = {
+  generatedAt: "2026-04-05T00:00:00.000Z",
+  range: "30d",
+  since: "2026-03-06T00:00:00.000Z",
+  pulse: { tripCount: 0, spent: 0, saved: 0, distanceKm: 0, openReportCount: 0 },
+  trips: [],
+  reports: [],
+  previousPeriodTrips: 0,
+  previousPeriodSpent: 0,
+  previousPeriodSaved: 0,
+  community: {
+    reportCount: 0,
+    previousPeriodCount: 0,
+    outcomes: [],
+    closedCount: 0,
+    medianCloseHours: null,
+    closeBuckets: [],
+    openOverAWeek: 0,
+  },
+  truncated: false,
+};
 
 describe("public dashboard announcements", () => {
   let container: HTMLDivElement;
@@ -58,12 +80,12 @@ describe("public dashboard announcements", () => {
           );
         }
 
-        if (url.includes("/api/incidents")) {
-          return Promise.resolve(makeJsonResponse({ incidents: [] }));
+        if (url.includes("/api/public/operations")) {
+          return Promise.resolve(makeJsonResponse(emptyOperations));
         }
 
-        if (url.includes("/api/fare-calculations")) {
-          return Promise.resolve(makeJsonResponse({ calculations: [] }));
+        if (url.includes("/api/dashboard/activity")) {
+          return Promise.resolve(makeJsonResponse({ activity: [] }));
         }
 
         if (url.includes("/api/fare-rates/documents")) {
@@ -125,7 +147,7 @@ describe("public dashboard announcements", () => {
               fetcher: (url: string) => fetch(url).then((response) => response.json()),
             },
           },
-          React.createElement(PublicUserDashboard),
+          React.createElement(RiderDashboardBody, { range: "30d", tab: "overview" }),
         ),
       );
       await Promise.resolve();
@@ -142,8 +164,8 @@ describe("public dashboard announcements", () => {
       anchor.textContent?.includes("See the ordinance behind this rate"),
     );
     expect(documentLink?.getAttribute("href")).toBe("/fare-documents/fare-live");
-    expect(container.textContent).toContain("Recent Fare Calculations");
-    expect(container.textContent).toContain("Recent Incident Reports");
+    expect(container.textContent).toContain("Recent fare calculations");
+    expect(container.textContent).toContain("Recent incident reports");
 
     // Only destinations the bottom nav cannot reach in one tap survive as
     // cards. "Calculate Fare" went because /calculator is a primary tab, and
