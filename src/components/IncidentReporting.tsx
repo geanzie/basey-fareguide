@@ -472,7 +472,7 @@ const IncidentReporting = () => {
       <div className="border border-surface-border bg-surface shadow-card mx-auto max-w-4xl rounded-card p-8">
         <div className="text-center mb-8">
           <div className={`${getDashboardIconChipClasses('red')} mx-auto mb-4 h-16 w-16 rounded-full`}>
-            <DashboardIconSlot icon={DASHBOARD_ICONS.incidents} size={DASHBOARD_ICON_POLICY.sizes.hero} />
+            <DashboardIconSlot icon={DASHBOARD_ICONS.report} size={DASHBOARD_ICON_POLICY.sizes.hero} />
           </div>
           <h2 className="text-3xl font-bold text-gray-900 mb-2">Report an Incident</h2>
           <p className="text-gray-600">Sign in to choose one of your recent trips before filing a report.</p>
@@ -489,7 +489,7 @@ const IncidentReporting = () => {
     <div className="border border-surface-border bg-surface shadow-card mx-auto max-w-4xl rounded-card p-8">
       <div className="text-center mb-8">
         <div className={`${getDashboardIconChipClasses('red')} mx-auto mb-4 h-16 w-16 rounded-full`}>
-          <DashboardIconSlot icon={DASHBOARD_ICONS.incidents} size={DASHBOARD_ICON_POLICY.sizes.hero} />
+          <DashboardIconSlot icon={DASHBOARD_ICONS.report} size={DASHBOARD_ICON_POLICY.sizes.hero} />
         </div>
         <h2 className="text-3xl font-bold text-gray-900 mb-2">Report an Incident</h2>
       </div>
@@ -820,7 +820,7 @@ const IncidentReporting = () => {
                 </>
               ) : (
                 <>
-                  <DashboardIconSlot icon={DASHBOARD_ICONS.incidents} size={DASHBOARD_ICON_POLICY.sizes.button} className="mr-2" />
+                  <DashboardIconSlot icon={DASHBOARD_ICONS.report} size={DASHBOARD_ICON_POLICY.sizes.button} className="mr-2" />
                   Submit Report
                 </>
               )}

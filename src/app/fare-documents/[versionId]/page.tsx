@@ -82,7 +82,7 @@ export default function FareDocumentPage({
                 <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
                   <div className="max-w-3xl">
                     <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700">
-                      <DashboardIconSlot icon={DASHBOARD_ICONS.fileText} size={16} />
+                      <DashboardIconSlot icon={DASHBOARD_ICONS.ordinance} size={16} />
                       <p>
                         {entry.isUpcoming
                           ? 'Takes effect soon'
@@ -168,7 +168,7 @@ export default function FareDocumentPage({
                 <div className="border-b border-slate-200 bg-slate-50 px-5 py-4 lg:px-6">
                   <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                     <DashboardIconSlot
-                      icon={DASHBOARD_ICONS.fileText}
+                      icon={DASHBOARD_ICONS.ordinance}
                       size={DASHBOARD_ICON_POLICY.sizes.button}
                     />
                     <span>Inline Document Preview</span>

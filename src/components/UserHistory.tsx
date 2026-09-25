@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import useSWR from 'swr'
-import { History } from 'lucide-react'
+import { IconHistory } from '@/components/BrandIcons'
 
 import Badge from '@/ui/Badge'
 import Button from '@/ui/Button'
@@ -140,7 +140,7 @@ export default function UserHistory() {
     return (
       <Card>
         <EmptyState
-          icon={History}
+          icon={IconHistory}
           title="Unable to load history"
           message={error instanceof Error ? error.message : 'Failed to load history. Please try again.'}
         />
@@ -180,7 +180,7 @@ export default function UserHistory() {
       {filteredHistory.length === 0 ? (
         <Card>
           <EmptyState
-            icon={History}
+            icon={IconHistory}
             title={searchQuery ? 'No matching activity found' : 'No saved activity yet'}
             message={
               searchQuery

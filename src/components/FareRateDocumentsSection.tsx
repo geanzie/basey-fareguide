@@ -82,7 +82,7 @@ export default function FareRateDocumentsSection() {
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
               <div className="max-w-3xl">
                 <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700">
-                  <DashboardIconSlot icon={DASHBOARD_ICONS.fileText} size={16} />
+                  <DashboardIconSlot icon={DASHBOARD_ICONS.ordinance} size={16} />
                   <p>{statusLabel(entry)}</p>
                 </div>
                 <h3 className="mt-2 text-2xl font-bold text-slate-900">{entry.document.title}</h3>
@@ -118,7 +118,7 @@ export default function FareRateDocumentsSection() {
                     className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
                   >
                     <DashboardIconSlot
-                      icon={DASHBOARD_ICONS.fileText}
+                      icon={DASHBOARD_ICONS.ordinance}
                       size={DASHBOARD_ICON_POLICY.sizes.button}
                       className="mr-2"
                     />

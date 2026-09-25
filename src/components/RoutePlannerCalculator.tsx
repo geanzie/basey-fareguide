@@ -1585,7 +1585,10 @@ const RoutePlannerCalculator = ({
                       <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
                         <span>{routeResult.durationText}</span>
                         <span className="text-slate-300">•</span>
-                        <span>{routeResult.distanceKm.toFixed(2)} km</span>
+                        <span className="inline-flex items-center gap-1">
+                          <DashboardIconSlot icon={DASHBOARD_ICONS.distance} size={14} />
+                          {routeResult.distanceKm.toFixed(2)} km
+                        </span>
                       </div>
                       <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-surface-tint px-2.5 py-1 text-xs font-semibold text-primary-dark">
                         <DashboardIconSlot icon={DASHBOARD_ICONS.discount} size={13} />

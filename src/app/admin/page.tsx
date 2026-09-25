@@ -107,7 +107,7 @@ export default function AdminPage() {
     { key: 'dashboard', label: 'Dashboard', icon: DASHBOARD_ICONS.dashboard },
     { key: 'users', label: 'User Management', icon: DASHBOARD_ICONS.users },
     { key: 'storage', label: 'Storage Management', icon: DASHBOARD_ICONS.storage },
-    { key: 'locations', label: 'Location Management', icon: DASHBOARD_ICONS.map },
+    { key: 'locations', label: 'Location Management', icon: DASHBOARD_ICONS.barangay },
   ]
 
   return (

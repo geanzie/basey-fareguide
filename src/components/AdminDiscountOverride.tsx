@@ -291,7 +291,7 @@ export default function AdminDiscountOverride({ onSuccess, onCancel }: AdminDisc
                       {user.barangayResidence && (
                         <div className="text-xs text-gray-500 mt-1">
                           <span className="inline-flex items-center gap-1">
-                            <DashboardIconSlot icon={DASHBOARD_ICONS.map} size={14} />
+                            <DashboardIconSlot icon={DASHBOARD_ICONS.barangay} size={14} />
                             <span>{user.barangayResidence}</span>
                           </span>
                         </div>

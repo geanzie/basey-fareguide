@@ -3,7 +3,8 @@
 import { memo, useMemo } from 'react'
 import Link from 'next/link'
 import useSWR from 'swr'
-import { AlertTriangle, BadgePercent, Banknote, ClipboardList, Route, ShieldCheck } from 'lucide-react'
+import { ShieldCheck } from 'lucide-react'
+import { IconDiscount, IconFareCheck, IconReport, IconRoute } from '@/components/BrandIcons'
 
 import FareRateBanner from '@/components/FareRateBanner'
 import TrafficAnnouncementsFeed from '@/components/TrafficAnnouncementsFeed'
@@ -104,14 +105,14 @@ function PublicUserDashboard() {
       <section className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <NavCard
           href="/report"
-          icon={AlertTriangle}
+          icon={IconReport}
           tone="red"
           title="Report Incident"
           description="Send one report with optional evidence."
         />
         <NavCard
           href="/profile/discount"
-          icon={BadgePercent}
+          icon={IconDiscount}
           tone="purple"
           title="Manage Discount Card"
           description="Check your approval and active discount."
@@ -123,7 +124,7 @@ function PublicUserDashboard() {
         <StatTile
           label="Saved Routes"
           value={summary.routes}
-          icon={Route}
+          icon={IconRoute}
           tone="info"
           href="/history?filter=routes"
         />
@@ -132,12 +133,12 @@ function PublicUserDashboard() {
         <StatTile
           label="My Reports"
           value={summary.reports}
-          icon={ClipboardList}
+          icon={IconReport}
           tone="danger"
           href="/history?filter=reports"
         />
-        <StatTile label="Total Fare Logged" value={formatCurrency(summary.totalFare)} icon={Banknote} tone="success" />
-        <StatTile label="Discount Savings" value={formatCurrency(summary.totalSavings)} icon={BadgePercent} tone="purple" />
+        <StatTile label="Total Fare Logged" value={formatCurrency(summary.totalFare)} icon={IconFareCheck} tone="success" />
+        <StatTile label="Discount Savings" value={formatCurrency(summary.totalSavings)} icon={IconDiscount} tone="purple" />
       </section>
 
       <section className="grid grid-cols-1 gap-5 xl:grid-cols-2">

@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 
 import ResponsiveTable, { ActionButton, StatusBadge } from '@/components/ResponsiveTable'
+import { USER_TYPE_ICONS } from '@/components/dashboardIcons'
 import type { AdminUserCreationSource, AdminUserDto, AdminUserType } from '@/lib/admin/user-management-contract'
 
 import {
@@ -214,7 +215,7 @@ export default function AdminUsersPanel({
             key: 'userType',
             label: 'Role',
             render: (value: string) => (
-              <StatusBadge status={formatAdminUserTypeLabel(value)} className={getRoleBadgeClass(value)} />
+              <StatusBadge status={formatAdminUserTypeLabel(value)} className={getRoleBadgeClass(value)} icon={USER_TYPE_ICONS[value]} />
             ),
           },
           {

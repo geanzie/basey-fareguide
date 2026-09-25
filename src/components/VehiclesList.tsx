@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/components/AuthProvider'
 import { VehicleType } from '@prisma/client'
 import ResponsiveTable, { StatusBadge, ActionButton } from './ResponsiveTable'
+import { DASHBOARD_ICONS, VEHICLE_TYPE_ICONS } from './dashboardIcons'
 import Modal from '@/ui/Modal'
 import type { VehicleDto, VehiclesResponseDto } from '@/lib/contracts'
 
@@ -156,6 +157,7 @@ export default function VehiclesList() {
         return (
           <StatusBadge
             status={vehicle.vehicleType}
+            icon={VEHICLE_TYPE_ICONS[vehicle.vehicleType] ?? DASHBOARD_ICONS.vehicle}
             className={getVehicleTypeColor(vehicle.vehicleType)}
           />
         )

@@ -1,6 +1,7 @@
 'use client'
 
 import { ActionButton, StatusBadge } from '@/components/ResponsiveTable'
+import { USER_TYPE_ICONS } from '@/components/dashboardIcons'
 import Modal from '@/ui/Modal'
 import type { AdminUserDto } from '@/lib/admin/user-management-contract'
 
@@ -68,7 +69,7 @@ export default function AdminUserDetailModal({
                 <p className="mt-1 text-sm text-gray-600">@{user.username}</p>
               </div>
               <div className="flex flex-wrap gap-2">
-                <StatusBadge status={formatAdminUserTypeLabel(user.userType)} className={getRoleBadgeClass(user.userType)} />
+                <StatusBadge status={formatAdminUserTypeLabel(user.userType)} className={getRoleBadgeClass(user.userType)} icon={USER_TYPE_ICONS[user.userType]} />
                 <StatusBadge
                   status={formatCreationSourceLabel(user.creationSource)}
                   className={getCreationSourceBadgeClass(user.creationSource)}

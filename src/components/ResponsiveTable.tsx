@@ -2,7 +2,7 @@
 
 import { ReactNode, memo } from 'react'
 import LoadingSpinner from '@/components/LoadingSpinner'
-import { DASHBOARD_ICONS, DashboardIconSlot } from '@/components/dashboardIcons'
+import { DASHBOARD_ICONS, DashboardIconSlot, type DashboardIcon } from '@/components/dashboardIcons'
 
 interface TableColumn {
   key: string
@@ -120,7 +120,7 @@ function ResponsiveTable({
 }
 
 // Status Badge Component for common use in tables
-export function StatusBadge({ status, className = "" }: { status: string, className?: string }) {
+export function StatusBadge({ status, className = "", icon }: { status: string, className?: string, icon?: DashboardIcon }) {
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
       case 'active':
@@ -144,7 +144,8 @@ export function StatusBadge({ status, className = "" }: { status: string, classN
   }
 
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(status)} ${className}`}>
+    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(status)} ${className}`}>
+      {icon ? <DashboardIconSlot icon={icon} size={12} /> : null}
       {status}
     </span>
   )

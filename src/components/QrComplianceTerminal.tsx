@@ -310,7 +310,7 @@ export default function QrComplianceTerminal() {
         className="fixed app-above-bottom-nav right-4 z-fab inline-flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-xl transition hover:bg-primary-dark lg:right-6"
         aria-label="Open QR compliance terminal"
       >
-        <DashboardIconSlot icon={DASHBOARD_ICONS.camera} size={22} className="text-white" />
+        <DashboardIconSlot icon={DASHBOARD_ICONS.qrScan} size={22} className="text-white" />
       </button>
 
       {open ? (
@@ -320,7 +320,7 @@ export default function QrComplianceTerminal() {
               <div className="mb-4 flex items-start justify-between gap-4">
                 <div className="flex items-start gap-3">
                   <div className={getDashboardIconChipClasses('emerald')}>
-                    <DashboardIconSlot icon={DASHBOARD_ICONS.camera} size={DASHBOARD_ICON_POLICY.sizes.section} className="text-primary-dark" />
+                    <DashboardIconSlot icon={DASHBOARD_ICONS.qrScan} size={DASHBOARD_ICON_POLICY.sizes.section} className="text-primary-dark" />
                   </div>
                   <div>
                     <h2 className="text-xl font-semibold text-slate-900">QR Compliance Terminal</h2>

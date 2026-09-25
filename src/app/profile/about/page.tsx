@@ -37,11 +37,11 @@ export default function AboutPage() {
                 <span>Route-based fare estimates</span>
               </div>
               <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2">
-                <DashboardIconSlot icon={DASHBOARD_ICONS.announcements} size={DASHBOARD_ICON_POLICY.sizes.button} />
+                <DashboardIconSlot icon={DASHBOARD_ICONS.traffic} size={DASHBOARD_ICON_POLICY.sizes.button} />
                 <span>Municipal traffic notices</span>
               </div>
               <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2">
-                <DashboardIconSlot icon={DASHBOARD_ICONS.incidents} size={DASHBOARD_ICON_POLICY.sizes.button} />
+                <DashboardIconSlot icon={DASHBOARD_ICONS.report} size={DASHBOARD_ICON_POLICY.sizes.button} />
                 <span>Incident reporting tools</span>
               </div>
             </div>
@@ -108,7 +108,7 @@ export default function AboutPage() {
                 version it shows has no issuance uploaded yet. */}
             <div id="fare-rate-documents" className="scroll-mt-24">
               <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-700">
-                <DashboardIconSlot icon={DASHBOARD_ICONS.fileText} size={16} />
+                <DashboardIconSlot icon={DASHBOARD_ICONS.ordinance} size={16} />
                 <p>Official Documents</p>
               </div>
               <h2 className="mt-2 text-2xl font-bold text-slate-900">
@@ -127,7 +127,7 @@ export default function AboutPage() {
               <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
                 <div className="max-w-3xl">
                   <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700">
-                    <DashboardIconSlot icon={DASHBOARD_ICONS.fileText} size={16} />
+                    <DashboardIconSlot icon={DASHBOARD_ICONS.ordinance} size={16} />
                     <p>Original Ordinance</p>
                   </div>
                   <h3 className="mt-2 text-2xl font-bold text-slate-900">
@@ -155,7 +155,7 @@ export default function AboutPage() {
                     className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
                   >
                     <DashboardIconSlot
-                      icon={DASHBOARD_ICONS.fileText}
+                      icon={DASHBOARD_ICONS.ordinance}
                       size={DASHBOARD_ICON_POLICY.sizes.button}
                       className="mr-2"
                     />

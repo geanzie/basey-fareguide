@@ -15,6 +15,7 @@ vi.mock('@/components/dashboardIcons', () => {
   return {
     __esModule: true,
     DASHBOARD_ICONS: new Proxy({}, { get: () => 'icon' }),
+    USER_TYPE_ICONS: {},
     DASHBOARD_ICON_POLICY: { sizes: { card: 24, alert: 16, button: 16 } },
     DashboardIconSlot: slot,
     getDashboardIconChipClasses: () => '',

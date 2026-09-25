@@ -204,7 +204,7 @@ export default function TicketPaymentsWorkspace({
         <div className="flex items-start gap-4">
           <div className={getDashboardIconChipClasses('emerald')}>
             <DashboardIconSlot
-              icon={DASHBOARD_ICONS.ticket}
+              icon={DASHBOARD_ICONS.payment}
               size={DASHBOARD_ICON_POLICY.sizes.hero}
             />
           </div>

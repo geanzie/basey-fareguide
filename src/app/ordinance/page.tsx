@@ -36,7 +36,7 @@ export default function OrdinancePage() {
                 {/* The band above carries the title and the full legal name;
                     they used to be repeated here as an h1 and a subtitle. */}
                 <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary-dark">
-                  <DashboardIconSlot icon={DASHBOARD_ICONS.fileText} size={16} />
+                  <DashboardIconSlot icon={DASHBOARD_ICONS.ordinance} size={16} />
                   <p>Public Legal Reference</p>
                 </div>
                 <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600">
@@ -107,7 +107,7 @@ export default function OrdinancePage() {
           <section className="overflow-hidden rounded-card border border-surface-border bg-surface shadow-card">
             <div className="border-b border-slate-200 bg-slate-50 px-5 py-4 lg:px-6">
               <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                <DashboardIconSlot icon={DASHBOARD_ICONS.fileText} size={DASHBOARD_ICON_POLICY.sizes.button} />
+                <DashboardIconSlot icon={DASHBOARD_ICONS.ordinance} size={DASHBOARD_ICON_POLICY.sizes.button} />
                 <span>Inline Ordinance Preview</span>
               </div>
             </div>

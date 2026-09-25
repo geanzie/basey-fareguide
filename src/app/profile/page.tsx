@@ -62,7 +62,7 @@ export default function ProfilePage() {
                 >
                   <div className={`${getDashboardIconChipClasses('amber')} h-10 w-10 shrink-0`}>
                     <DashboardIconSlot
-                      icon={DASHBOARD_ICONS.incidents}
+                      icon={DASHBOARD_ICONS.report}
                       size={DASHBOARD_ICON_POLICY.sizes.card}
                     />
                   </div>
