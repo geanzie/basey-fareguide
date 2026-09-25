@@ -59,7 +59,7 @@ export default function AppShell({ children, user }: AppShellProps) {
           <div className="flex items-center gap-3">
             <BrandMark />
             <div className="min-w-0">
-              <h1 className="truncate text-lg font-bold text-ink-strong">Basey FareCheck</h1>
+              <h1 className="truncate font-brand text-lg font-extrabold text-ink-strong">Basey FareCheck</h1>
               <p className="text-xs text-ink-muted">Fare Reference System</p>
             </div>
           </div>

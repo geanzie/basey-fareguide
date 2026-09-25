@@ -115,7 +115,7 @@ const SocialSignupCompleteForm = ({ providerLabel, firstName, lastName, email }:
     <div className="min-h-dvh bg-ink-strong px-4 py-10 sm:px-6 lg:px-8">
       <div className="mx-auto w-full max-w-lg">
         <div className="mb-6 flex flex-col items-center text-center">
-          <BrandMark />
+          <BrandMark size="lg" tone="dark" />
           <h1 className="mt-4 text-2xl font-extrabold text-white">Finish your account</h1>
           <p className="mt-1 text-xs text-ink-muted">
             Signed in with {providerLabel} — just a few more details.

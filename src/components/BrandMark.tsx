@@ -1,25 +1,14 @@
-import {
-  DASHBOARD_ICONS,
-  DASHBOARD_ICON_POLICY,
-  DashboardIconSlot,
-} from '@/components/dashboardIcons'
+import { LogoMark } from '@/components/Logo'
 
+// The Banig Ticket mark from the brand kit. Use tone="dark" on the dark
+// auth screens so the ticket reads as straw on ink instead of green on ink.
 export default function BrandMark({
   size = 'md',
+  tone = 'light',
 }: {
-  size?: 'sm' | 'md'
+  size?: 'sm' | 'md' | 'lg'
+  tone?: 'light' | 'dark'
 }) {
-  const sizeClasses = size === 'sm' ? 'h-9 w-9 rounded-lg' : 'h-10 w-10 rounded-xl'
-
-  return (
-    <div
-      className={`inline-flex items-center justify-center bg-gradient-to-br from-primary to-green-600 text-white shadow-sm ${sizeClasses}`}
-    >
-      <DashboardIconSlot
-        icon={DASHBOARD_ICONS.brand}
-        size={DASHBOARD_ICON_POLICY.sizes.brand}
-        className="text-white"
-      />
-    </div>
-  )
+  const px = size === 'sm' ? 36 : size === 'lg' ? 64 : 44
+  return <LogoMark size={px} tone={tone} />
 }

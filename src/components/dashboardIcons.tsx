@@ -1,5 +1,6 @@
 import {
   cloneElement,
+  type ComponentType,
   isValidElement,
   type ReactElement,
   type ReactNode,
@@ -9,14 +10,10 @@ import {
   ArrowLeft,
   ArrowRight,
   AudioLines,
-  BadgePercent,
-  Banknote,
-  Bike,
   Building2,
   BusFront,
   Calculator,
   Camera,
-  CarTaxiFront,
   Copy,
   Check,
   CheckCircle2,
@@ -48,7 +45,6 @@ import {
   Plus,
   RefreshCw,
   RotateCcw,
-  Route,
   Search,
   SearchX,
   ShieldAlert,
@@ -64,8 +60,17 @@ import {
   type LucideIcon,
   type LucideProps,
 } from 'lucide-react'
+import {
+  IconDiscount,
+  IconFareCheck,
+  IconHabal,
+  IconRoute,
+  IconTricycle,
+} from '@/components/BrandIcons'
 
-export type DashboardIcon = LucideIcon | ReactNode
+// Brand-kit icons take the same size/strokeWidth/className props as lucide.
+type BrandIcon = ComponentType<{ size?: number; strokeWidth?: number; className?: string }>
+export type DashboardIcon = LucideIcon | BrandIcon | ReactNode
 export type DashboardIconTone =
   | 'slate'
   | 'blue'
@@ -123,9 +128,9 @@ export const DASHBOARD_ICONS = {
   copy: Copy,
   danger: AlertCircle,
   dashboard: LayoutDashboard,
-  discount: BadgePercent,
+  discount: IconDiscount,
   evidence: Paperclip,
-  fare: Banknote,
+  fare: IconFareCheck,
   feedback: MessageSquareHeart,
   file: File,
   fileText: FileText,
@@ -148,7 +153,7 @@ export const DASHBOARD_ICONS = {
   reports: TriangleAlert,
   refresh: RefreshCw,
   reset: RotateCcw,
-  routes: Route,
+  routes: IconRoute,
   rural: Leaf,
   safe: ShieldCheck,
   star: Star,
@@ -159,8 +164,8 @@ export const DASHBOARD_ICONS = {
   users: Users,
   vehicle: CarFront,
   // The two rides Basey FareCheck is deployed for.
-  tricycle: CarTaxiFront,
-  motorbike: Bike,
+  tricycle: IconTricycle,
+  motorbike: IconHabal,
   video: Film,
   view: Eye,
   storage: HardDrive,

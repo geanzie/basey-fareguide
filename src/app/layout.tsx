@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { cookies } from 'next/headers'
-import { Inter } from 'next/font/google'
+import { Bricolage_Grotesque, Inter } from 'next/font/google'
 import { AuthProvider, AuthAwareLayout } from '@/components/AuthProvider'
 import { SWRProvider } from '@/components/SWRProvider'
 import { FeedbackProvider } from '@/ui/FeedbackProvider'
@@ -9,6 +9,12 @@ import { serializeSessionUser } from '@/lib/serializers'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
+// Wordmark face from the brand kit; exposed as the `font-brand` utility.
+const brand = Bricolage_Grotesque({
+  subsets: ['latin'],
+  weight: ['500', '800'],
+  variable: '--font-brand',
+})
 
 export const metadata: Metadata = {
   title: 'Basey FareCheck',
@@ -21,16 +27,12 @@ export const metadata: Metadata = {
     statusBarStyle: 'default',
     title: 'Basey FareCheck',
   },
-  icons: {
-    icon: '/favicon.ico',
-    apple: '/icons/icon-192.png',
-  },
 }
 
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#16a34a',
+  themeColor: '#14532D',
   // Required for env(safe-area-inset-*) to resolve to anything but 0px on
   // notched devices — globals.css builds the tab bar and sheet padding on it,
   // and manifest.json runs the app in standalone mode.
@@ -48,10 +50,7 @@ export default async function RootLayout({
   const initialSession = authUser ? { user: serializeSessionUser(authUser) } : null
 
   return (
-    <html lang="en" data-scroll-behavior="smooth">
-      <head>
-        <link rel="icon" href="/favicon.ico" />
-      </head>
+    <html lang="en" className={brand.variable} data-scroll-behavior="smooth">
       <body className={`${inter.className} bg-surface-bg antialiased overflow-x-hidden`} suppressHydrationWarning>
         <SWRProvider>
           <AuthProvider initialSession={initialSession}>

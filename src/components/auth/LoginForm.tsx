@@ -75,8 +75,8 @@ const LoginForm = ({
     <div className="flex min-h-dvh items-center justify-center bg-ink-strong px-4 py-12">
       <div className="w-full max-w-md">
         <div className="mb-8 flex flex-col items-center text-center">
-          <BrandMark />
-          <h1 className="mt-4 text-2xl font-extrabold text-white">Basey FareCheck</h1>
+          <BrandMark size="lg" tone="dark" />
+          <h1 className="mt-4 font-brand text-2xl font-extrabold text-white">Basey FareCheck</h1>
           <p className="mt-1 text-xs text-ink-muted">Municipal Ordinance 105, Series of 2023</p>
         </div>
 
