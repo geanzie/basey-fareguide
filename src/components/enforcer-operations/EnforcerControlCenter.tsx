@@ -3,7 +3,12 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import dynamic from 'next/dynamic'
 import useSWR from 'swr'
-import type { EnforcerOperationsDto, EnforcerOperationsRange, ViolationGroup } from '@/lib/contracts'
+import type {
+  EnforcerIncidentWatermarkDto,
+  EnforcerOperationsDto,
+  EnforcerOperationsRange,
+  ViolationGroup,
+} from '@/lib/contracts'
 import {
   VIOLATION_GROUPS,
   VIOLATION_GROUP_LABELS,
@@ -18,7 +23,7 @@ import {
   repeatPlates,
   violationGroupFor,
 } from '@/lib/incidents/dashboardGroups'
-import { swrKey } from '@/lib/swrKeys'
+import { SWR_KEYS, swrKey } from '@/lib/swrKeys'
 import { DASHBOARD_ICONS } from '@/components/dashboardIcons'
 import PageShell from '@/ui/PageShell'
 import StatTile from '@/ui/StatTile'
@@ -44,6 +49,7 @@ const IncidentHotspotMap = dynamic(() => import('./IncidentHotspotMap'), {
   loading: () => <div className="h-[55vh] w-full animate-pulse bg-surface-alt lg:h-[520px]" />,
 })
 
+/** How often the new-report watermark is checked. */
 const POLL_MS = 15_000
 /** How long a newly arrived report keeps its "New" tag. */
 const FRESH_MS = 90_000
@@ -122,13 +128,30 @@ function ControlCenterBody({
   tab: DashboardTab
   onStatusChange: (status: { generatedAt: string | null; failed: boolean }) => void
 }) {
-  const { data, error } = useSWR<EnforcerOperationsDto>(swrKey.enforcerOperations(range), {
-    refreshInterval: POLL_MS,
-    refreshWhenHidden: false,
-    revalidateOnFocus: true,
-    dedupingInterval: 5_000,
+  // The full payload is heavy (every incident in range), so it is not polled.
+  // Only the watermark below is live; a new report triggers one refetch.
+  const { data, error, mutate } = useSWR<EnforcerOperationsDto>(swrKey.enforcerOperations(range), {
+    revalidateOnFocus: false,
     keepPreviousData: true,
   })
+  const { data: watermark, error: watermarkError } = useSWR<EnforcerIncidentWatermarkDto>(
+    SWR_KEYS.enforcerIncidentWatermark,
+    {
+      refreshInterval: POLL_MS,
+      refreshWhenHidden: false,
+      revalidateOnFocus: true,
+      dedupingInterval: 5_000,
+    },
+  )
+
+  // undefined = no watermark seen yet; the first one only sets the baseline.
+  const latestIdRef = useRef<string | null | undefined>(undefined)
+  useEffect(() => {
+    if (!watermark) return
+    const previous = latestIdRef.current
+    latestIdRef.current = watermark.latestId
+    if (previous !== undefined && previous !== watermark.latestId) void mutate()
+  }, [watermark, mutate])
 
   const [filter, setFilter] = useState<Filter>(null)
   const [mapMode, setMapMode] = useState<MapMode>('hotspots')
@@ -137,10 +160,10 @@ function ControlCenterBody({
 
   useEffect(() => {
     onStatusChange({
-      generatedAt: data?.generatedAt ?? null,
-      failed: Boolean(error),
+      generatedAt: watermark?.checkedAt ?? data?.generatedAt ?? null,
+      failed: Boolean(error || watermarkError),
     })
-  }, [data?.generatedAt, error, onStatusChange])
+  }, [watermark?.checkedAt, data?.generatedAt, error, watermarkError, onStatusChange])
 
   // Reports that arrived after the page first loaded, with when we saw them.
   const seenRef = useRef<Set<string> | null>(null)

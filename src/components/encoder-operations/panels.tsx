@@ -175,11 +175,9 @@ export function WorkQueue({
 
 export function DeskFeed({
   items,
-  freshIds,
   now,
 }: {
   items: EncoderEventDto[]
-  freshIds: Set<string>
   now: number
 }) {
   const [expanded, setExpanded] = useState(false)
@@ -192,14 +190,11 @@ export function DeskFeed({
     <>
       <ol className="flex flex-col">
         {items.map((item, index) => {
-          const fresh = freshIds.has(item.id)
           const collapsed = !expanded && index >= PHONE_FEED_ROWS
           return (
             <li
               key={item.id}
-              className={`${collapsed ? 'hidden lg:flex' : 'flex'} items-start gap-3 border-b border-surface-border py-2.5 last:border-b-0 ${
-                fresh ? 'enforcer-feed-fresh' : ''
-              }`}
+              className={`${collapsed ? 'hidden lg:flex' : 'flex'} items-start gap-3 border-b border-surface-border py-2.5 last:border-b-0`}
             >
               <span className="mt-1.5">
                 <Swatch color={ACTIVITY_HEX[item.group]} />
@@ -213,7 +208,6 @@ export function DeskFeed({
                   {item.plateNumber ?? 'No plate recorded'}, {vehicleTypeLabel(item.vehicleType)}
                   {item.amount !== null ? `, ${formatPesos(item.amount)}` : ''}
                 </span>
-                {fresh ? <span className="text-xs font-semibold text-primary-dark">New</span> : null}
               </span>
             </li>
           )

@@ -2,8 +2,8 @@
  * GET /api/encoder/operations — the encoder control center payload.
  *
  * One response feeds the whole page (tiles, work queue, desk feed, charts),
- * so every client-side filter works on data already in hand and a poll is
- * one request.
+ * so every client-side filter works on data already in hand. The page does
+ * not poll: it fetches on load and on a period change.
  */
 
 import type { OperationsRange } from "@/lib/operations/period";

@@ -159,6 +159,22 @@ export function LiveStatus({
   )
 }
 
+/**
+ * Load time for dashboards that do not poll. Only the enforcer center is
+ * live; the others fetch on load and on a period change.
+ */
+export function StaticStatus({ generatedAt, failed }: { generatedAt: string | null; failed: boolean }) {
+  return (
+    <span className="inline-flex items-center gap-2 text-xs font-medium text-white/90" role="status">
+      {failed
+        ? 'Could not load. Reload the page to try again.'
+        : generatedAt === null
+          ? 'Loading…'
+          : `Updated ${new Date(generatedAt).toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' })}`}
+    </span>
+  )
+}
+
 /** "Showing only X" strip with a reset, shown while a page filter is on. */
 export function FilterBar({
   label,

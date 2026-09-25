@@ -126,8 +126,8 @@ export async function GET(request: NextRequest) {
       types,
     }
 
-    // Polled every 15 s by the control center; a cached copy would show a
-    // stale queue next to live action buttons.
+    // Refetched whenever the control center sees a new report; a cached copy
+    // would show a stale queue next to live action buttons.
     return NextResponse.json(body, { headers: { 'Cache-Control': 'no-store' } })
   } catch (error) {
     return createAuthErrorResponse(error)

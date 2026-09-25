@@ -2,7 +2,9 @@
  * GET /api/enforcer/operations — the enforcer control center payload.
  *
  * One response feeds the whole page (map, feed, charts), so every client-side
- * filter works on data already in hand and a 15-second poll is one request.
+ * filter works on data already in hand. The page fetches it on load and on a
+ * period change, then again only when the watermark below reports a new
+ * incident.
  */
 
 export type EnforcerOperationsRange = "today" | "7d" | "30d" | "90d";
@@ -112,4 +114,15 @@ export interface EnforcerOperationsDto {
   /** True when the range held more rows than the server reads at once. */
   truncated: boolean;
   types: EnforcerOperationsTypeDto[];
+}
+
+/**
+ * GET /api/enforcer/operations/latest — the newest reported incident. The
+ * control center polls this every 15 s instead of the full payload.
+ */
+export interface EnforcerIncidentWatermarkDto {
+  /** When the server answered; drives the "Live · updated" label. */
+  checkedAt: string;
+  latestId: string | null;
+  latestCreatedAt: string | null;
 }

@@ -25,7 +25,7 @@ import { CaseOutcomes, TimeToClose } from '@/components/enforcer-operations/anal
 import { BarList, HourHeatGrid, Panel, StackedTrend, vehicleTypeLabel } from '@/components/operations/charts'
 import {
   FilterBar,
-  LiveStatus,
+  StaticStatus,
   PERIOD_LABELS,
   RangePicker,
   TAB_PANEL_ID,
@@ -42,8 +42,6 @@ import { SkeletonBox } from '@/ui/Skeleton'
 import { FARE_HEX, SAVINGS_HEX, formatKm, formatPesos } from './palette'
 import { CommunityCounts, EnforcementFeed, FrequentRoutes, ReportList, TripList } from './panels'
 
-/** A rider's own numbers change a few times a day at most. */
-const POLL_MS = 60_000
 const RECENT_ROWS = 5
 
 const SAVINGS_ONLY = ['SAVED'] as const
@@ -52,13 +50,12 @@ const SAVINGS_LABELS = { SAVED: 'Saved' }
 type Status = { generatedAt: string | null; failed: boolean }
 
 /**
- * The rider home page frame: brand band with the live indicator and time
+ * The rider home page frame: brand band with the load time and time
  * period, the Overview / Analytics switch, then the selected view.
  */
 export default function RiderControlCenter({ title, subtitle }: { title: string; subtitle: string }) {
   const [range, setRange] = useState<RiderOperationsRange>('30d')
   const [status, setStatus] = useState<Status>({ generatedAt: null, failed: false })
-  const now = useNow()
   const [tab, changeTab] = useDashboardTab()
 
   return (
@@ -67,7 +64,7 @@ export default function RiderControlCenter({ title, subtitle }: { title: string;
       subtitle={subtitle}
       band={
         <div className="mt-3 flex flex-col gap-3">
-          <LiveStatus generatedAt={status.generatedAt} failed={status.failed} now={now} />
+          <StaticStatus generatedAt={status.generatedAt} failed={status.failed} />
           <div className="flex flex-wrap items-center justify-between gap-3">
             <TabSwitch value={tab} onChange={changeTab} />
             <RangePicker value={range} onChange={setRange} />
@@ -90,10 +87,8 @@ export function RiderDashboardBody({
   onStatusChange?: (status: Status) => void
 }) {
   const { data, error } = useSWR<RiderOperationsDto>(swrKey.riderOperations(range), {
-    refreshInterval: POLL_MS,
-    refreshWhenHidden: false,
-    revalidateOnFocus: true,
-    dedupingInterval: 5_000,
+    // Not live: fetched on load and on a period change only.
+    revalidateOnFocus: false,
     keepPreviousData: true,
   })
   const { data: activity } = useSWR<{ activity: DashboardActivityItemDto[] }>(

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import useSWR from 'swr'
 import type { EncoderActivityGroup, EncoderOperationsDto, EncoderOperationsRange, EncoderQueueKind } from '@/lib/contracts'
 import {
@@ -23,7 +23,7 @@ import { DASHBOARD_ICONS } from '@/components/dashboardIcons'
 import { BarList, HourHeatGrid, Panel, StackedTrend, Swatch, vehicleTypeLabel } from '@/components/operations/charts'
 import {
   FilterBar,
-  LiveStatus,
+  StaticStatus,
   PERIOD_LABELS,
   RangePicker,
   TAB_PANEL_ID,
@@ -40,10 +40,6 @@ import { TONE_HEX } from '@/ui/theme'
 import { ACTIVITY_HEX, formatPesos } from './palette'
 import { DeskFeed, ExpiryOutlook, PaymentLag, PermitsByType, WorkQueue } from './panels'
 
-/** Desk work changes by the minute, not the second; half the enforcer's rate. */
-const POLL_MS = 30_000
-/** How long a newly arrived event keeps its "New" tag. */
-const FRESH_MS = 90_000
 
 const ACTIVITY_GROUP_SHORT_LABELS: Record<EncoderActivityGroup, string> = {
   REGISTRATIONS: 'Vehicles',
@@ -57,7 +53,7 @@ const PAYMENT_LABELS = { PAYMENTS: 'Collected' }
 const PAYMENT_COLORS = { PAYMENTS: TONE_HEX.success }
 
 /**
- * The encoder home page frame: brand band with the live indicator and time
+ * The encoder home page frame: brand band with the load time and time
  * period, the Overview / Analytics switch, then the selected view.
  */
 export default function EncoderControlCenter({
@@ -74,7 +70,6 @@ export default function EncoderControlCenter({
     generatedAt: null,
     failed: false,
   })
-  const now = useNow()
   const [tab, changeTab] = useDashboardTab()
 
   return (
@@ -83,7 +78,7 @@ export default function EncoderControlCenter({
       subtitle={subtitle}
       band={
         <div className="mt-3 flex flex-col gap-3">
-          <LiveStatus generatedAt={status.generatedAt} failed={status.failed} now={now} />
+          <StaticStatus generatedAt={status.generatedAt} failed={status.failed} />
           <div className="flex flex-wrap items-center justify-between gap-3">
             <TabSwitch value={tab} onChange={changeTab} />
             <RangePicker value={range} onChange={setRange} />
@@ -107,10 +102,8 @@ function ControlCenterBody({
   onStatusChange: (status: { generatedAt: string | null; failed: boolean }) => void
 }) {
   const { data, error } = useSWR<EncoderOperationsDto>(swrKey.encoderOperations(range), {
-    refreshInterval: POLL_MS,
-    refreshWhenHidden: false,
-    revalidateOnFocus: true,
-    dedupingInterval: 5_000,
+    // Not live: fetched on load and on a period change only.
+    revalidateOnFocus: false,
     keepPreviousData: true,
   })
 
@@ -120,32 +113,6 @@ function ControlCenterBody({
   useEffect(() => {
     onStatusChange({ generatedAt: data?.generatedAt ?? null, failed: Boolean(error) })
   }, [data?.generatedAt, error, onStatusChange])
-
-  // Events that arrived after the page first loaded, with when we saw them.
-  const seenRef = useRef<Set<string> | null>(null)
-  const [freshSince, setFreshSince] = useState<Map<string, number>>(new Map())
-  useEffect(() => {
-    if (!data) return
-    const ids = data.feed.map((item) => item.id)
-    if (!seenRef.current) {
-      seenRef.current = new Set(ids)
-      return
-    }
-    const arrived = ids.filter((id) => !seenRef.current!.has(id))
-    if (arrived.length === 0) return
-    arrived.forEach((id) => seenRef.current!.add(id))
-    const at = Date.now()
-    setFreshSince((prev) => {
-      const next = new Map(prev)
-      arrived.forEach((id) => next.set(id, at))
-      return next
-    })
-  }, [data])
-
-  const freshIds = useMemo(
-    () => new Set([...freshSince].filter(([, at]) => now - at < FRESH_MS).map(([id]) => id)),
-    [freshSince, now],
-  )
 
   const events = useMemo(() => (data?.events ?? []).filter((e) => matchesEvent(filter, e)), [data?.events, filter])
   const feed = useMemo(() => (data?.feed ?? []).filter((e) => matchesEvent(filter, e)), [data?.feed, filter])
@@ -406,7 +373,7 @@ function ControlCenterBody({
               )
             })}
           </div>
-          <DeskFeed items={feed} freshIds={freshIds} now={now} />
+          <DeskFeed items={feed} now={now} />
         </Panel>
       </div>
       {truncatedNote}

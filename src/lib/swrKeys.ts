@@ -19,6 +19,7 @@ export const SWR_KEYS = {
   driverSession: "/api/driver/session/active",
   dashboardStats: '/api/dashboard/stats',
   dashboardActivity: '/api/dashboard/activity?limit=3',
+  enforcerIncidentWatermark: '/api/enforcer/operations/latest',
   driverIncidents: '/api/driver/incidents',
   driverIncidentsCount: '/api/driver/incidents/count',
   driverHistory: '/api/driver/session/history',
