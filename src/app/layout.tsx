@@ -8,7 +8,9 @@ import { resolveAuthUserFromToken } from '@/lib/auth'
 import { serializeSessionUser } from '@/lib/serializers'
 import './globals.css'
 
-const inter = Inter({ subsets: ['latin'] })
+// next/font registers Inter under a hashed family name, so Tailwind's
+// `font-sans` must reach it through this variable, not the literal 'Inter'.
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 // Wordmark face from the brand kit; exposed as the `font-brand` utility.
 const brand = Bricolage_Grotesque({
   subsets: ['latin'],
@@ -50,7 +52,7 @@ export default async function RootLayout({
   const initialSession = authUser ? { user: serializeSessionUser(authUser) } : null
 
   return (
-    <html lang="en" className={brand.variable} data-scroll-behavior="smooth">
+    <html lang="en" className={`${inter.variable} ${brand.variable}`} data-scroll-behavior="smooth">
       <body className={`${inter.className} bg-surface-bg antialiased overflow-x-hidden`} suppressHydrationWarning>
         <SWRProvider>
           <AuthProvider initialSession={initialSession}>

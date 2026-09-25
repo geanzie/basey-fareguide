@@ -42,7 +42,7 @@ module.exports = {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-inter)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
         brand: ['var(--font-brand)', 'system-ui', 'sans-serif'],
       },
       // Mirrors Tailwind's stock ramp, wrapped in the --text-scale multiplier.

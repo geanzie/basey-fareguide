@@ -35,7 +35,10 @@ body {
   min-height: 100dvh;
   margin: 0;
   padding: 0;
-  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  /* Fixed-width digits app-wide: fares, distances, countdowns and table
+     columns line up and do not jitter when a value recalculates. */
+  font-variant-numeric: tabular-nums;
   /* Safety net: text rendered with no Tailwind size class still scales.
      rem resolves against <html>, which we never touch, so this cannot
      move any spacing utility. */
