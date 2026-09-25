@@ -63,4 +63,5 @@ export const swrKey = {
   adminFeedback: (query?: string) =>
     `/api/admin/feedback${query ? `?${query}` : ''}`,
   enforcerOperations: (range: string) => `/api/enforcer/operations?range=${range}`,
+  encoderOperations: (range: string) => `/api/encoder/operations?range=${range}`,
 } as const;
