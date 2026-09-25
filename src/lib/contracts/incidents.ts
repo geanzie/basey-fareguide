@@ -8,9 +8,11 @@ export type IncidentStatus =
   | "RESOLVED"
   | "DISMISSED";
 
-export type EnforcerIncidentsViewMode = "dashboard" | "queue";
+/** queue = cases still needing action; history = closed cases (resolved, dismissed, referred). */
+export type EnforcerIncidentsViewMode = "history" | "queue";
 
-export type EnforcerIncidentScope = "all" | "unresolved";
+/** closed = RESOLVED, DISMISSED and REFERRED_FOR_FRANCHISE_ACTION. */
+export type EnforcerIncidentScope = "all" | "unresolved" | "closed";
 
 export type TicketPaymentStatus = "NOT_APPLICABLE" | "UNPAID" | "PAID";
 

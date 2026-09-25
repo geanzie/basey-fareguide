@@ -17,6 +17,14 @@ const INCIDENT_TYPE_LABELS: Record<string, string> = {
   EMPTY_SEAT_CHARGE: "Paid Seats Resold",
   OVERCHARGING: "Overcharging",
   NO_PERMIT: "No Permit",
+  UNAUTHORIZED_CARGO_CHARGE: "Unauthorized Cargo Charge",
+  REFUSED_POSTED_FARE: "Refused Posted Fare",
+  OTHER_FARE_DISPUTE: "Other Fare Dispute",
+  REFUSED_VALID_DISCOUNT: "Refused Valid Discount",
+  NO_FRANCHISE_AND_MTOP: "No Franchise and MTOP",
+  CANCELLED_FRANCHISE_OPERATION: "Operating on Cancelled Franchise",
+  FRANCHISE_FRAUD: "Franchise Fraud",
+  FRANCHISE_TRANSFER_VIOLATION: "Illegal Franchise Transfer",
 };
 
 const INCIDENT_STATUS_LABELS: Record<string, string> = {

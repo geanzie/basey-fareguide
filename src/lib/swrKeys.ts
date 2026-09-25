@@ -62,4 +62,5 @@ export const swrKey = {
     `/api/admin/curated-routes${query ? `?${query}` : ''}`,
   adminFeedback: (query?: string) =>
     `/api/admin/feedback${query ? `?${query}` : ''}`,
+  enforcerOperations: (range: string) => `/api/enforcer/operations?range=${range}`,
 } as const;

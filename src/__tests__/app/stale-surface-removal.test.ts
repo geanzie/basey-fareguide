@@ -31,7 +31,11 @@ describe("Phase 6 stale surface removal", () => {
     expect(enforcerPage).not.toContain("activeTab");
     expect(enforcerPage).not.toContain("Dashboard");
     expect(enforcerPage).not.toContain("Chart");
-    expect(enforcerPage).toContain("EnforcerIncidentsList");
+    // The incident list moved to /enforcer/incidents; the home page is overview only.
+    expect(enforcerPage).toContain("EnforcerControlCenter");
+    expect(readFileSync(repoPath("src", "app", "enforcer", "incidents", "page.tsx"), "utf8")).toContain(
+      "EnforcerIncidentsList",
+    );
     expect(adminDashboard).not.toContain("serverStatus");
     expect(adminDashboard).not.toContain("apiHealth");
     expect(adminDashboard).not.toContain("lastBackup");

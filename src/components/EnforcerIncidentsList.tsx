@@ -20,7 +20,6 @@ import {
   DASHBOARD_ICONS,
   DASHBOARD_ICON_POLICY,
   DashboardIconSlot,
-  getDashboardIconChipClasses,
   type DashboardIcon,
 } from '@/components/dashboardIcons'
 
@@ -55,27 +54,34 @@ interface ActionNotice {
   message: string
 }
 
-type EnforcerStatusFilter = 'ALL' | 'PENDING' | 'TICKET_ISSUED' | 'RESOLVED'
+type EnforcerStatusFilter =
+  | 'ALL'
+  | 'PENDING'
+  | 'TICKET_ISSUED'
+  | 'RESOLVED'
+  | 'DISMISSED'
+  | 'REFERRED_FOR_FRANCHISE_ACTION'
 
 const QUEUE_STATUS_FILTERS = ['ALL', 'PENDING', 'TICKET_ISSUED'] as const satisfies readonly EnforcerStatusFilter[]
 
-const DASHBOARD_STATUS_FILTERS = ['ALL', 'PENDING', 'TICKET_ISSUED', 'RESOLVED'] as const satisfies readonly EnforcerStatusFilter[]
+const HISTORY_STATUS_FILTERS = ['ALL', 'RESOLVED', 'DISMISSED', 'REFERRED_FOR_FRANCHISE_ACTION'] as const satisfies readonly EnforcerStatusFilter[]
 
 const UNRESOLVED_INCIDENT_STATUSES = ['PENDING', 'TICKET_ISSUED'] as const
+const CLOSED_INCIDENT_STATUSES = ['RESOLVED', 'DISMISSED', 'REFERRED_FOR_FRANCHISE_ACTION'] as const
 const EVIDENCE_ASSIGNMENT_NOTICE = 'Evidence is only accessible to the enforcer or admin.'
 const PAGE_SIZE = 50
 
 const ALLOWED_STATUS_FILTERS: Record<EnforcerIncidentsViewMode, readonly EnforcerStatusFilter[]> = {
-  dashboard: DASHBOARD_STATUS_FILTERS,
+  history: HISTORY_STATUS_FILTERS,
   queue: QUEUE_STATUS_FILTERS,
 }
 
 const STATUS_TABS: Record<EnforcerIncidentsViewMode, Array<{ key: EnforcerStatusFilter; label: string }>> = {
-  dashboard: [
-    { key: 'ALL', label: 'All' },
-    { key: 'PENDING', label: 'Pending' },
-    { key: 'TICKET_ISSUED', label: 'Ticket Issued' },
+  history: [
+    { key: 'ALL', label: 'All closed' },
     { key: 'RESOLVED', label: 'Resolved' },
+    { key: 'DISMISSED', label: 'Dismissed' },
+    { key: 'REFERRED_FOR_FRANCHISE_ACTION', label: 'Referred' },
   ],
   queue: [
     { key: 'ALL', label: 'All' },
@@ -165,7 +171,7 @@ export default function EnforcerIncidentsList({
   const isQueueMode = mode === 'queue'
   const [page, setPage] = useState(1)
   const isEmbeddedQueueMode = isQueueMode && embeddedQrHandoffSnapshot !== undefined
-  const requestScope: EnforcerIncidentScope = isQueueMode ? 'unresolved' : 'all'
+  const requestScope: EnforcerIncidentScope = isQueueMode ? 'unresolved' : 'closed'
   const statusQueryParam = statusFilter !== 'ALL' ? `&status=${statusFilter}` : ''
   const swrKey = `/api/incidents/enforcer?scope=${requestScope}&mode=${mode}&page=${page}&limit=${PAGE_SIZE}${statusQueryParam}`
   const allowedStatusFilters = ALLOWED_STATUS_FILTERS[mode]
@@ -267,13 +273,8 @@ export default function EnforcerIncidentsList({
   }
 
   const scopedIncidents = useMemo(() => {
-    if (!isQueueMode) {
-      return incidents
-    }
-
-    return incidents.filter((incident) =>
-      UNRESOLVED_INCIDENT_STATUSES.includes(incident.status as (typeof UNRESOLVED_INCIDENT_STATUSES)[number]),
-    )
+    const allowed: readonly string[] = isQueueMode ? UNRESOLVED_INCIDENT_STATUSES : CLOSED_INCIDENT_STATUSES
+    return incidents.filter((incident) => allowed.includes(incident.status))
   }, [incidents, isQueueMode])
 
   const embeddedPlateNumber = isEmbeddedQueueMode ? qrHandoffSnapshot?.vehicle?.plateNumber?.trim().toLowerCase() || '' : ''
@@ -311,6 +312,8 @@ export default function EnforcerIncidentsList({
       pending: scopedIncidents.filter((incident) => incident.status === 'PENDING').length,
       ticketIssued: scopedIncidents.filter((incident) => incident.status === 'TICKET_ISSUED').length,
       resolved: scopedIncidents.filter((incident) => incident.status === 'RESOLVED').length,
+      dismissed: scopedIncidents.filter((incident) => incident.status === 'DISMISSED').length,
+      referred: scopedIncidents.filter((incident) => incident.status === 'REFERRED_FOR_FRANCHISE_ACTION').length,
     }),
     [scopedIncidents],
   )
@@ -325,6 +328,10 @@ export default function EnforcerIncidentsList({
         return stats.ticketIssued
       case 'RESOLVED':
         return stats.resolved
+      case 'DISMISSED':
+        return stats.dismissed
+      case 'REFERRED_FOR_FRANCHISE_ACTION':
+        return stats.referred
       default:
         return 0
     }
@@ -670,27 +677,6 @@ export default function EnforcerIncidentsList({
         </div>
       ) : null}
 
-      {!isQueueMode ? (
-        <div className="border border-surface-border bg-surface shadow-card rounded-card">
-          <div className="px-4 py-5 sm:px-6 sm:py-6">
-            <div className="flex items-start gap-4">
-              <div className={getDashboardIconChipClasses('red')}>
-                <DashboardIconSlot
-                  icon={DASHBOARD_ICONS.incidents}
-                  size={DASHBOARD_ICON_POLICY.sizes.hero}
-                  className="text-red-700"
-                />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl">Queue overview</h2>
-                <p className="text-gray-600 mt-1">
-                  Review live queue status alongside completed enforcement history.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
       <div className="space-y-6 sm:space-y-8">
         {/*
           The banner filters rather than just announcing. stats.pending used to
@@ -698,7 +684,7 @@ export default function EnforcerIncidentsList({
           the Pending tab's count — with only the tab able to do anything about
           it. The cards are gone and this is now the page's call to action.
         */}
-        {!isEmbeddedQueueMode && stats.pending > 0 ? (
+        {isQueueMode && !isEmbeddedQueueMode && stats.pending > 0 ? (
           <button
             type="button"
             onClick={() => setStatusFilter('PENDING')}
@@ -799,12 +785,12 @@ export default function EnforcerIncidentsList({
         <div className="border border-surface-border bg-surface shadow-card rounded-card p-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-sm font-medium text-gray-700">
-              {isQueueMode ? 'Unresolved work queue' : 'All enforcement incidents'}
+              {isQueueMode ? 'Unresolved work queue' : 'Closed cases'}
             </p>
             <p className="mt-1 text-sm text-gray-500">
               {isQueueMode
                 ? 'Focus on pending and investigating incidents that still need action.'
-                : 'Review live queue volume together with the resolved enforcement record.'}
+                : 'Resolved, dismissed and referred incidents, newest first.'}
             </p>
           </div>
           <div className="inline-flex items-center gap-2 text-sm text-gray-500">
@@ -1001,7 +987,7 @@ export default function EnforcerIncidentsList({
                 ? 'No unresolved incidents matched this plate number.'
                 : isQueueMode
                   ? 'No unresolved incidents found for the selected filters.'
-                  : 'No incidents found for the selected filters.'}
+                  : 'No closed incidents found for the selected filters.'}
               className="rounded-lg"
             />
           </div>

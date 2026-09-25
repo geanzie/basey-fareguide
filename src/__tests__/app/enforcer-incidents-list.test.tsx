@@ -287,37 +287,29 @@ describe('EnforcerIncidentsList', () => {
     ;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false
   })
 
-  it('keeps workflow actions text-visible while rendering icon-supported controls', async () => {
+  it('shows only closed cases in history mode', async () => {
     await act(async () => {
-      root.render(React.createElement(EnforcerIncidentsList, { mode: 'dashboard' }))
+      root.render(React.createElement(EnforcerIncidentsList, { mode: 'history' }))
       await Promise.resolve()
     })
 
     expect(vi.mocked(useSWR)).toHaveBeenCalledWith(
-      `/api/incidents/enforcer?scope=all&mode=dashboard&page=1&limit=${PAGE_SIZE}`,
+      `/api/incidents/enforcer?scope=closed&mode=history&page=1&limit=${PAGE_SIZE}`,
     )
-    expect(container.textContent).toContain('Queue overview')
+    expect(container.textContent).toContain('Closed cases')
     expect(container.textContent).toContain('Search incidents')
-    expect(container.textContent).toContain('4 incidents returned')
-    expect(container.textContent).toContain('View Details')
-    expect(container.textContent).toContain('Evidence')
-    expect(container.textContent).not.toContain('Verify Evidence')
-    expect(container.textContent).toContain('Issue Ticket')
-    // Dismiss is the no-ticket exit from a pending incident and the only way to
-    // clear a report with no usable evidence. Mobile has always offered it.
-    expect(container.textContent).toContain('Dismiss')
-    expect(container.textContent).not.toContain('Take and Issue Ticket')
-    expect(container.textContent).not.toContain('Resolve Only')
+    expect(container.textContent).toContain('RES-321')
+    // No "awaiting response" call to action: nothing here needs action.
+    expect(container.textContent).not.toContain('awaiting response')
 
-    const controls = Array.from(container.querySelectorAll('button'))
-
-    expect(controls.length).toBeGreaterThan(0)
-    expect(controls.every((button) => (button.textContent || '').trim().length > 0)).toBe(true)
+    const buttons = Array.from(container.querySelectorAll('button')).map((button) => (button.textContent || '').trim())
+    expect(buttons).toContain('Resolved (1)')
+    expect(buttons).not.toContain('Pending (2)')
   })
 
   it('shows evidence management for all enforcers without requiring assignment', async () => {
     await act(async () => {
-      root.render(React.createElement(EnforcerIncidentsList, { mode: 'dashboard' }))
+      root.render(React.createElement(EnforcerIncidentsList, { mode: 'queue' }))
       await Promise.resolve()
     })
 
@@ -338,7 +330,7 @@ describe('EnforcerIncidentsList', () => {
 
   it('renders incident details in a compact case snapshot layout', async () => {
     await act(async () => {
-      root.render(React.createElement(EnforcerIncidentsList, { mode: 'dashboard' }))
+      root.render(React.createElement(EnforcerIncidentsList, { mode: 'queue' }))
       await Promise.resolve()
     })
 
@@ -361,7 +353,7 @@ describe('EnforcerIncidentsList', () => {
 
   it('renders the enforced penalty preview as read-only in the ticket modal', async () => {
     await act(async () => {
-      root.render(React.createElement(EnforcerIncidentsList, { mode: 'dashboard' }))
+      root.render(React.createElement(EnforcerIncidentsList, { mode: 'queue' }))
       await Promise.resolve()
     })
 
@@ -395,11 +387,10 @@ describe('EnforcerIncidentsList', () => {
 
   it('renders the humanised status label rather than the raw enum', async () => {
     await act(async () => {
-      root.render(React.createElement(EnforcerIncidentsList, { mode: 'dashboard' }))
+      root.render(React.createElement(EnforcerIncidentsList, { mode: 'history' }))
       await Promise.resolve()
     })
 
-    expect(container.textContent).toContain('Pending')
     expect(container.textContent).toContain('Resolved')
     expect(container.textContent).not.toContain('ticket_issued')
     expect(container.textContent).not.toContain('pending')
@@ -407,7 +398,7 @@ describe('EnforcerIncidentsList', () => {
 
   it('dismisses a pending incident with the field name the route reads', async () => {
     await act(async () => {
-      root.render(React.createElement(EnforcerIncidentsList, { mode: 'dashboard' }))
+      root.render(React.createElement(EnforcerIncidentsList, { mode: 'queue' }))
       await Promise.resolve()
     })
 
@@ -471,7 +462,7 @@ describe('EnforcerIncidentsList', () => {
     vi.stubGlobal('fetch', rejectingFetch)
 
     await act(async () => {
-      root.render(React.createElement(EnforcerIncidentsList, { mode: 'dashboard' }))
+      root.render(React.createElement(EnforcerIncidentsList, { mode: 'queue' }))
       await Promise.resolve()
     })
 
@@ -497,7 +488,7 @@ describe('EnforcerIncidentsList', () => {
 
   it('shows a polished in-app success notice instead of a browser alert after issuing a ticket', async () => {
     await act(async () => {
-      root.render(React.createElement(EnforcerIncidentsList, { mode: 'dashboard' }))
+      root.render(React.createElement(EnforcerIncidentsList, { mode: 'queue' }))
       await Promise.resolve()
     })
 
@@ -540,14 +531,14 @@ describe('EnforcerIncidentsList', () => {
       expect.objectContaining({ method: 'PATCH' }),
     )
     // One predicate mutate replaces the old pair of exact-key calls, so a ticket
-    // issued from the dashboard still refreshes the queue and every paged key.
+    // issued from the queue still refreshes the closed history and every paged key.
     expect(mutateCacheMock).toHaveBeenCalledWith(
       expect.any(Function),
       undefined,
       { revalidate: true },
     )
     const matches = mutateCacheMock.mock.calls[0][0] as (key: unknown) => boolean
-    expect(matches(`/api/incidents/enforcer?scope=all&mode=dashboard&page=1&limit=${PAGE_SIZE}`)).toBe(true)
+    expect(matches(`/api/incidents/enforcer?scope=closed&mode=history&page=1&limit=${PAGE_SIZE}`)).toBe(true)
     expect(matches(`/api/incidents/enforcer?scope=unresolved&mode=queue&page=1&limit=${PAGE_SIZE}`)).toBe(true)
     expect(matches('/api/incidents?limit=100')).toBe(false)
     expect(matches(undefined)).toBe(false)

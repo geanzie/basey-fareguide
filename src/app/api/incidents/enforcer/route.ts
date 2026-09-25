@@ -5,7 +5,7 @@ import { serializeIncident } from '@/lib/serializers'
 import { parsePaginationParams, buildPaginationMetadata } from '@/lib/api/pagination'
 import type { EnforcerIncidentScope } from '@/lib/contracts'
 
-const ENFORCER_INCIDENT_SCOPES: readonly EnforcerIncidentScope[] = ['all', 'unresolved']
+const ENFORCER_INCIDENT_SCOPES: readonly EnforcerIncidentScope[] = ['all', 'unresolved', 'closed']
 
 function isEnforcerIncidentScope(value: string): value is EnforcerIncidentScope {
   return ENFORCER_INCIDENT_SCOPES.includes(value as EnforcerIncidentScope)
@@ -37,7 +37,11 @@ export async function GET(request: NextRequest) {
         ? {
             status: { in: ['PENDING', 'TICKET_ISSUED'] },
           }
-        : {}
+        : scope === 'closed'
+          ? {
+              status: { in: ['RESOLVED', 'DISMISSED', 'REFERRED_FOR_FRANCHISE_ACTION'] },
+            }
+          : {}
 
     // Add violation type filter if specified
     if (filter !== 'all') {

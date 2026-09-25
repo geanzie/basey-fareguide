@@ -127,6 +127,23 @@ describe('GET /api/incidents/enforcer', () => {
     expect(json.incidents).toHaveLength(2)
   })
 
+  it('returns closed history newest first when closed scope is requested', async () => {
+    prismaMock.incident.findMany.mockResolvedValueOnce([makeIncident('RESOLVED'), makeIncident('DISMISSED')])
+    prismaMock.incident.count.mockResolvedValueOnce(2)
+
+    const response = await GET(makeRequest('http://localhost/api/incidents/enforcer?scope=closed') as never)
+    const json = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(prismaMock.incident.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { status: { in: ['RESOLVED', 'DISMISSED', 'REFERRED_FOR_FRANCHISE_ACTION'] } },
+        orderBy: { createdAt: 'desc' },
+      }),
+    )
+    expect(json.filters).toEqual(expect.objectContaining({ scope: 'closed' }))
+  })
+
   it('rejects explicit invalid scope values with 400', async () => {
     const response = await GET(
       makeRequest('http://localhost/api/incidents/enforcer?scope=banana') as never,

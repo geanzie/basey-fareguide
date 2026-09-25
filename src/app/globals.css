@@ -110,3 +110,51 @@ body {
   margin-left: auto;
   margin-right: auto;
 }
+
+/* Operations control centers (enforcer-operations, encoder-operations).
+   The only motion on those pages: one ring per data refresh on the live dot,
+   and a fading highlight on an item that just arrived in the feed. */
+.enforcer-live-ping::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: inherit;
+  animation: enforcer-ping 1.2s ease-out 1;
+}
+
+@keyframes enforcer-ping {
+  from { transform: scale(1); opacity: 0.8; }
+  to { transform: scale(2.6); opacity: 0; }
+}
+
+.enforcer-feed-fresh {
+  animation: enforcer-fresh 6s ease-out 1;
+  box-shadow: inset 3px 0 0 #16a34a;
+}
+
+@keyframes enforcer-fresh {
+  from { background-color: #dcfce7; }
+  to { background-color: transparent; }
+}
+
+.leaflet-tooltip.enforcer-map-count {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 12px;
+  text-shadow: 0 1px 2px rgb(15 23 42 / 0.6);
+  padding: 0;
+}
+.leaflet-tooltip.enforcer-map-count::before {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .enforcer-live-ping::after,
+  .enforcer-feed-fresh {
+    animation: none;
+  }
+}
