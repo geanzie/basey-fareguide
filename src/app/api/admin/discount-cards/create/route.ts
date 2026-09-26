@@ -224,20 +224,42 @@ export async function POST(request: NextRequest) {
   }
 }
 
+/** One page of eligible users. The admin narrows it with `?q=`, not by scrolling. */
+const ELIGIBLE_USERS_PAGE_SIZE = 50
+const MAX_SEARCH_TERMS = 4
+
+function eligibleUserSearch(query: string | null) {
+  const terms = (query ?? '').trim().split(/\s+/).filter(Boolean).slice(0, MAX_SEARCH_TERMS)
+
+  // Every word must match some field, so "juan cruz" finds Juan Dela Cruz.
+  return terms.map((term) => ({
+    OR: [
+      { firstName: { contains: term, mode: 'insensitive' as const } },
+      { lastName: { contains: term, mode: 'insensitive' as const } },
+      { username: { contains: term, mode: 'insensitive' as const } },
+      { barangayResidence: { contains: term, mode: 'insensitive' as const } },
+    ],
+  }))
+}
+
 /**
- * GET /api/admin/discount-cards/create
- * Returns information about available users for discount card creation
+ * GET /api/admin/discount-cards/create?q=<search>
+ * Returns the first page of public users without a discount card, plus the
+ * discount types. `hasMore` tells the admin to refine the search.
  */
 export async function GET(request: NextRequest) {
   try {
     await requireRequestRole(request, [...ADMIN_ONLY])
 
-    // Get users without discount cards
-    const eligibleUsers = await prisma.user.findMany({
+    const search = eligibleUserSearch(new URL(request.url).searchParams.get('q'))
+
+    // One extra row answers `hasMore` without a second count query.
+    const rows = await prisma.user.findMany({
       where: {
         isActive: true,
-        discountCard: null, // Will be enabled after migration
-        userType: 'PUBLIC' // Only public users can have discount cards
+        discountCard: null,
+        userType: 'PUBLIC', // Only public users can have discount cards
+        ...(search.length > 0 ? { AND: search } : {}),
       },
       select: {
         id: true,
@@ -249,15 +271,18 @@ export async function GET(request: NextRequest) {
         barangayResidence: true,
         createdAt: true
       },
-      orderBy: {
-        lastName: 'asc'
-      }
+      orderBy: [{ lastName: 'asc' }, { id: 'asc' }],
+      take: ELIGIBLE_USERS_PAGE_SIZE + 1,
     })
+
+    const hasMore = rows.length > ELIGIBLE_USERS_PAGE_SIZE
+    const eligibleUsers = rows.slice(0, ELIGIBLE_USERS_PAGE_SIZE)
 
     return NextResponse.json({
       success: true,
       eligibleUsers: eligibleUsers,
       count: eligibleUsers.length,
+      hasMore,
       discountTypes: [
         {
           value: 'SENIOR_CITIZEN',

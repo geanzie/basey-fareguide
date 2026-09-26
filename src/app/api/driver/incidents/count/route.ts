@@ -38,11 +38,13 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    // Plate fallback: incidents without vehicleId — fetch only id + plateNumber to filter
+    // Plate fallback: incidents without vehicleId. `contains` narrows the rows in
+    // the database (every driver polls this); the exact normalized match below
+    // still decides, since stored plates may carry stray spaces or lowercase.
     const plateFallbackRows = await prisma.incident.findMany({
       where: {
         vehicleId: null,
-        plateNumber: { not: null },
+        plateNumber: { contains: normalizedPlate, mode: 'insensitive' },
         status: { in: ['PENDING', 'TICKET_ISSUED'] },
       },
       select: { plateNumber: true },

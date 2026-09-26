@@ -33,7 +33,9 @@ interface AdminDiscountOverrideProps {
 
 export default function AdminDiscountOverride({ onSuccess, onCancel }: AdminDiscountOverrideProps) {
   const [eligibleUsers, setEligibleUsers] = useState<User[]>([])
-  const [filteredUsers, setFilteredUsers] = useState<User[]>([])
+  const [hasMoreUsers, setHasMoreUsers] = useState(false)
+  // Kept apart from the list: a new search can drop the chosen user from it.
+  const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [discountTypes, setDiscountTypes] = useState<DiscountType[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(true)
@@ -56,31 +58,24 @@ export default function AdminDiscountOverride({ onSuccess, onCancel }: AdminDisc
   const [disabilityType, setDisabilityType] = useState('')
   const [idNumber, setIdNumber] = useState('')
 
-  // Load eligible users and discount types
+  // The server searches and returns one page, so every public user is never
+  // sent to the browser. First load runs at once; typing waits for a pause.
+  const [debouncedQuery, setDebouncedQuery] = useState('')
   useEffect(() => {
-    fetchEligibleUsers()
-  }, [])
+    const timer = setTimeout(() => setDebouncedQuery(searchQuery.trim()), 300)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
 
-  // Filter users based on search
   useEffect(() => {
-    if (!searchQuery.trim()) {
-      setFilteredUsers(eligibleUsers)
-      return
-    }
+    const controller = new AbortController()
+    fetchEligibleUsers(debouncedQuery, controller.signal)
+    return () => controller.abort()
+  }, [debouncedQuery])
 
-    const query = searchQuery.toLowerCase()
-    const filtered = eligibleUsers.filter(user =>
-      `${user.firstName} ${user.lastName}`.toLowerCase().includes(query) ||
-      user.username.toLowerCase().includes(query) ||
-      user.barangayResidence?.toLowerCase().includes(query)
-    )
-    setFilteredUsers(filtered)
-  }, [searchQuery, eligibleUsers])
-
-  const fetchEligibleUsers = async () => {
+  const fetchEligibleUsers = async (query: string, signal?: AbortSignal) => {
     try {
-      setLoading(true)
-      const response = await fetch('/api/admin/discount-cards/create')
+      const params = query ? `?q=${encodeURIComponent(query)}` : ''
+      const response = await fetch(`/api/admin/discount-cards/create${params}`, { signal })
 
       if (!response.ok) {
         throw new Error('Failed to fetch eligible users')
@@ -88,12 +83,13 @@ export default function AdminDiscountOverride({ onSuccess, onCancel }: AdminDisc
 
       const data = await response.json()
       setEligibleUsers(data.eligibleUsers || [])
-      setFilteredUsers(data.eligibleUsers || [])
+      setHasMoreUsers(Boolean(data.hasMore))
       setDiscountTypes(data.discountTypes || [])
       } catch (err: any) {
+      if (err?.name === 'AbortError') return
       setError(err.message || 'Failed to load users')
     } finally {
-      setLoading(false)
+      if (!signal?.aborted) setLoading(false)
     }
   }
 
@@ -161,6 +157,7 @@ export default function AdminDiscountOverride({ onSuccess, onCancel }: AdminDisc
       
       // Reset form
       setSelectedUserId('')
+      setSelectedUser(null)
       setSelectedDiscountType('')
       setOverrideReason('')
       setNotes('')
@@ -178,7 +175,7 @@ export default function AdminDiscountOverride({ onSuccess, onCancel }: AdminDisc
 
       // Refresh user list
       setTimeout(() => {
-        fetchEligibleUsers()
+        fetchEligibleUsers(debouncedQuery)
       }, 1000)
       } catch (err: any) {
       setError(err.message || 'Failed to create discount card')
@@ -186,8 +183,6 @@ export default function AdminDiscountOverride({ onSuccess, onCancel }: AdminDisc
       setCreating(false)
     }
   }
-
-  const selectedUser = eligibleUsers.find(u => u.id === selectedUserId)
 
   return (
     <div className="border border-surface-border bg-surface shadow-card rounded-card p-6">
@@ -263,12 +258,12 @@ export default function AdminDiscountOverride({ onSuccess, onCancel }: AdminDisc
 
             {/* User List */}
             <div className="border border-gray-300 rounded-lg max-h-64 overflow-y-auto">
-              {filteredUsers.length === 0 ? (
+              {eligibleUsers.length === 0 ? (
                 <div className="p-4 text-center text-gray-500">
                   {searchQuery ? 'No users found matching your search' : 'No eligible users available'}
                 </div>
               ) : (
-                filteredUsers.map(user => (
+                eligibleUsers.map(user => (
                   <label
                     key={user.id}
                     className={`flex items-start gap-3 p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0 ${
@@ -280,7 +275,10 @@ export default function AdminDiscountOverride({ onSuccess, onCancel }: AdminDisc
                       name="user"
                       value={user.id}
                       checked={selectedUserId === user.id}
-                      onChange={(e) => setSelectedUserId(e.target.value)}
+                      onChange={(e) => {
+                        setSelectedUserId(e.target.value)
+                        setSelectedUser(user)
+                      }}
                       className="mt-1"
                     />
                     <div className="flex-1">
@@ -301,6 +299,11 @@ export default function AdminDiscountOverride({ onSuccess, onCancel }: AdminDisc
                 ))
               )}
             </div>
+            {hasMoreUsers && (
+              <p className="mt-2 text-xs text-gray-500">
+                Showing the first {eligibleUsers.length} users. Type a name, username, or barangay to find someone else.
+              </p>
+            )}
 
             {selectedUser && (
               <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
