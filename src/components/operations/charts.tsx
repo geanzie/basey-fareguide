@@ -412,7 +412,10 @@ export function HourHeatGrid({
         . Busiest single hour: <b className="text-ink-strong">{WEEKDAYS[peak.day]} {formatHour(peak.hour)}</b>{' '}
         ({peak.count}).
       </p>
-      <div className="overflow-x-auto">
+      {/* `relative` keeps the cells' absolutely positioned sr-only counts
+          inside this scroller; without it they escape the clip and widen the
+          whole page on a phone. */}
+      <div className="relative overflow-x-auto">
         <table className="w-full min-w-[520px] table-fixed border-separate" style={{ borderSpacing: 2 }}>
           <caption className="sr-only">
             {noun[1][0].toUpperCase() + noun[1].slice(1)} by weekday and hour, Philippine time
