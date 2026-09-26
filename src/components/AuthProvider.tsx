@@ -276,7 +276,8 @@ export function AuthAwareLayout({ children }: { children: React.ReactNode }) {
   const shouldShowTerminal = user?.userType === 'ENFORCER'
 
   if (isAuthRoute(pathname)) {
-    return <main className="flex-1">{children}</main>
+    // Flex column so an auth screen can fill exactly the height the footer leaves.
+    return <main className="flex flex-1 flex-col">{children}</main>
   }
 
   if (status === 'logging_out') {

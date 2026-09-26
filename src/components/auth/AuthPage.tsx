@@ -20,7 +20,7 @@ const AuthPage = ({
   const [isLogin, setIsLogin] = useState(true)
 
   return (
-    <div>
+    <div className="flex flex-1 flex-col">
       {isLogin ? (
         <LoginForm
           initialError={initialError}

@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { cookies } from 'next/headers'
 import { Bricolage_Grotesque, Inter } from 'next/font/google'
 import { AuthProvider, AuthAwareLayout } from '@/components/AuthProvider'
+import SiteFooter from '@/components/SiteFooter'
 import { SWRProvider } from '@/components/SWRProvider'
 import { FeedbackProvider } from '@/ui/FeedbackProvider'
 import { resolveAuthUserFromToken } from '@/lib/auth'
@@ -64,14 +65,7 @@ export default async function RootLayout({
               {children}
             </AuthAwareLayout>
 
-            {/* Minimal Footer */}
-            <footer className="hidden bg-gray-900 py-6 text-white lg:block">
-              <div className="container mx-auto px-4 text-center">
-                <div className="text-sm text-gray-400">
-                  <p>&copy; 2025 Municipality of Basey, Samar • Municipal Ordinance 105 Series of 2023</p>
-                </div>
-              </div>
-            </footer>
+            <SiteFooter />
           </div>
           </FeedbackProvider>
           </AuthProvider>
