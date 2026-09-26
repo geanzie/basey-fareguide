@@ -90,7 +90,7 @@ describe("GET /api/curated-routes", () => {
     const response = await GET();
 
     expect(response.headers.get("Cache-Control")).toBe(
-      "public, max-age=60, stale-while-revalidate=300",
+      "public, max-age=60, s-maxage=60, stale-while-revalidate=300",
     );
   });
 

@@ -43,6 +43,16 @@ describe('GET /api/config/trip-flow', () => {
     })
   })
 
+  it('lets the CDN hold the answer briefly so the scan path skips the function', async () => {
+    settingsMock.getDriverSessionSettings.mockResolvedValue({ suspendedVehicleTypes: [] })
+
+    const response = await GET()
+
+    expect(response.headers.get('Cache-Control')).toBe(
+      'public, max-age=30, s-maxage=30, stale-while-revalidate=60',
+    )
+  })
+
   it('reports an empty list when the admin has resumed every type', async () => {
     settingsMock.getDriverSessionSettings.mockResolvedValue({ suspendedVehicleTypes: [] })
 

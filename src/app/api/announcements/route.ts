@@ -7,7 +7,7 @@ export async function GET() {
     const response = await getPublicAnnouncements();
     return NextResponse.json(response, {
       headers: {
-        "Cache-Control": "public, max-age=60, stale-while-revalidate=300",
+        "Cache-Control": "public, max-age=60, s-maxage=60, stale-while-revalidate=300",
       },
     });
   } catch (error) {

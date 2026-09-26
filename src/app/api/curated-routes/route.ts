@@ -39,7 +39,7 @@ export async function GET() {
 
     return NextResponse.json(serializeCuratedRouteCorpus(records), {
       headers: {
-        "Cache-Control": "public, max-age=60, stale-while-revalidate=300",
+        "Cache-Control": "public, max-age=60, s-maxage=60, stale-while-revalidate=300",
       },
     });
   } catch (error) {

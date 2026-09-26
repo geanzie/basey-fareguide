@@ -27,5 +27,9 @@ export async function GET() {
     seatCapacities: capacitySettings.seatCapacities,
   }
 
-  return NextResponse.json(response)
+  // Hot on the scan path. A short CDN window keeps a crowd of riders off the
+  // function; the server decides the real flow regardless of what this said.
+  return NextResponse.json(response, {
+    headers: { 'Cache-Control': 'public, max-age=30, s-maxage=30, stale-while-revalidate=60' },
+  })
 }
