@@ -121,8 +121,8 @@ describe("FareRateBanner", () => {
     expect(container.textContent).toContain("Fare Rates");
     expect(container.textContent).toContain("Current fare");
     expect(container.textContent).toContain("Upcoming fare");
-    expect(container.textContent).toContain("PHP 15.00");
-    expect(container.textContent).toContain("PHP 18.00");
+    expect(container.textContent).toContain("₱15");
+    expect(container.textContent).toContain("₱18");
     expect(container.textContent).toContain("Per additional km");
     expect(findLinkByText(container, "See the ordinance behind this rate")?.getAttribute("href")).toBe(
       "/fare-documents/fare-live",
@@ -153,8 +153,8 @@ describe("FareRateBanner", () => {
 
     expect(container.textContent).toContain("Announcement");
     expect(container.textContent).toContain("Upcoming fare hike approved");
-    expect(container.textContent).toContain("base fare from PHP 15.00 to PHP 18.00");
-    expect(container.textContent).toContain("additional kilometer rate from PHP 3.00 to PHP 4.00");
+    expect(container.textContent).toContain("base fare from ₱15 to ₱18");
+    expect(container.textContent).toContain("additional kilometer rate from ₱3 to ₱4");
     // "fare-next" has no issuance uploaded yet, so the announcement sends
     // riders to the full list rather than to a "Document not available" page.
     expect(

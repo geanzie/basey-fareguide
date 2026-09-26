@@ -27,3 +27,24 @@ const km = new Intl.NumberFormat('en-PH', { maximumFractionDigits: 1 })
 export function formatKm(value: number): string {
   return `${km.format(value)} km`
 }
+
+/**
+ * The rider dashboard's one figure style and one chip style. Every number on
+ * the page reads at the same size and weight; emphasis comes from the chip's
+ * contour and tint, never from a bigger font.
+ */
+export const FIGURE = 'font-brand font-bold tabular-nums text-ink-strong'
+
+export type ChipTone = 'fare' | 'discount' | 'open' | 'closed' | 'neutral'
+
+const CHIP_TONES: Record<ChipTone, string> = {
+  fare: 'border-primary/35 bg-surface-tint text-primary-dark',
+  discount: 'border-brandPurple/35 bg-brandPurple/5 text-brandPurple',
+  open: 'border-warning/45 bg-warning/5 text-warning-dark',
+  closed: 'border-primary/35 bg-surface-tint text-primary-dark',
+  neutral: 'border-surface-border bg-surface-alt text-ink-muted',
+}
+
+export function chipClass(tone: ChipTone): string {
+  return `inline-flex min-w-[5.5rem] items-center justify-center rounded-lg border px-2.5 py-1 text-sm font-semibold tabular-nums ${CHIP_TONES[tone]}`
+}

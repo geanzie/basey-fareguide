@@ -19,8 +19,9 @@ import { SWR_KEYS } from '@/lib/swrKeys'
  */
 const ABOUT_DOCUMENTS_HREF = '/profile/about#fare-rate-documents'
 
+/** ₱15 for whole pesos, ₱3.50 with centavos — the same rule the dashboards use. */
 function formatCurrency(value: number) {
-  return `PHP ${value.toFixed(2)}`
+  return Number.isInteger(value) ? `₱${value}` : `₱${value.toFixed(2)}`
 }
 
 function documentHref(
@@ -43,6 +44,7 @@ interface FareRateBannerProps {
 function getAnnouncementContent(data: FareRatesResponseDto) {
   if (!data.upcoming) {
     return {
+      isIncrease: false,
       toneClasses: 'border-primary/20 bg-surface-tint text-primary-dark',
       badge: 'No new fare change',
       headline: 'Current fare rates remain in effect',
@@ -79,6 +81,7 @@ function getAnnouncementContent(data: FareRatesResponseDto) {
       : 'Upcoming fare schedule approved'
 
   return {
+    isIncrease,
     toneClasses: isIncrease
       ? 'border-amber-200 bg-amber-50 text-amber-950'
       : 'border-blue-200 bg-blue-50 text-blue-950',
@@ -105,8 +108,8 @@ export default function FareRateBanner({
 
   if (isLoading && !data) {
     return (
-      <div className={`border border-surface-border bg-surface shadow-card rounded-2xl p-4 ${className}`.trim()}>
-        <p className="text-sm text-slate-500">Loading official fare rates...</p>
+      <div className={`rounded-card border border-surface-border bg-surface p-4 shadow-card ${className}`.trim()}>
+        <p className="text-sm text-ink-muted">Loading official fare rates...</p>
       </div>
     )
   }
@@ -126,15 +129,15 @@ export default function FareRateBanner({
   const currentHref = documentHref(data.current.versionId, documents)
 
   return (
-    <section className={`border border-surface-border bg-surface shadow-card rounded-2xl p-5 ${className}`.trim()}>
+    <section className={`rounded-card border border-surface-border bg-surface p-4 shadow-card ${className}`.trim()}>
       {variant === 'announcement' && (
-        <div className={`mb-5 rounded-2xl border px-5 py-4 ${announcement.toneClasses}`}>
+        <div className={`mb-4 rounded-xl border px-4 py-4 ${announcement.toneClasses}`}>
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] opacity-80">
+              <p className="text-xs font-semibold opacity-80">
                 {announcement.badge}
               </p>
-              <h3 className="mt-2 text-2xl font-bold">{announcement.headline}</h3>
+              <h3 className="mt-1 font-brand text-lg font-bold">{announcement.headline}</h3>
               <p className="mt-2 max-w-3xl text-sm opacity-90">{announcement.detail}</p>
               <Link
                 href={announcedHref}
@@ -152,60 +155,80 @@ export default function FareRateBanner({
         </div>
       )}
 
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
-          <p className="mt-1 text-sm text-slate-600">{description}</p>
+      <header className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+        <div className="min-w-0">
+          <h2 className="font-brand text-lg font-bold text-ink-strong">{title}</h2>
+          <p className="text-xs text-ink-muted">{description}</p>
         </div>
-        <div className="flex flex-col items-start gap-2 lg:items-end">
-          <div className="rounded-card border border-primary/20 bg-surface-alt px-4 py-3 text-sm text-primary-dark">
-            Active as of {formatManilaDateTimeLabel(data.current.effectiveAt)}
+        <Link
+          href={currentHref}
+          className="rounded text-sm font-semibold text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+        >
+          See the ordinance behind this rate
+        </Link>
+      </header>
+
+      <div className="mt-4 grid gap-3 md:grid-cols-2">
+        <div className="rounded-xl border border-primary/35 bg-surface-tint p-4">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+            <p className="text-sm font-semibold text-primary-dark">Current fare</p>
+            <p className="text-xs text-ink-muted">Since {formatManilaDateTimeLabel(data.current.effectiveAt)}</p>
           </div>
-          <Link
-            href={currentHref}
-            className="text-sm font-semibold text-primary-dark underline-offset-2 hover:underline"
+          <RateRows
+            baseDistanceKm={data.current.baseDistanceKm}
+            baseFare={data.current.baseFare}
+            perKmRate={data.current.perKmRate}
+          />
+        </div>
+
+        {data.upcoming ? (
+          <div
+            className={`rounded-xl border p-4 ${
+              announcement.isIncrease
+                ? 'border-warning/60 bg-warning/5'
+                : 'border-surface-border bg-surface-alt'
+            }`}
           >
-            See the ordinance behind this rate
-          </Link>
-        </div>
-      </div>
-
-      <div className="mt-4 grid gap-4 md:grid-cols-2">
-        <div className="rounded-2xl border border-primary/20 bg-surface-tint p-4">
-          <div className="text-xs font-medium uppercase tracking-wide text-primary-dark">Current fare</div>
-          <div className="mt-3 space-y-2 text-sm text-primary-dark">
-            <div className="flex items-center justify-between">
-              <span>Base fare ({data.current.baseDistanceKm} km)</span>
-              <span className="font-semibold">{formatCurrency(data.current.baseFare)}</span>
+            <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+              <p className="text-sm font-semibold text-ink-strong">Upcoming fare</p>
+              <p className="text-xs text-ink-muted">From {formatManilaDateTimeLabel(data.upcoming.effectiveAt)}</p>
             </div>
-            <div className="flex items-center justify-between">
-              <span>Per additional km</span>
-              <span className="font-semibold">{formatCurrency(data.current.perKmRate)}</span>
-            </div>
+            <RateRows
+              baseDistanceKm={data.upcoming.baseDistanceKm}
+              baseFare={data.upcoming.baseFare}
+              perKmRate={data.upcoming.perKmRate}
+            />
           </div>
-        </div>
-
-        <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
-          <div className="text-xs font-medium uppercase tracking-wide text-blue-700">Upcoming fare</div>
-          {data.upcoming ? (
-            <div className="mt-3 space-y-2 text-sm text-blue-900">
-              <div className="flex items-center justify-between">
-                <span>Base fare ({data.upcoming.baseDistanceKm} km)</span>
-                <span className="font-semibold">{formatCurrency(data.upcoming.baseFare)}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Per additional km</span>
-                <span className="font-semibold">{formatCurrency(data.upcoming.perKmRate)}</span>
-              </div>
-              <p className="pt-2 text-xs text-blue-700">
-                Effective {formatManilaDateTimeLabel(data.upcoming.effectiveAt)}
-              </p>
-            </div>
-          ) : (
-            <p className="mt-3 text-sm text-blue-900">No future fare change is scheduled right now.</p>
-          )}
-        </div>
+        ) : (
+          <div className="flex flex-col justify-center rounded-xl border border-dashed border-surface-border bg-surface-alt p-4">
+            <p className="text-sm font-semibold text-ink-strong">Upcoming fare</p>
+            <p className="mt-1 text-sm text-ink-muted">No future fare change is scheduled right now.</p>
+          </div>
+        )}
       </div>
     </section>
+  )
+}
+
+function RateRows({
+  baseDistanceKm,
+  baseFare,
+  perKmRate,
+}: {
+  baseDistanceKm: number
+  baseFare: number
+  perKmRate: number
+}) {
+  return (
+    <dl className="mt-3 space-y-1.5 text-sm">
+      <div className="flex items-baseline justify-between gap-3">
+        <dt className="text-ink-body">Base fare, first {baseDistanceKm} km</dt>
+        <dd className="font-brand font-bold tabular-nums text-ink-strong">{formatCurrency(baseFare)}</dd>
+      </div>
+      <div className="flex items-baseline justify-between gap-3">
+        <dt className="text-ink-body">Per additional km</dt>
+        <dd className="font-brand font-bold tabular-nums text-ink-strong">{formatCurrency(perKmRate)}</dd>
+      </div>
+    </dl>
   )
 }

@@ -155,9 +155,9 @@ describe("public dashboard announcements", () => {
       await Promise.resolve();
     });
 
-    expect(container.textContent).toContain("Traffic Announcements");
+    expect(container.textContent).toContain("Traffic announcements");
     expect(container.textContent).toContain("Weekend reroute");
-    expect(container.textContent).toContain("Fare Notice");
+    expect(container.textContent).toContain("Fare notice");
     // The notice must carry riders to the issuance that authorized the rate,
     // otherwise a fare adjustment is announced with no way to check it.
     const documentLink = Array.from(container.querySelectorAll("a")).find((anchor) =>

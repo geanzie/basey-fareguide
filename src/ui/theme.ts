@@ -31,6 +31,16 @@ export const TONE_BADGE_CLASSES: Record<Tone, string> = {
   muted: 'bg-ink-muted/10 text-ink-muted',
 }
 
+/** Contour for a tile that needs attention (StatTile `highlight`). */
+export const TONE_BORDER_CLASSES: Record<Tone, string> = {
+  success: 'border-primary/45',
+  danger: 'border-danger/45',
+  warning: 'border-warning/60',
+  info: 'border-info/45',
+  purple: 'border-brandPurple/45',
+  muted: 'border-surface-border',
+}
+
 export const TONE_TEXT_CLASSES: Record<Tone, string> = {
   success: 'text-primary',
   danger: 'text-danger',

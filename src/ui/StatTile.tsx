@@ -5,7 +5,7 @@ import {
   DASHBOARD_ICON_POLICY,
   DashboardIconSlot,
 } from '@/components/dashboardIcons'
-import { TONE_HEX, TONE_TEXT_CLASSES, type Tone } from './theme'
+import { TONE_BORDER_CLASSES, TONE_HEX, TONE_TEXT_CLASSES, type Tone } from './theme'
 
 interface Props {
   label: string
@@ -25,12 +25,31 @@ interface Props {
   href?: string
   /** A short qualifier under the value, e.g. 'Cleanup recommended'. */
   detail?: string
+  /**
+   * 'ink' sets the value in neutral ink so a row of tiles reads as one set,
+   * leaving the tone to the icon chip. Defaults to 'tone'.
+   */
+  valueColor?: 'tone' | 'ink'
+  /** Draws the tile's outline in its tone, for a number that needs attention. */
+  highlight?: boolean
 }
 
-const SHELL = 'flex flex-col gap-1 rounded-card border border-surface-border bg-surface p-4 shadow-card'
+const SHELL = 'flex flex-col gap-1 rounded-card border bg-surface p-4 shadow-card'
 
 /** Compact metric tile. Designed for grid-cols-2 lg:grid-cols-4 grids. */
-export default function StatTile({ label, value, icon: Icon, tone = 'success', href, detail }: Props) {
+export default function StatTile({
+  label,
+  value,
+  icon: Icon,
+  tone = 'success',
+  href,
+  detail,
+  valueColor = 'tone',
+  highlight = false,
+}: Props) {
+  const shell = `${SHELL} ${highlight ? TONE_BORDER_CLASSES[tone] : 'border-surface-border'}`
+  const valueClasses =
+    valueColor === 'ink' ? 'font-brand font-bold tabular-nums text-ink-strong' : `font-extrabold ${TONE_TEXT_CLASSES[tone]}`
   const body = (
     <>
       {Icon ? (
@@ -42,7 +61,7 @@ export default function StatTile({ label, value, icon: Icon, tone = 'success', h
           <Icon className={`h-[18px] w-[18px] ${TONE_TEXT_CLASSES[tone]}`} />
         </span>
       ) : null}
-      <div className={`text-xl font-extrabold ${TONE_TEXT_CLASSES[tone]}`}>{value}</div>
+      <div className={`text-xl ${valueClasses}`}>{value}</div>
       <div className="flex items-center gap-1 text-xs font-semibold leading-tight text-ink-muted">
         <span className="min-w-0 flex-1">
           {label}
@@ -60,13 +79,13 @@ export default function StatTile({ label, value, icon: Icon, tone = 'success', h
   )
 
   if (!href) {
-    return <div className={SHELL}>{body}</div>
+    return <div className={shell}>{body}</div>
   }
 
   return (
     <Link
       href={href}
-      className={`group ${SHELL} transition hover:-translate-y-0.5 hover:shadow-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 motion-reduce:transform-none motion-reduce:transition-none`}
+      className={`group ${shell} transition hover:-translate-y-0.5 hover:shadow-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 motion-reduce:transform-none motion-reduce:transition-none`}
     >
       {body}
     </Link>

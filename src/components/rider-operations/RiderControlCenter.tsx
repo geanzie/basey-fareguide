@@ -265,45 +265,58 @@ export function RiderDashboardBody({
 
   return (
     <div id={TAB_PANEL_ID} role="tabpanel" aria-labelledby={tabId('overview')} className="flex flex-col gap-4">
+      {/* One color per meaning, shared with the rows below: green is a fare
+          paid, purple a discount, amber something still waiting. Values stay
+          in ink so the four read as one set. */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatTile label="Trips" value={pulse.tripCount} icon={IconRoute} tone="info" href="/history?filter=routes" />
-        <StatTile label="Fares paid" value={formatPesos(pulse.spent)} icon={IconFareCheck} tone="success" />
-        <StatTile label="Discount savings" value={formatPesos(pulse.saved)} icon={IconDiscount} tone="purple" />
+        <StatTile
+          label="Trips"
+          value={pulse.tripCount}
+          icon={IconRoute}
+          tone="muted"
+          valueColor="ink"
+          href="/history?filter=routes"
+        />
+        <StatTile label="Fares paid" value={formatPesos(pulse.spent)} icon={IconFareCheck} tone="success" valueColor="ink" />
+        <StatTile
+          label="Discount savings"
+          value={formatPesos(pulse.saved)}
+          icon={IconDiscount}
+          tone="purple"
+          valueColor="ink"
+        />
         {/* "My" is load-bearing: the transparency panel below counts the
             whole municipality's reports. Open counts every date, not the period. */}
         <StatTile
           label="My open reports"
           value={pulse.openReportCount}
           icon={IconReport}
-          tone={pulse.openReportCount > 0 ? 'warning' : 'success'}
+          tone={pulse.openReportCount > 0 ? 'warning' : 'muted'}
+          valueColor="ink"
+          highlight={pulse.openReportCount > 0}
           href="/history?filter=reports"
         />
       </div>
 
       <TrafficAnnouncementsFeed
-        title="Traffic Announcements"
+        title="Traffic announcements"
         description="Newest municipal road and transport advisories for riders."
       />
 
       <FareRateBanner
-        title="Fare Notice"
-        description="Current public fare rates and the next approved increase or adjustment, when one is scheduled."
+        title="Fare notice"
+        description="What you pay today, and the next approved change when one is scheduled."
       />
 
       {filterBar}
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
-        <Panel
-          title="Recent fare calculations"
-          hint={`Your latest trips in the last ${PERIOD_LABELS[range]}.`}
-          className="lg:col-span-3"
-        >
-          <TripList trips={trips.slice(0, RECENT_ROWS)} now={now} filtered={filter !== null} />
-        </Panel>
-        <Panel title="Recent incident reports" hint="Reports you filed, newest first." className="lg:col-span-2">
-          <ReportList reports={data.reports.slice(0, RECENT_ROWS)} now={now} />
-        </Panel>
-      </div>
+      <Panel title="Recent fare calculations" hint={`Your latest trips in the last ${PERIOD_LABELS[range]}.`}>
+        <TripList trips={trips.slice(0, RECENT_ROWS)} now={now} filtered={filter !== null} />
+      </Panel>
+
+      <Panel title="Recent incident reports" hint="Reports you filed, newest first.">
+        <ReportList reports={data.reports.slice(0, RECENT_ROWS)} now={now} />
+      </Panel>
 
       <Panel
         title="Enforcement transparency"
@@ -315,7 +328,7 @@ export function RiderDashboardBody({
             handledCount={community.reportCount - underReview}
             underReviewCount={underReview}
           />
-          <EnforcementFeed items={activity?.activity ?? []} />
+          <EnforcementFeed items={activity?.activity ?? []} now={now} />
         </div>
       </Panel>
 

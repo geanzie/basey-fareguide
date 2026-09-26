@@ -15,13 +15,13 @@ interface TrafficAnnouncementsFeedProps {
 function getToneClasses(category: PublicAnnouncementDto['category']) {
   switch (category) {
     case 'EMERGENCY_NOTICE':
-      return 'border-red-200 bg-red-50 text-red-950'
+      return 'border-danger/45 bg-danger/5 text-danger'
     case 'ROAD_CLOSURE':
-      return 'border-amber-200 bg-amber-50 text-amber-950'
+      return 'border-warning/60 bg-warning/5 text-warning-dark'
     case 'ROAD_WORK':
-      return 'border-blue-200 bg-blue-50 text-blue-950'
+      return 'border-info/45 bg-info/5 text-info'
     default:
-      return 'border-slate-200 bg-slate-50 text-slate-900'
+      return 'border-surface-border bg-surface-alt text-ink-muted'
   }
 }
 
@@ -38,47 +38,33 @@ export default function TrafficAnnouncementsFeed({
 
   return (
     <section
-      className={`rounded-card border border-surface-border bg-surface p-5 shadow-card ${className}`.trim()}
+      className={`rounded-card border border-surface-border bg-surface p-4 shadow-card ${className}`.trim()}
     >
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
-          <p className="mt-1 text-sm text-slate-600">{description}</p>
-        </div>
-        <div className="rounded-card border border-surface-border bg-surface-alt px-4 py-3 text-sm text-slate-700">
-          Latest active advisories
-        </div>
-      </div>
+      <header className="min-w-0">
+        <h2 className="font-brand text-lg font-bold text-ink-strong">{title}</h2>
+        <p className="text-xs text-ink-muted">{description}</p>
+      </header>
 
-      <div className="mt-4 grid gap-4">
+      <ol className="mt-4 flex flex-col gap-3">
         {data.announcements.map((announcement) => (
-          <article
-            key={announcement.id}
-            className={`rounded-2xl border p-4 ${getToneClasses(announcement.category)}`}
-          >
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-full border border-current/15 bg-white/70 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide">
-                    {announcement.categoryLabel}
-                  </span>
-                  <span className="text-xs opacity-75">
-                    Posted {formatManilaDateTimeLabel(announcement.startsAt)}
-                  </span>
-                </div>
-                <h4 className="mt-3 text-xl font-bold">{announcement.title}</h4>
-                <p className="mt-2 whitespace-pre-line text-sm opacity-90">{announcement.body}</p>
-              </div>
-
-              {announcement.endsAt && (
-                <div className="rounded-xl border border-current/15 bg-white/70 px-4 py-3 text-sm font-medium">
-                  Until {formatManilaDateTimeLabel(announcement.endsAt)}
-                </div>
-              )}
+          <li key={announcement.id} className="rounded-xl border border-surface-border p-4">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              {/* The category is the one colored mark: how serious the advisory is. */}
+              <span
+                className={`rounded-lg border px-2 py-0.5 text-xs font-semibold ${getToneClasses(announcement.category)}`}
+              >
+                {announcement.categoryLabel}
+              </span>
+              <span className="text-xs text-ink-muted">
+                Posted {formatManilaDateTimeLabel(announcement.startsAt)}
+                {announcement.endsAt ? `, until ${formatManilaDateTimeLabel(announcement.endsAt)}` : ''}
+              </span>
             </div>
-          </article>
+            <h3 className="mt-2 text-sm font-semibold text-ink-strong">{announcement.title}</h3>
+            <p className="mt-1 whitespace-pre-line text-sm text-ink-body">{announcement.body}</p>
+          </li>
         ))}
-      </div>
+      </ol>
     </section>
   )
 }
