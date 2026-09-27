@@ -60,7 +60,8 @@ describe("home route", () => {
     expect(html).toContain("Municipal Ordinance No. 105, Series of 2023");
     expect(html).toContain("₱17");
     expect(html).toContain("₱2.50");
-    expect(html).toContain('href="/login"');
+    // One way in: the hero button, not a second pill in the top bar.
+    expect(html.match(/href="\/login"/g)).toHaveLength(1);
     expect(html).not.toContain("Announcement");
     expect(html).not.toContain("Fees operators pay");
     expect(html).not.toContain("banig-mat.webp')] bg-[length");

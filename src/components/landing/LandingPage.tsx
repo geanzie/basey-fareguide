@@ -87,18 +87,11 @@ const Hero = () => (
     />
 
     <Container className="relative">
-      <nav className="flex items-center justify-between gap-4 py-5" aria-label="Main">
-        <Link href="/" className={`flex items-center gap-3 rounded-lg ${FOCUS_RING}`}>
-          <BrandMark size="md" tone="dark" />
-          <span className="whitespace-nowrap font-brand text-lg font-extrabold sm:text-xl">Basey FareCheck</span>
-        </Link>
-        <Link
-          href="/login"
-          className={`shrink-0 whitespace-nowrap rounded-full bg-[#F3E6C4] px-4 py-2 text-sm sm:px-5 font-semibold text-[#14532D] transition hover:bg-white ${FOCUS_RING}`}
-        >
-          Sign in
-        </Link>
-      </nav>
+      {/* Just the wordmark: the hero's own button is the page's one way in. */}
+      <div className="flex items-center gap-3 py-5">
+        <BrandMark size="md" tone="dark" />
+        <span className="whitespace-nowrap font-brand text-lg font-extrabold sm:text-xl">Basey FareCheck</span>
+      </div>
 
       <div className="max-w-xl pb-16 pt-10 sm:pb-20 lg:max-w-2xl lg:pb-28 lg:pt-20">
         <h1 className="font-brand text-4xl font-extrabold leading-[1.05] text-balance text-[#F3E6C4] sm:text-5xl lg:text-6xl">
