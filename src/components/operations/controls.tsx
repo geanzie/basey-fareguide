@@ -8,6 +8,13 @@ import type { OperationsRange } from '@/lib/operations/period'
  * brand band, so they are styled for white-on-green.
  */
 
+/**
+ * Backing for a pill group in the brand band. The band's right half is a
+ * banig photo, so a translucent white group would vanish into it; a dark
+ * frosted one reads on both the gradient and the photo.
+ */
+export const BAND_PILL = 'inline-flex rounded-full bg-black/45 p-1 ring-1 ring-white/20 backdrop-blur-sm'
+
 export const RANGES: Array<{ value: OperationsRange; label: string }> = [
   { value: 'today', label: 'Today' },
   { value: '7d', label: '7 days' },
@@ -45,7 +52,7 @@ export function TabSwitch({
   onChange: (value: DashboardTab) => void
 }) {
   return (
-    <div role="tablist" aria-label="Dashboard view" className="inline-flex rounded-full bg-white/15 p-1">
+    <div role="tablist" aria-label="Dashboard view" className={BAND_PILL}>
       {TABS.map((tab) => {
         const active = tab.value === value
         return (
@@ -110,7 +117,7 @@ export function RangePicker({
   onChange: (value: OperationsRange) => void
 }) {
   return (
-    <div role="radiogroup" aria-label="Time period" className="inline-flex rounded-full bg-white/15 p-1">
+    <div role="radiogroup" aria-label="Time period" className={BAND_PILL}>
       {RANGES.map((range) => {
         const active = range.value === value
         return (

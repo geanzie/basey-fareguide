@@ -33,7 +33,7 @@ export default function AdminDiscountCardsPage() {
             <button
               onClick={() => setActiveTab('list')}
               className={`inline-flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-                activeTab === 'list' ? 'bg-white text-primary-dark' : 'bg-white/15 text-white hover:bg-white/25'
+                activeTab === 'list' ? 'bg-white text-primary-dark' : 'bg-black/45 text-white ring-1 ring-white/20 backdrop-blur-sm hover:bg-black/60'
               }`}
             >
               <List className="h-4 w-4" />
@@ -42,7 +42,7 @@ export default function AdminDiscountCardsPage() {
             <button
               onClick={() => setActiveTab('create')}
               className={`inline-flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-                activeTab === 'create' ? 'bg-white text-primary-dark' : 'bg-white/15 text-white hover:bg-white/25'
+                activeTab === 'create' ? 'bg-white text-primary-dark' : 'bg-black/45 text-white ring-1 ring-white/20 backdrop-blur-sm hover:bg-black/60'
               }`}
             >
               <Plus className="h-4 w-4" />

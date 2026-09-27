@@ -33,6 +33,7 @@ interface Props {
  * under the band, which only looked right when the page's first child was a
  * card — a bare heading or toolbar landed dark-on-gradient instead. The plate
  * carries `bg-surface-bg`, so content always starts on the app background.
+ * It is `relative` so it paints over the band's banig field, not under it.
  *
  * Its 20px top radius is 4px tighter than the band's 24px bottom radius (the
  * 6px it is floated up by, minus the 2px of band edge left visible), so the
@@ -57,7 +58,7 @@ export default function PageShell({
       <GradientHeader title={title} subtitle={subtitle} backHref={backHref} right={right}>
         {band}
       </GradientHeader>
-      <div className="-mt-6 rounded-t-plate bg-surface-bg px-4 pb-8 pt-5 lg:px-8">{children}</div>
+      <div className="relative -mt-6 rounded-t-plate bg-surface-bg px-4 pb-8 pt-5 lg:px-8">{children}</div>
     </div>
   )
 }

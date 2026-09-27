@@ -4,6 +4,7 @@ import { useState } from 'react'
 import RoleGuard from '@/components/RoleGuard'
 import EnforcerIncidentsList from '@/components/EnforcerIncidentsList'
 import type { EnforcerIncidentsViewMode } from '@/lib/contracts'
+import { BAND_PILL } from '@/components/operations/controls'
 import PageShell from '@/ui/PageShell'
 
 const VIEWS: Array<{ mode: EnforcerIncidentsViewMode; label: string }> = [
@@ -24,7 +25,7 @@ export default function EnforcerIncidentsPage() {
             : 'Look up resolved, dismissed and referred incidents'
         }
         band={
-          <div role="tablist" aria-label="Incident view" className="mt-3 inline-flex rounded-full bg-white/15 p-1">
+          <div role="tablist" aria-label="Incident view" className={`mt-3 ${BAND_PILL}`}>
             {VIEWS.map((view) => (
               <button
                 key={view.mode}
