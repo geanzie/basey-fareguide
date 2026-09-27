@@ -72,12 +72,18 @@ const Container = ({ children, className = '' }: { children: ReactNode; classNam
 
 const Hero = () => (
   <header className="relative overflow-hidden bg-[#14532D] text-white">
-    {/* Phones: the text fills the width, so the mat goes below it instead — a
-        small round one rising out of the bottom-right corner, in the same
-        tikog binding as the desktop mat. */}
+    {/* Phones: the text fills the width, so the mat sits behind it — a round
+        one half off the right edge, like the desktop mat — under a forest
+        scrim. The scrim never drops below 80% forest, which keeps the straw
+        headline above 4:1 and the body copy above 4.5:1 even over the
+        palest part of the weave. */}
     <div
       aria-hidden="true"
-      className="pointer-events-none absolute -bottom-20 -right-14 size-52 rounded-full bg-[url('/brand/banig-mat.webp')] bg-cover bg-left shadow-[0_0_0_5px_#E6D3A8,0_0_0_6px_rgba(0,0,0,0.25),0_16px_40px_rgba(0,0,0,0.45)] sm:hidden"
+      className="pointer-events-none absolute right-[-10rem] top-1/2 size-[28rem] -translate-y-1/2 rounded-full bg-[url('/brand/banig-mat.webp')] bg-cover bg-left shadow-[0_0_0_5px_#E6D3A8] sm:hidden"
+    />
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#14532D]/95 via-[#14532D]/90 to-[#14532D]/80 sm:hidden"
     />
     {/* Tablets: the same tikog strip that edges the sign-in header, kept to
         the space right of the text. */}
@@ -100,11 +106,11 @@ const Hero = () => (
         <span className="whitespace-nowrap font-brand text-lg font-extrabold sm:text-xl">Basey FareCheck</span>
       </div>
 
-      <div className="max-w-xl pb-36 pt-10 sm:pb-20 lg:max-w-2xl lg:pb-28 lg:pt-20">
+      <div className="max-w-xl pb-16 pt-10 sm:pb-20 lg:max-w-2xl lg:pb-28 lg:pt-20">
         <h1 className="font-brand text-4xl font-extrabold leading-[1.05] text-balance text-[#F3E6C4] sm:text-5xl lg:text-6xl">
           Know the fare before you ride.
         </h1>
-        <p className="mt-5 max-w-lg text-base leading-relaxed text-white/80 lg:text-lg">
+        <p className="mt-5 max-w-lg text-base leading-relaxed text-white/90 sm:text-white/80 lg:text-lg">
           Basey FareCheck is the municipality&apos;s fare guide for tricycles and habal-habal. It
           shows the fare the Sangguniang Bayan approved, records each trip, and gives riders a
           way to report overcharging.
