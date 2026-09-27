@@ -22,7 +22,8 @@ export function isAuthRoute(pathname: string | null | undefined): boolean {
     pathname === LOGIN_ROUTE ||
     pathname.startsWith(`${LOGIN_ROUTE}/`) ||
     pathname === LEGACY_AUTH_ROUTE ||
-    pathname.startsWith(`${LEGACY_AUTH_ROUTE}/`)
+    pathname.startsWith(`${LEGACY_AUTH_ROUTE}/`) ||
+    pathname === SOCIAL_SIGNUP_ROUTE
   );
 }
 

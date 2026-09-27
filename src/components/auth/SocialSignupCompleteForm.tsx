@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/AuthProvider'
 import type { SessionUserDto } from '@/lib/contracts'
 import { useRetryCountdown } from '@/components/auth/useRetryCountdown'
-import BrandMark from '@/components/BrandMark'
+import AuthShell from '@/components/auth/AuthShell'
 import Button from '@/ui/Button'
 import { Field, Input, Select } from '@/ui/Field'
 import { authFetchFailureMessage, authPost, formatRetryCountdown } from '@/lib/authFetch'
@@ -112,144 +112,135 @@ const SocialSignupCompleteForm = ({ providerLabel, firstName, lastName, email }:
   }
 
   return (
-    <div className="min-h-dvh bg-ink-strong px-4 py-10 sm:px-6 lg:px-8">
-      <div className="mx-auto w-full max-w-lg">
-        <div className="mb-6 flex flex-col items-center text-center">
-          <BrandMark size="lg" tone="dark" />
-          <h1 className="mt-4 text-2xl font-extrabold text-white">Finish your account</h1>
-          <p className="mt-1 text-xs text-ink-muted">
-            Signed in with {providerLabel} — just a few more details.
+    <AuthShell
+      title="Finish your account"
+      subtitle={`Signed in with ${providerLabel}. A few more details and you are done.`}
+    >
+      <form className="space-y-4" onSubmit={handleSubmit}>
+        {retry.isCountingDown ? (
+          <div className="rounded-xl bg-warning/10 px-4 py-3 text-sm font-medium text-warning-dark">
+            Too many attempts from this account. You can try again in{' '}
+            <span className="tabular-nums">{formatRetryCountdown(retry.secondsLeft)}</span>. Your
+            details are saved — leave this page open.
+          </div>
+        ) : error ? (
+          <div className="rounded-xl bg-danger-soft px-4 py-3 text-sm font-medium text-danger">
+            {error}
+          </div>
+        ) : null}
+
+        <div className="rounded-xl bg-surface-alt px-4 py-3 text-sm">
+          <p className="font-bold text-ink-strong">
+            {firstName} {lastName}
+          </p>
+          <p className="text-ink-muted">{email}</p>
+        </div>
+
+        <Field label="Mobile Number" htmlFor="phoneNumber" hint="09XXXXXXXXX" required>
+          <Input
+            id="phoneNumber"
+            name="phoneNumber"
+            type="tel"
+            autoComplete="tel"
+            required
+            placeholder="09171234567"
+            value={formData.phoneNumber}
+            onChange={handleInputChange}
+          />
+        </Field>
+
+        <Field label="Date of Birth" htmlFor="dateOfBirth">
+          <Input
+            id="dateOfBirth"
+            name="dateOfBirth"
+            type="date"
+            autoComplete="bday"
+            value={formData.dateOfBirth}
+            onChange={handleInputChange}
+          />
+        </Field>
+
+        <Field label="Barangay of Residence" htmlFor="barangayResidence">
+          <Select
+            id="barangayResidence"
+            name="barangayResidence"
+            value={formData.barangayResidence}
+            onChange={handleInputChange}
+          >
+            <option value="">Select barangay (optional)</option>
+            {BARANGAYS.map((barangay) => (
+              <option key={barangay} value={barangay}>
+                {barangay}
+              </option>
+            ))}
+          </Select>
+        </Field>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Government ID Type" htmlFor="idType">
+            <Select id="idType" name="idType" value={formData.idType} onChange={handleInputChange}>
+              <option value="">Optional</option>
+              {ID_TYPES.map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="ID Number" htmlFor="governmentId">
+            <Input
+              id="governmentId"
+              name="governmentId"
+              type="text"
+              value={formData.governmentId}
+              onChange={handleInputChange}
+            />
+          </Field>
+        </div>
+
+        <div className="rounded-xl border border-warning/40 bg-warning/10 p-4">
+          <label className="flex cursor-pointer items-start gap-3">
+            <input
+              id="privacyNoticeAcknowledged"
+              name="privacyNoticeAcknowledged"
+              type="checkbox"
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-warning text-primary focus:ring-primary"
+              checked={formData.privacyNoticeAcknowledged}
+              onChange={handleInputChange}
+            />
+            <span className="text-sm text-warning-dark">
+              I have read and acknowledge the{' '}
+              <a
+                href="/privacy-policy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium underline"
+              >
+                Privacy Notice
+              </a>{' '}
+              and understand that my personal data will be processed for account registration
+              and related service use.
+            </span>
+          </label>
+          <p className="mt-2 pl-7 text-xs text-warning-dark/80">
+            Version {CURRENT_PRIVACY_NOTICE_VERSION}
           </p>
         </div>
 
-        <div className="rounded-3xl bg-surface p-6 shadow-raised sm:p-8">
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            {retry.isCountingDown ? (
-              <div className="rounded-xl bg-warning/10 px-4 py-3 text-sm font-medium text-warning-dark">
-                Too many attempts from this account. You can try again in{' '}
-                <span className="tabular-nums">{formatRetryCountdown(retry.secondsLeft)}</span>. Your
-                details are saved — leave this page open.
-              </div>
-            ) : error ? (
-              <div className="rounded-xl bg-danger-soft px-4 py-3 text-sm font-medium text-danger">
-                {error}
-              </div>
-            ) : null}
-
-            <div className="rounded-xl bg-surface-alt px-4 py-3 text-sm">
-              <p className="font-bold text-ink-strong">
-                {firstName} {lastName}
-              </p>
-              <p className="text-ink-muted">{email}</p>
-            </div>
-
-            <Field label="Mobile Number" htmlFor="phoneNumber" hint="09XXXXXXXXX" required>
-              <Input
-                id="phoneNumber"
-                name="phoneNumber"
-                type="tel"
-                autoComplete="tel"
-                required
-                placeholder="09171234567"
-                value={formData.phoneNumber}
-                onChange={handleInputChange}
-              />
-            </Field>
-
-            <Field label="Date of Birth" htmlFor="dateOfBirth">
-              <Input
-                id="dateOfBirth"
-                name="dateOfBirth"
-                type="date"
-                autoComplete="bday"
-                value={formData.dateOfBirth}
-                onChange={handleInputChange}
-              />
-            </Field>
-
-            <Field label="Barangay of Residence" htmlFor="barangayResidence">
-              <Select
-                id="barangayResidence"
-                name="barangayResidence"
-                value={formData.barangayResidence}
-                onChange={handleInputChange}
-              >
-                <option value="">Select barangay (optional)</option>
-                {BARANGAYS.map((barangay) => (
-                  <option key={barangay} value={barangay}>
-                    {barangay}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Government ID Type" htmlFor="idType">
-                <Select id="idType" name="idType" value={formData.idType} onChange={handleInputChange}>
-                  <option value="">Optional</option>
-                  {ID_TYPES.map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-              <Field label="ID Number" htmlFor="governmentId">
-                <Input
-                  id="governmentId"
-                  name="governmentId"
-                  type="text"
-                  value={formData.governmentId}
-                  onChange={handleInputChange}
-                />
-              </Field>
-            </div>
-
-            <div className="rounded-xl border border-warning/40 bg-warning/10 p-4">
-              <label className="flex cursor-pointer items-start gap-3">
-                <input
-                  id="privacyNoticeAcknowledged"
-                  name="privacyNoticeAcknowledged"
-                  type="checkbox"
-                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-warning text-primary focus:ring-primary"
-                  checked={formData.privacyNoticeAcknowledged}
-                  onChange={handleInputChange}
-                />
-                <span className="text-sm text-warning-dark">
-                  I have read and acknowledge the{' '}
-                  <a
-                    href="/privacy-policy"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-medium underline"
-                  >
-                    Privacy Notice
-                  </a>{' '}
-                  and understand that my personal data will be processed for account registration
-                  and related service use.
-                </span>
-              </label>
-              <p className="mt-2 pl-7 text-xs text-warning-dark/80">
-                Version {CURRENT_PRIVACY_NOTICE_VERSION}
-              </p>
-            </div>
-
-            <Button
-              type="submit"
-              loading={loading}
-              disabled={retry.isCountingDown}
-              className="w-full"
-            >
-              {loading
-                ? 'Creating account...'
-                : retry.isCountingDown
-                  ? `Try again in ${formatRetryCountdown(retry.secondsLeft)}`
-                  : 'Create Account'}
-            </Button>
-          </form>
-        </div>
-      </div>
-    </div>
+        <Button
+          type="submit"
+          loading={loading}
+          disabled={retry.isCountingDown}
+          className="w-full"
+        >
+          {loading
+            ? 'Creating account...'
+            : retry.isCountingDown
+              ? `Try again in ${formatRetryCountdown(retry.secondsLeft)}`
+              : 'Create account'}
+        </Button>
+      </form>
+    </AuthShell>
   )
 }
 

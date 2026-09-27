@@ -2,10 +2,11 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { CheckCircle2, Info, KeyRound } from 'lucide-react'
+import { CheckCircle2, Info } from 'lucide-react'
 
 import Button from '@/ui/Button'
 import { Field, Input } from '@/ui/Field'
+import AuthShell from './AuthShell'
 
 interface RequestResetFormProps {
   onSuccess?: () => void
@@ -62,7 +63,7 @@ const RequestResetForm = ({ onSuccess, onCancel }: RequestResetFormProps) => {
   }
 
   const successTitle =
-    deliveryMode === 'development_console' ? 'OTP Ready For Development' : 'OTP Code Sent'
+    deliveryMode === 'development_console' ? 'Code ready for development' : 'Code sent'
 
   const nextStepLine =
     deliveryMode === 'development_console'
@@ -74,95 +75,80 @@ const RequestResetForm = ({ onSuccess, onCancel }: RequestResetFormProps) => {
     `A 6-digit verification code has been sent to ${maskedEmail || 'your email'}.`
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-ink-strong px-4 py-12">
-      <div className="w-full max-w-md">
-        <div className="mb-8 flex flex-col items-center text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/10">
-            <KeyRound className="h-8 w-8 text-primary" />
-          </div>
-          <h1 className="mt-4 text-2xl font-extrabold text-white">Reset Password</h1>
-          <p className="mt-1 text-xs text-ink-muted">
-            Enter your email address to receive an OTP code
-          </p>
-        </div>
-
-        <div className="rounded-3xl bg-surface p-6 shadow-raised sm:p-8">
-          {success ? (
-            <div className="space-y-4">
-              <div className="rounded-xl bg-surface-tint p-4">
-                <div className="flex gap-3">
-                  <CheckCircle2 className="h-5 w-5 shrink-0 text-primary" />
-                  <div>
-                    <h3 className="text-sm font-bold text-primary-dark">{successTitle}</h3>
-                    <p className="mt-1 text-sm text-ink-body">{resolvedSuccessMessage}</p>
-                    <p className="mt-1 text-sm text-ink-muted">The code is valid for 10 minutes.</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-xl bg-info/10 p-4">
-                <div className="flex gap-3">
-                  <Info className="h-5 w-5 shrink-0 text-info" />
-                  <div className="text-xs text-ink-body">
-                    <h3 className="text-sm font-bold text-ink-strong">Next Steps</h3>
-                    <p className="mt-2">{nextStepLine}</p>
-                    <p>2. Enter the 6-digit code on the next page</p>
-                    <p>3. Set your new password</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Button className="w-full" onClick={() => router.push('/auth/reset-password')}>
-                  Continue to Password Reset
-                </Button>
-                <Button variant="secondary" className="w-full" onClick={() => router.push('/auth')}>
-                  Back to Login
-                </Button>
+    <AuthShell
+      title="Reset password"
+      subtitle="Enter the email you registered with. We will send you a 6-digit code."
+    >
+      {success ? (
+        <div className="space-y-4">
+          <div className="rounded-xl bg-surface-tint p-4">
+            <div className="flex gap-3">
+              <CheckCircle2 className="h-5 w-5 shrink-0 text-primary" />
+              <div>
+                <h3 className="text-sm font-bold text-primary-dark">{successTitle}</h3>
+                <p className="mt-1 text-sm text-ink-body">{resolvedSuccessMessage}</p>
+                <p className="mt-1 text-sm text-ink-muted">The code is valid for 10 minutes.</p>
               </div>
             </div>
-          ) : (
-            <form className="space-y-4" onSubmit={handleSubmit}>
-              {error ? (
-                <div className="rounded-xl bg-danger-soft px-4 py-3 text-sm font-medium text-danger">
-                  {error}
-                </div>
-              ) : null}
+          </div>
 
-              <Field
-                label="Email Address"
-                htmlFor="email"
-                hint="Enter the email address you registered with"
-              >
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  placeholder="Enter your email address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </Field>
-
-              <div className="space-y-2 pt-2">
-                <Button type="submit" loading={loading} className="w-full">
-                  {loading ? 'Sending OTP...' : 'Send OTP Code'}
-                </Button>
-                <Button
-                  variant="secondary"
-                  className="w-full"
-                  onClick={() => (onCancel ? onCancel() : router.push('/auth'))}
-                >
-                  Back to Login
-                </Button>
+          <div className="rounded-xl bg-info/10 p-4">
+            <div className="flex gap-3">
+              <Info className="h-5 w-5 shrink-0 text-info" />
+              <div className="text-xs text-ink-body">
+                <h3 className="text-sm font-bold text-ink-strong">Next steps</h3>
+                <p className="mt-2">{nextStepLine}</p>
+                <p>2. Enter the 6-digit code on the next page</p>
+                <p>3. Set your new password</p>
               </div>
-            </form>
-          )}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Button className="w-full" onClick={() => router.push('/auth/reset-password')}>
+              Enter code
+            </Button>
+            <Button variant="secondary" className="w-full" onClick={() => router.push('/auth')}>
+              Back to sign in
+            </Button>
+          </div>
         </div>
-      </div>
-    </div>
+      ) : (
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          {error ? (
+            <div className="rounded-xl bg-danger-soft px-4 py-3 text-sm font-medium text-danger">
+              {error}
+            </div>
+          ) : null}
+
+          <Field label="Email address" htmlFor="email">
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              placeholder="Enter your email address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </Field>
+
+          <div className="space-y-2 pt-2">
+            <Button type="submit" loading={loading} className="w-full">
+              {loading ? 'Sending code...' : 'Send code'}
+            </Button>
+            <Button
+              variant="secondary"
+              className="w-full"
+              onClick={() => (onCancel ? onCancel() : router.push('/auth'))}
+            >
+              Back to sign in
+            </Button>
+          </div>
+        </form>
+      )}
+    </AuthShell>
   )
 }
 
