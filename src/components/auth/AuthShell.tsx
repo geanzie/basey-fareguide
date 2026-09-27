@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 
+import BanigCornerMat from '@/components/BanigCornerMat'
 import BrandMark from '@/components/BrandMark'
 
 interface AuthShellProps {
@@ -63,13 +64,7 @@ const BanigPhoto = () => (
       className="pointer-events-none absolute inset-y-0 right-0 w-[36%] bg-[url('/brand/banig-mat.webp')] bg-cover bg-center sm:w-[calc(50%-10rem)] lg:hidden"
       style={{ maskImage: PHONE_MASK, WebkitMaskImage: PHONE_MASK }}
     />
-    <div
-      aria-hidden="true"
-      className="pointer-events-none absolute bottom-[calc(var(--ry)*-1)] left-[calc(var(--rx)*-1)] hidden h-[calc(var(--ry)*2)] w-[calc(var(--rx)*2)] overflow-hidden rounded-[50%] shadow-[0_0_0_6px_#E6D3A8,0_0_0_7px_rgba(0,0,0,0.25),0_24px_60px_rgba(0,0,0,0.45)] [--rx:115%] [--ry:56%] lg:block"
-    >
-      {/* Only the ellipse's top-right quarter can be on screen; the photo fills just that. */}
-      <div className="absolute left-1/2 top-0 h-1/2 w-1/2 bg-[url('/brand/banig-disc.webp')] bg-cover bg-left-top" />
-    </div>
+    <BanigCornerMat className="hidden lg:block" />
   </>
 )
 

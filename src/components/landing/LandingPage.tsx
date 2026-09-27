@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 
+import BanigCornerMat from '@/components/BanigCornerMat'
 import BrandMark from '@/components/BrandMark'
 import type { FareRatesResponseDto } from '@/lib/contracts'
 import { formatManilaDateTimeLabel } from '@/lib/manilaTime'
@@ -72,15 +73,12 @@ const Container = ({ children, className = '' }: { children: ReactNode; classNam
 
 const Hero = () => (
   <header className="relative overflow-hidden bg-[#14532D] text-white">
-    {/* Phones: the text fills the width, so the mat sits behind it — a round
-        one half off the right edge, like the desktop mat — under a forest
-        scrim. The scrim never drops below 80% forest, which keeps the straw
-        headline above 4:1 and the body copy above 4.5:1 even over the
+    {/* Phones: the text fills the width, so the mat sits behind it — laid
+        diagonally into the bottom-left corner as on the sign-in panel — under
+        a forest scrim. The scrim never drops below 80% forest, which keeps the
+        straw headline above 4:1 and the body copy above 4.5:1 even over the
         palest part of the weave. */}
-    <div
-      aria-hidden="true"
-      className="pointer-events-none absolute right-[-10rem] top-1/2 size-[28rem] -translate-y-1/2 rounded-full bg-[url('/brand/banig-mat.webp')] bg-cover bg-left shadow-[0_0_0_5px_#E6D3A8] sm:hidden"
-    />
+    <BanigCornerMat className="sm:hidden" />
     <div
       aria-hidden="true"
       className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#14532D]/95 via-[#14532D]/90 to-[#14532D]/80 sm:hidden"
