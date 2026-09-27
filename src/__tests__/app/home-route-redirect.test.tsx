@@ -1,85 +1,85 @@
-// @vitest-environment jsdom
+import { renderToStaticMarkup } from "react-dom/server";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
-import React, { act } from "react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createRoot, type Root } from "react-dom/client";
-
-const routerMock = vi.hoisted(() => ({
-  replace: vi.fn(),
+const mocks = vi.hoisted(() => ({
+  cookieGet: vi.fn<(name: string) => { value: string } | undefined>(() => undefined),
+  redirect: vi.fn((url: string) => {
+    throw new Error(`NEXT_REDIRECT:${url}`);
+  }),
+  resolveAuthUserFromToken: vi.fn<(token: string | undefined) => Promise<{ userType: string } | null>>(
+    async () => null,
+  ),
+  getResolvedFareRates: vi.fn(),
 }));
 
-const authMock = vi.hoisted(() => ({
-  useAuth: vi.fn<() => {
-    user: { id: string; userType: string } | null;
-    status: string;
-  }>(() => ({ user: null, status: "unauthenticated" })),
+vi.mock("next/headers", () => ({
+  cookies: async () => ({ get: mocks.cookieGet }),
 }));
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => routerMock,
+  redirect: mocks.redirect,
 }));
 
-vi.mock("@/components/AuthProvider", () => ({
-  useAuth: authMock.useAuth,
+vi.mock("@/lib/auth", () => ({
+  resolveAuthUserFromToken: mocks.resolveAuthUserFromToken,
+}));
+
+vi.mock("@/lib/fare/rateService", () => ({
+  getResolvedFareRates: mocks.getResolvedFareRates,
 }));
 
 import HomePage from "@/app/page";
 
+const LIVE_RATES = {
+  current: {
+    versionId: "v-live",
+    baseDistanceKm: 3,
+    baseFare: 17,
+    perKmRate: 2.5,
+    effectiveAt: "2026-06-01T00:00:00.000Z",
+  },
+  upcoming: null,
+};
+
+async function renderHome() {
+  return renderToStaticMarkup(await HomePage());
+}
+
 describe("home route", () => {
-  let container: HTMLDivElement;
-  let root: Root;
-
-  beforeEach(() => {
-    (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-    container = document.createElement("div");
-    document.body.appendChild(container);
-    root = createRoot(container);
+  afterEach(() => {
+    vi.clearAllMocks();
+    mocks.resolveAuthUserFromToken.mockResolvedValue(null);
   });
 
-  afterEach(async () => {
-    await act(async () => {
-      root.unmount();
-    });
-    container.remove();
-    routerMock.replace.mockReset();
-    authMock.useAuth.mockReset();
-    authMock.useAuth.mockReturnValue({ user: null, status: "unauthenticated" });
-    (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
-  });
+  it("shows signed-out visitors the landing page with the ordinance and the live rate", async () => {
+    mocks.getResolvedFareRates.mockResolvedValue(LIVE_RATES);
 
-  async function renderHome() {
-    await act(async () => {
-      root.render(React.createElement(HomePage));
-      await Promise.resolve();
-    });
-  }
+    const html = await renderHome();
 
-  it("sends signed-out visitors straight to the login page", async () => {
-    authMock.useAuth.mockReturnValue({ user: null, status: "unauthenticated" });
-
-    await renderHome();
-
-    expect(routerMock.replace).toHaveBeenCalledWith("/login");
-    expect(container.textContent).not.toContain("Key Features");
-    expect(container.textContent).not.toContain("Public Announcements");
+    expect(mocks.redirect).not.toHaveBeenCalled();
+    expect(html).toContain("Municipal Ordinance No. 105, Series of 2023");
+    expect(html).toContain("₱17");
+    expect(html).toContain("₱2.50");
+    expect(html).toContain('href="/login"');
+    expect(html).not.toContain("Announcement");
   });
 
   it("sends signed-in users to their role home route", async () => {
-    authMock.useAuth.mockReturnValue({
-      user: { id: "public-1", userType: "PUBLIC" },
-      status: "authenticated",
-    });
+    mocks.cookieGet.mockReturnValue({ value: "token" });
+    mocks.resolveAuthUserFromToken.mockResolvedValue({ userType: "ENFORCER" });
 
-    await renderHome();
-
-    expect(routerMock.replace).toHaveBeenCalledWith("/dashboard");
+    await expect(renderHome()).rejects.toThrow("NEXT_REDIRECT:/enforcer");
+    expect(mocks.resolveAuthUserFromToken).toHaveBeenCalledWith("token");
+    expect(mocks.getResolvedFareRates).not.toHaveBeenCalled();
   });
 
-  it("waits for the session to resolve before redirecting", async () => {
-    authMock.useAuth.mockReturnValue({ user: null, status: "loading" });
+  it("shows no fare figure when the rate cannot be read", async () => {
+    mocks.getResolvedFareRates.mockRejectedValue(new Error("db down"));
+    vi.spyOn(console, "error").mockImplementation(() => {});
 
-    await renderHome();
+    const html = await renderHome();
 
-    expect(routerMock.replace).not.toHaveBeenCalled();
+    expect(html).toContain("could not be loaded");
+    expect(html).not.toContain("for the first");
   });
 });

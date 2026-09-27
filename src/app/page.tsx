@@ -1,35 +1,40 @@
-'use client'
+import type { Metadata } from 'next'
+import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import LandingPage from '@/components/landing/LandingPage'
+import { resolveAuthUserFromToken } from '@/lib/auth'
+import { getAuthenticatedHomeRoute } from '@/lib/authRoutes'
+import type { FareRatesResponseDto } from '@/lib/contracts'
+import { getResolvedFareRates } from '@/lib/fare/rateService'
 
-import AuthStateShell from '@/components/AuthStateShell'
-import { useAuth } from '@/components/AuthProvider'
-import { getAuthenticatedHomeRoute, LOGIN_ROUTE } from '@/lib/authRoutes'
+export const metadata: Metadata = {
+  title: 'Basey FareCheck | Official fares under Municipal Ordinance No. 105',
+  description:
+    'The fare guide for tricycles and habal-habal in Basey, Samar: the fare in force today and what Municipal Ordinance No. 105, Series of 2023 requires.',
+}
 
-export default function HomePage() {
-  const router = useRouter()
-  const { user, status } = useAuth()
+/**
+ * Signed-in users go straight to their role home; everyone else gets the
+ * public landing page. The session is resolved here on the server so a
+ * signed-in user never sees the landing page flash first.
+ */
+export default async function HomePage() {
+  const cookieStore = await cookies()
+  const user = await resolveAuthUserFromToken(cookieStore.get('auth-token')?.value)
 
-  useEffect(() => {
-    if (status === 'loading') {
-      return
-    }
+  if (user) {
+    redirect(getAuthenticatedHomeRoute(user.userType))
+  }
 
-    if (status === 'authenticated' && user) {
-      router.replace(getAuthenticatedHomeRoute(user.userType))
-      return
-    }
+  // No fallback figure: if the rate cannot be read, the page says so rather
+  // than showing a fare nobody approved.
+  let fareRates: FareRatesResponseDto | null = null
+  try {
+    fareRates = await getResolvedFareRates()
+  } catch (error) {
+    console.error('[landing] failed to resolve fare rates', error)
+  }
 
-    router.replace(LOGIN_ROUTE)
-  }, [router, status, user])
-
-  return (
-    <div className="min-h-dvh">
-      <AuthStateShell
-        title="Opening Basey FareCheck"
-        message="Taking you to the right place for your account."
-      />
-    </div>
-  )
+  return <LandingPage fareRates={fareRates} />
 }

@@ -6,12 +6,13 @@ import { isAuthRoute } from '@/lib/authRoutes'
 
 /**
  * Desktop-only footer. Auth screens fill the viewport and carry the same line
- * in their own brand panel, so the footer steps aside there.
+ * in their own brand panel, and the landing page at `/` has its own forest
+ * footer, so this one steps aside on both.
  */
 export default function SiteFooter() {
   const pathname = usePathname()
 
-  if (isAuthRoute(pathname)) {
+  if (isAuthRoute(pathname) || pathname === '/') {
     return null
   }
 
