@@ -72,8 +72,15 @@ const Container = ({ children, className = '' }: { children: ReactNode; classNam
 
 const Hero = () => (
   <header className="relative overflow-hidden bg-[#14532D] text-white">
+    {/* Phones: the text fills the width, so the mat goes below it instead — a
+        small round one rising out of the bottom-right corner, in the same
+        tikog binding as the desktop mat. */}
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute -bottom-20 -right-14 size-52 rounded-full bg-[url('/brand/banig-mat.webp')] bg-cover bg-left shadow-[0_0_0_5px_#E6D3A8,0_0_0_6px_rgba(0,0,0,0.25),0_16px_40px_rgba(0,0,0,0.45)] sm:hidden"
+    />
     {/* Tablets: the same tikog strip that edges the sign-in header, kept to
-        the space right of the text. Phones have no such space, so none. */}
+        the space right of the text. */}
     <div
       aria-hidden="true"
       className="pointer-events-none absolute inset-y-0 right-0 hidden w-[calc(100%-38rem)] bg-[url('/brand/banig-mat.webp')] bg-cover bg-center sm:block lg:hidden"
@@ -93,7 +100,7 @@ const Hero = () => (
         <span className="whitespace-nowrap font-brand text-lg font-extrabold sm:text-xl">Basey FareCheck</span>
       </div>
 
-      <div className="max-w-xl pb-16 pt-10 sm:pb-20 lg:max-w-2xl lg:pb-28 lg:pt-20">
+      <div className="max-w-xl pb-36 pt-10 sm:pb-20 lg:max-w-2xl lg:pb-28 lg:pt-20">
         <h1 className="font-brand text-4xl font-extrabold leading-[1.05] text-balance text-[#F3E6C4] sm:text-5xl lg:text-6xl">
           Know the fare before you ride.
         </h1>
