@@ -3,7 +3,7 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react'
 import { Loader2 } from 'lucide-react'
 
-export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'success' | 'ghost'
+export type ButtonVariant = 'primary' | 'secondary' | 'soft' | 'danger' | 'success' | 'ghost'
 export type ButtonSize = 'sm' | 'md'
 
 interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -18,6 +18,9 @@ const VARIANTS: Record<ButtonVariant, string> = {
   primary: 'bg-primary text-white hover:bg-primary-dark',
   success: 'bg-primary text-white hover:bg-primary-dark',
   danger: 'bg-danger-soft text-danger border border-danger-softBorder hover:bg-red-100',
+  // Quieter green for an intermediate step (e.g. a wizard's Next), so the
+  // solid primary stays reserved for the action that actually commits.
+  soft: 'bg-surface-tint text-primary-dark border border-primary/30 hover:bg-green-100',
   secondary: 'bg-surface-alt text-ink-body border border-surface-border hover:bg-surface-bg',
   ghost: 'bg-transparent text-info hover:bg-info/5',
 }
