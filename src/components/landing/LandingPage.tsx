@@ -4,13 +4,7 @@ import type { ReactNode } from 'react'
 import BrandMark from '@/components/BrandMark'
 import type { FareRatesResponseDto } from '@/lib/contracts'
 import { formatManilaDateTimeLabel } from '@/lib/manilaTime'
-import {
-  ORDINANCE_105_ARTICLES,
-  ORDINANCE_105_FACTS,
-  ORDINANCE_105_FEES,
-  ORDINANCE_105_PENALTIES,
-  type OrdinanceAmount,
-} from '@/lib/ordinance105Digest'
+import { ORDINANCE_105_FACTS, ORDINANCE_105_FARE_POINTS } from '@/lib/ordinance105Digest'
 import { ordinanceResource } from '@/lib/ordinanceResource'
 
 /**
@@ -42,40 +36,30 @@ const ROLES: Array<{ role: string; summary: string; features: string[] }> = [
     features: [
       'Fare calculator that measures your route by road, not a straight line',
       '20% off for students, senior citizens and persons with disability',
-      'Scan the permit QR sticker on the vehicle to log your trip',
-      'Report overcharging or unsafe driving, with photos as evidence',
+      'Scan the permit QR sticker on the vehicle to log your trip and fare',
+      'Report overcharging, with photos as evidence',
     ],
   },
   {
     role: 'Drivers',
-    summary: 'Show riders that the fare you charge is the approved one.',
-    features: [
-      'Record each trip and the fare charged, right from your phone',
-      'Your permit QR and trip history in one place',
-    ],
+    summary: 'Record each trip and the fare charged, right from your phone.',
+    features: [],
   },
   {
     role: 'Enforcers',
-    summary: 'Check a vehicle on the road in seconds.',
-    features: [
-      'Scan a permit to see if the franchise and MTOP are valid',
-      'File and follow incidents with the penalty the ordinance sets',
-    ],
+    summary: 'Follow up overcharging reports against the approved fare.',
+    features: [],
   },
   {
     role: 'Municipal staff',
-    summary: 'Keep the records every fare depends on.',
-    features: [
-      'Register vehicles, issue permits and print their QR stickers',
-      'Publish fare changes with the Sangguniang Bayan issuance behind them',
-    ],
+    summary: 'Publish fare changes with the Sangguniang Bayan issuance behind them.',
+    features: [],
   },
 ]
 
 const LandingPage = ({ fareRates }: LandingPageProps) => (
   <div className="flex flex-1 flex-col bg-surface text-ink-body">
     <Hero />
-    <BanigSeam />
     <AppSection fareRates={fareRates} />
     <OrdinanceSection />
     <LandingFooter />
@@ -89,8 +73,7 @@ const Container = ({ children, className = '' }: { children: ReactNode; classNam
 const Hero = () => (
   <header className="relative overflow-hidden bg-[#14532D] text-white">
     {/* Tablets: the same tikog strip that edges the sign-in header, kept to
-        the space right of the text. Phones have no such space; the seam
-        below the hero carries the weave there. */}
+        the space right of the text. Phones have no such space, so none. */}
     <div
       aria-hidden="true"
       className="pointer-events-none absolute inset-y-0 right-0 hidden w-[calc(100%-38rem)] bg-[url('/brand/banig-mat.webp')] bg-cover bg-center sm:block lg:hidden"
@@ -145,14 +128,6 @@ const Hero = () => (
   </header>
 )
 
-/** A thin band of woven mat between the forest and the page, like a binding. */
-const BanigSeam = () => (
-  <div
-    aria-hidden="true"
-    className="h-3 border-y-2 border-[#E6D3A8] bg-[url('/brand/banig-mat.webp')] bg-[length:28rem_auto] bg-center sm:h-4"
-  />
-)
-
 const AppSection = ({ fareRates }: LandingPageProps) => (
   <section aria-labelledby="app-heading" className="py-16 lg:py-24">
     <Container className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-16">
@@ -168,18 +143,20 @@ const AppSection = ({ fareRates }: LandingPageProps) => (
 
         <dl className="mt-10 divide-y divide-surface-border border-y border-surface-border">
           {ROLES.map(({ role, summary, features }) => (
-            <div key={role} className="grid gap-3 py-6 sm:grid-cols-[11rem_minmax(0,1fr)] sm:gap-8">
-              <dt className="font-brand text-xl font-extrabold text-[#14532D]">{role}</dt>
+            <div key={role} className="grid gap-2 py-5 sm:grid-cols-[11rem_minmax(0,1fr)] sm:gap-8">
+              <dt className="font-brand text-lg font-extrabold text-[#14532D]">{role}</dt>
               <dd>
                 <p className="font-medium text-ink-strong">{summary}</p>
-                <ul className="mt-3 space-y-2 text-sm leading-relaxed text-ink-muted">
-                  {features.map((feature) => (
-                    <li key={feature} className="flex gap-3">
-                      <span aria-hidden="true" className="mt-2 size-1.5 shrink-0 rounded-full bg-primary" />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
+                {features.length > 0 ? (
+                  <ul className="mt-3 space-y-2 text-sm leading-relaxed text-ink-muted">
+                    {features.map((feature) => (
+                      <li key={feature} className="flex gap-3">
+                        <span aria-hidden="true" className="mt-2 size-1.5 shrink-0 rounded-full bg-primary" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
               </dd>
             </div>
           ))}
@@ -246,7 +223,7 @@ const OrdinanceSection = () => (
   <section
     id="ordinance"
     aria-labelledby="ordinance-heading"
-    className="scroll-mt-4 border-t border-[#E6D3A8] bg-[#FBF6EA] py-16 lg:py-24"
+    className="scroll-mt-4 border-t border-[#E6D3A8] bg-[#FBF6EA] py-14 lg:py-20"
   >
     <Container>
       <div className="max-w-3xl">
@@ -256,8 +233,7 @@ const OrdinanceSection = () => (
         </h2>
         <p className="mt-4 leading-relaxed text-ink-body">
           The ordinance that regulates every tricycle-for-hire and motorcycle-for-hire in Basey.
-          It amends {ORDINANCE_105_FACTS.amends}, and every fare and penalty in this app traces
-          back to it.
+          It amends {ORDINANCE_105_FACTS.amends}, and every fare in this app traces back to it.
         </p>
       </div>
 
@@ -268,44 +244,19 @@ const OrdinanceSection = () => (
         <Fact label="In force" value={ORDINANCE_105_FACTS.effectivity} />
       </dl>
 
-      <ol className="mt-14 divide-y divide-[#E6D3A8] border-y border-[#E6D3A8]">
-        {ORDINANCE_105_ARTICLES.map((article) => (
-          <li key={article.numeral} className="grid gap-4 py-8 md:grid-cols-[6rem_minmax(0,1fr)] md:gap-8">
-            <div className="flex items-baseline gap-3 md:block">
-              <span className="font-brand text-4xl font-extrabold text-[#14532D] md:text-5xl">
-                {article.numeral}
-              </span>
-              <span className="sr-only">Article {article.numeral}</span>
-            </div>
-            <div>
-              <h3 className="font-brand text-xl font-extrabold text-ink-strong">{article.title}</h3>
-              <ul className="mt-4 grid gap-x-10 gap-y-3 lg:grid-cols-2">
-                {article.points.map((point) => (
-                  <li key={point.section} className="flex gap-3 text-sm leading-relaxed">
-                    <SectionTag section={point.section} />
-                    <span>{point.text}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+      <h3 className="mt-12 font-brand text-xl font-extrabold text-ink-strong">
+        What it says about fares
+      </h3>
+      <ul className="mt-5 grid gap-x-10 gap-y-4 border-y border-[#E6D3A8] py-6 lg:grid-cols-2">
+        {ORDINANCE_105_FARE_POINTS.map((point) => (
+          <li key={point.section} className="flex gap-3 text-sm leading-relaxed">
+            <SectionTag section={point.section} />
+            <span>{point.text}</span>
           </li>
         ))}
-      </ol>
+      </ul>
 
-      <div className="mt-14 grid gap-10 lg:grid-cols-2">
-        <AmountTable
-          title="Fees operators pay"
-          caption="Sections 11, 21, 23 and 26"
-          rows={ORDINANCE_105_FEES}
-        />
-        <AmountTable
-          title="Penalties"
-          caption="Sections 28 and 33, the ordinance's only fines"
-          rows={ORDINANCE_105_PENALTIES}
-        />
-      </div>
-
-      <div className="mt-12 flex flex-wrap gap-3">
+      <div className="mt-8 flex flex-wrap gap-3">
         <Link
           href="/ordinance"
           className="rounded-xl bg-[#14532D] px-5 py-3 text-sm font-semibold text-[#F3E6C4] transition hover:bg-[#0f3f22] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14532D]"
@@ -336,44 +287,6 @@ const SectionTag = ({ section }: { section: string }) => (
   <span className="mt-0.5 h-fit shrink-0 whitespace-nowrap rounded-md bg-[#14532D]/10 px-2 py-0.5 text-xs font-semibold tabular-nums text-[#14532D]">
     Sec. {section}
   </span>
-)
-
-const AmountTable = ({
-  title,
-  caption,
-  rows,
-}: {
-  title: string
-  caption: string
-  rows: OrdinanceAmount[]
-}) => (
-  <div>
-    <h3 className="font-brand text-xl font-extrabold text-ink-strong">{title}</h3>
-    <p className="mt-1 text-sm text-ink-muted">{caption}</p>
-    <table className="mt-4 w-full text-left text-sm">
-      <thead className="sr-only">
-        <tr>
-          <th scope="col">Item</th>
-          <th scope="col">Section</th>
-          <th scope="col">Amount</th>
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-[#E6D3A8] border-y border-[#E6D3A8]">
-        {rows.map((row) => (
-          <tr key={`${row.section}-${row.label}`} className="align-top">
-            <td className="py-3 pr-4 text-ink-body">
-              {row.label}
-              {row.note ? <span className="mt-0.5 block text-xs text-ink-muted">{row.note}</span> : null}
-            </td>
-            <td className="hidden whitespace-nowrap py-3 pr-4 text-xs text-ink-muted sm:table-cell">
-              Sec. {row.section}
-            </td>
-            <td className="whitespace-nowrap py-3 text-right font-semibold tabular-nums text-ink-strong">{row.amount}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
 )
 
 const LandingFooter = () => (

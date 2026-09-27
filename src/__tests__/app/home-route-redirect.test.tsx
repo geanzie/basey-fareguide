@@ -62,6 +62,8 @@ describe("home route", () => {
     expect(html).toContain("₱2.50");
     expect(html).toContain('href="/login"');
     expect(html).not.toContain("Announcement");
+    expect(html).not.toContain("Fees operators pay");
+    expect(html).not.toContain("banig-mat.webp')] bg-[length");
   });
 
   it("sends signed-in users to their role home route", async () => {
