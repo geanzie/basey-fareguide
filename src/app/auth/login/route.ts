@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-import { LEGACY_AUTH_ROUTE, getAuthenticatedHomeRoute } from '@/lib/authRoutes'
+import { LOGIN_ROUTE, getAuthenticatedHomeRoute } from '@/lib/authRoutes'
 import {
   applyLoginSessionCookie,
   authenticateLoginAttempt,
 } from '@/lib/login'
 
 function buildAuthRedirectUrl(request: NextRequest, username: string, errorMessage: string): URL {
-  const redirectUrl = new URL(LEGACY_AUTH_ROUTE, request.url)
+  const redirectUrl = new URL(LOGIN_ROUTE, request.url)
   redirectUrl.searchParams.set('error', errorMessage)
 
   if (username.trim()) {

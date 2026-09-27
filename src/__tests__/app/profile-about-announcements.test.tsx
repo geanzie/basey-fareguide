@@ -281,6 +281,6 @@ describe("profile about page announcements", () => {
     await renderAboutPage();
 
     expect(container.textContent).not.toContain("Public Announcements");
-    expect(routerMock.replace).toHaveBeenCalledWith("/login");
+    expect(routerMock.replace).toHaveBeenCalledWith("/auth");
   });
 });

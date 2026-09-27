@@ -1,7 +1,8 @@
 import type { UserRole } from "@/lib/contracts";
 
-export const LOGIN_ROUTE = "/login";
-export const LEGACY_AUTH_ROUTE = "/auth";
+export const LOGIN_ROUTE = "/auth";
+/** Old sign-in path; the page redirects to LOGIN_ROUTE so existing links keep working. */
+export const LEGACY_LOGIN_ROUTE = "/login";
 /** Where social sign-in sends a user who has no account yet. */
 export const SOCIAL_SIGNUP_ROUTE = "/register/social";
 export const POST_LOGOUT_ROUTE = LOGIN_ROUTE;
@@ -21,8 +22,8 @@ export function isAuthRoute(pathname: string | null | undefined): boolean {
   return (
     pathname === LOGIN_ROUTE ||
     pathname.startsWith(`${LOGIN_ROUTE}/`) ||
-    pathname === LEGACY_AUTH_ROUTE ||
-    pathname.startsWith(`${LEGACY_AUTH_ROUTE}/`) ||
+    pathname === LEGACY_LOGIN_ROUTE ||
+    pathname.startsWith(`${LEGACY_LOGIN_ROUTE}/`) ||
     pathname === SOCIAL_SIGNUP_ROUTE
   );
 }

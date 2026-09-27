@@ -1,33 +1,19 @@
-import AuthPage from '@/components/auth/AuthPage'
-import { resolveAuthErrorMessage } from '@/lib/oauth/errorMessages'
-import { listConfiguredProviders } from '@/lib/oauth/providers'
+import { redirect } from 'next/navigation'
 
-interface LoginPageSearchParams {
-  error?: string | string[]
-  username?: string | string[]
-}
+import { LOGIN_ROUTE } from '@/lib/authRoutes'
 
-function getSearchParamValue(value: string | string[] | undefined): string {
-  if (Array.isArray(value)) {
-    return value[0] ?? ''
-  }
-
-  return value ?? ''
-}
-
-export default async function LoginPage({
+// `/auth` is the sign-in page; this path stays so old links and bookmarks still land there.
+export default async function LegacyLoginPage({
   searchParams,
 }: {
-  searchParams?: Promise<LoginPageSearchParams>
+  searchParams?: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const resolvedSearchParams = await searchParams
-  const error = getSearchParamValue(resolvedSearchParams?.error)
-
-  return (
-    <AuthPage
-      initialError={error ? resolveAuthErrorMessage(error) : ''}
-      initialUsername={getSearchParamValue(resolvedSearchParams?.username)}
-      socialProviders={listConfiguredProviders().map(({ slug, label }) => ({ slug, label }))}
-    />
-  )
+  const params = new URLSearchParams()
+  for (const [key, value] of Object.entries((await searchParams) ?? {})) {
+    for (const item of Array.isArray(value) ? value : value === undefined ? [] : [value]) {
+      params.append(key, item)
+    }
+  }
+  const query = params.toString()
+  redirect(query ? `${LOGIN_ROUTE}?${query}` : LOGIN_ROUTE)
 }

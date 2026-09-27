@@ -115,7 +115,7 @@ const Hero = () => (
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
-            href="/login"
+            href="/auth"
             className={`rounded-xl bg-[#F3E6C4] px-5 py-3 text-sm font-semibold text-[#14532D] transition hover:bg-white ${FOCUS_RING}`}
           >
             Sign in or create an account

@@ -191,7 +191,7 @@ describe('auth guard transitions', () => {
     ;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false
   })
 
-  it('redirects unauthenticated users to /login without showing Access Denied', async () => {
+  it('redirects unauthenticated users to /auth without showing Access Denied', async () => {
     sessionResponse = makeJsonResponse({ message: 'Unauthorized' }, 401)
 
     await act(async () => {
@@ -205,7 +205,7 @@ describe('auth guard transitions', () => {
       await flushPromises()
     })
 
-    expect(replaceMock).toHaveBeenCalledWith('/login')
+    expect(replaceMock).toHaveBeenCalledWith('/auth')
     expect(container.textContent).toContain('Redirecting to login')
     expect(container.textContent).not.toContain('Access Denied')
     expect(container.textContent).not.toContain('Protected admin reports')
@@ -227,7 +227,7 @@ describe('auth guard transitions', () => {
 
     expect(container.textContent).toContain('Access Denied')
     expect(container.textContent).not.toContain('Redirecting to login')
-    expect(replaceMock).not.toHaveBeenCalledWith('/login')
+    expect(replaceMock).not.toHaveBeenCalledWith('/auth')
   })
 
   it('renders a neutral loading shell while auth is resolving', async () => {
@@ -277,7 +277,7 @@ describe('auth guard transitions', () => {
       await flushPromises()
     })
 
-    expect(replaceMock).toHaveBeenCalledWith('/login')
+    expect(replaceMock).toHaveBeenCalledWith('/auth')
     expect(container.textContent).toContain('Redirecting to login')
     expect(container.textContent).not.toContain('Protected admin reports')
   })
@@ -374,7 +374,7 @@ describe('auth guard transitions', () => {
       await flushPromises()
     })
 
-    expect(replaceMock).toHaveBeenCalledWith('/login')
+    expect(replaceMock).toHaveBeenCalledWith('/auth')
     expect(refreshMock).toHaveBeenCalled()
   })
 
@@ -418,7 +418,7 @@ describe('auth guard transitions', () => {
       await flushPromises()
     })
 
-    expect(currentPathname).toBe('/login')
+    expect(currentPathname).toBe('/auth')
     expect(container.textContent).toContain('Auth status: unauthenticated')
     expect(container.textContent).not.toContain('Auth status: logging_out')
   })
@@ -440,7 +440,7 @@ describe('auth guard transitions', () => {
       await flushPromises()
     })
 
-    expect(replaceMock).toHaveBeenCalledWith('/login')
+    expect(replaceMock).toHaveBeenCalledWith('/auth')
     expect(refreshMock).toHaveBeenCalled()
   })
 
@@ -463,7 +463,7 @@ describe('auth guard transitions', () => {
       await flushPromises()
     })
 
-    expect(replaceMock).toHaveBeenCalledWith('/login')
+    expect(replaceMock).toHaveBeenCalledWith('/auth')
     expect(container.textContent).toContain('Signing out')
   })
 })

@@ -122,14 +122,14 @@ describe("GET /api/auth/oauth/[provider]/callback", () => {
   it("rejects a state that does not match the cookie", async () => {
     const res = await GET(buildRequest({ state: "tampered-state" }), { params });
 
-    expect(locationOf(res)).toContain("/login?error=oauth_state");
+    expect(locationOf(res)).toContain("/auth?error=oauth_state");
     expect(providersMock.exchangeCodeForProfile).not.toHaveBeenCalled();
   });
 
   it("reports a cancelled sign-in without exchanging the code", async () => {
     const res = await GET(buildRequest({ error: "access_denied" }), { params });
 
-    expect(locationOf(res)).toContain("/login?error=oauth_denied");
+    expect(locationOf(res)).toContain("/auth?error=oauth_denied");
     expect(providersMock.exchangeCodeForProfile).not.toHaveBeenCalled();
   });
 
@@ -139,7 +139,7 @@ describe("GET /api/auth/oauth/[provider]/callback", () => {
 
     const res = await GET(buildRequest(), { params });
 
-    expect(locationOf(res)).toContain("/login?error=oauth_staff_account");
+    expect(locationOf(res)).toContain("/auth?error=oauth_staff_account");
     expect(res.headers.get("set-cookie") ?? "").not.toContain("auth-token=ey");
     expect(prismaMock.userOAuthAccount.create).not.toHaveBeenCalled();
   });
@@ -154,7 +154,7 @@ describe("GET /api/auth/oauth/[provider]/callback", () => {
 
     const res = await GET(buildRequest(), { params });
 
-    expect(locationOf(res)).toContain("/login?error=oauth_unverified_email");
+    expect(locationOf(res)).toContain("/auth?error=oauth_unverified_email");
     expect(prismaMock.userOAuthAccount.create).not.toHaveBeenCalled();
   });
 
@@ -180,7 +180,7 @@ describe("GET /api/auth/oauth/[provider]/callback", () => {
     expect(setCookie).toContain("auth-token=");
     // The hop to /dashboard belongs to a redirect chain that started at the
     // provider, so a strict session cookie would not be sent with it and the
-    // user would land back on /login.
+    // user would land back on /auth.
     expect(setCookie).toContain("SameSite=lax");
   });
 
@@ -200,7 +200,7 @@ describe("GET /api/auth/oauth/[provider]/callback", () => {
     expect(setCookie).toContain("auth-token=");
     // The hop to /dashboard belongs to a redirect chain that started at the
     // provider, so a strict session cookie would not be sent with it and the
-    // user would land back on /login.
+    // user would land back on /auth.
     expect(setCookie).toContain("SameSite=lax");
   });
 
@@ -227,7 +227,7 @@ describe("GET /api/auth/oauth/[provider]/callback", () => {
 
     const res = await GET(buildRequest(), { params });
 
-    expect(locationOf(res)).toContain("/login?error=oauth_no_email");
+    expect(locationOf(res)).toContain("/auth?error=oauth_no_email");
   });
 });
 
