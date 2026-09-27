@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import Link from 'next/link'
 
 import BanigCornerMat from '@/components/BanigCornerMat'
 import BrandMark from '@/components/BrandMark'
@@ -76,10 +77,14 @@ const BrandPanel = () => (
     <BanigPhoto />
     {/* Below lg this column lines up with the centered form underneath it. */}
     <div className="relative mx-auto flex w-full max-w-md flex-col lg:mx-0 lg:max-w-none">
-      <div className="flex items-center gap-3">
+      <Link
+        href="/"
+        aria-label="Basey FareCheck home"
+        className="flex w-fit items-center gap-3 rounded-lg transition-opacity hover:opacity-85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F3E6C4] focus-visible:ring-offset-4 focus-visible:ring-offset-[#14532D]"
+      >
         <BrandMark size="md" tone="dark" />
         <h1 className="font-brand text-xl font-extrabold">Basey FareCheck</h1>
-      </div>
+      </Link>
 
       {/* On lg this block sits in the top 44% of the panel, above the mat. The
           largest size waits for a tall screen as well as a wide one. */}
