@@ -1,0 +1,55 @@
+1
+00:00:00,400 --> 00:00:07,000
+Every day in Basey, thousands of rides on tricycles and habal-habal begin with one question: how much is the fare?
+
+2
+00:00:07,300 --> 00:00:15,000
+Without a shared guide, riders guess, drivers and passengers argue, discounts get skipped, and overcharging leaves no proof.
+
+3
+00:00:15,300 --> 00:00:22,000
+Introducing Basey FareCheck, the municipality's fare guide, built on Municipal Ordinance No. 105, Series of 2023.
+
+4
+00:00:22,300 --> 00:00:29,500
+Pick where you're going. FareCheck measures your trip by real roads, not a straight line,
+
+5
+00:00:29,500 --> 00:00:37,000
+and shows the exact fare approved by the Sangguniang Bayan, the same number your driver sees.
+
+6
+00:00:37,300 --> 00:00:48,000
+Students, seniors and persons with disability get twenty percent off automatically. Scan the permit QR to log your trip, and report overcharging with photo evidence.
+
+7
+00:00:48,300 --> 00:00:55,000
+It's grounded in law. The Local Government Code empowers the Sangguniang Bayan to regulate tricycles for hire,
+
+8
+00:00:55,000 --> 00:01:01,000
+and Ordinance 105, enacted unanimously on July 3, 2023, sets the fares FareCheck applies.
+
+9
+00:01:01,300 --> 00:01:08,000
+Only the Sangguniang Bayan may set fares, after a public hearing. Drivers must charge the approved fare and post it.
+
+10
+00:01:08,000 --> 00:01:14,000
+Discounts follow national law, and your personal data is protected under the Data Privacy Act of 2012.
+
+11
+00:01:14,300 --> 00:01:24,000
+FareCheck enforces the ordinance and never rewrites it: verified routes only, fare changes only with an official issuance, and penalties only where the law provides.
+
+12
+00:01:24,300 --> 00:01:36,000
+For commuters, that means a fair price every time, the discounts you're entitled to, proof of every ride, and a voice when something goes wrong. Drivers get fewer arguments and a record of their trips.
+
+13
+00:01:36,300 --> 00:01:49,000
+For the municipal government: evidence-based enforcement, one shared record, instant town-wide fare updates, transparent franchise actions, and real data for planning.
+
+14
+00:01:49,300 --> 00:01:56,500
+Basey FareCheck. Know the fare before you ride.

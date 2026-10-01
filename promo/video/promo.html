@@ -1,0 +1,541 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Basey FareCheck Promo</title>
+<link href="assets/fonts/fonts.css" rel="stylesheet">
+<!--
+  Basey FareCheck promotional video, one HTML page per frame.
+
+  Every animation is a paused CSS animation on one global clock. seek(t) puts
+  the whole page at second t, and render.mjs screenshots it frame by frame and
+  pipes the frames into ffmpeg. Open this file in a browser to preview: it
+  plays on its own unless loaded with ?render.
+
+  Facts on screen come from the app itself:
+  - src/lib/ordinance105Digest.ts and public/ordinances/municipal-ordinance-no-105.pdf
+  - src/lib/fare/calculator.ts (base fare covers 3 km, ceil per extra km, 20% off)
+  - src/lib/incidents/penaltyRules.ts (only Sec. 33 / 28 / 11 carry fines)
+  The sample fare uses the seeded ₱15 base and ₱3/km rate and is labelled as a
+  sample; the app always shows the rate in force.
+-->
+<style>
+  :root {
+    --forest: #14532D;
+    --forest-deep: #0d3b20;
+    --forest-ink: #0a2e19;
+    --straw: #F3E6C4;
+    --tikog: #E6D3A8;
+    --cream: #FBF6EA;
+    --leaf: #22c55e;
+    --ink: #1c2a22;
+    --muted: #5b6b61;
+    --red: #c2410c;
+    --brand: 'Bricolage Grotesque', 'Inter', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--forest-ink); }
+  body { font-family: 'Inter', system-ui, sans-serif; color: var(--ink); -webkit-font-smoothing: antialiased; }
+
+  #stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; }
+  .scene { position: absolute; inset: 0; opacity: 0;
+    animation: sceneIn .7s ease-out both, sceneOut .7s ease-in forwards; }
+  @keyframes sceneIn { from { opacity: 0 } to { opacity: 1 } }
+  @keyframes sceneOut { from { opacity: 1 } to { opacity: 0 } }
+
+  /* Entrance vocabulary. data-d sets the delay from the scene's start. */
+  [data-d] { animation-duration: .8s; animation-fill-mode: both; animation-timing-function: cubic-bezier(.2,.8,.2,1); }
+  .fu { animation-name: fu; }   @keyframes fu { from { opacity: 0; transform: translateY(40px) } to { opacity: 1; transform: none } }
+  .fi { animation-name: fi; }   @keyframes fi { from { opacity: 0 } to { opacity: 1 } }
+  .pop { animation-name: pop; animation-timing-function: cubic-bezier(.3,1.6,.5,1); }
+  @keyframes pop { from { opacity: 0; transform: scale(.6) } to { opacity: 1; transform: none } }
+  .sl { animation-name: sl; }   @keyframes sl { from { opacity: 0; transform: translateX(-80px) } to { opacity: 1; transform: none } }
+  .sr { animation-name: sr; }   @keyframes sr { from { opacity: 0; transform: translateX(80px) } to { opacity: 1; transform: none } }
+  .zoom { animation-name: zoom; animation-duration: 1.4s !important; }
+  @keyframes zoom { from { opacity: 0; transform: scale(1.15) } to { opacity: 1; transform: none } }
+  .draw { stroke-dasharray: 1; stroke-dashoffset: 1; animation-name: draw; animation-duration: 2.2s !important; animation-timing-function: ease-in-out !important; }
+  @keyframes draw { to { stroke-dashoffset: 0 } }
+  .strike { animation-name: strike; animation-duration: .5s !important; transform-origin: left; }
+  @keyframes strike { from { transform: scaleX(0) } to { transform: scaleX(1) } }
+
+  .brand { font-family: var(--brand); font-weight: 800; letter-spacing: -0.02em; }
+  .eyebrow { font-weight: 700; font-size: 22px; letter-spacing: .22em; text-transform: uppercase; color: var(--tikog); }
+  .eyebrow.dark { color: var(--forest); }
+
+  /* Shared backdrops */
+  .bg-forest { background: radial-gradient(ellipse at 30% 20%, #1d6b3c 0%, var(--forest) 45%, var(--forest-ink) 100%); }
+  .bg-cream { background: var(--cream); }
+  .weave { position: absolute; inset: 0; background: url(assets/banig-mat.webp) center/cover; opacity: .10; mix-blend-mode: luminosity; }
+
+
+  /* ---------- Tricycle ---------- */
+  .tricycle { position: absolute; width: 420px; }
+  /* The symbol is drawn facing left; mirrored it faces right, so the wheels spin
+     in reverse to roll forward. */
+  .tricycle { transform: scaleX(-1); }
+  .wheel { transform-box: fill-box; transform-origin: center; animation: spin .6s linear infinite reverse; }
+  @keyframes spin { to { transform: rotate(360deg) } }
+  .road { position: absolute; left: 0; right: 0; bottom: 0; height: 230px; background: #2b3a31; }
+  .road::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 14px; background: #3e5146; }
+  .lane { position: absolute; top: 110px; left: 0; width: 4000px; height: 10px;
+    background: repeating-linear-gradient(90deg, #E6D3A8 0 90px, transparent 90px 180px);
+    animation: lane 1s linear infinite; }
+  @keyframes lane { to { transform: translateX(-180px) } }
+
+  /* Scene 1 */
+  #s1 .hills { position: absolute; left: 0; right: 0; bottom: 200px; height: 420px; }
+  #s1 .drive { animation-name: drive1; animation-duration: 3s !important; animation-timing-function: cubic-bezier(.15,.7,.3,1) !important; }
+  @keyframes drive1 { from { transform: translateX(-700px) } to { transform: translateX(0) } }
+  #s1 .q1 { position: absolute; left: 160px; top: 140px; font-size: 44px; color: rgba(255,255,255,.85); font-weight: 500; max-width: 1400px; line-height: 1.3; }
+  #s1 .q2 { position: absolute; left: 160px; top: 300px; font-size: 128px; color: var(--straw); line-height: 1; }
+  .bubble { position: absolute; padding: 18px 26px; border-radius: 22px; background: #fff; color: var(--forest);
+    font-family: var(--brand); font-weight: 800; font-size: 52px; box-shadow: 0 12px 30px rgba(0,0,0,.3); }
+  .bubble::after { content: ''; position: absolute; left: 34px; bottom: -18px; border: 12px solid transparent; border-top: 14px solid #fff; border-left-width: 6px; }
+
+  /* Scene 2 */
+  #s2 h2 { position: absolute; left: 160px; top: 120px; font-size: 84px; color: var(--forest); max-width: 1400px; line-height: 1.05; }
+  .problems { position: absolute; left: 160px; right: 160px; top: 360px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 32px; }
+  .pcard { background: #fff; border-radius: 26px; padding: 40px 34px; min-height: 380px; box-shadow: 0 18px 50px rgba(20, 83, 45, .12); border-top: 8px solid var(--red); }
+  .pcard .ic { width: 96px; height: 96px; border-radius: 24px; background: #fff1e8; display: grid; place-items: center; margin-bottom: 30px; }
+  .pcard h3 { font-family: var(--brand); font-weight: 800; font-size: 40px; color: var(--ink); line-height: 1.1; }
+  .pcard p { margin-top: 16px; font-size: 25px; color: var(--muted); line-height: 1.4; }
+
+  /* Scene 3 */
+  #s3 .disc { position: absolute; left: 50%; top: 50%; width: 1500px; height: 1500px; margin: -750px 0 0 -750px; border-radius: 50%;
+    background: url(assets/banig-disc.webp) center/cover; opacity: .16; animation: turn 60s linear infinite; }
+  @keyframes turn { to { transform: rotate(360deg) } }
+  #s3 .center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding-bottom: 80px; }
+  #s3 .logo { width: 220px; height: 220px; }
+  #s3 .word { font-size: 150px; color: #fff; margin-top: 18px; line-height: 1; }
+  #s3 .tag { font-size: 64px; color: var(--straw); margin-top: 26px; }
+  #s3 .sub { font-size: 32px; color: rgba(255,255,255,.82); margin-top: 26px; max-width: 1200px; line-height: 1.4; }
+
+  /* Scene 4 — phone */
+  .phone { position: absolute; width: 470px; height: 940px; border-radius: 64px; background: #0b0f0d; padding: 18px;
+    box-shadow: 0 40px 90px rgba(0,0,0,.45), inset 0 0 0 3px #2a332e; }
+  .screen { width: 100%; height: 100%; border-radius: 48px; overflow: hidden; background: var(--cream); position: relative; }
+  .appbar { height: 128px; background: var(--forest); color: #fff; display: flex; align-items: flex-end; gap: 14px; padding: 0 28px 20px; }
+  .appbar img { width: 46px; height: 46px; }
+  .appbar span { font-family: var(--brand); font-weight: 800; font-size: 28px; }
+  .field { margin: 16px 22px 0; background: #fff; border-radius: 18px; padding: 14px 18px; box-shadow: 0 4px 14px rgba(0,0,0,.06); }
+  .field small { display: block; font-size: 15px; color: var(--muted); font-weight: 600; }
+  .field b { font-size: 21px; color: var(--ink); }
+  .map { margin: 16px 22px 0; height: 330px; border-radius: 18px; overflow: hidden; background: #e9efe3; position: relative; }
+  .farecard { margin: 16px 22px 0; background: var(--forest); color: #fff; border-radius: 22px; padding: 20px 24px; }
+  .farecard small { color: var(--tikog); font-size: 16px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+  .farecard .amt { font-family: var(--brand); font-weight: 800; font-size: 72px; color: var(--straw); line-height: 1.05; }
+  .farecard .meta { font-size: 17px; color: rgba(255,255,255,.8); }
+
+  .steps { position: absolute; left: 820px; top: 90px; width: 980px; }
+  .steps h2 { font-size: 70px; color: var(--forest); line-height: 1.05; }
+  .step { display: flex; gap: 30px; align-items: flex-start; margin-top: 34px; }
+  .step .n { flex: none; width: 76px; height: 76px; border-radius: 50%; background: var(--forest); color: var(--straw);
+    font-family: var(--brand); font-weight: 800; font-size: 40px; display: grid; place-items: center; }
+  .step h3 { font-family: var(--brand); font-weight: 800; font-size: 42px; color: var(--ink); }
+  .step p { font-size: 27px; color: var(--muted); margin-top: 6px; line-height: 1.4; }
+  .formula { margin-top: 40px; padding: 24px 30px; border-radius: 20px; background: #fff; border: 2px dashed #b9c9bd; font-size: 26px; color: var(--ink); line-height: 1.5; }
+  .formula b { color: var(--forest); }
+  .formula small { display: block; color: var(--muted); font-size: 20px; margin-top: 6px; }
+
+  /* Scene 5 */
+  #s5 h2 { position: absolute; left: 160px; top: 110px; font-size: 80px; color: #fff; }
+  .tiles { position: absolute; left: 160px; right: 160px; top: 290px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 36px; }
+  .tile { background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.14); border-radius: 30px; padding: 38px 42px; display: flex; gap: 34px; align-items: center; min-height: 270px; }
+  .tile .ic { flex: none; width: 130px; height: 130px; border-radius: 30px; background: var(--straw); display: grid; place-items: center; }
+  .tile h3 { font-family: var(--brand); font-weight: 800; font-size: 44px; color: var(--straw); line-height: 1.1; }
+  .tile p { font-size: 26px; color: rgba(255,255,255,.82); margin-top: 10px; line-height: 1.4; }
+  .disc-demo { display: inline-flex; align-items: center; gap: 18px; margin-top: 14px; font-family: var(--brand); font-weight: 800; font-size: 40px; }
+  .disc-demo .old { color: rgba(255,255,255,.55); position: relative; }
+  .disc-demo .old i { position: absolute; left: -4px; right: -4px; top: 52%; height: 4px; background: #f87171; display: block; }
+  .disc-demo .new { color: #fff; }
+
+  /* Scene 6 — legal basis */
+  .doc { position: absolute; width: 640px; box-shadow: 0 30px 80px rgba(0,0,0,.45); border-radius: 6px; background: #fff; }
+  #s6 .doc.back { left: 250px; top: 120px; transform: rotate(-6deg); }
+  #s6 .doc.front { left: 170px; top: 90px; }
+  #s6 .doc.front.zoom { transform-origin: center; }
+  .chain { position: absolute; left: 960px; top: 120px; width: 820px; }
+  .chain h2 { font-size: 72px; color: #fff; line-height: 1.05; }
+  .link { display: flex; align-items: center; gap: 26px; margin-top: 22px; background: rgba(255,255,255,.08); border-left: 8px solid var(--straw); border-radius: 0 20px 20px 0; padding: 22px 28px; }
+  .link small { display: block; font-size: 20px; color: var(--tikog); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+  .link b { display: block; font-family: var(--brand); font-weight: 800; font-size: 34px; color: #fff; margin-top: 4px; line-height: 1.15; }
+  .link.app { background: var(--straw); border-left-color: #fff; }
+  .link.app small { color: var(--forest); } .link.app b { color: var(--forest); }
+  .arrow { margin: 6px 0 0 34px; color: var(--straw); font-size: 26px; line-height: 1; }
+  .facts { position: absolute; left: 160px; right: 160px; bottom: 150px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; }
+  .fact { border-left: 4px solid var(--straw); padding-left: 22px; }
+  .fact small { font-size: 20px; color: var(--tikog); }
+  .fact b { display: block; font-size: 30px; color: #fff; margin-top: 4px; font-weight: 600; }
+
+  /* Scene 7 — sections */
+  #s7 h2 { position: absolute; left: 160px; top: 100px; font-size: 76px; color: var(--forest); }
+  .secs { position: absolute; left: 160px; width: 1000px; top: 240px; }
+  .sec { display: flex; gap: 26px; align-items: flex-start; padding: 22px 0; border-bottom: 2px solid #eadfc3; }
+  .sec .tag { flex: none; width: 190px; text-align: center; padding: 8px 14px; border-radius: 12px; background: rgba(20,83,45,.1); color: var(--forest); font-weight: 700; font-size: 26px; }
+  .sec span { font-size: 30px; color: var(--ink); line-height: 1.35; }
+  .national { position: absolute; right: 160px; top: 240px; width: 560px; }
+  .ncard { background: #fff; border-radius: 24px; padding: 28px 32px; box-shadow: 0 14px 40px rgba(20,83,45,.1); margin-bottom: 26px; }
+  .ncard small { font-size: 19px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--forest); }
+  .ncard ul { list-style: none; margin-top: 12px; }
+  .ncard li { font-size: 25px; line-height: 1.45; color: var(--ink); padding: 4px 0; }
+  .ncard li b { color: var(--forest); }
+
+  /* Scene 8 — guardrails */
+  #s8 h2 { position: absolute; left: 160px; top: 120px; font-size: 80px; color: #fff; max-width: 1500px; line-height: 1.05; }
+  .guards { position: absolute; left: 160px; right: 160px; top: 380px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 36px; }
+  .guard { background: var(--cream); border-radius: 28px; padding: 40px 36px; min-height: 420px; }
+  .guard .ic { width: 100px; height: 100px; border-radius: 50%; background: var(--forest); display: grid; place-items: center; margin-bottom: 28px; }
+  .guard h3 { font-family: var(--brand); font-weight: 800; font-size: 40px; color: var(--forest); line-height: 1.1; }
+  .guard p { font-size: 25px; color: var(--muted); margin-top: 14px; line-height: 1.45; }
+
+  /* Scenes 9 & 10 — advantages */
+  .adv { position: absolute; inset: 0; display: grid; grid-template-columns: 640px 1fr; }
+  .adv .side { position: relative; padding: 130px 70px 0 160px; overflow: hidden; }
+  .adv .side h2 { font-size: 80px; line-height: 1.02; position: relative; }
+  .adv .side .eyebrow { position: relative; margin-bottom: 26px; }
+  .adv .list { padding: 120px 160px 0 90px; }
+  .ben { display: flex; gap: 28px; align-items: flex-start; margin-bottom: 34px; }
+  .ben .ck { flex: none; width: 64px; height: 64px; border-radius: 18px; display: grid; place-items: center; }
+  .ben h3 { font-family: var(--brand); font-weight: 800; font-size: 40px; line-height: 1.1; }
+  .ben p { font-size: 25px; margin-top: 6px; line-height: 1.4; }
+  #s9 .side { background: var(--forest); color: var(--straw); }
+  #s9 .list { background: var(--cream); }
+  #s9 .ck { background: var(--forest); } #s9 .ben h3 { color: var(--forest); } #s9 .ben p { color: var(--muted); }
+  #s10 .side { background: var(--straw); color: var(--forest); }
+  #s10 .list { background: var(--forest-ink); }
+  #s10 .ck { background: var(--straw); } #s10 .ben h3 { color: var(--straw); } #s10 .ben p { color: rgba(255,255,255,.78); }
+  .roles { position: absolute; left: 160px; bottom: 150px; display: grid; grid-template-columns: repeat(2, 210px); gap: 18px; }
+  .role { border-radius: 18px; padding: 18px; text-align: center; font-weight: 700; font-size: 21px; white-space: nowrap; background: rgba(20,83,45,.12); color: var(--forest); }
+  .driver-note { position: absolute; left: 160px; right: 70px; bottom: 150px; border-radius: 22px; padding: 26px 28px; background: rgba(255,255,255,.08); color: #fff; font-size: 25px; line-height: 1.45; }
+  .driver-note b { color: var(--straw); font-family: var(--brand); font-size: 32px; display: block; margin-bottom: 6px; }
+
+  /* Scene 11 */
+  #s11 .center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; padding-top: 130px; text-align: center; }
+  #s11 .logo { width: 170px; height: 170px; }
+  #s11 .tag { font-size: 124px; color: var(--straw); margin-top: 24px; line-height: 1.02; }
+  #s11 .word { font-size: 58px; color: #fff; margin-top: 26px; }
+  #s11 .who { font-size: 28px; color: rgba(255,255,255,.75); margin-top: 18px; }
+  #s11 .drive { animation-name: drive2; animation-duration: 5s !important; animation-timing-function: cubic-bezier(.5,0,.8,.6) !important; }
+  @keyframes drive2 { from { transform: translateX(0) } to { transform: translateX(2300px) } }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <!-- Side-view tricycle: motorcycle with a covered sidecar, as in Basey. -->
+    <symbol id="trike" viewBox="0 0 420 260">
+      <ellipse cx="210" cy="248" rx="200" ry="10" fill="rgba(0,0,0,.28)"/>
+      <!-- sidecar cab -->
+      <path d="M150 70 h220 q20 0 20 20 v110 q0 12 -12 12 H150 Z" fill="#14532D"/>
+      <path d="M140 58 h240 q16 0 16 14 v6 H134 v-6 q0 -14 6 -14z" fill="#E6D3A8"/>
+      <rect x="170" y="92" width="88" height="62" rx="10" fill="#cfe7f5" opacity=".9"/>
+      <rect x="270" y="92" width="96" height="62" rx="10" fill="#cfe7f5" opacity=".9"/>
+      <rect x="150" y="166" width="230" height="10" fill="#F3E6C4"/>
+      <text transform="matrix(-1 0 0 1 530 0)" x="265" y="202" text-anchor="middle" font-family="Bricolage Grotesque, sans-serif" font-weight="800" font-size="22" fill="#F3E6C4">BASEY</text>
+      <!-- motorcycle -->
+      <path d="M40 176 q10 -40 60 -44 l54 0 l0 40 l-90 20 z" fill="#b91c1c"/>
+      <path d="M58 130 l-12 -40 l24 -4" stroke="#1f2937" stroke-width="8" fill="none" stroke-linecap="round"/>
+      <rect x="96" y="120" width="56" height="14" rx="7" fill="#111827"/>
+      <!-- rider -->
+      <circle cx="118" cy="56" r="20" fill="#7c4a2d"/>
+      <path d="M98 50 q20 -26 42 0 z" fill="#111827"/>
+      <path d="M104 78 q14 -6 30 0 l8 46 h-44 z" fill="#2563eb"/>
+      <path d="M104 92 l-44 6" stroke="#2563eb" stroke-width="14" stroke-linecap="round"/>
+      <!-- wheels -->
+      <g class="wheel"><circle cx="70" cy="212" r="36" fill="#111827"/><circle cx="70" cy="212" r="16" fill="#9ca3af"/><rect x="66" y="180" width="8" height="64" fill="#4b5563"/></g>
+      <g class="wheel"><circle cx="200" cy="212" r="36" fill="#111827"/><circle cx="200" cy="212" r="16" fill="#9ca3af"/><rect x="196" y="180" width="8" height="64" fill="#4b5563"/></g>
+      <g class="wheel"><circle cx="340" cy="212" r="30" fill="#111827"/><circle cx="340" cy="212" r="13" fill="#9ca3af"/><rect x="337" y="186" width="6" height="52" fill="#4b5563"/></g>
+    </symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  </defs>
+</svg>
+
+<div id="stage">
+
+  <!-- 1. Hook -->
+  <section class="scene bg-forest" id="s1" data-start="0" data-end="7.5">
+    <svg class="hills" viewBox="0 0 1920 420" preserveAspectRatio="none">
+      <path d="M0 300 Q300 120 640 260 T1300 200 T1920 240 V420 H0Z" fill="#0f4425"/>
+      <path d="M0 360 Q420 230 900 330 T1920 300 V420 H0Z" fill="#0b381e"/>
+      <g fill="#0a2e19"><path d="M1500 230 l8 -90 l8 90z"/><path d="M1480 150 q28 -30 56 0 q-28 -10 -56 0z"/><path d="M1650 250 l8 -110 l8 110z"/><path d="M1626 150 q32 -34 64 0 q-32 -12 -64 0z"/></g>
+    </svg>
+    <div class="road"><div class="lane"></div></div>
+    <p class="q1 fu" data-d="0.6">Every day in Basey, thousands of rides on tricycles and habal-habal begin with one question:</p>
+    <h1 class="q2 brand fu" data-d="2.6">How much is the fare?</h1>
+    <div class="drive" data-d="0.2" style="position:absolute; left:1180px; bottom:150px; width:520px;">
+      <svg class="tricycle" style="position:relative; width:520px" viewBox="0 0 420 260"><use href="#trike"/></svg>
+      <div class="bubble pop" data-d="3.6" style="left:-60px; top:-110px;">₱ ??</div>
+      <div class="bubble pop" data-d="4.2" style="left:250px; top:-150px; font-size:40px;">₱ ??</div>
+    </div>
+  </section>
+
+  <!-- 2. The problem -->
+  <section class="scene bg-cream" id="s2" data-start="7" data-end="15.5">
+    <p class="eyebrow dark fu" data-d="0.3" style="position:absolute; left:160px; top:80px;">The problem</p>
+    <h2 class="brand fu" data-d="0.5">Without a shared fare guide, every ride is a negotiation.</h2>
+    <div class="problems">
+      <div class="pcard fu" data-d="1.4">
+        <div class="ic"><svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#c2410c" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.6v.6"/><circle cx="12" cy="17.2" r=".6" fill="#c2410c"/></svg></div>
+        <h3>Guessing the price</h3><p>Riders, visitors and first-timers don't know what's fair.</p>
+      </div>
+      <div class="pcard fu" data-d="2.0">
+        <div class="ic"><svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#c2410c" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h11v8H8l-4 3z"/><path d="M15 9h5v8l-3-2h-6v-2"/></svg></div>
+        <h3>Arguments at drop-off</h3><p>Disputes over the amount, with no reference both sides trust.</p>
+      </div>
+      <div class="pcard fu" data-d="2.6">
+        <div class="ic"><svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#c2410c" stroke-width="2.2" stroke-linecap="round"><path d="M20 12l-8 8-8-8V4h8z"/><circle cx="8" cy="8" r="1.4"/><path d="M3 21L21 3"/></svg></div>
+        <h3>Discounts skipped</h3><p>Students, seniors and PWDs aren't always given what the law grants.</p>
+      </div>
+      <div class="pcard fu" data-d="3.2">
+        <div class="ic"><svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#c2410c" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5"/><path d="M9 13l6 6M15 13l-6 6"/></svg></div>
+        <h3>No record, no proof</h3><p>Overcharging is hard to report and harder to act on.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. Brand reveal -->
+  <section class="scene bg-forest" id="s3" data-start="15" data-end="22.5">
+    <div class="disc"></div>
+    <div class="center">
+      <img class="logo pop" data-d="0.4" src="assets/logo-mark-on-dark.svg" alt="">
+      <div class="word brand fu" data-d="1.0">Basey FareCheck</div>
+      <div class="tag brand fu" data-d="1.8">Know the fare before you ride.</div>
+      <div class="sub fu" data-d="2.6">The Municipality of Basey's fare guide for tricycles and habal-habal, built on Municipal Ordinance No. 105, Series of 2023.</div>
+    </div>
+  </section>
+
+  <!-- 4. How it works -->
+  <section class="scene bg-cream" id="s4" data-start="22" data-end="37.5">
+    <div class="phone sl" data-d="0.2" style="left:200px; top:70px;">
+      <div class="screen">
+        <div class="appbar"><img src="assets/logo-mark-on-dark.svg" alt=""><span>Fare Calculator</span></div>
+        <div class="field fi" data-d="1.2"><small>FROM</small><b>Basey Public Market</b></div>
+        <div class="field fi" data-d="1.8"><small>TO</small><b>Brgy. Buenavista</b></div>
+        <div class="map fi" data-d="2.6">
+          <svg width="100%" height="100%" viewBox="0 0 386 330">
+            <rect width="386" height="330" fill="#e9efe3"/>
+            <path d="M0 260 Q120 220 180 250 T386 210" stroke="#a7d3e8" stroke-width="26" fill="none"/>
+            <g stroke="#fff" stroke-width="10" fill="none" stroke-linecap="round">
+              <path d="M40 40 L120 90 L150 180 L250 200 L340 120"/><path d="M120 90 L260 60 L340 120"/><path d="M20 160 L150 180"/><path d="M250 200 L300 300"/>
+            </g>
+            <path class="draw" data-d="3.0" pathLength="1" d="M40 40 L120 90 L150 180 L250 200 L340 120" stroke="#14532D" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="40" cy="40" r="12" fill="#14532D" stroke="#fff" stroke-width="4"/>
+            <g class="pop" data-d="5.0"><circle cx="340" cy="120" r="14" fill="#c2410c" stroke="#fff" stroke-width="4"/></g>
+          </svg>
+        </div>
+        <div class="farecard fu" data-d="5.4">
+          <small>Official fare · Regular</small>
+          <div class="amt" id="fareCount">₱0.00</div>
+          <div class="meta">5.2 km by road · Ordinance No. 105</div>
+        </div>
+      </div>
+    </div>
+    <div class="steps">
+      <p class="eyebrow dark fu" data-d="0.4">For commuters</p>
+      <h2 class="brand fu" data-d="0.6">Check the fare in three taps.</h2>
+      <div class="step sr" data-d="1.4"><div class="n">1</div><div><h3>Pick where you're going</h3><p>Choose your pick-up and drop-off from Basey's barangays and landmarks.</p></div></div>
+      <div class="step sr" data-d="3.0"><div class="n">2</div><div><h3>Measured by road, not a straight line</h3><p>Routes are verified with real road maps. An unverified route is never priced as official.</p></div></div>
+      <div class="step sr" data-d="5.0"><div class="n">3</div><div><h3>See the approved fare</h3><p>The exact fare set by the Sangguniang Bayan — the same number your driver sees.</p></div></div>
+      <div class="formula fu" data-d="7.5">
+        <b>₱15</b> base fare covers the first <b>3 km</b> &nbsp;+&nbsp; <b>₱3</b> for each km after, rounded up<br>
+        5.2 km → ₱15 + (3 × ₱3) = <b>₱24.00</b>
+        <small>Sample computation. The app always shows the rate in force today.</small>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. More for riders -->
+  <section class="scene bg-forest" id="s5" data-start="37" data-end="48.5">
+    <div class="weave"></div>
+    <h2 class="brand fu" data-d="0.3">Built for every rider.</h2>
+    <div class="tiles">
+      <div class="tile fu" data-d="1.0">
+        <div class="ic"><svg width="70" height="70" viewBox="0 0 24 24" fill="none" stroke="#14532D" stroke-width="2.2" stroke-linecap="round"><path d="M19 5L5 19"/><circle cx="7" cy="7" r="2.5"/><circle cx="17" cy="17" r="2.5"/></svg></div>
+        <div><h3>20% off, automatically</h3><p>For students, senior citizens and persons with disability.</p>
+          <div class="disc-demo"><span class="old">₱24.00<i class="strike" data-d="2.4"></i></span><span class="new pop" data-d="2.8">₱19.20</span></div></div>
+      </div>
+      <div class="tile fu" data-d="1.6">
+        <div class="ic"><svg width="70" height="70" viewBox="0 0 24 24" fill="#14532D"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="5" y="5" width="3" height="3" fill="#F3E6C4"/><rect x="16" y="5" width="3" height="3" fill="#F3E6C4"/><rect x="5" y="16" width="3" height="3" fill="#F3E6C4"/><rect x="14" y="14" width="3" height="3"/><rect x="18" y="18" width="3" height="3"/><rect x="18" y="14" width="3" height="2"/><rect x="14" y="18" width="2" height="3"/></svg></div>
+        <div><h3>Scan the permit QR</h3><p>Every franchised unit carries a sticker. Scan it to confirm the vehicle and log your trip and fare.</p></div>
+      </div>
+      <div class="tile fu" data-d="2.2">
+        <div class="ic"><svg width="70" height="70" viewBox="0 0 24 24" fill="none" stroke="#14532D" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V4h12l-2 4 2 4H4"/><circle cx="18" cy="18" r="3"/><path d="M18 16.5v1.5l1 1"/></svg></div>
+        <div><h3>Report overcharging</h3><p>File a report from your trip, with photos as evidence, straight to municipal enforcers.</p></div>
+      </div>
+      <div class="tile fu" data-d="2.8">
+        <div class="ic"><svg width="70" height="70" viewBox="0 0 24 24" fill="none" stroke="#14532D" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8.5a15 15 0 0 1 20 0"/><path d="M5.5 12a10 10 0 0 1 13 0"/><path d="M9 15.5a5 5 0 0 1 6 0"/><circle cx="12" cy="19" r="1.2" fill="#14532D"/><path d="M3 3l18 18"/></svg></div>
+        <div><h3>Works with weak signal</h3><p>Fares and measured routes you've checked are saved on your phone for rides out of coverage.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. Legal basis -->
+  <section class="scene bg-forest" id="s6" data-start="48" data-end="61.5">
+    <img class="doc back fi" data-d="0.4" src="assets/ordinance-p5-05.png" alt="">
+    <img class="doc front zoom" data-d="0.2" src="assets/ordinance-p1-01.png" alt="Municipal Ordinance No. 105, page 1">
+    <div class="chain">
+      <p class="eyebrow fu" data-d="0.6">Grounded in law</p>
+      <h2 class="brand fu" data-d="0.8">Every fare traces back to the ordinance.</h2>
+      <div class="link sr" data-d="2.0"><div><small>Republic Act No. 7160</small><b>Local Government Code of 1991</b></div></div>
+      <div class="arrow fi" data-d="2.6">▼ empowers the Sangguniang Bayan to regulate tricycles</div>
+      <div class="link sr" data-d="3.4"><div><small>Sangguniang Bayan of Basey · DILG guidelines</small><b>Municipal Ordinance No. 105, Series of 2023</b></div></div>
+      <div class="arrow fi" data-d="4.2">▼ sets the fare and the rules drivers follow</div>
+      <div class="link app sr" data-d="5.0"><div><small>Applied in real time</small><b>Basey FareCheck</b></div></div>
+    </div>
+    <div class="facts" style="left:960px; right:140px; bottom:110px; grid-template-columns: 1.5fr 1fr 1fr;">
+      <div class="fact fu" data-d="6.4"><small>Sponsored by</small><b>Hon. Ariel P. Duran</b></div>
+      <div class="fact fu" data-d="6.8"><small>Enacted</small><b>3 July 2023</b></div>
+      <div class="fact fu" data-d="7.2"><small>Vote</small><b>Unanimous</b></div>
+    </div>
+  </section>
+
+  <!-- 7. What the law says -->
+  <section class="scene bg-cream" id="s7" data-start="61" data-end="74.5">
+    <p class="eyebrow dark fu" data-d="0.2" style="position:absolute; left:160px; top:60px;">Municipal Ordinance No. 105</p>
+    <h2 class="brand fu" data-d="0.4">What the law says about fares</h2>
+    <div class="secs">
+      <div class="sec sl" data-d="1.2"><span class="tag">Sec. 2</span><span>Covers every tricycle and motorcycle for hire operating in Basey.</span></div>
+      <div class="sec sl" data-d="1.9"><span class="tag">Sec. 7</span><span>Only the Sangguniang Bayan sets and adjusts fares — after a public hearing.</span></div>
+      <div class="sec sl" data-d="2.6"><span class="tag">Sec. 24</span><span>Fares are per passenger, with a discount for students, seniors and PWDs.</span></div>
+      <div class="sec sl" data-d="3.3"><span class="tag">Sec. 19(k)</span><span>Drivers charge the approved fare — nothing more.</span></div>
+      <div class="sec sl" data-d="4.0"><span class="tag">Sec. 19(n)</span><span>The approved fare is posted where passengers can see it.</span></div>
+      <div class="sec sl" data-d="4.7"><span class="tag">Sec. 29–30</span><span>Violations are grounds to cancel the franchise, decided by the Sangguniang Bayan.</span></div>
+    </div>
+    <div class="national">
+      <div class="ncard sr" data-d="6.0"><small>Discounts backed by national law</small>
+        <ul><li><b>RA 11314</b> · Student Fare Discount Act</li><li><b>RA 9994</b> · Expanded Senior Citizens Act</li><li><b>RA 10754</b> · Benefits for Persons with Disability</li></ul></div>
+      <div class="ncard sr" data-d="7.0"><small>Your data, protected</small>
+        <ul><li><b>RA 10173</b> · Data Privacy Act of 2012 — IDs and evidence photos kept in private storage.</li></ul></div>
+    </div>
+  </section>
+
+  <!-- 8. Guardrails -->
+  <section class="scene bg-forest" id="s8" data-start="74" data-end="84.5">
+    <div class="weave"></div>
+    <p class="eyebrow fu" data-d="0.2" style="position:absolute; left:160px; top:70px;">Built to stay lawful</p>
+    <h2 class="brand fu" data-d="0.4">The app enforces the ordinance — it never rewrites it.</h2>
+    <div class="guards">
+      <div class="guard fu" data-d="1.4">
+        <div class="ic"><svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="#F3E6C4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><path d="M9 10l2 2 4-4"/></svg></div>
+        <h3>Verified routes only</h3><p>If a road route can't be confirmed, no official fare is issued. No guesses on the record.</p>
+      </div>
+      <div class="guard fu" data-d="2.2">
+        <div class="ic"><svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="#F3E6C4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5"/><path d="M9 13h7M9 17h5"/></svg></div>
+        <h3>Fare changes need an issuance</h3><p>Staff publish a new rate only with the Sangguniang Bayan document behind it, on its effective date.</p>
+      </div>
+      <div class="guard fu" data-d="3.0">
+        <div class="ic"><svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="#F3E6C4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M5 7h14"/><path d="M5 7l-3 7a3 3 0 0 0 6 0z"/><path d="M19 7l-3 7a3 3 0 0 0 6 0z"/></svg></div>
+        <h3>Penalties cite their section</h3><p>Fines only where the ordinance authorises one. Overcharging goes to the franchise process under Sec. 29–30.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9. Advantages for commuters -->
+  <section class="scene" id="s9" data-start="84" data-end="96.5">
+    <div class="adv">
+      <div class="side">
+        <div class="weave" style="opacity:.14"></div>
+        <p class="eyebrow fu" data-d="0.2">Advantages</p>
+        <h2 class="brand fu" data-d="0.4">For commuters</h2>
+        <div class="driver-note fu" data-d="7.0"><b>And for drivers</b>A clear fare to point to, fewer arguments, and a record of every trip they drive.</div>
+      </div>
+      <div class="list">
+        <div class="ben sr" data-d="1.2"><div class="ck"><svg width="36" height="36" style="color:#F3E6C4"><use href="#i-check"/></svg></div><div><h3>A fair price, every time</h3><p>No haggling. The fare is set by law and the same for everyone.</p></div></div>
+        <div class="ben sr" data-d="2.2"><div class="ck"><svg width="36" height="36" style="color:#F3E6C4"><use href="#i-check"/></svg></div><div><h3>Discounts you're entitled to</h3><p>The 20% student, senior and PWD discount is built into the fare.</p></div></div>
+        <div class="ben sr" data-d="3.2"><div class="ck"><svg width="36" height="36" style="color:#F3E6C4"><use href="#i-check"/></svg></div><div><h3>Proof of every ride</h3><p>Your trip history shows the vehicle, the route and the fare paid.</p></div></div>
+        <div class="ben sr" data-d="4.2"><div class="ck"><svg width="36" height="36" style="color:#F3E6C4"><use href="#i-check"/></svg></div><div><h3>A voice when overcharged</h3><p>Reports with evidence reach enforcers, not a dead end.</p></div></div>
+        <div class="ben sr" data-d="5.2"><div class="ck"><svg width="36" height="36" style="color:#F3E6C4"><use href="#i-check"/></svg></div><div><h3>Confidence for visitors</h3><p>Tourists and first-time riders know the fare before they board.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10. Advantages for government -->
+  <section class="scene" id="s10" data-start="96" data-end="109.5">
+    <div class="adv">
+      <div class="side">
+        <p class="eyebrow dark fu" data-d="0.2">Advantages</p>
+        <h2 class="brand fu" data-d="0.4">For the municipal government</h2>
+        <p class="fu" data-d="0.8" style="position:relative; margin-top:26px; font-size:27px; line-height:1.45; color:#3d5a45;">Everyone signs in to their own view of the same records.</p>
+        <div class="roles">
+          <div class="role pop" data-d="6.2">Riders</div><div class="role pop" data-d="6.5">Drivers</div>
+          <div class="role pop" data-d="6.8">Enforcers</div><div class="role pop" data-d="7.1">Municipal staff</div>
+        </div>
+      </div>
+      <div class="list">
+        <div class="ben sr" data-d="1.0"><div class="ck"><svg width="36" height="36" style="color:#14532D"><use href="#i-check"/></svg></div><div><h3>Ordinance 105, enforced with evidence</h3><p>Reports arrive with trip data and photos, ready for enforcer follow-up.</p></div></div>
+        <div class="ben sr" data-d="2.0"><div class="ck"><svg width="36" height="36" style="color:#14532D"><use href="#i-check"/></svg></div><div><h3>One record for everyone</h3><p>The fare a rider sees is the fare a driver charges and an enforcer checks.</p></div></div>
+        <div class="ben sr" data-d="3.0"><div class="ck"><svg width="36" height="36" style="color:#14532D"><use href="#i-check"/></svg></div><div><h3>Fare updates, town-wide, on the effective date</h3><p>No reprinting fare matrices. A new rate reaches every phone at once.</p></div></div>
+        <div class="ben sr" data-d="4.0"><div class="ck"><svg width="36" height="36" style="color:#14532D"><use href="#i-check"/></svg></div><div><h3>Transparent, auditable franchise actions</h3><p>Every ticket and referral cites the section it rests on.</p></div></div>
+        <div class="ben sr" data-d="5.0"><div class="ck"><svg width="36" height="36" style="color:#14532D"><use href="#i-check"/></svg></div><div><h3>Data for better transport planning</h3><p>Trip and route records show where Basey actually travels.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11. Call to action -->
+  <section class="scene bg-forest" id="s11" data-start="109" data-end="121">
+    <div class="road"><div class="lane"></div></div>
+    <div class="center">
+      <img class="logo pop" data-d="0.3" src="assets/logo-mark-on-dark.svg" alt="">
+      <div class="tag brand fu" data-d="0.9">Know the fare<br>before you ride.</div>
+      <div class="word brand fu" data-d="1.8">Basey FareCheck</div>
+      <div class="who fu" data-d="2.4">Municipality of Basey, Samar · Municipal Ordinance No. 105, Series of 2023</div>
+    </div>
+    <div class="drive" data-d="4.0" style="position:absolute; left:-420px; bottom:150px; width:420px;">
+      <svg class="tricycle" style="position:relative" viewBox="0 0 420 260"><use href="#trike"/></svg>
+    </div>
+  </section>
+
+</div>
+
+<script>
+  // Narration. render.mjs writes it to captions.srt, which rides in the MP4 as a
+  // subtitle track you can switch on, and doubles as the voice-over script.
+  window.NARRATION = [
+    [0.4, 7.0, "Every day in Basey, thousands of rides on tricycles and habal-habal begin with one question: how much is the fare?"],
+    [7.3, 15.0, "Without a shared guide, riders guess, drivers and passengers argue, discounts get skipped, and overcharging leaves no proof."],
+    [15.3, 22.0, "Introducing Basey FareCheck, the municipality's fare guide, built on Municipal Ordinance No. 105, Series of 2023."],
+    [22.3, 29.5, "Pick where you're going. FareCheck measures your trip by real roads, not a straight line,"],
+    [29.5, 37.0, "and shows the exact fare approved by the Sangguniang Bayan, the same number your driver sees."],
+    [37.3, 48.0, "Students, seniors and persons with disability get twenty percent off automatically. Scan the permit QR to log your trip, and report overcharging with photo evidence."],
+    [48.3, 55.0, "It's grounded in law. The Local Government Code empowers the Sangguniang Bayan to regulate tricycles for hire,"],
+    [55.0, 61.0, "and Ordinance 105, enacted unanimously on July 3, 2023, sets the fares FareCheck applies."],
+    [61.3, 68.0, "Only the Sangguniang Bayan may set fares, after a public hearing. Drivers must charge the approved fare and post it."],
+    [68.0, 74.0, "Discounts follow national law, and your personal data is protected under the Data Privacy Act of 2012."],
+    [74.3, 84.0, "FareCheck enforces the ordinance and never rewrites it: verified routes only, fare changes only with an official issuance, and penalties only where the law provides."],
+    [84.3, 96.0, "For commuters, that means a fair price every time, the discounts you're entitled to, proof of every ride, and a voice when something goes wrong. Drivers get fewer arguments and a record of their trips."],
+    [96.3, 109.0, "For the municipal government: evidence-based enforcement, one shared record, instant town-wide fare updates, transparent franchise actions, and real data for planning."],
+    [109.3, 116.5, "Basey FareCheck. Know the fare before you ride."],
+  ];
+  window.DURATION = 121;
+
+  const scenes = [...document.querySelectorAll('.scene')];
+  for (const s of scenes) {
+    const start = +s.dataset.start, end = +s.dataset.end;
+    s.style.animationDelay = `${start}s, ${end - 0.7}s`;
+    s.querySelectorAll('[data-d]').forEach(el => {
+      const d = start + parseFloat(el.dataset.d);
+      el.style.animationDelay = `${d}s`;
+    });
+  }
+
+  const fareCount = document.getElementById('fareCount');
+  const s4 = scenes.find(s => s.id === 's4');
+  const ease = x => 1 - Math.pow(1 - x, 3);
+
+  window.seek = (t) => {
+    for (const a of document.getAnimations()) { a.pause(); a.currentTime = t * 1000; }
+    for (const s of scenes) s.style.visibility = (t >= +s.dataset.start - 0.05 && t <= +s.dataset.end + 0.05) ? 'visible' : 'hidden';
+    const k = Math.min(Math.max((t - (+s4.dataset.start + 5.6)) / 1.6, 0), 1);
+    fareCount.textContent = '₱' + (24 * ease(k)).toFixed(2);
+  };
+
+  if (!location.search.includes('render')) {
+    const t0 = performance.now();
+    const tick = () => { seek(((performance.now() - t0) / 1000) % DURATION); requestAnimationFrame(tick); };
+    document.fonts.ready.then(tick);
+  } else {
+    seek(0);
+  }
+</script>
+</body>
+</html>

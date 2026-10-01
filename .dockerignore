@@ -41,3 +41,6 @@ public/uploads
 
 # Documentation is not needed to run the app
 docs
+
+# The promo video and its render sources are not part of the app
+promo

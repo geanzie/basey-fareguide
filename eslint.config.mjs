@@ -20,6 +20,7 @@ export default [
       'node_modules/**',
       'public/uploads/**',
       'src/generated/**',
+      'promo/**',
     ],
   },
   ...compat.extends('next/core-web-vitals', 'next/typescript'),
