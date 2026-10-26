@@ -142,11 +142,7 @@ const withSerwist = withSerwistInit({
   // the public/ files are appended to the manifest *after* every transform has
   // run (see transformManifest in @serwist/build). The worker caches the
   // archive deliberately instead — see src/lib/map/basemapRequest.ts.
-  //
-  // The landing page's promo video (public/promo/, ~15 MB) is left out too, so
-  // installing the worker never downloads it; it loads only when someone
-  // presses play, and defaultCache's video route serves its Range requests.
-  globPublicPatterns: ['**/!(*.pmtiles|*.mp4)'],
+  globPublicPatterns: ['**/!(*.pmtiles)'],
 })
 
 export default withSerwist(withBundleAnalyzer(nextConfig as any) as any);
