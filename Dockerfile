@@ -1,7 +1,7 @@
 # ============================================================
 # Stage 1: Install dependencies (production only)
 # ============================================================
-FROM node:20-alpine AS deps
+FROM node:24-alpine AS deps
 WORKDIR /app
 
 # Install libc for native modules (sharp, etc.)
@@ -16,7 +16,7 @@ RUN npx prisma generate
 # ============================================================
 # Stage 2: Build the Next.js application
 # ============================================================
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 WORKDIR /app
 
 RUN apk add --no-cache libc6-compat openssl
@@ -39,7 +39,7 @@ RUN npm run build:app
 # ============================================================
 # Stage 3: Production runner image
 # ============================================================
-FROM node:20-alpine AS runner
+FROM node:24-alpine AS runner
 WORKDIR /app
 
 RUN apk add --no-cache libc6-compat openssl

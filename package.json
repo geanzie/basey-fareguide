@@ -2,6 +2,9 @@
   "name": "frontend",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "npm run build:deploy",
@@ -56,7 +59,7 @@
     "react-dom": "^19.1.2",
     "react-pdf": "^9.2.1",
     "resend": "^6.4.2",
-    "sharp": "^0.34.5",
+    "sharp": "^0.35.5",
     "swr": "^2.3.6"
   },
   "devDependencies": {
@@ -66,7 +69,8 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/geojson": "^7946.0.16",
     "@types/jsonwebtoken": "^9.0.5",
-    "@types/node": "^20",
+    "@types/node": "^24.19.2",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitest/coverage-v8": "^4.1.0",

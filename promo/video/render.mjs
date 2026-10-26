@@ -2,13 +2,14 @@
 //
 //   npm i --no-save playwright-core        (once; uses the local Chromium)
 //   python3 promo/video/music.py           (writes music.wav)
-//   node promo/video/render.mjs            (writes basey-farecheck-promo.mp4)
+//   python3 promo/video/narration.py       (optional: writes soundtrack.wav, voice + music)
+//   node promo/video/render.mjs            (writes public/promo/basey-farecheck-promo.mp4)
 //
 // Options: --stills t1,t2,...  writes PNG stills at those seconds instead.
 //          CHROMIUM_PATH=...     Chromium binary (default: Playwright's lookup).
 //
-// Also writes captions.srt from the narration lines in promo.html and muxes it
-// into the MP4 as a subtitle track (off by default in most players).
+// Also writes captions.srt from the narration lines in promo.html. It is the
+// voice-over script for narration.py; the MP4 carries no subtitle track.
 import { spawn } from 'node:child_process'
 import { createRequire } from 'node:module'
 import { existsSync, writeFileSync } from 'node:fs'
@@ -53,16 +54,17 @@ writeFileSync(
   narration.map(([a, b, text], i) => `${i + 1}\n${stamp(a)} --> ${stamp(b)}\n${text}\n`).join('\n'),
 )
 
-const music = join(here, 'music.wav')
-const out = join(here, 'basey-farecheck-promo.mp4')
+// The voiced soundtrack when narration.py has written one, else the music bed.
+const music = [join(here, 'soundtrack.wav'), join(here, 'music.wav')].find(existsSync) ?? join(here, 'music.wav')
+// Written straight into public/, where the landing page plays it from.
+const out = join(here, '../../public/promo/basey-farecheck-promo.mp4')
 const ffmpeg = spawn(
   'ffmpeg',
   [
     '-y', '-loglevel', 'error',
     '-f', 'image2pipe', '-framerate', String(FPS), '-c:v', 'mjpeg', '-i', '-',
-    '-i', join(here, 'captions.srt'),
-    ...(existsSync(music) ? ['-i', music, '-map', '2:a', '-c:a', 'aac', '-b:a', '160k'] : []),
-    '-map', '0:v', '-map', '1:s', '-c:s', 'mov_text', '-metadata:s:s:0', 'language=eng',
+    ...(existsSync(music) ? ['-i', music, '-map', '1:a', '-c:a', 'aac', '-b:a', '160k'] : []),
+    '-map', '0:v',
     '-c:v', 'libx264', '-preset', 'medium', '-crf', '20', '-pix_fmt', 'yuv420p', '-movflags', '+faststart',
     out,
   ],

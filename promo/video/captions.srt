@@ -1,6 +1,6 @@
 1
 00:00:00,400 --> 00:00:07,000
-Every day in Basey, thousands of rides on tricycles and habal-habal begin with one question: how much is the fare?
+Riding a tricycle or habal-habal in Basey? Before you board, get the answer to one question: how much is the fare?
 
 2
 00:00:07,300 --> 00:00:15,000

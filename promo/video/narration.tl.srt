@@ -1,0 +1,55 @@
+1
+00:00:00,400 --> 00:00:07,000
+Sasakay ka ng tricycle o habal-habal sa Basey? Alamin mo muna: magkano ba ang pamasahe?
+
+2
+00:00:07,300 --> 00:00:15,000
+Kung walang malinaw na basehan, hula-hula lang, may away pa sa pagbaba, nakakalimutan ang discount, at walang patunay kapag sobra ang singil.
+
+3
+00:00:15,300 --> 00:00:22,000
+Kaya nandito ang Basey FareCheck, ang fare guide ng bayan, base sa Ordinance 105.
+
+4
+00:00:22,300 --> 00:00:29,500
+Piliin mo lang kung saan ka pupunta. Sinusukat ng FareCheck ang biyahe sa totoong daan, hindi sa diretsong linya,
+
+5
+00:00:29,500 --> 00:00:37,000
+tapos ipapakita ang eksaktong pamasaheng aprubado ng Sangguniang Bayan, 'yung parehong halagang nakikita ng driver.
+
+6
+00:00:37,300 --> 00:00:48,000
+Estudyante, senior o PWD? May automatic kang twenty percent discount. I-scan lang ang QR sa sasakyan para ma-record ang biyahe, at i-report kung na-overcharge ka, may picture pa.
+
+7
+00:00:48,300 --> 00:00:55,000
+Legal 'to, ha. Sa Local Government Code, Sangguniang Bayan ang may hawak sa mga tricycle for hire,
+
+8
+00:00:55,000 --> 00:01:01,000
+at Ordinance 105 ang nagtatakda ng pamasahe, aprubado ng buong konseho.
+
+9
+00:01:01,300 --> 00:01:08,000
+Sangguniang Bayan lang ang puwedeng magtakda ng pamasahe, may public hearing pa. Dapat sundin at ipaskil ng driver.
+
+10
+00:01:08,000 --> 00:01:14,000
+Ang discount, ayon sa batas, at safe ang data mo sa ilalim ng Data Privacy Act.
+
+11
+00:01:14,300 --> 00:01:24,000
+Hindi binabago ng FareCheck ang ordinansa, sinusunod lang: verified na ruta, bagong pamasahe kapag may opisyal na kautusan lang, at multa ayon lang sa batas.
+
+12
+00:01:24,300 --> 00:01:36,000
+Para sa pasahero: tamang presyo tuwing sasakay, ang discount na para sa'yo, patunay ng bawat biyahe, at may laban ka kapag may problema. Para sa driver: wala nang away, at may record pa ng mga biyahe.
+
+13
+00:01:36,300 --> 00:01:49,000
+Para sa munisipyo: aksyon na may ebidensya, iisang record para sa lahat, mabilis na update ng pamasahe sa buong bayan, malinaw na desisyon sa prangkisa, at totoong datos para sa plano.
+
+14
+00:01:49,300 --> 00:01:56,500
+Basey FareCheck. Alamin ang pamasahe bago sumakay.

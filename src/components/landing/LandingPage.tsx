@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 
 import BanigCornerMat from '@/components/BanigCornerMat'
 import BrandMark from '@/components/BrandMark'
+import LandingVideo from '@/components/landing/LandingVideo'
 import type { FareRatesResponseDto } from '@/lib/contracts'
 import { formatManilaDateTimeLabel } from '@/lib/manilaTime'
 import { ORDINANCE_105_FACTS, ORDINANCE_105_FARE_POINTS } from '@/lib/ordinance105Digest'
@@ -23,12 +24,17 @@ interface LandingPageProps {
 
 const FOCUS_RING =
   'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F3E6C4]'
-const PHONE_MASK = 'linear-gradient(to left, #000 55%, transparent)'
 
 /** ₱15 for whole pesos, ₱3.50 with centavos — the same rule the dashboards use. */
 function formatCurrency(value: number) {
   return Number.isInteger(value) ? `₱${value}` : `₱${value.toFixed(2)}`
 }
+
+/** The landing page is home, so Home is the current page and jumps to the top. */
+const NAV_LINKS: Array<{ href: string; label: string; current?: boolean }> = [
+  { href: '#top', label: 'Home', current: true },
+  { href: '#video', label: 'Video' },
+]
 
 const ROLES: Array<{ role: string; summary: string; features: string[] }> = [
   {
@@ -71,65 +77,111 @@ const Container = ({ children, className = '' }: { children: ReactNode; classNam
   <div className={`mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-10 ${className}`}>{children}</div>
 )
 
+/**
+ * The hero and the promo video are one composition on one forest block: the
+ * pitch on the left and the video beside it, laid on the round banig mat, on
+ * desktop; the video straight under the pitch on phones and tablets. Neither
+ * has its own band, so nothing separates them.
+ */
 const Hero = () => (
-  <header className="relative overflow-hidden bg-[#14532D] text-white">
-    {/* Phones: the text fills the width, so the mat sits behind it — laid
-        diagonally into the bottom-left corner as on the sign-in panel — under
-        a forest scrim. The scrim never drops below 80% forest, which keeps the
-        straw headline above 4:1 and the body copy above 4.5:1 even over the
-        palest part of the weave. */}
-    <BanigCornerMat className="sm:hidden" />
+  <header id="top" className="relative overflow-hidden bg-[#14532D] text-white">
+    {/* Phones and tablets: the mat lies diagonally into the bottom-left corner
+        as on the sign-in panel, under the video, beneath a forest scrim. The
+        scrim never drops below 80% forest, which keeps the straw headings above
+        4:1 and the body copy above 4.5:1 even over the palest part of the weave. */}
+    <BanigCornerMat className="lg:hidden" />
     <div
       aria-hidden="true"
-      className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#14532D]/95 via-[#14532D]/90 to-[#14532D]/80 sm:hidden"
+      className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#14532D]/95 via-[#14532D]/90 to-[#14532D]/80 lg:hidden"
     />
-    {/* Tablets: the same tikog strip that edges the sign-in header, kept to
-        the space right of the text. */}
-    <div
-      aria-hidden="true"
-      className="pointer-events-none absolute inset-y-0 right-0 hidden w-[calc(100%-38rem)] bg-[url('/brand/banig-mat.webp')] bg-cover bg-center sm:block lg:hidden"
-      style={{ maskImage: PHONE_MASK, WebkitMaskImage: PHONE_MASK }}
-    />
-    {/* Desktop: a round mat half off the right edge, bound in tikog like the
-        one in the sign-in panel's corner. */}
-    <div
-      aria-hidden="true"
-      className="pointer-events-none absolute right-[-16rem] top-1/2 hidden size-[44rem] -translate-y-1/2 rounded-full bg-[url('/brand/banig-mat.webp')] bg-cover bg-left shadow-[0_0_0_6px_#E6D3A8,0_0_0_7px_rgba(0,0,0,0.25),0_24px_60px_rgba(0,0,0,0.45)] lg:block xl:right-[-12rem]"
-    />
-
     <Container className="relative">
-      {/* Just the wordmark: the hero's own button is the page's one way in. */}
-      <div className="flex items-center gap-3 py-5">
-        <BrandMark size="md" tone="dark" />
-        <span className="whitespace-nowrap font-brand text-lg font-extrabold sm:text-xl">Basey FareCheck</span>
+      {/* Wordmark, then in-page links: centred on wider screens, on their
+          own row under the wordmark on phones (both do not fit at 360px).
+          Sign-in stays the hero's button, the page's one way in. */}
+      <div className="relative flex flex-wrap items-center gap-x-4 gap-y-2 py-5">
+        <div className="flex items-center gap-3">
+          <BrandMark size="md" tone="dark" />
+          <span className="whitespace-nowrap font-brand text-lg font-extrabold sm:text-xl">Basey FareCheck</span>
+        </div>
+        <nav aria-label="Page sections" className="-mx-3 w-full sm:absolute sm:left-1/2 sm:mx-0 sm:w-auto sm:-translate-x-1/2">
+          <ul className="flex items-center gap-1 text-sm font-semibold sm:gap-2">
+            {NAV_LINKS.map(({ href, label, current }) => (
+              <li key={href}>
+                <a
+                  href={href}
+                  aria-current={current ? 'page' : undefined}
+                  className={`block rounded-lg px-3 py-2 underline-offset-[10px] transition ${
+                    current
+                      ? 'text-[#F3E6C4] underline decoration-2'
+                      : 'text-white/80 hover:text-white hover:underline hover:decoration-white/40'
+                  } ${FOCUS_RING}`}
+                >
+                  {label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
       </div>
 
-      <div className="max-w-xl pb-16 pt-10 sm:pb-20 lg:max-w-2xl lg:pb-28 lg:pt-20">
-        <h1 className="font-brand text-4xl font-extrabold leading-[1.05] text-balance text-[#F3E6C4] sm:text-5xl lg:text-6xl">
-          Know the fare before you ride.
-        </h1>
-        <p className="mt-5 max-w-lg text-base leading-relaxed text-white/90 sm:text-white/80 lg:text-lg">
-          Basey FareCheck is the municipality&apos;s fare guide for tricycles and habal-habal. It
-          shows the fare the Sangguniang Bayan approved, records each trip, and gives riders a
-          way to report overcharging.
-        </p>
-        <div className="mt-8 flex flex-wrap gap-3">
-          <Link
-            href="/auth"
-            className={`rounded-xl bg-[#F3E6C4] px-5 py-3 text-sm font-semibold text-[#14532D] transition hover:bg-white ${FOCUS_RING}`}
-          >
-            Sign in or create an account
-          </Link>
-          <a
-            href="#ordinance"
-            className={`rounded-xl border border-white/30 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10 ${FOCUS_RING}`}
-          >
-            Read what the ordinance says
-          </a>
+      <div className="grid gap-12 pb-14 pt-8 sm:pb-20 sm:pt-12 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] lg:items-center lg:gap-14 lg:pb-24 lg:pt-14 xl:grid-cols-2 xl:gap-16">
+        <div className="max-w-xl">
+          <h1 className="font-brand text-4xl font-extrabold leading-[1.05] text-balance text-[#F3E6C4] sm:text-5xl xl:text-6xl">
+            Know the fare before you ride.
+          </h1>
+          <p className="mt-5 max-w-lg text-base leading-relaxed text-white/90 lg:text-white/80 xl:text-lg">
+            Basey FareCheck is the municipality&apos;s fare guide for tricycles and habal-habal. It
+            shows the fare the Sangguniang Bayan approved, records each trip, and gives riders a
+            way to report overcharging.
+          </p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Link
+              href="/auth"
+              className={`rounded-xl bg-[#F3E6C4] px-5 py-3 text-sm font-semibold text-[#14532D] transition hover:bg-white ${FOCUS_RING}`}
+            >
+              Sign in or create an account
+            </Link>
+            <a
+              href="#ordinance"
+              className={`rounded-xl border border-white/30 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10 ${FOCUS_RING}`}
+            >
+              Read what the ordinance says
+            </a>
+          </div>
         </div>
+        <VideoSection />
       </div>
     </Container>
   </header>
+)
+
+/**
+ * The promo video beside the pitch (see Hero). On desktop it is laid on the
+ * round mat: the disc is pinned near the frame's top-right corner, so its rim
+ * shows above and to the right of the video and is cut off by the page edge,
+ * while the caption underneath stays clear of it.
+ */
+const VideoSection = () => (
+  <section id="video" aria-labelledby="video-heading" className="scroll-mt-4">
+    <div className="relative">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -right-64 -top-64 hidden size-[36rem] rounded-full bg-[url('/brand/banig-mat.webp')] bg-cover bg-left shadow-[0_0_0_6px_#E6D3A8,0_0_0_7px_rgba(0,0,0,0.25),0_24px_60px_rgba(0,0,0,0.45)] lg:block"
+      />
+      <div className="relative">
+        <LandingVideo />
+      </div>
+    </div>
+    <div className="mt-6 max-w-md lg:mt-5">
+      <h2 id="video-heading" className="font-brand text-lg font-extrabold text-[#F3E6C4] lg:text-xl">
+        FareCheck in two minutes
+      </h2>
+      <p className="mt-1 text-sm leading-relaxed text-white/90 lg:text-white/80">
+        How a fare is measured by road, the ordinance behind it, and what it changes for riders and
+        the town.
+      </p>
+    </div>
+  </section>
 )
 
 const AppSection = ({ fareRates }: LandingPageProps) => (

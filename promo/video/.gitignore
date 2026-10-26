@@ -1,2 +1,7 @@
 music.wav
 still-*.png
+soundtrack.wav
+*.onnx
+*.onnx.json
+__pycache__/
+voice/

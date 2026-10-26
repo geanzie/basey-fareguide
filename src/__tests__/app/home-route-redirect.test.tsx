@@ -65,6 +65,15 @@ describe("home route", () => {
     expect(html).not.toContain("Announcement");
     expect(html).not.toContain("Fees operators pay");
     expect(html).not.toContain("banig-mat.webp')] bg-[length");
+    // The promo video sits in the hero beside the pitch, poster only until someone presses play.
+    expect(html).toContain("FareCheck in two minutes");
+    expect(html).toContain('poster="/promo/basey-farecheck-promo-poster.webp"');
+    expect(html).toContain('preload="none"');
+    // Top-bar links jump within the page; Home is the current page.
+    expect(html).toContain('href="#top" aria-current="page"');
+    expect(html).toContain('id="top"');
+    expect(html).toContain('href="#video"');
+    expect(html).toContain('id="video"');
   });
 
   it("sends signed-in users to their role home route", async () => {
